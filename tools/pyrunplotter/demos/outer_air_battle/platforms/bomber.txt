@@ -1,0 +1,97 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+radar_signature    bomber_radar_signature    constant 1000 m2   end_radar_signature
+infrared_signature bomber_infrared_signature constant 1000 w/sr end_infrared_signature
+optical_signature  bomber_optical_signature  constant 1000 m2   end_optical_signature
+
+
+platform_type BOMBER WSF_PLATFORM
+
+#  icon EA-6B
+   icon B-52
+
+   radar_signature    bomber_radar_signature
+   infrared_signature bomber_infrared_signature
+   optical_signature  bomber_optical_signature
+   multiresolution_mover MR_AIR_MOVER
+   end_multiresolution_mover
+   
+   processor track_manager WSF_TRACK_PROCESSOR
+      //debug
+#      purge_interval  60 sec
+#      update_interval 2 sec
+   end_processor
+
+   processor task_mgr WSF_TASK_PROCESSOR
+      evaluation_interval DETECTED 60 seconds
+      state DETECTED
+         next_state RETURN
+            return (PLATFORM.GroundRangeTo(TRACK) <= 300.0 * MATH.M_PER_NM());
+         end_next_state
+      end_state
+      evaluation_interval RETURN 100 hours
+      state RETURN
+         on_entry
+            PLATFORM.TurnToRelativeHeading(180.0);
+            writeln("!!!!!!!!!!!!! ", PLATFORM.Name(), " has reached launch point!!!!!!!!!!");
+         end_on_entry
+      end_state
+   end_processor
+
+end_platform_type
+
+multiresolution_mover MR_AIR_MOVER WSF_MULTIRESOLUTION_MOVER
+   model low_fidelity_mover
+      fidelity_range 0 0.5
+      mover WSF_AIR_MOVER
+         # WAGs - Luke Miklos
+         roll_rate_limit               0.7 rad/sec
+         default_linear_acceleration   0.7 g
+         default_radial_acceleration   2.5 g
+         default_climb_rate            300 fps
+   
+         # Mach 0.9 (516.0 kts) at altitude, Janes Reference
+         maximum_speed                 516.0 knots
+   
+         # Ceiling, Janes Reference
+         maximum_altitude              55000 ft
+         minimum_altitude              1000 ft
+   
+         # WAG - Luke Miklos
+         maximum_linear_acceleration   7 g
+   
+         #no_pitch
+         at_end_of_path extrapolate
+      end_mover
+   end_model
+   model high_fidelity_mover
+      fidelity_range 0.5 1.0
+      mover WSF_AIR_MOVER
+         # WAGs - Luke Miklos
+         roll_rate_limit               0.9 rad/sec
+         default_linear_acceleration   0.9 g
+         default_radial_acceleration   3.5 g
+         default_climb_rate            350 fps
+   
+         # Mach 0.9 (516.0 kts) at altitude, Janes Reference
+         maximum_speed                 326.0 knots
+   
+         # Ceiling, Janes Reference
+         maximum_altitude              50000 ft
+         minimum_altitude              1500 ft
+   
+         # WAG - Luke Miklos
+         maximum_linear_acceleration   8 g
+   
+         #no_pitch
+         at_end_of_path extrapolate
+      end_mover
+   end_model
+end_multiresolution_mover

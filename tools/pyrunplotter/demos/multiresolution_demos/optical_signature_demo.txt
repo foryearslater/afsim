@@ -1,0 +1,74 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# Copyright (C) 2021 Stellar Science; U.S. Government has Unlimited Rights.
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+###############################################################################
+# optical_signature_demo.txt
+# This demo adapts the demo in 
+# signature_demos/2nd_composite_optical_signature_fighter.txt to make the 
+# fighter platform's optical signature multiresolution by combining the three
+# optical signatures defined in signature_demos/signatures. It uses the same
+# sensors, but alters the fighter's route. Varying the fidelity parameter in
+# the platform definition will choose different signatures, with [0-0.33) choosing 
+# the spherical signature, [0.33-0.66) the box signature, and [0.66-1.0] the 
+# multi-shape signature.
+###############################################################################
+
+define_path_variable CASE optical_signature_demo
+log_file output/$(CASE).log
+file_path .
+
+end_time 1200 sec
+
+# include platform and scenario files from signature_demos
+include_once platforms/simple_fighter.txt
+include_once platforms/generic_irst_site.txt
+include_once platforms/generic_eoir_site.txt
+include_once platforms/sensor_laydown_fighter.txt
+
+include_once signatures/fighter_multiresolution_signature.txt
+
+platform fighter_multi SIMPLE_FIGHTER
+   side red
+   add multiresolution_optical_signature FIGHTER_MULTIRESOLUTION_OPTICAL_SIGNATURE
+   end_multiresolution_optical_signature
+   route
+      position 40.2n 89.5w altitude 20000 ft heading 270 deg speed 500 kts
+      position 40.1n 90.0w altitude 20000 ft heading 270 deg speed 500 kts
+      position 40.2n 90.0w altitude 20000 ft heading 270 deg speed 500 kts
+      position 40.1n 90.1w altitude 20000 ft heading 270 deg speed 500 kts
+      position 40.2n 89.5w altitude 20000 ft heading 270 deg speed 500 kts
+   end_route
+end_platform
+
+event_output
+   file output/$(CASE).evt
+   enable all
+end_event_output
+
+event_pipe
+   file output/$(CASE)_%d.aer
+   use_preset full
+   enable DETECTION_ATTEMPT 
+end_event_pipe
+
+multiresolution_multirun_table
+   model_list
+      fighter_multi optical_signature
+   end_model_list
+   fidelity_table
+      0.1
+      0.5
+      0.8
+   end_fidelity_table
+   loop_after_table_end
+end_multiresolution_multirun_table
+
+final_run_number 3

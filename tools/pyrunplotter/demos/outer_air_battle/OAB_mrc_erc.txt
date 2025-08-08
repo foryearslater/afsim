@@ -1,0 +1,61 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+define_path_variable CASE outer_air_battle-mrc-erc
+log_file output/$(CASE).log
+
+include event_pipe.txt
+include event_output.txt 
+
+script_interface debug end_script_interface
+
+define_path_variable PATH base_types
+#file_path ../base_types
+file_path ../$(PATH)
+file_path .
+
+#dis_interface end_dis_interface
+
+# platforms
+include_once platforms/blue_prop_awacs_1.txt
+
+include_once platforms/blue_multirole_fighter_2.txt
+include_once platforms/blue_multirole_fighter_2_erc.txt
+include_once platforms/blue_multirole_fighter_2_mrc.txt
+
+include_once platforms/cvn.txt
+
+include_once platforms/bomber.txt
+
+## scenarios
+include_once scenarios/routes.txt
+include_once scenarios/cvbg.txt
+include_once scenarios/bombers.txt
+
+event_output file output/$(CASE).evt end_event_output
+event_pipe file output/$(CASE)_%d.aer end_event_pipe
+
+end_time 6 hours
+
+multiresolution_multirun_table
+   model_list
+      bomber-1 mover
+      bomber-2 mover
+      bomber-3 mover
+      bomber-4 mover
+      bomber-5 mover
+   end_model_list
+   loop_after_table_end
+   fidelity_table
+      0.25 0.25 0.25 0.25 0.25
+      0.75 0.75 0.75 0.75 0.75
+   end_fidelity_table
+end_multiresolution_multirun_table
+
+final_run_number 2
