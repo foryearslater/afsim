@@ -1,0 +1,572 @@
+/*! \mainpage World Simulation Framework (WSF)
+
+\section intro Introduction
+
+<hr>
+<b>
+****************************************************************************
+Copyright 2003-2015 The Boeing Company
+
+This software is provided 'As Is', with no warranties, either express or
+implied, and Boeing will not be liable for any damages arising in any way
+from the use of this software.
+
+See individual source files for relevant exportability and
+restrictions.
+****************************************************************************
+</b>
+<hr>
+
+WSF is a C++ extensible object-oriented framework for creating system simulations.
+The framework provides basic simulation objects (platforms, sensors, etc.)
+and various utilities (coordinate transforms, random number generators, etc.)
+
+\section howto Getting Started in Using WSF
+
+<ul>
+<li>\ref hello_sim
+<li>\ref app_objects
+<li>\ref sim_input
+<li>\ref sim_objects
+<li>\ref object_types
+<li>\ref sim_observers
+<li>\ref units
+<li>\ref plugins
+<li>\ref notes
+</ul>
+*/
+
+// *****************************************************************************
+
+/*! \page hello_sim Getting Started (or Hello, Sim)
+
+The following example demonstrates a trivial simulation and serves as a building block on which we will
+proceed to add additional capabilities.  It loads
+a scenario from 'test.txt' (the format of the scenario input file is described in a separate document).
+It then initializes the simulation and proceeds to run it.
+
+\code
+
+int main(int argc, char* argv[])
+{
+   WsfApplication app("My app", argc, argv);
+
+   // Create the scenario and load inputs
+   WsfScenario scenario(app);
+   scenario.LoadFromFile("test.txt");
+
+   // Finalize input processing and detect errors
+   scenario.CompleteLoad();
+
+   // Create the simulation
+   WsfSimulation sim(scenario, 0 /* run number */);
+
+   sim.Initialize();
+   sim.Start();
+   double simTime = 0.0;
+   while (sim.IsActive())
+   {
+      simTime = sim.AdvanceTime();
+   }
+   sim.Complete(simTime);
+   return 0;
+}
+\endcode
+
+This simulation is not very useful because it doesn't produce any output.  If we modify the example as
+follows, we can either direct the simulation entities to be sent to a Distributed Interactive
+Simulation (DIS) exercise or written to a replay file that can be
+displayed by external programs.  The scenario input file 'test.txt' must define a 'dis_interface'
+block to define what to do. And again, the contents of the scenario input file are described in a
+separate document.
+
+\code
+
+int main(int argc, char* argv[])
+{
+   WsfApplication app("My app", argc, argv);
+   WSF_REGISTER_EXTENSION(app, dis_interface);             // Added!
+
+   // Create the scenario and load inputs
+   WsfScenario scenario(app);
+   scenario.LoadFromFile("test.txt");
+
+   // Finalize input processing and detect errors
+   scenario.CompleteLoad();
+
+   // Create the simulation
+   WsfSimulation sim(scenario, 0 /* run number */);
+
+   sim.Initialize();
+   sim.Start();
+   double simTime = 0.0;
+   while (sim.IsActive())
+   {
+      simTime = sim.AdvanceTime();
+   }
+   sim.Complete(simTime);
+   return 0;
+}
+\endcode
+
+The above examples only demonstrate the basics.  They don't demonstrate how to extend WSF to provide your
+own types of simulation objects (platforms, sensors, etc.), or implement observers that let you
+gather information about things occuring in the simulation.  These topics will be discussed in the following
+sections.
+
+What do you want to do next?
+\li Forward to \ref app_objects
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page app_objects Application, simulation and scenario objects and extensions.
+
+A WSF application must instantiate three fundamental objects to execute a WSF simulation:
+\li WsfApplication - Supervisory object for a WSF application.
+\li WsfScenario - Defines the properties and initial conditions of the objects to be simulated. This
+is typically populated from one or more files.
+\li WsfSimulation (or one of its derivations) - Executes the scenario.
+
+Each of these objects allows extensions to be defined that extended the capabilities
+of WSF. These are:
+\li WsfApplicationExtension
+\li WsfScenarioExtension
+\li WsfSimulationExtension
+
+What do you want to do next?
+\li Forward to \ref sim_input
+\li Backward to \ref hello_sim
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page sim_input Simulation Input
+
+The scenario object (WsfScenario) is populated with input from files or other
+sources.
+
+\section inpstr The Input Stream
+
+WSF implements an abstract concept of an input stream call UtInput.  This class
+provides numerous methods to extract data from the stream.  WSF provides two
+concrete implementations of UtInput:
+
+\li UtInputFile - A input stream that reads from a text file (like a C++
+'ifstream' object).
+\li UtInputString - An input stream that reads from a C++ string (like a C++
+'strstream' or 'stringstream' object).
+
+\section objinp Object Input Methods
+
+Nearly every major object in WSF implements the method:
+
+\code
+bool ProcessInput(UtInput& aInput);
+\endcode
+
+This method examines the current command in the input stream to see if it
+should be processed by the class.  If so, it processes the command and returns
+'true'.  If it doesn't recognize the command and if it is a derived class,
+then it should call the base class ProcessInput method which continues the process.
+If any class in the heirarchy recognizes the command then 'true' should be returned.
+If no class in the heirarchy recognizes the command then 'false' should be returned.
+
+\section inpfac Input Factories
+
+The scenario makes use of various 'TypeList' classes (for example,
+WsfPlatformTypes, WsfSensorTypes, etc.) to process the input stream.
+A type list looks at the current command and if it recognizes it, processes the
+command and returns 'true'.  If it does't recognize it then it simply returns
+'false'.
+
+\section inpopt Input Operation
+
+The scenario simply reads a command and passes it to each type list
+where it is given a chance to process the command.  If a type list recognizes the command
+it is processed by creating and updating objects using the ProcessInput methods
+and returns 'true' to the scenario.  If a factory does not recognize a command
+then it returns 'false' to the scenario which tells it to try the next type list.
+If no scenario object recognizes the command then the command is passed to extensions
+registered with the scenario. If it doesn't recognize the command then the command is invalid.
+
+\section inperr Input Errors
+
+Any error encountered in the input will result in an exception being thrown.
+The calling routine may catch the error, but input errors may leave objects
+in an indeterminate state and cause the simulation to crash if allowed to
+continue.
+
+\section inptype Use of the Object Type System.
+
+The type lists makes extensive use of the object type system (\ref object_types)
+described earlier.  Commands will direct it to create new object types or to create
+instances of object types.  For instance, a 'platform_type' command will result in
+WsfPlatformTypes::LoadType creating a new platform type (by calling WsfPlatformTypes::Add).
+A 'platform' command will result in WsfPlatformTypes::LoadInstance cloning one of
+the defined types (WsfPlatformTypes::Clone) and adding it to the scenario.
+Other type lists perform similar operations.
+
+What do you want to do next?
+\li Forward to \ref sim_objects
+\li Backward to \ref app_objects
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page sim_objects Major Objects Simulated by WSF
+
+The fundamental objects that are simulated by WSF are
+\li \ref platforms
+\li \ref movers
+\li \ref sensors
+\li \ref comm
+\li \ref processors
+\li \ref signature
+\li \ref aero
+\li \ref fuel
+\li \ref zones
+\li \ref cmdchains
+
+There are many more objects defined within WSF, but these are the ones that are
+the most visible.
+
+\section platforms Platforms
+
+A platform represents something like a car, truck, aircraft, satellite, human,
+building, etc.  It serves as a container to which the remaining objects are
+attached.
+
+WsfPlatform is the base class for a platform. In general you should not have
+to derive from this class because it is really only a container.  All of the
+functionality of a platform is defined by its constituent parts.
+
+\section movers Movers
+
+A mover object acts as the propulsion system for the platform to which it is
+attached.  It is responsible for maintaining the kinematic state of a platform
+(i.e.: location, orientation, speed, acceleration)  Note that a platform is not
+an directly an 'air platform', 'ground platform' or 'satellite'.  It assumes
+the attributes of one of those because it has the appropriate type of mover
+attached.
+
+WsfMover is the base class for all mover implementations.  You can provide your
+own by deriving from it or you can use one of the WSF-provided implementations:
+
+\li WsfAirMover
+\li WsfGroundMover
+\li WsfSpaceMover
+
+\section sensors Sensors
+
+Sensor objects provide the 'senses' for a platform (think of them as the eyes,
+ears and nose of the platform).
+
+WsfSensor is the base class for all sensor implementations.  You can provide your
+own by deriving from it or you can you used of the WSF-provided implementations:
+
+\li WsfPassiveSensor
+\li WsfRadarSensor
+
+\section comm Communications
+
+Communications objects provide the mechanism for platforms to communicate with
+each other.
+
+WsfComm is the base class for all communications implementations.  You can provide your
+own by deriving from it or you can use one of the WSF-provided implementations:
+
+\li WsfCommRcvr
+\li WsfCommXmtr
+\li WsfRadioRcvr
+\li WsfRadioXmtr
+
+\section processors Processors
+
+Processors provide the congitive capabilities of a platform. These can represent
+decision processes that would be provided by either organic (brain) or inorganic
+(computer) methods. Processors can:
+
+\li Receive messages from another processor on the same platform.
+\li Reciver messages from a sensor on the same platform.
+\li Receive messages from another platform via a comm reciever.
+\li Be invoked on a periodic basis.
+\li Send messages other processors on the same platform.
+\li Send messages to other platforms via comm transmitters.
+\li Invoke actions or change the state of the platform or its consituent parts.
+
+As you can see, processors can do just about anything they want.
+
+WsfProcessor is the base class for all processor implementations.  You can provide your
+own by deriving from it or you can use one of the WSF-provided implementations:
+
+\li WsfDelayProcessor
+\li WsfMessageProcessor
+\li WsfTrackProcessor
+
+\section signature Signatures
+
+A platform has an 'attribute' called a signature which represents its visibility
+to a sensor located at some angle to the platform.  The WsfSignature object is a
+container for the signatures.  There are several signatures currently implemented:
+
+\li WsfRadarSig
+
+As part of the signature implementation there exists an attribute called the
+'signature state'.  This, in effect, allows different signature tables to be used
+depending on the configuration of the platform.
+
+\section aero Aerodynamics Properties
+
+WsfAero implements aerodynamic properties.  It will probably be extended in the future.
+
+\section fuel Fuel Consumption
+
+WsfFuel implements a very simple fuel consumption model. It will be extended
+in the future to provide more options.
+
+\section zones Zones
+
+Zones are polygonal or circular areas that can be used in decision making
+processes.
+
+\section cmdchains Command Chain
+
+A command chain represents the commander-peer-subordinate structure and is used to
+direct messages to platforms.  A platform becomes a member of a command chain by adding a
+WsfCommandChain object that denotes the name of the command chain and the name of the
+commanding platform.  A platform may be part of more than one command chain as its
+role dictates.
+
+What do you want to do next?
+\li Forward to \ref sim_input
+\li Backward to \ref object_types
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page object_types The 'Object Type' System
+
+The 'object type' system is most useful when used the the simulation loader
+described later, but it is also useful even if you aren't going to use it.  The
+object type system allows you to create an object (platform, sensor, etc.) and
+register it as a 'object type'.  The created object can be an instance of any of
+the classes provided by WSF that has been populated with the characteristics you
+desire or an instance of a derived class that you have created.
+
+All of the object types that have been pre-defined by WSF (for example,
+WsfAirMover, WsfRadarSensor, etc.) have been pre-registered in the object type
+system and are available to be used in simulation input files.  You can create
+derived classes and also register them so they can be used in simulation input
+files.  Assume you have a new sensor (the same pattern would apply to a platform,
+mover, etc.):
+
+\code
+class MySensor : public WsfSensor
+{
+   ...
+};
+\endcode
+
+The sensor can be registered as a new sensor type in either an application or scenario extension
+using the following:
+
+\code
+#include "WsfSensorTypes.hpp"
+
+#include "MySensor.hpp"
+...
+   // 'scenario' is a reference to the scenario.
+   scenario.GetSensorTypes().AddCoreType("MY_SENSOR", new MySensor(scenario));
+\endcode
+
+The sensor can then be attached to a platform type in an input file:
+\verbatim
+platform_type MY_AC WSF_PLATFORM
+  sensor sensor-1 MY_SENSOR
+     ... commands specific to MY_SENSOR ...
+  end_sensor
+end_platform_type
+\endverbatim
+
+Use of object types is not just limited to the simulation loader. Let's say
+a new platform type has been created and registered as 'MY_AC'. How it got
+there isn't important.  It could have been created by the simulation loader
+or by code you have written.  At any rate, you can create a copy of the
+aircraft and add it to the simulation:
+
+\code
+WsfPlatform* platformPtr = WsfPlatformTypes::Clone("MY_AC");
+platformPtr->SetName("ac-1");
+// Set other parameters as desired such as the route, etc.
+sim.AddPlatform(platformPtr);
+\endcode
+
+What do you want to do next?
+\li Forward to \ref units
+\li Backward to \ref sim_objects
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page units Units and Coordinate Systems
+
+\section units-1 Units
+
+Unless otherwise noted in the documentation, WSF will utilize meter/kilogram/second
+units for all arguments and member variables.  The input
+system provides the mechanism for the user to specify input values in various
+forms, but it always converts them to the preferred units before storing them in
+memory.
+
+The units are as follows:
+
+\li Length: meters (m)
+\li Mass: kilogram (kg)
+\li Time: seconds (s)
+\li Velocity: m/s
+\li Acceleration: m/s^2
+\li Frequency: Hertz (Hz) = 1/s
+\li Force: Newtons (Nt) = kg-m/s^2
+\li Power: Watts (W) = Nt-m/s
+\li Angle: radians
+\li Latitude: decimal degrees in the range [-90, 90]
+\li Longitude: decimal degrees in the range [-180, 180]
+\li Data units: bits
+\li Data transfer rate: bits/second
+
+\section coords-1 Coordinates
+
+WSF utilizes the coordinate systems as defined by the <b>IEEE Standard for Distributed
+Interactive Simulation (DIS) - Application Protocols</b> (IEEE Standard 1278.1-1995).
+The standard defines two basic coordinate systems and WSF adds three additional systems
+for convenience.  The coordinate systems are defined as follow:
+
+- The 'World Coordinate System' (WCS).  This is defined to be the WGS-84
+  coordinate system as defined in NIMA TR 8350.2 and utilized by DIS.
+  This is a right handed with:
+   - The origin is at the center of the Earth.
+   - The +X axis passes through 0N, 0E
+   - The +Y axis passes through 0N, 90E
+   - The +Z axis passes through 90N (the north pole).
+- The 'Entity Coordinate System' (ECS).  This is sometimes referred to
+  as the 'Body' coordinate system.  This is a right handed system with:
+   - The origin is at the center of the body.
+   - The +X axis goes out the front of the body.
+   - The +Y axis goes out the pilots right side.
+   - The +Z axis goes out the bottom of the body.
+   - Positive yaw   is to pilots right.
+   - Positive pitch is nose up.
+   - Positive roll  is right wing down.
+- A local North-East-Down (NED) system. This is like the ECS except it has
+  not been rotated by the entity orientation angles.
+   - The origin is at the center of entity.
+   - The +X axis is North.
+   - The +Y axis is East.
+   - The +Z axis is down.
+- The 'Earth Centered Inertial (ECI).  This system is like WCS with the exception that
+  it is rotated by an angle that changes with time in the  WCS X-Y plane.  This also is
+  a right handed system with its origin at the center of the Earth, the X-axis pointing
+  toward the vernal equinox, the point at which the Sun's path crosses the Earth's
+  equator from south to north on the 1st day of Spring, March 20th-21st.  This point
+  defines the  inertial reference to the X-axis in the equatorial plane.  The Y-axis is
+  perpendicular to the X-axis in the equatorial plane and the Z-axis passes through the
+  north pole.
+- The 'Part Coordinate System' (PCS), represents the local coordinate system of a part
+  attached to the entity, such as an antenna.  It represents the position and orientation
+  of this sub-part.  It is important to note, the position and orientation of the sub-part
+  is relative to is owning part or parent entity. It is described more fully in UtEntityPart.
+
+Methods to support these systems are defined in the classes UtEntity and UtEntityPart.
+The main platform class in WSF (WsfPlatform) derives from UtEntity.  UtEntityPart is
+used by the aggregate parts of the platform to represent the positions of sensors, etc.
+
+What do you want to do next?
+\li Forward to \ref sim_observers
+\li Backward to \ref sim_objects
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page sim_observers Simulation Observers
+
+WSF by itself does not produce any output. It does this because it is impossible
+to anticipate all the potential forms of output that may be desired.  What WSF
+does provide, however, it an concept called a 'simulation observers'.  Simulation
+observers are registered and then called from within WSF as various key locations
+during simulation operation. The observer gather statistics, produce event logs,
+etc.  WSF provides two observers:
+
+\li WsfDisInterface - provides the ability to interact with DIS exercise and
+create replay files that can be displayed by external programs.
+\li WsfEventOutput - A simple text event output mechanism.
+
+Observers can 'connect' to various 'callback objects' that represent events that
+can occur during the course of the simulation. The events to which you can
+subscribe and their argument lists are defined in WsfObserver.
+
+What do you want to do next?
+\li Forward to \ref plugins
+\li Backward to \ref units
+\li Return to \ref intro
+*/
+
+// *****************************************************************************\
+
+/*! \page plugins Creating Plug-Ins
+This section is under construction.
+
+What do you want to do next?
+\li Forward to \ref notes
+\li Backward to \ref units
+\li Return to \ref intro
+*/
+
+// *****************************************************************************
+
+/*! \page notes Programming Notes
+
+This section provides general programming notes when using WSF.
+
+\li \ref notes-a
+\li \ref notes-b
+\section notes-a The Platform List
+
+WsfSimulation maintains a list of all active platforms in the simulation.  It
+includes methods for determining if a platform exists, iterating over all active
+platforms, etc.
+
+\section notes-b Platforms and Platform indices.
+
+Platforms may be destroyed during a simulation.  Therefore, an object (simulation
+observer, another platform, etc.) must not retain a pointer to another platform
+as there is no way to guarantee that the platform will always exist.  What should
+be retained is a 'platform index'.
+
+When a platform is added to the simulation it is assigned a unique platform index
+that will never be reassigned during the simulation (Note: the platform index is
+not assigned until WsfSimulation::Initialize is called).  The platform index
+for an active platform can be retrieved by:
+
+\code
+unsigned int platformIndex = platformPtr->GetIndex();
+\endcode
+
+Given a platform index, the address of the associated platform can be retrieved by:
+
+\code
+WsfPlatform* WsfSimulation::GetPlatformByIndex(platformIndex)
+\endcode
+The return value will be the pointer to the platform <b>if it still exists</b> or 0
+if the platform has been removed from the simulation.
+
+What do you want to do next?
+\li Backward to \ref plugins
+\li Return to \ref intro
+*/

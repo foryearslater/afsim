@@ -1,0 +1,125 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+radar_signature AIRCRAFT_RADAR_SIG
+   constant 10 m2
+end_radar_signature
+
+weapon_effects phaser_effects PHASER_LETHALITY
+   shield_damage_rate       100.0
+   armor_damage_rate         20.0
+end_weapon_effects
+
+# define the platform with the phaser
+platform_type phaser-plat WSF_PLATFORM
+   icon BTR-70
+   side black
+   radar_signature AIRCRAFT_RADAR_SIG
+   # PHASER_WEAPON is the new weapon type
+   weapon phaser PHASER_WEAPON
+      weapon_effects phaser_effects
+      # enable debug to show which target the weapon is firing upon
+      debug
+      fire_duration              5.0 sec
+      fire_integration_interval  0.1 sec
+   end_weapon
+   # define a radar to detect the targets
+   sensor radar WSF_RADAR_SENSOR
+      on
+      transmitter
+         frequency 1 ghz
+         power 1 mw
+      end_transmitter
+      frame_time 1 s
+      one_m2_detect_range 30 nm
+      reports_location
+      processor track-processor
+   end_sensor
+   # The track processor maintains the tracks
+   processor track-processor WSF_TRACK_PROCESSOR
+      on
+   end_processor
+end_platform_type
+
+# Define the target type as a simple air-mover
+platform_type target WSF_PLATFORM
+   icon Wedge
+   side yellow
+   radar_signature AIRCRAFT_RADAR_SIG
+   # give the target 600 shields
+   #             and 100 armor
+   aux_data
+      double phaser_shields = 600
+      double phaser_armor   = 100
+   end_aux_data
+   mover WSF_AIR_MOVER
+   end_mover
+end_platform_type
+
+# the phaser platform instance
+platform phaser-1 phaser-plat
+
+   position 61n 44w altitude 10 m
+   # every 10 seconds, fire at a random target
+   execute at_interval_of 10 s 
+      if (MasterTrackList().Count() > 0)
+      {
+         int index = (int)RANDOM.Uniform(0.0, MasterTrackList().Count());
+         WsfTrack targetTrack = MasterTrackList().Entry(index);
+         if (targetTrack.Target().IsValid())
+         {                        
+            Weapon("phaser").Fire(targetTrack);
+         }
+      }
+   end_execute
+end_platform
+
+# Instead of placing each target manually, this platform will 'launch' targets every second.
+# This is a common way to create platforms during a simulation run
+platform target_spawn WSF_PLATFORM
+   icon Wedge
+   side purple
+   add weapon tgt_launcher WSF_EXPLICIT_WEAPON
+      launched_platform_type target
+      quantity 40
+      # on_create is called after each target is created
+      # here the target is positioned at a random location
+      script void on_create(WsfPlatform tgt, WsfTrack track)
+         double lat = 61 + RANDOM.Uniform(-0.5, 0.5);
+         double lon = -44 + RANDOM.Uniform(-1.0, 1.0);
+         tgt.SetLocation(lat, lon, 8000);
+         tgt.TurnToHeading(RANDOM.Uniform(0.0, 360.0));
+      end_script
+   end_weapon
+   # Fire every second
+   execute at_interval_of 1 s
+      Weapon("tgt_launcher").Fire();
+   end_execute
+end_platform
+
+platform target-1 target
+   route
+      position 61n 43.5w altitude 10 km speed 500 kts
+      position 61n 44.5w
+   end_route
+end_platform
+
+platform target-2 target
+   route
+      position 61n 44.5w altitude 10 km speed 500 kts
+      position 61n 43.5w
+   end_route
+end_platform
+
+# run for 20 simulation minutes
+end_time 20 min
+
+event_pipe
+   file weapon_scenario.aer
+end_event_pipe

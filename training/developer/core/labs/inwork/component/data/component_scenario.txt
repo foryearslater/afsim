@@ -1,0 +1,202 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// Scenario for component exercise
+// This Scenario Consists of Two Platforms Orbiting Earth
+// The Starship Enterprise, which carries bars of  gold-pressed latinum
+// (the only remaining currency of the 24th century), and
+// The Ferengi Ship
+// (The  Ferengi  are a fictional merchant race of questionable ethics).
+// The Ferengi Ship Approaches the Enterprise and Attempts to Steal the Latinum
+// The Ferengi execute a plan in which they launch a cyber attack over a comm device.
+// As a result the Enterprise drops track on (can no longer target) the Ferengi Ship.
+// Then they launch a second cyber attack that forces the Enterprise to  drop  (turn off) its shields.
+// Once These Cyber Attacks are Successfully Accomplished, the Ferengi can Steal the Latinum.
+
+// Define "shields" outside platform definition
+shields enterprise_shields WSF_SHIELDS
+   initial_strength 1.0e10 joules
+   recharge_rate 1e8 Watts
+   on
+end_shields
+
+platform_type Enterprise WSF_PLATFORM
+   icon space_shuttle
+   side white
+
+   mover WSF_SPACE_MOVER
+      position 0n 90w altitude 500 km heading 90 deg  // "standard orbit"
+      suppress_warnings enabled
+   end_mover
+
+   latinum quantity 500  // Define latinum here
+                         // only a single input, so not in a block
+
+   // Define copy of externally defined type here
+   shields enterprise_shields
+
+   add sensor all_seeing WSF_GEOMETRIC_SENSOR
+      on
+      reports_location
+      reports_velocity
+      reports_side
+      reports_type
+      update_interval 1 s
+      frame_time 1 s
+      cyber_effect track_drop  // component definiton included in sensor definition
+   end_sensor
+
+   comm unsecured_comm WSF_COMM_TRANSCEIVER
+      internal_link unsecured_computer
+   end_comm
+
+   processor unsecured_computer WSF_SCRIPT_PROCESSOR
+      on_message
+         default
+            script
+               string command = MESSAGE.SubType();
+               if (command == "DROP_TRACK")
+               {
+                  WsfSensor s = PLATFORM.Sensor("all_seeing");
+                  s.SetAuxData("BEGIN_EXPLOIT", true);  // should be able to communicate directly with component
+               }
+            end_script
+      end_on_message
+   end_processor
+
+end_platform_type
+
+platform_type FERENGI_SHIP WSF_PLATFORM
+   icon ucav_navy
+   side green
+   mover WSF_SPACE_MOVER
+   end_mover
+end_platform_type
+
+platform Ferengi_Ship FERENGI_SHIP
+
+   edit mover
+      position 0n 91w altitude 500 km heading 90 deg  // "standard orbit"
+   end_mover
+
+   add comm unsecured_comm WSF_COMM_TRANSCEIVER
+   end_comm
+
+   execute at_time 30 seconds absolute
+      WsfComm c = PLATFORM.Comm("unsecured_comm");
+      WsfMessage msg = {};
+      msg.SetSubType("DROP_TRACK");
+      c.SendMessage(msg,"enterprise", "unsecured_comm");
+   end_execute
+
+   execute at_time 40 seconds absolute
+      WsfComm c = PLATFORM.Comm("unsecured_comm");
+      WsfMessage msg = {};
+      msg.SetSubType("DROP_SHIELDS");
+      c.SendMessage(msg,"enterprise", "unsecured_comm");
+   end_execute
+
+   add processor transport_latinum WSF_SCRIPT_PROCESSOR
+
+      update_interval 0.1 s
+      on_update
+
+         // check to see if the shields are down
+         WsfPlatform enterprise = WsfSimulation.FindPlatform("enterprise");
+         Shields shields = enterprise.Shields();
+
+         if (! shields.IsTurnedOn())  // We can do this because of inheritance of shields from WsfPlatformPart
+         {
+            enterprise.Comment("Shields Down");
+            static bool beamLatinumNow = true;
+
+            WsfDraw draw = {};
+            static double downTime = TIME_NOW;
+            if (beamLatinumNow)
+            {
+               writeln("Enterprise shields down.");
+               PLATFORM.Comment(TIME_NOW, "Stealing Latinum");
+               Latinum latinum = enterprise.Latinum();
+               latinum.TransferTo(PLATFORM);
+               if (PLATFORM.Latinum().IsValid())
+               {
+                  writeln("Latinum now on Ferengi Ship: ", PLATFORM.Latinum().Quantity());
+               }
+               beamLatinumNow = false;
+            }
+            if (TIME_NOW < (downTime + 10))
+            {
+               draw.Erase(1);
+               draw.SetId(1);
+               draw.SetDuration(10.0);
+               draw.SetLineSize(5);
+               draw.SetColor(0.1, 1.0, 0.1);
+               draw.BeginLines();
+               draw.Vertex(PLATFORM);
+               draw.Vertex(enterprise);
+               draw.End();
+            }
+            else
+            {
+               draw.Erase(1);
+            }
+         }
+      end_on_update
+   end_processor
+end_platform
+
+platform enterprise Enterprise
+end_platform
+
+event_pipe file component_exercise.aer end_event_pipe
+
+event_output
+   file component_sceanrio.evt
+   enable SENSOR_TRACK_INITIATED
+   enable SENSOR_TRACK_DROPPED
+   enable COMMENT
+end_event_output
+
+script void DrawTrackIcon(WsfPlatform aPlatform, WsfTrack aTrack)
+   if (aTrack.TargetType() == "FERENGI_SHIP")
+   {
+      WsfDraw draw = {};
+      draw.Erase(2);
+      WsfGeoPoint gp = aTrack.LocationAtTime(TIME_NOW);
+      draw.SetId(2);
+      draw.BeginIcons(aPlatform.Heading(), "ucav_navy");
+      draw.Vertex(gp);
+      draw.End();
+   }
+end_script
+
+script void SensorTrackInitiated(WsfPlatform aPlatform, WsfSensor aSensor, WsfTrack aTrack)
+   DrawTrackIcon(aPlatform, aTrack);
+end_script
+
+script void SensorTrackUpdated(WsfPlatform aPlatform, WsfSensor aSensor, WsfTrack aTrack)
+   DrawTrackIcon(aPlatform, aTrack);
+end_script
+
+script void SensorTrackDropped(WsfPlatform aPlatform, WsfSensor aSensor, WsfTrack aTrack)
+   WsfDraw draw = {};
+   draw.Erase(2);
+   WsfPlatform enterprise = WsfSimulation.FindPlatform("enterprise");
+   enterprise.Comment("Sensor Track Dropped!");
+end_script
+
+observer
+   enable SENSOR_TRACK_INITIATED SensorTrackInitiated
+   enable SENSOR_TRACK_UPDATED SensorTrackUpdated
+   enable SENSOR_TRACK_DROPPED SensorTrackDropped
+end_observer
+
+start_date jul 27 2369
+
+end_time 10 min

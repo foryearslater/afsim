@@ -1,0 +1,77 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+(struct root
+   (var ObjectMap/Shield shieldType)
+
+   (rule shield-type {
+      shields <string> <string> (new (type shieldType $1) (type shieldType $2) :backup (type shieldType WSF_SHIELDS)) [apply($$)]
+         <TypeCommand>*
+      end_shields
+    | (error { shields <ignore>* end_shields } )
+   })
+{
+   <shield-type>
+})
+
+(struct Platform
+   (var ObjectMap/Shield shields)
+   (var ObjectMap/Latinum latinum)
+
+   (rule type-command {
+      shields <string> (new (subtype shields $1) (type shieldType $2) ) [apply($$)] <TypeCommand>*  
+   })
+
+   (rule instance-command {
+      shields <string> (load (subtype shields $1)) [apply($$)] <TypeCommand>*
+      latinum <string> (load (subtype latinum $1)) [apply($$)] <TypeCommand>*
+   })
+   
+   (rule latinum-command {
+        quantity  <integer>
+   })
+
+{
+   add shields <string> <string> (new (subtype shields $1) (type shieldType $3) :backup (type shieldType WSF_SHIELDS)) [apply($$)] <TypeCommand>* 
+ | edit shields <string> (load (subtype shields $1)) [apply($$)] <TypeCommand>*
+ | delete shields <string> (delete (subtype shields $1)) [apply($$)]
+ | shields <string> (new (subtype shields this_shield) (type shieldType $1) :backup (type shieldType WSF_SHIELDS)) [apply($$)]
+ | latinum <latinum-command>
+}
+)
+
+(struct Shield
+   :base_type PlatformPart
+{
+   initial_strength <real> <energy-unit>
+ | recharge_rate <real> <power-unit>
+ | <PlatformPart>
+})
+
+(struct WSF_SHIELDS
+   :symbol (type shieldType WSF_SHIELDS)
+   :base_type Shield
+{
+   <Shield>
+})
+
+(struct Latinum
+   :symbol (type latinumType latinum)
+   :base_type PlatformPart
+{
+   quantity <integer>
+})
+
+(struct Sensor
+   (rule cyber-effect-type { exploit_delay | track_drop | track_pulloff })
+{
+   cyber_effect <cyber-effect-type>
+})
+
+

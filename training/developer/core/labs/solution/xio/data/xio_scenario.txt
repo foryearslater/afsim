@@ -1,0 +1,93 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// XIO scenario
+// There are four notional aircraft flying.
+// One can demonstrate controlling one or more of these with xio.
+
+include_once ./p6dof_types/environment/p6dof_environment.txt
+include_once ./p6dof_types/movers/aircraft/FA_LGT/FA_LGT.txt
+
+xio_interface 
+  unicast 127.0.0.1 send_port 1234 receive_port 1235
+  debug enable
+end_xio_interface
+
+platform Blue_Fighter_1 AIRCRAFT
+   icon F-18
+
+   route
+      position 33:54:44.51n 83:20:16.78w altitude 32808.40 ft speed 550 kts
+   end_route
+end_platform
+
+platform Blue_Fighter_2 AIRCRAFT
+   icon F-16c
+   edit mover
+      route
+         label start position 41:45:40.412n 99:46:51.690w
+            altitude 20000 ft
+            speed 500 kts
+         position 42:13:16.00n 97:10:44.07w
+         position 43:52:05.08n 97:35:50.73w
+         position 43:29:32.06n 101:04:42.62w
+         position 41:46:28.72n 102:40:22.54w
+            goto start
+      end_route
+   end_mover
+end_platform
+
+platform Blue_Fighter_3 AIRCRAFT
+   icon F-35
+   edit mover
+      route
+         label start position 39:14:05.64n 99:21:39.15w
+            altitude 10000 ft
+            speed 400 kts
+         position 39:13:14.49n 98:36:46.25w
+         position 38:14:20.16n 97:47:56.13w
+         position 37:50:18.26n 98:55:56.38w
+         position 38:20:49.66n 100:17:34.04w
+         position 39:01:35.65n 99:46:26.98w
+            goto start
+      end_route
+   end_mover      
+end_platform
+
+platform Blue_Fighter_4 AIRCRAFT
+   icon F-22
+   edit mover
+      route
+         label start position 40:03:55.908n 104:04:06.867w
+            altitude 30000 ft
+            speed 450 nm/h
+         position 41:16:28.22n 103:05:09.55w
+         position 40:53:38.49n 101:38:38.34w
+         position 39:44:07.18n 102:03:34.27w
+         position 38:51:56.95n 102:57:30.29w
+         position 39:33:49.59n 104:00:30.86w
+            goto start
+      end_route
+   end_mover
+end_platform
+
+platform_type AIRCRAFT WSF_PLATFORM
+   side blue
+   spatial_domain air
+   indestructible 
+   mover WSF_P6DOF_MOVER
+      p6dof_object_type  FA_LGT
+      update_interval 0.01667 sec
+      follow_vertical_track
+   end_mover
+   
+end_platform_type
+
+end_time 1 day
+realtime

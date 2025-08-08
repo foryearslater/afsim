@@ -1,0 +1,130 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# define a non-life form; Tricorder will not detect
+platform_type GROUND_FORCE_VEHICLE WSF_PLATFORM
+   icon hummvee
+   category ground_vehicle
+end_platform_type
+
+# define the platform types representing the life forms
+platform_type LIFE_FORM WSF_PLATFORM
+   icon human
+end_platform_type
+
+platform_type ROMULAN LIFE_FORM                       // Uses the LIFE_FORM type
+   side red
+   aux_data
+      string LIFE_FORM_REPORTED_TYPE = "Romulan"      // Set the type of life form
+   end_aux_data
+end_platform_type
+
+platform_type KLINGON WSF_PLATFORM                    // Does not use the LIFE_FORM type
+   icon human                           
+   side magenta
+   category klingon_life_form                         // Uses a category instead to denote a life form
+   aux_data
+      string LIFE_FORM_REPORTED_TYPE = "Klingon"      // Set the type of life form
+   end_aux_data
+end_platform_type
+
+platform_type VULCAN LIFE_FORM                        // Uses the LIFE_FORM type
+   side green
+   aux_data
+      string LIFE_FORM_REPORTED_TYPE = "Vulcan"       // Set the type of life form
+   end_aux_data
+end_platform_type
+
+# create the players
+platform RGFV GROUND_FORCE_VEHICLE                    // Romulan Ground Force Vehicle
+   side red
+   position 35:01n 118:01w altitude 0 ft agl
+   initial_damage_factor 0.75                         // Heavily damaged
+end_platform
+
+platform Romulan_Cmdr ROMULAN
+   position 35:01:25.898n 118:01:48.929w              // Romulan Commander with 100 % health
+   altitude 0 ft agl
+end_platform
+
+platform Kor KLINGON                                  // Kor the Klingon
+   position 35n 118w altitude 0 ft agl
+   initial_damage_factor 0.25                         // Slightly hurt 
+end_platform
+
+platform Spock VULCAN                                 // Spock the Vulcan
+   position 34:59n 118:02w altitude 0 ft agl
+   add sensor tricorder TRICORDER_SENSOR            // Standard Tricorder Sensor 
+                                                      // for detecting life forms
+      on                                              // By default sensors are turned off  
+    
+      mode KLINGON
+         frame_time 2 s                     
+         reports_type                                 // Reports type of life form      
+         life_form_type klingon_life_form
+      end_mode   
+
+      mode ALL_LIFE_FORMS
+         frame_time 1 s                     
+         reports_type                                 // Reports type of life form      
+         life_form_type LIFE_FORM                     // Types detected (platform_type or platform categories)
+         life_form_type klingon_life_form
+      end_mode   
+           
+   end_sensor
+   
+   execute at_time 5 min absolute
+      PLATFORM.Sensor("tricorder").SelectMode("ALL_LIFE_FORMS");
+   end_execute
+   
+end_platform
+
+// Scripts used by the script observer
+// These need to be defined before the script observer block
+script void SensorTrackInitiated(WsfPlatform aPlatform, 
+                                 WsfSensor aSensor, 
+                                 WsfTrack aTrack) 
+                                 
+   writeln("*** T=", TIME_NOW, " ", aPlatform.Name(), 
+           " has initiated a track on a ", aTrack.Type(),
+           " with a health of ", (aTrack.TrackQuality() * 100.0), " %");          
+   writeln("   Mode: ", aSensor.CurrentMode());
+   
+   int lifeFormCount = ((TricorderSensor)aSensor).LifeFormTypeCount();   
+   for (int i = 0; i < lifeFormCount; i = i + 1)
+   {
+      string lifeFormTypeStr = ((TricorderSensor)aSensor).LifeFormTypeEntry(i);
+      writeln("   Life Form Type: ", lifeFormTypeStr);   
+   }
+   
+end_script
+
+script void SensorTurnedOn(WsfPlatform aPlatform, WsfSensor aSensor) 
+   writeln("*** T=", TIME_NOW, " ", aPlatform.Name(), " has turned on a ", aSensor.Name());
+end_script
+
+
+// Script observer block
+observer   
+   enable SENSOR_TRACK_INITIATED 
+   enable SENSOR_TURNED_ON
+end_observer
+
+// Event output block
+event_output
+   file   replay.evt 
+   enable SENSOR_MODE_ACTIVATED
+   enable SENSOR_TRACK_INITIATED
+   enable SENSOR_TURNED_ON
+end_event_output
+
+event_pipe file sensor_scenario.aer end_event_pipe
+
+# run for 10 simulation minutes
+end_time 10 min

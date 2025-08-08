@@ -1,0 +1,128 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// Comm Exercise 1 
+// Scenario
+
+include_once ./comm_types.txt
+
+platform blue_commander CMDR
+   side blue
+   commander SELF
+   position 39:39:12n 123:08:00w altitude 0 ft agl
+   
+   execute at_interval_of 5 s
+      WsfControlMessage cntrlMsg = WsfControlMessage();        
+      cntrlMsg.SetFunction("I COMMAND YOU");
+      PLATFORM.Comm("comm-net").SendMessageToSubordinates("", cntrlMsg);
+   end_execute
+
+end_platform
+
+platform blue-1 AIRCRAFT
+   side blue
+   commander blue_commander
+   route
+      label start
+      position 40:42:00n 123:38:00w  
+         altitude 10000 ft
+         speed 400 kts
+      position 41:18:45.20n 125:24:37.27w
+         speed 500 nm/h
+      position 42:27:50.36n 124:19:45.70w
+         altitude 1000 feet
+      position 41:30:56.15n 122:26:30.31w
+         altitude 10000 feet
+         goto start
+   end_route
+   
+   edit comm comm-net
+      source_track_number 100
+   end_comm
+   
+end_platform
+
+platform blue_2 AIRCRAFT
+   side blue
+   commander blue_commander   
+   route
+      label start
+      position 42:48:00n 122:46:00w 
+         altitude 10000 ft
+         speed 500 kts
+      position 41:54:34.03n 121:16:04.80w
+         altitude 10000 feet
+      position 40:58:07.86n 122:35:22.02w
+         altitude 10000 feet
+         speed 400 nm/h
+      position 41:47:01.18n 124:01:47.94w
+         speed 500 nm/h
+         goto start
+   end_route
+   
+   edit comm comm-net
+      source_track_number 200
+   end_comm
+   
+end_platform
+
+dis_interface
+   application 1
+   
+   connections
+      unicast 127.0.0.1 send_port 1234 receive_port 1235
+   end_connections
+   
+   autostart  
+   entity_type CMDR         1:1:225:0:5:2:2
+   entity_type AIRCRAFT     1:1:225:0:1:1:1
+end_dis_interface
+
+event_pipe
+   file comm_exercise.aer
+end_event_pipe
+
+event_output
+   file    comm_exercise.evt
+   disable TEAM_NAME_DEFINITION
+   
+   enable COMM_TURNED_OFF
+   enable COMM_TURNED_ON
+   enable MESSAGE_RECEIVED
+   enable MESSAGE_TRANSMITTED  
+   enable PROCESSOR_TURNED_OFF
+   enable PROCESSOR_TURNED_ON
+end_event_output
+
+comm_lab_interface
+   debug
+   print_messages   
+end_comm_lab_interface
+
+end_time 6 hours
+realtime
+platform blue-3 AIRCRAFT
+   side blue
+   position 38:28:47.764n 122:50:13.166w altitude 30000 ft
+   mover
+      route
+         label start position 38:28:47.764n 122:50:13.166w
+            altitude 30000 ft speed 300 kts
+         position 37:56:12.52n 120:52:13.18w
+         position 36:34:49.19n 121:21:27.08w
+         position 37:22:26.16n 123:39:50.79w
+            goto start
+      end_route
+   end_mover
+
+   edit comm comm-net
+      source_track_number 300
+   end_comm
+
+end_platform

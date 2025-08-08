@@ -1,0 +1,83 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// Common types for comm_exercise
+
+comm BLUE_COMM SIGNAL_COMM
+   debug
+end_comm
+
+platform_type COMM_PLATFORM WSF_PLATFORM    
+
+   comm comm-net BLUE_COMM
+      internal_link msg_processor 
+   end_comm 
+
+   processor msg_processor WSF_SCRIPT_PROCESSOR    
+   end_processor      
+
+end_platform_type
+
+platform_type CMDR COMM_PLATFORM
+   icon cmd_post
+   
+   edit processor msg_processor
+
+      // --- * --- * ---
+      script void ProcessMessage(LocationMessage aMsg)   
+         writeln("Message received of type: ", aMsg.Type());     
+         writeln("Received a Location Message from ", aMsg.Originator());      
+      end_script
+
+      on_message type LOCATION_MESSAGE
+         script
+            ProcessMessage((LocationMessage) MESSAGE); 
+         end_script
+      end_on_message
+      
+   end_processor      
+   
+end_platform_type
+
+platform_type SUBORDINATE COMM_PLATFORM
+
+   execute at_interval_of 5 s
+      // Send location
+      LocationMessage msg = LocationMessage();
+      PLATFORM.Comm("comm-net").SendMessageToCommander(msg);
+   end_execute
+
+   edit processor msg_processor
+      // --- * --- * ---
+      script void ProcessMessage(WsfControlMessage aMsg)        
+      
+         // Send status
+         WsfStatusMessage statusMsg = WsfStatusMessage();        
+         statusMsg.SetStatus("OK");
+         PLATFORM.Comm("comm-net").SendMessageToCommander("", statusMsg);
+         
+      end_script
+
+      on_message
+         type WSF_CONTROL_MESSAGE
+            script ProcessMessage((WsfControlMessage) MESSAGE); end_script
+      end_on_message
+   end_processor      
+end_platform_type
+
+platform_type AIRCRAFT SUBORDINATE   
+   icon fighter
+   mover WSF_AIR_MOVER
+   end_mover
+end_platform_type
+
+platform_type AIRCRAFT2 WSF_PLATFORM   
+   icon fighter
+end_platform_type
+

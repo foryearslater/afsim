@@ -1,0 +1,114 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// Comm exercise 2
+// This instance includes a single isr aircraft
+// It receives our custom LocationMessage over
+// our custom SingnalComm device.  Because the messages
+// come over the DIS interface, any simulation
+// can process our location messages.
+
+include_once ./comm_types.txt
+
+platform isr-1 COMM_PLATFORM 
+   side blue
+   icon JSTARS 
+   
+   add processor internal_generation WSF_SCRIPT_PROCESSOR
+      update_interval 5.0 seconds
+      internal_link msg_processor      
+      on_update
+         // Send location
+         LocationMessage msg = LocationMessage();
+         SendMessage(msg);
+      end_on_update
+   end_processor
+   
+   edit comm comm-net
+      source_track_number 400
+   end_comm
+   
+   edit processor msg_processor
+      
+      on_message type LOCATION_MESSAGE
+         script
+            LocationMessage msg = (LocationMessage)MESSAGE;
+            WsfDraw draw = WsfDraw();
+            draw.Erase(msg.SourceTrackNumber());
+            
+            draw.SetId(msg.SourceTrackNumber());
+            draw.SetDuration(20.0);
+            draw.SetColor(0.0, 0.0, 1.0);  // blue            
+            
+            WsfGeoPoint iconLoc = WsfGeoPoint.Construct(msg.Latitude(), msg.Longitude(), msg.Altitude());
+
+            // Draw text at this location
+            string textToDisplay = " " + (string)msg.SourceTrackNumber();
+            draw.SetTextSize(10);
+            draw.SetColor(0.1, 1.0, 0.1);
+            writeln(textToDisplay);
+            draw.BeginText(textToDisplay);
+            draw.Vertex(iconLoc);
+            draw.End();
+            
+            double course = msg.Course();
+            // Draw icon at this location
+            draw.BeginIcons(msg.Course(), "Wedge");
+            draw.Vertex(iconLoc);
+            draw.End();
+
+         end_script
+      end_on_message 
+            
+   end_processor
+   
+   add mover WSF_AIR_MOVER
+      route
+         label start position 37:55:59.637n 123:25:56.182w
+            altitude 30000 ft speed 250 kts
+         position 38:07:05.17n 123:06:05.81w
+         position 38:24:25.93n 123:32:21.48w
+         position 38:14:35.48n 123:48:08.69w
+            goto start
+      end_route
+   end_mover
+   
+end_platform
+
+dis_interface
+   application 2
+   unicast 127.0.0.1 send_port 1235 receive_port 1234
+   autostart  
+   entity_type CMDR         1:1:225:0:5:2:2
+   entity_type AIRCRAFT2    1:1:225:0:1:1:1
+end_dis_interface
+
+event_pipe
+   file comm_exercise2.aer
+end_event_pipe
+
+event_output
+   file comm_exercise2.evt
+   disable TEAM_NAME_DEFINITION
+   
+   enable COMM_TURNED_OFF
+   enable COMM_TURNED_ON
+   enable MESSAGE_RECEIVED
+   enable MESSAGE_TRANSMITTED  
+   enable PROCESSOR_TURNED_OFF
+   enable PROCESSOR_TURNED_ON
+end_event_output
+
+comm_lab_interface
+   debug
+   print_messages
+end_comm_lab_interface
+
+end_time 6 hours
+realtime
