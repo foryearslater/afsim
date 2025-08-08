@@ -1,0 +1,97 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+file_path .
+
+#define_path_variable SCNRIO 1v1             // 1v1 scenario
+define_path_variable SCNRIO  2v2             // 2v2 scenario
+#define_path_variable SCNRIO 2v2_air_movers
+#define_path_variable SCNRIO hvaa_dca        // 4v6 blue HVAA DCA
+#define_path_variable SCNRIO escort          // 4v6 blue bomber escort
+
+log_file output/${SCNRIO}.log
+
+include_once _common.txt
+include_once scenarios/${SCNRIO}.txt
+
+$define REP 1
+
+// create log.txt that looks like Brawler's standard output
+script_variables 
+   double closest_hostile = 1000*MATH.M_PER_NM();
+   bool log_print = true; // set to true if desire to create a log.txt output that mimmicks brawler's standard output
+   bool iout_print = true; // set to true if desire to create an iout.txt output
+   bool sensor_print =  false; // **WARNING**, setting this to true causes errors, still debugging this tool
+   WsfGeoPoint origin = WsfGeoPoint.Construct("00:00:00.00n 00:00:00.00e"); // scenario origin point for log print out
+   int rseed = (int)WsfSimulation.RandomSeed();
+   Array<string> log_string = {"output/","LOG",".",(string)$<REP>$};
+   Array<string> iout_string = {"output/","IOUT",".",(string)$<REP>$};
+   Array<string> sensor_string = {"output/","SENSOR",".",(string)$<REP>$};
+#  string log_path = "output/log.txt";
+   string log_path = "".Join(log_string);
+   string iout_path = "".Join(iout_string);
+   string sensor_path = "".Join(sensor_string);
+   FileIO log = FileIO();
+   FileIO iout = FileIO();
+   FileIO sensorIO = FileIO();
+end_script_variables
+
+execute at_interval_of 10 s 
+   writeln("T = ",TIME_NOW);
+end_execute
+
+include_once observer.txt
+include_once sensor_observer.txt
+
+end_time 1 hr
+
+random_seed 13579
+
+#end_time 2 sec
+
+// DIS Interface
+#dis_interface
+#   record output/4v6_test.rep
+#   suppress_comm_data on            // Mitigate large replay file sizes
+#   suppress_cme_detect_beam         // Mitigate large replay file sizes (due to angle ranging processor)
+#   suppress_emissions_data    true  // Mitigate large replay file sizes (due to angle ranging processor)
+#   suppress_non_standard_data true // Only use if all else fails in reducing replay size
+#end_dis_interface
+
+// Mystic event pipe configuration
+event_pipe
+   file output/${SCNRIO}.aer
+   enable AIRCOMBAT
+   enable TRACK_UPDATE
+   enable BEHAVIOR_TOOL
+end_event_pipe
+
+// Events output file
+event_output
+   file output/${SCNRIO}.evt
+#   enable all
+#   disable all
+#    enable PLATFORM_INITIALIZED
+#   enable PLATFORM_ADDED
+#    enable BTREE_NODE_CHILDREN
+#    enable BTREE_NODE_EXEC
+#   enable LOCAL_TRACK_CORRELATION
+#   enable LOCAL_TRACK_DECORRELATION
+#   enable LOCAL_TRACK_DROPPED
+#   enable LOCAL_TRACK_INITIATED
+#   enable LOCAL_TRACK_UPDATED    
+#   enable SENSOR_TRACK_INITIATED
+#   enable SENSOR_DETECTION_ATTEMPT
+#    enable MESSAGE_TRANSMITTED
+#    enable MESSAGE_RECEIVED
+#   enable WEAPON_HIT
+#   enable WEAPON_MISSED
+#   enable BTREE_NODE_CHILDREN
+#   enable BTREE_NODE_EXEC
+end_event_output
