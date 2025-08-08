@@ -1,0 +1,112 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+processor WEAPON_DL_MANAGER WSF_UPLINK_PROCESSOR
+   update_interval 1 sec
+    script_debug_writes off
+   script_variables
+      Map<string, bool>  mUplinkStatus             = Map<string, bool>();
+      Set<string>        mWeaponTypesWithoutUplink = Set<string>();
+      Array<string>      mUplinkSensorNames        = Array<string>();
+      WsfUplinkProcessor uplinkProc                = (WsfUplinkProcessor)PROCESSOR;
+      bool test = false;
+   end_script_variables
+   
+   script bool UplinkCapableSensorExists(WsfPlatform i_weapon)
+      foreach (string mUplinkSensorName in mUplinkSensorNames)
+      {
+         WsfSensor uplinkSensor = PLATFORM.Sensor(mUplinkSensorName);
+         if (uplinkSensor.IsValid())
+         {
+            if (uplinkSensor.IsTurnedOn() && uplinkSensor.WithinFieldOfView(i_weapon.Location()))
+            {
+               writeln_d(" ",PLATFORM.Name()," ", uplinkSensor.Name(), " can uplink to <", i_weapon.Name(), ">. T=", TIME_NOW);
+               return true;
+            }
+            else if (uplinkSensor.IsTurnedOff() )
+            {
+               // Simulates a low-power update via uplink sensor (e.g. a radar)
+               if (uplinkSensor.AuxDataExists("SENSOR_AZ_HALF_ANGLE") && uplinkSensor.AuxDataExists("SENSOR_EL_HALF_ANGLE"))
+               {
+                  double relAZ = PLATFORM.RelativeAzimuthOf(i_weapon.Location());
+                  double relEL = PLATFORM.RelativeElevationOf(i_weapon.Location());
+                  if (MATH.Fabs(relAZ) <= uplinkSensor.AuxDataDouble("SENSOR_AZ_HALF_ANGLE") &&
+                      MATH.Fabs(relEL) <= uplinkSensor.AuxDataDouble("SENSOR_EL_HALF_ANGLE"))
+                  {
+                     writeln_d(" ", uplinkSensor.Name(), " can uplink to <", i_weapon.Name(), ">. T=", TIME_NOW);
+                     return true;
+                  }
+               }
+               else { writeln_d(" Sensor aux data not defined for sensor type <", uplinkSensor.Type(), ">!!!"); }
+            }
+         }
+         else { writeln_d(" ", mUplinkSensorName, " cannot uplink to <", i_weapon.Name(), "> because it is not valid. T=", TIME_NOW); }
+      }
+      
+      return false;
+   end_script
+
+   on_update
+      // Add Active Weapons to list (for when auto_weapon_uplink is not enabled in the WSF_TASK_PROCESSOR)
+      Array<WsfPlatform> temp_list = PLATFORM->guid_list;
+      if (temp_list.Size() > 0)
+      {
+         foreach (WsfPlatform weapon in temp_list)
+         {
+            if (weapon.IsValid() && !mUplinkStatus.Exists(weapon.Name())) 
+            { 
+               mUplinkStatus.Set(weapon.Name(), false); 
+            }
+         }
+      }
+            
+      // Loop through active uplinks
+      for(int linkI = 0; linkI < uplinkProc.UplinkCount(); linkI += 1)
+      {
+         WsfPlatform weapon = uplinkProc.UplinkPlatformEntry(linkI);
+         if(weapon.IsValid())
+         {
+            // First time we've seen this uplink, add it to the map for future bookkeeping
+            if(!mUplinkStatus.Exists(weapon.Name()))
+            {
+               if (!UplinkCapableSensorExists(weapon)) { mUplinkStatus[weapon.Name()] = false; }
+            }
+            
+            // shutdown the uplink if this weapon type does not have one, or if no uplink capable sensor exists
+            if(mWeaponTypesWithoutUplink.Exists(weapon.Type()) || !UplinkCapableSensorExists(weapon))
+            {
+               writeln_d("T=", TIME_NOW, " ", PLATFORM.Name(), " cutting link to: ", weapon.Name());
+               uplinkProc.StopUplinking(weapon);
+               mUplinkStatus[weapon.Name()] = false;
+            }
+         }
+      }
+
+      foreach(string weaponName : bool isUplinking in mUplinkStatus)
+      {
+         WsfPlatform weapon = WsfSimulation.FindPlatform(weaponName);
+         if (weapon.IsValid())
+         {
+            // If this weapon has an uplink and we can talk to it turn the uplink back on
+            if(!isUplinking &&
+               !mWeaponTypesWithoutUplink.Exists(weapon.Type()) &&
+               UplinkCapableSensorExists(weapon))
+            {
+               uplinkProc.StartUplinking(weapon);
+               if(uplinkProc.IsUplinkingTo(weapon))
+               {
+                  mUplinkStatus[weaponName] = true;
+                  writeln_d("T=" , TIME_NOW, "  ", PLATFORM.Name(), "  reacquiring link to: ", weapon.Name());
+               }
+            }
+         }
+         else { mUplinkStatus[weaponName] = false; }
+      }
+   end_on_update
+end_processor

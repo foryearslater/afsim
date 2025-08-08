@@ -1,0 +1,118 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+  script_variables 
+/*
+   This list of variables is required for using the EZJA WsfAdvancedBehaviorTree
+   The variables are various assessment parameters utilized within the tree 
+   Most of the variables are initialized in the on_initialize block of WSF_SA_PROCESSOR
+   and they are updated in the on_update block of the WSF_SA_PROCESSOR
+*/
+
+#        platform and flight group objects
+         WsfPlatform iacid = PLATFORM;
+         WsfCommandChain iflite = PLATFORM.CommandChain("IFLITE");
+         WsfCommandChain ielement = PLATFORM.CommandChain("ELEMENT");
+         WsfTaskProcessor tsk_mgr = (WsfTaskProcessor)PLATFORM.Processor("tsk_mgr");
+#         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)PLATFORM.Processor("thinker");
+#         WsfSituationAwarenessProcessor saPROC = (WsfSituationAwarenessProcessor)PLATFORM.Processor("assessment");
+
+#        used for maneuver
+         double pr_heading;           
+         double pr_speed; 
+         double pr_throttle;
+         double pr_gees;
+         double pr_altitude;
+         
+#        route
+         WsfRoute ROUTE = WsfRoute();
+         
+#        assessment variables
+         string faz_desired = "";        // desired faz to be in
+         bool change_desired = false;    // true if i desire to change faz
+         double t_phase;                 // sim time at which it is acceptable to change phase
+         string flight_lead = "";        // flight lead
+         bool dzr_change = false ;       // someone in this flight is desiring a phase change
+         string dzr_phase = "";          // desired phase to change to
+         bool flt_guiding;               // true if someone in my flight is guiding 
+         bool time_ok;                   // indicates if i've been in current faz long enough to switch faz
+         bool alerted;                   // true if i'm aware of a threat missile and feel threatened by it
+         bool apole_tct;                 // true if i desire to perform an apole tactic (crank) when guiding missiles
+         string reason;                  // reason i desire to change faz
+         string RuleReason;              // reason i desire to change rule type
+         string faz;                     // current phase of platform
+         string rule_type;               // rule type of this platform
+         bool needil;                    // set to true if me or my flight mates are guiding a missile
+         Map<WsfSA_EntityPerception, bool> mapSTIFF_ARM = Map<WsfSA_EntityPerception,bool>(); // map of tracks to stiff arm
+         Array<WsfLocalTrack> ill_list = Array<WsfLocalTrack>();                              // array of tracks i'm guiding missiles against
+         int beans;                      // number of weapons I am supporting
+         WsfLocalTrack ltrk_cls_hst;     // track of closest hostile to me, calculated in ftr_faz @ call to rng_close_host
+         int n_pump;                     // number of pumps this A/C has performed
+         bool first_pass;                // true if this is the first pass 
+         bool attack_success;            // true if mission is complete
+         bool react;                     // true if i will perform a pre-planned reaction on the first pass
+         bool evd_msl;                   // true if i will turn cold to defeat a threat missile
+         bool p_snip;                    // true if i will snip my missile prior to husky or autonomous state to prioritize survivability 
+         bool p_pump;                    // probability that i will pump 
+         bool pump_per;                  // if true, i have permission to pump, true if p_pump is true and when guiding missiles, p_snip is true
+         bool solo = false;              // true if i will break from my flight and become my own flight lead
+         bool dead_buddy;                // do I have a dead wingman
+         bool onrail;                    // true if a missile is on the rail (pickle button pressed, waiting for missile to launch)
+         bool stiff_arm_all;             // true to stiff arm all threats
+         bool ing4last;                  // whether or not to pursue an egressing target
+         bool spiked;                    // is an A/C spiking me
+         bool sam_spiked;                // is a sam spiking me
+         bool msl_spike;                 // is a missile spiking me
+         double rng_cls_hst;             // range to closest hostile A/C
+         bool buddy_hot;                 // determine if someone in my flight is hot to threats
+         bool hot_asp;                   // determine if someone is hot to me and within a threatening range
+         bool threatnd;                  // am I threatened
+         bool sam_threatnd;              // is a SAM threatening to me
+         double rng_cls_sam;             // range to closest hostile SAM
+         bool bng_msl;                   // true if i'm winchester
+         bool bng_fuel;                  // true if i'm bingo fuel
+         bool joker_fuel;                // true if i'm joker fuel
+         bool flt_lead;                  // true if i am the flight lead
+         bool el_lead;                   // true if i am the element lead
+         double t_last_pickle;           //time that you last pickled (for switchology considerations)
+         
+         
+
+//       Misc variables
+         WsfGeoPoint home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0w"); // base location
+#         WsfGeoPoint home_base = (WsfGeoPoint) PLATFORM.Location();
+         bool in_pos; # used for the formation flying ( true if in position)
+         double t_faz_switch; // time at which I changed phase to my current phase
+         int rte_ind; // route point index, increase as you hit your route points
+         WsfTrack TaskTrack = WsfTrack(); // track of IADS assignment
+         Atmosphere atmos = Atmosphere.Construct("standard_day");
+
+//       WEAPON RULES
+//       calculated in tgt_bias
+         Map<WsfLocalTrack, double> mapSCORE = Map<WsfLocalTrack, double>(); // prioritization score of each track
+         Array<WsfSA_EntityPerception> shoot_list = Array<WsfSA_EntityPerception>();  # my shoot list
+         WsfSA_EntityPerception ppmjid = WsfSA_EntityPerception(); #highest prioritized target
+         
+//       calculated in select weapon
+         Map<WsfSA_EntityPerception, int> mapMXTGT_AC = Map<WsfSA_EntityPerception, int>(); #Max number of missiles at a single target by a single player
+         Map<WsfSA_EntityPerception, int>  mapMXTGTD = Map<WsfSA_EntityPerception, int>();  #Max number of missiles at a single target
+         Map<WsfSA_EntityPerception, string> mapPRMISL_AC = Map<WsfSA_EntityPerception, string>(); # fox number selected
+
+//       calculated in shoot_it
+         Map<WsfSA_EntityPerception, bool> mapPICKLE = Map<WsfSA_EntityPerception, bool>(); // determine whether or not to pickle at track
+         bool pitch_up; // if I'm ready to shoot and desire an assisted loft tactic, pitch up
+         Array<WsfPlatform> guid_list = Array<WsfPlatform>();
+
+         int counter = 5;
+         bool no_tree;  // true if I will skip the behavior tree
+//       create a mover object to my referenced in various places
+#         WsfBrawlerMover my_mover = (WsfBrawlerMover) PLATFORM.Mover();
+
+   end_script_variables

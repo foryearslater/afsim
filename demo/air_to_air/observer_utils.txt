@@ -1,0 +1,73 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM Wizard
+#Functions to calculate x and y distance from an origin to a point
+#Created By: Clay Vincent
+#Classification: UNCLASSIFIED//FOUO
+
+#CJV - NOTE, when using these functions, be careful what you use as the origin for the simulation.
+#      If it is too close to 180/-180 it will probably cause issues in the +/- and distances reported.
+
+script double Get_X(WsfGeoPoint origin, WsfGeoPoint point)
+   WsfGeoPoint X = WsfGeoPoint();
+   X.Set(origin.Latitude(),point.Longitude(),0);
+   double Dist_X = origin.GroundRangeTo(X)*MATH.FT_PER_M();
+   
+   if (origin.Longitude() < point.Longitude())
+   {
+      return Dist_X;
+   }
+   else
+   {
+      return Dist_X * -1;
+   }   
+end_script
+
+script double Get_Y(WsfGeoPoint origin, WsfGeoPoint point)
+   WsfGeoPoint Y = WsfGeoPoint();
+   Y.Set(point.Latitude(),origin.Longitude(),0);
+   double Dist_Y = origin.GroundRangeTo(Y)*MATH.FT_PER_M();
+   
+   if (origin.Latitude() < point.Latitude())
+   {
+      return Dist_Y;
+   }
+   else
+   {
+      return Dist_Y * -1;
+   }   
+end_script
+
+#MTC - fxn to grab dead platforms based on missile-shooter-target trios
+script WsfPlatform getDeadPlat(WsfWeaponEngagement aWeaponEngagement, string shtortgt)
+   int step;
+   for(int num = 0; num < msl_sht_tgt.Size();num = num + 3)
+   {
+      if(msl_sht_tgt.Get(num) == aWeaponEngagement.WeaponPlatform().Index())
+      {
+         if(shtortgt == "shooter")
+         {
+            step = 1;
+         }
+         else if(shtortgt == "target")
+         {
+            step = 2;
+         }
+         foreach(WsfPlatform plat in dead_aircraft)
+         {
+            if(msl_sht_tgt.Get(num+step) == plat.AuxDataInt("platID"))
+            {
+               return plat;
+            }
+         }
+      }
+   }  
+   return null;
+end_script

@@ -1,0 +1,340 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/* taken from ftr_faz.F90 and pcode.F90 (EZJA Brawler RULES)
+
+Fighter Assess:
+
+Summary: Change faz of the flight if desired
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+Determine if a phase change to egress should occur, this happens in this routine so the same 
+handfull of egress checks does not need to occur in each faz behavior node
+
+Only the flight lead can make a decision to change phase, if a non-flight lead member desires 
+a phase change, then that platform will set an aux data bool and string "desire_change" & "faz_desired".
+The flight lead will check this aux data to see if flight mates desire a change in phase and makes the 
+decision to change phase. 
+
+
+Key Parameters Description:
+
+pr_altitude:    desired altitude
+pr_speed:       desired speed
+pr_gees:        desired gees
+pr_throttle:    desired throttle setting
+pr_heading:     desired heading
+ppmjid:         track object of highest prioritized hostile
+ill_list:       list of tracks that have a missile guiding onto them of which I am the guider of that missile
+ngb_track_list: Array of hostile track objects 
+t_faz_switch:   Simulation time when I last changed phase
+n_pump:         number of times I have been in pump faz
+first_pass:     true if this is my first pass (n_pump = 0)
+pump_per:       pump permission, true if I meet criteria to enter pump phase
+solo:           If true, A/C will no longer require flight lead permission to change phase or make other decisions
+dead_buddy:     true if a flight mate is dead
+needil:         true if there are missiles in the air that require my guidance 
+spiked:         true if I am spiked
+sam_spiked:     true if a sam has spiked me
+threatnd:       true if an A/C is threatening me
+sam_threatdn:   true if a SAM is threatening me
+t_phase:        sim time at which I can switch phase. Purpose is to limit A/C from changing phase too quickly
+bng_msl:        true if winchester criteria has been met
+bng_fuel:       true if bingo fuel has been met
+joker_fuel:     true if joker fuel has been met
+apole_tct:      true if apole/fpole tactic is desired. If true then A/C will enter crank phase when guiding missile
+
+
+ 
+*/
+//include prdata/rules_utils.txt
+advanced_behavior ftr_rules
+
+   script_debug_writes disable
+
+
+   script_variables
+
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;
+
+      extern WsfPlatform iacid;
+      extern WsfCommandChain iflite;
+      extern WsfCommandChain ielement;
+      extern WsfCommandChain FTR_RULES_CHAIN;
+      
+#        assessment variables
+        extern string faz_desired; // desired faz to be in
+        extern bool change_desired; // true if i desire to change faz
+        extern bool time_ok; // indicates if i've been in current faz long enough to switch faz
+        extern bool alerted; // true if i'm aware of a threat missile and feel threatened by it
+        extern bool apole_tct; // true if i desire to perform an apole tactic (crank) when guiding missiles
+        extern string reason; // reason i desire to change faz
+        extern string faz; // current phase of platform
+        extern bool needil; // set to true if me or my flight mates are guiding a missile
+        extern Map<WsfSA_EntityPerception, bool> mapSTIFF_ARM; // map of tracks to stiff arm
+        extern WsfLocalTrack ltrk_cls_hst;  // track of closest hostile to me, calculated in ftr_faz @ call to rng_close_host
+        extern int n_pump; // number of pumps this A/C has performed
+        extern bool first_pass; // true if this is the first pass 
+        extern bool attack_success; // true if mission is complete
+        extern bool react; // true if i will perform a pre-planned reaction on the first pass
+        extern bool evd_msl; // true if i will turn cold to defeat a threat missile
+        extern bool p_snip; // true if i will snip my missile prior to husky or autonomous state to prioritize survivability 
+        extern bool p_pump; // probability that i will pump 
+        extern bool pump_per; // if true, i have permission to pump, true if p_pump is true and when guiding missiles, p_snip is true
+        extern bool solo; // true if i will break from my flight and become my own flight lead
+        extern bool dead_buddy; // do I have a dead wingman
+        extern bool onrail; // true if a missile is on the rail (pickle buttom pressed, waiting for missile to launch)
+        extern bool stiff_arm_all; // true to stiff arm all threats
+        extern bool ing4last; // whether or not to pursue an egressing target
+        extern bool spiked; // is an A/C spiking me
+        extern bool sam_spiked; // is a sam spiking me
+        extern bool msl_spike; // is a missile spiking me
+        extern double rng_cls_hst; // range to closest hostile A/C
+        extern bool buddy_hot; // determine if someone in my flight is hot to threats
+        extern bool hot_asp; // determine if someone is hot to me and within a threatening range
+        extern bool threatnd; // am I threatened
+        extern bool sam_threatnd; // is a SAM threatening to me
+        extern double rng_cls_sam; // range to closest hostile SAM
+        extern bool bng_msl; // true if i'm winchester
+        extern bool bng_fuel; // true if i'm bingo fuel
+        extern bool joker_fuel; // true if i'm joker fuel
+        extern bool flt_lead; // true if i am the flight lead
+        extern bool el_lead; // true if i am the element lead
+        extern string rule_type; // current rule type
+        extern WsfSA_EntityPerception ppmjid; // current highest prioritized target
+        extern double t_faz_switch; // time at which I last switched faz 
+        extern double t_phase; // sim time at which it is acceptable to change phase
+        extern string flight_lead;
+        extern bool dzr_change;
+        extern string dzr_phase;
+        extern bool flt_guiding;
+
+         extern double pr_heading;
+         extern double pr_speed; 
+         extern double pr_throttle;
+         extern double pr_gees;
+         extern double pr_altitude;
+         
+         extern Atmosphere atmos;
+         extern bool pitch_up;
+         extern bool log_print;
+         extern string log_path;
+         extern string iout_path;
+         extern bool iout_print;
+         extern FileIO log;
+         extern FileIO iout;
+         WsfProcessor saPROC = (WsfSA_Processor)PROCESSOR;
+      
+      
+   end_script_variables
+
+
+
+   on_init
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+
+   end_on_init
+
+
+   precondition
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+      
+   end_precondition
+
+
+   execute
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," ftr_rules");   
+#      BRAWLER.SetConsciousnessEventTime(0.5);
+#    FileIO log = FileIO();
+#    FileIO iout = FileIO();
+#    if (log_print)
+#    {
+#       log.Open(log_path, "append");
+#    }
+#    if (iout_print)
+#    {
+#       iout.Open(iout_path, "append");    
+#    }
+/************************************************************************************
+*************************************************************************************
+*                           START TRANSITION LOGIC                                  *
+*************************************************************************************
+*************************************************************************************/
+//-   GENERIC PHASE CHANGE LOGIC
+// if i'm bingo missile or bingo fuel and not at the merge -> egress
+if( bng_msl && !flt_guiding && faz != "egress")
+{  
+   faz_desired = "egress";
+   reason = "bingo missile";
+}
+else if ( bng_fuel && faz != "egress")
+{  
+   faz_desired = "egress";
+   reason = "bingo fuel";
+}
+else if (attack_success && !flt_guiding && faz != "egress")
+{  
+   faz_desired = "egress";
+   reason = "MISSION OVER";
+}
+else if (first_pass && react && rng_cls_hst <= iacid->REACT_RNG && faz != "reaction")
+{  
+   faz_desired = "reaction";
+   reason = "PRE-PLANNED MANEUVER";
+   t_phase=TIME_NOW + iacid->TDRAG;
+}
+//react to SAM if threatened and allowed to pump
+else if (sam_threatnd && pump_per && time_ok)
+{
+   faz_desired = "pump";
+   reason = "THREATENED BY A SAM";
+   t_phase=TIME_NOW + (Math.Max(iacid->TDRAG,rng_cls_sam*MATH.NM_PER_M()));
+}
+
+bool ftr_lead = false;
+if (iacid.Name() == FTR_RULES_CHAIN.CommanderName())
+{
+   ftr_lead = true;
+}
+
+// set aux data so flight lead will know if flight mates desire a phase change
+if (!ftr_lead && !solo && faz_desired != faz) 
+{  
+   dzr_change=true;
+   dzr_phase=faz_desired;
+}
+
+// phase changing
+// check if my flight mates are requesting a change in phase, if so, change whole flight's phase
+if (ftr_lead)
+{
+   for (int i=0 ; i<FTR_RULES_CHAIN.SubordinateCount() ; i+=1)
+   {
+      if (!FTR_RULES_CHAIN.SubordinateEntry(i).CategoryMemberOf("missile") && (FTR_RULES_CHAIN.SubordinateEntry(i)->dzr_change || FTR_RULES_CHAIN.SubordinateEntry(i)->faz_desired!=FTR_RULES_CHAIN.SubordinateEntry(i)->faz) )
+      {
+         if (FTR_RULES_CHAIN.SubordinateEntry(i)->faz_desired != FTR_RULES_CHAIN.SubordinateEntry(i)->faz)
+         {
+            dzr_phase = FTR_RULES_CHAIN.SubordinateEntry(i)->faz_desired;
+         }
+         else
+         {
+            dzr_phase = FTR_RULES_CHAIN.SubordinateEntry(i)->dzr_phase;
+         }
+         reason = FTR_RULES_CHAIN.SubordinateEntry(i)->reason;
+         t_phase = FTR_RULES_CHAIN.SubordinateEntry(i)->t_phase;
+         dzr_change = true;
+      }
+   }
+}
+// I'm flight lead and someone in my flight desires a change in phase, change everyones phase in my flight
+if (ftr_lead && dzr_change)
+{
+   for (int i=0 ; i < FTR_RULES_CHAIN.SubordinateCount() ; i=i+1)
+   {  // skip this iteration if mate is no longer a valid platform in the sim
+      if (!FTR_RULES_CHAIN.SubordinateEntry(i).IsValid() || FTR_RULES_CHAIN.SubordinateEntry(i).IsNull() || FTR_RULES_CHAIN.SubordinateEntry(i).CategoryMemberOf("missile")) 
+      {continue;} 
+      WsfPlatform mate = FTR_RULES_CHAIN.SubordinateEntry(i);
+      if (!mate->solo && mate != iacid)
+      {  
+         if (log_print){log.Write(write_str(mate.Name()," CHANGING PHASE FROM ",mate->faz," TO ",dzr_phase," REASON: ",reason,"\n"));}
+         if (iout_print){iout.Write(write_str(mate.Name()," CHANGING PHASE FROM ",mate->faz," TO ",dzr_phase," REASON: ",reason,"\n"));}
+         mate->faz = dzr_phase;
+         mate->faz_desired = dzr_phase;
+         mate->t_faz_switch = TIME_NOW;
+         mate->dzr_change = false;
+         mate->t_phase = t_phase;
+         mate->reason = reason;
+         if(mate->faz == "pump"){mate->n_pump = mate->n_pump + 1;}
+      } 
+   }
+   // now change flt lead's phase
+   if (log_print){log.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",dzr_phase," REASON: ",reason,"\n"));}
+   if (iout_print){iout.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",dzr_phase," REASON: ",reason,"\n"));}
+   faz = dzr_phase;
+   faz_desired = dzr_phase;
+   t_faz_switch = TIME_NOW;
+   if(faz == "pump"){n_pump = n_pump + 1;}
+   dzr_change = false;
+   return Success("CHANGING PHASE1"); // end here
+}
+
+// if i'm flight lead and phase change desired, change phase for whole flight, if i'm solo change my phase
+if (faz != faz_desired && (ftr_lead || solo) )
+{
+   if (solo) // if i'm solo, only change my phase
+   {  
+     if (log_print){log.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",faz_desired," REASON: ",reason,"\n"));}
+     if (iout_print){iout.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",faz_desired," REASON: ",reason,"\n"));}
+     faz = faz_desired;
+     t_faz_switch = TIME_NOW;
+     if(faz == "pump"){n_pump = n_pump + 1;}
+     return Success("CHANGING PHASE2");
+   }
+//   if i'm flight lead, change phase of whole flight to my phase
+  else if (ftr_lead)
+  {
+      if (log_print){log.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",faz_desired," REASON: ",reason,"\n"));}
+      if (iout_print){iout.Write(write_str(iacid.Name()," CHANGING PHASE FROM ",faz," TO ",faz_desired," REASON: ",reason,"\n"));}
+      faz = faz_desired; 
+      faz_desired = faz_desired;
+      t_faz_switch = TIME_NOW;
+      if(faz == "pump"){n_pump = n_pump + 1;}
+      for  (int i =0; i < FTR_RULES_CHAIN.SubordinateCount(); i+=1)
+      {   // skip this iteration if mate is no longer a valid platform in the sim
+         if (!FTR_RULES_CHAIN.SubordinateEntry(i).IsValid() || FTR_RULES_CHAIN.SubordinateEntry(i).CategoryMemberOf("missile")) {continue;} 
+         WsfPlatform mate = FTR_RULES_CHAIN.SubordinateEntry(i);
+         if (mate.IsNull() || !mate.IsValid()) {continue;} // if mate doesn't exist, cycle through to next iteration 
+         if (mate->solo) 
+         { /*nothing*/ } // if my mate is solo, don't command him any longer
+         else
+         {  
+            if (log_print){log.Write(write_str(mate.Name()," CHANGING PHASE FROM ",mate->faz," TO ",faz_desired," REASON: ","flight lead decision","\n"));}
+            if (iout_print){iout.Write(write_str(mate.Name()," CHANGING PHASE FROM ",mate->faz," TO ",faz_desired," REASON: ","flight lead decision","\n"));}
+            mate->faz = faz_desired;
+            mate->faz_desired = faz_desired;
+            mate->t_faz_switch = TIME_NOW;
+            mate->t_phase = t_phase;
+            mate->reason = ": ".Join({"flight lead decision",reason});
+            if(mate->faz == "pump"){mate->n_pump = mate->n_pump + 1;}
+         } 
+      }
+   }
+} 
+      return Success("EXECUTING FIGHTER RULES");
+//  close log.txt and iout.txt
+#   if (iout_print){iout.Close();}
+#   if (log_print){log.Close();}
+   end_execute
+end_advanced_behavior
+

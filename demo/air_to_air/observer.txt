@@ -1,0 +1,530 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+script_variables
+   double total_aircraft  = 0;
+   double total_sam       = 0;
+   double red_aircraft    = 0;
+   double red_sam         = 0;
+   double blue_aircraft   = 0;
+   double blue_sam        = 0;
+   double blue_total_ac   = 0;
+   double blue_total_sam  = 0;
+   double red_total_ac    = 0;
+   double red_total_sam   = 0;
+   double total_total_ac  = 0; 
+   double total_total_sam = 0;
+   int total_entities     = 0;   
+   
+#  extern int math_seed;
+   extern string log_path;
+   extern bool iout_print;
+   extern bool log_print;
+   #WsfGeoPoint origin = WsfGeoPoint();
+   origin.Set(0,0,0);
+   
+   #MTC added two data containers to account for dead aircraft returning NULL 
+   #implemented initially on every missile fired, dealt with in msl endgame
+   Array<WsfPlatform> dead_aircraft = Array<WsfPlatform>();
+   Array<int> msl_sht_tgt = Array<int>();
+end_script_variables
+
+include_once observer_utils.txt
+
+execute at_interval_of 5 s
+   extern WsfGeoPoint origin; 
+   if (log_print)
+   {
+      int p = WsfSimulation.PlatformCount();
+
+      log.Writeln(write_str("\nSIMULATION TIME HAS REACHED ",Format.Fixed(TIME_NOW,1), " s"));
+      log.Writeln(write_str("Min Perceived Range to Hostile ( ",Format.Fixed(closest_hostile*MATH.NM_PER_M(),1)," nmi )"));
+      closest_hostile = 200.0*MATH.M_PER_NM(); // re-set this so it's recalculated
+      for (int i = 0; i <= total_entities; i = i + 1)
+      {
+         if (WsfSimulation.FindPlatform(i).IsValid() && !WsfSimulation.FindPlatform(i).CategoryMemberOf("missile"))
+         {
+            WsfPlatform ac = WsfSimulation.FindPlatform(i);
+           for (int i =0; i<ac.ProcessorCount(); i=i+1)
+           { 
+              if (ac.ProcessorEntry(i).IsValid() && ac.ProcessorEntry(i).Type()
+                 == "WSF_SA_PROCESSOR" && TIME_NOW > 10) 
+              {  
+                 if(ac->rng_cls_hst <= closest_hostile) { closest_hostile = ac->rng_cls_hst; }
+              }
+           }
+           double hdg=ac.Heading();
+           if(hdg < 0.){hdg=hdg+360.;}
+           log.Writeln(write_str("A/C ",Format.Fixed(i,0).Pad(3)," ",ac.Side().Pad(-4)," ",ac.Name().Pad(-12),
+            "(",Format.Fixed((ac.Longitude()-origin.Longitude())*60.0405,1).Pad(6),",",
+            Format.Fixed((ac.Latitude()-origin.Latitude())*60.0405,1).Pad(6),")Nm ",
+            Format.Fixed(ac.Altitude()*MATH.FT_PER_M()/1000.,1).Pad(4),"kft Hdg=",Format.Fixed(hdg,0).Pad(3),
+            "° M=",Format.Fixed(ac.MachNumber(),2).Pad(3)," Pitch=",Format.Fixed(ac.Pitch(),1).Pad(4),"°"));
+         }
+      }
+   }
+end_execute
+
+script void platformInitialized(WsfPlatform aPlatform)
+   int ac_index = aPlatform.Index();
+   double time = TIME_NOW;
+   if(!aPlatform.CategoryMemberOf("missile"))
+   {
+      writeln("A/C ", ac_index, " at time ", Format.Fixed(time,2));
+   }
+end_script
+
+script void PlatformKilled(WsfPlatform aPlatform)
+   if(!aPlatform.CategoryMemberOf("missile") && TIME_NOW < WsfSimulation.EndTime())
+   {
+      int IndexKilled = aPlatform.Index();
+      double TimeKilled = TIME_NOW;
+      string side = aPlatform.Side();      
+      
+      WsfPlatform deadguy = WsfSimulation.CreatePlatform(aPlatform.Type());
+      deadguy.SetLocation(aPlatform.Location());
+      deadguy.SetAuxData("platID",IndexKilled);
+      dead_aircraft.PushBack(deadguy);      
+      
+      if(side == "red" && !aPlatform.AuxDataBool("captured"))
+      {
+         if (aPlatform.CategoryMemberOf("aircraft"))
+         { //have to use category since spatial domain returns "air" for missiles and aircraft
+            red_aircraft = red_aircraft - 1;
+            total_aircraft = total_aircraft - 1;
+         }
+         else if (aPlatform.SpatialDomain() == "land")
+         {
+            red_sam = red_sam - 1;
+            total_sam = total_sam - 1;
+         }
+      }
+      
+      if(side == "blue")
+      {
+         if (aPlatform.CategoryMemberOf("aircraft"))
+         { //have to use category since spatial domain returns "air" for missiles and aircraft
+            blue_aircraft = blue_aircraft - 1;
+            total_aircraft = total_aircraft - 1;
+         }
+         else if (aPlatform.SpatialDomain() == "land")
+         {
+            blue_sam = blue_sam - 1;
+            total_sam = total_sam - 1;
+         }
+      }
+      
+      if (log_print)
+      {
+         if (aPlatform.CategoryMemberOf("aircraft"))
+         { //have to use category since spatial domain returns "air" for missiles and aircraft
+            log.Writeln(write_str(" A/C ",IndexKilled," IS KILLED AT TIME ",Format.Fixed(TimeKilled,2)));
+         }
+         else if (aPlatform.SpatialDomain() == "land")
+         {
+            log.Writeln(write_str(" SAM ",IndexKilled," IS KILLED AT TIME ",Format.Fixed(TimeKilled,2)));
+         }
+      }
+   }
+end_script
+
+script void mslendMissile(WsfWeaponEngagement aWeaponEngagement)
+   #weapon_termianted
+   WsfPlatform target, shooter;
+   WsfPlatform missile = aWeaponEngagement.WeaponPlatform();
+   int target_index, shooter_index;
+   
+   #MTC - added checks for target and shooter being alive
+   #Dead platforms are grabbed based on weapon-target-shooter trios stored at launch
+   if(aWeaponEngagement.TargetPlatform().IsValid())
+   {
+      target = aWeaponEngagement.TargetPlatform();
+      target_index = target.Index();
+   }
+   else
+   {
+      target = getDeadPlat(aWeaponEngagement,"target");
+      target_index = target.AuxDataInt("platID");
+   }
+   
+   if(aWeaponEngagement.FiringPlatform().IsValid())
+   {
+      shooter = aWeaponEngagement.FiringPlatform();
+      shooter_index = shooter.Index();
+   }
+   else
+   {
+      shooter = getDeadPlat(aWeaponEngagement,"shooter");
+      shooter_index = shooter.AuxDataInt("platID");
+   }   
+   
+   string weapon_name = aWeaponEngagement.WeaponPlatformName();
+   string weapon_type = aWeaponEngagement.WeaponSystemType();
+   double PkDrawn = aWeaponEngagement.PkDrawn();
+   double Pk = aWeaponEngagement.Pk()*aWeaponEngagement.PkDegrade();
+   
+   #Missile Fuse and Kill 
+
+   if (PkDrawn > 0)
+   {
+      if (log_print)
+      {
+         string killed;
+         if (PkDrawn <= Pk)
+         {
+            killed = "T";
+         }
+         else
+         {
+            killed = "F";
+         }
+         log.Writeln(write_str(" MISSILE ",weapon_name," FUZES AGAINST ",target_index,
+          "     RNG=     ",Format.Fixed(aWeaponEngagement.MissDistance()*MATH.FT_PER_M(),2)," T= ",Format.Fixed(TIME_NOW,2)));     
+         log.Writeln(write_str("         TERMINAL POSITION: X= ",Format.Fixed(Get_X(origin,aWeaponEngagement.WeaponLocation()),2),
+          " Y= ",Format.Fixed(Get_Y(origin,aWeaponEngagement.WeaponLocation()),2)," Z= ",Format.Fixed(missile.Altitude()*MATH.FT_PER_M(),2)));                                      
+         #CJV - Need to actually do MODE
+         log.Writeln(write_str("         LAUNCH POSITION: X= ",Format.Fixed(Get_X(origin,aWeaponEngagement.WeaponLocationAtLaunch()),2),
+          " Y= ",Format.Fixed(Get_Y(origin,aWeaponEngagement.WeaponLocationAtLaunch()),2),
+          " Z= ",Format.Fixed(aWeaponEngagement.WeaponLocationAtLaunch().Altitude()*MATH.FT_PER_M(),2)," MODE CMD_GUIDED_DES_RDR"));
+         #CJV - Need to actually get AVERAGE VELOCITY
+         log.Writeln(write_str("         AVERAGE VELOCITY= ",Format.Fixed(missile.Speed()*MATH.FT_PER_M(),2)));
+         #CJV - Need to actually get TERMINAL VELOCITY
+         log.Writeln(write_str("         TERMINAL VELOCITY= ",Format.Fixed(missile.Speed()*MATH.FT_PER_M(),2)));
+#        log.Writeln(write_str("         GEES AVAILABLE= ",Format.Fixed(aWeaponEngagement.EndgameGees(),2)));
+         log.Writeln(write_str("         LAUNCHER POSITION: X= ",Format.Fixed(Get_X(origin,shooter.Location()),2),
+          " Y= ",Format.Fixed(Get_Y(origin,shooter.Location()),2)," Z= ",Format.Fixed(shooter.Altitude()*MATH.FT_PER_M(),2)));
+         #CJV - Need to actually find FPOLE
+         log.Writeln(write_str("         FPOLE= ",Format.Fixed(shooter.SlantRangeTo(target)*MATH.NM_PER_M(),2)));
+         #CJV - Need to actually get TRACKBANK info
+         log.Writeln("         GUIDANCE TRACKBANK   1 HAS TRACK ON FUZEE   SEEKERS CONTRIBUITING ACTIVE");
+         #MTC - works currently with missiles with one sensor that is the seeker
+         log.Writeln(write_str("         ENDGAME SEEKER: ",aWeaponEngagement.WeaponPlatform().SensorEntry(0).Type()));
+         log.Writeln(write_str(" MSLEND..MISSILE ",weapon_name,"(",weapon_type,"   ) VS TGT  ",target_index,"   KILL= ",killed));
+         log.Writeln(write_str("         PK= ",Format.Fixed(Pk,3),", DRAW= ",Format.Fixed(PkDrawn,3),
+          " AT TIME  ",Format.Fixed(TIME_NOW,2)));
+      }
+   }
+   else if(PkDrawn < 0)
+   {
+      if (log_print)
+      {
+         if (aWeaponEngagement.ExtendedResult().Split()[0] == "Missile_ProxFuzeActivated")
+         {
+            log.Writeln(write_str(" MISL ",weapon_name," FAILS: T= ",Format.Fixed(TIME_NOW,2),
+             " DUE TO ", aWeaponEngagement.ExtendedResult().Split()[1]));
+         }
+         else
+         {
+            log.Writeln(write_str(" MISL ",weapon_name," FAILS: T= ",Format.Fixed(TIME_NOW,2),
+             " DUE TO ", aWeaponEngagement.ExtendedResult()));
+         }
+      }
+   }
+end_script
+
+script void mslendMSL(WsfWeaponEngagement aWeaponEngagement)
+   #weapon_terminated
+   int shooter_index;
+   int target_index;
+   int weapon_index = aWeaponEngagement.WeaponPlatform().Index();
+   
+   if(aWeaponEngagement.TargetPlatform().IsValid())
+   {
+      target_index = aWeaponEngagement.TargetPlatform().Index();
+   }
+   else
+   {
+      WsfPlatform target = getDeadPlat(aWeaponEngagement,"target");
+      target_index = target.AuxDataInt("platID");
+   }
+   
+   if(aWeaponEngagement.FiringPlatform().IsValid())
+   {
+      shooter_index = aWeaponEngagement.FiringPlatform().Index();
+   }
+   else
+   {
+      WsfPlatform shooter = getDeadPlat(aWeaponEngagement,"shooter");
+      shooter_index = shooter.AuxDataInt("platID");
+   }
+
+   string weapon_type = aWeaponEngagement.WeaponSystemType();
+   bool condition = aWeaponEngagement.TargetPlatform().IsValid();
+         
+   if(condition == false)
+   {
+      if (log_print)
+      {
+         log.Writeln(write_str(" MSLEND...MSL ",weapon_index,"( ",weapon_type," ) VS TGT  ",target_index,
+          "       TGT DEAD, TIME= ",Format.Fixed(TIME_NOW,2)));
+      }
+   }
+end_script
+
+script void FiredAt(WsfWeaponEngagement aWeaponEngagement, WsfTrack aTargetTrack)
+   #weapon_fired
+   WsfPlatform target, shooter;
+   int target_index, shooter_index;
+   WsfPlatform weapon = aWeaponEngagement.WeaponPlatform();
+   int weapon_index = weapon.Index();
+
+   if(aWeaponEngagement.TargetPlatform().IsValid())
+   {
+      target = aWeaponEngagement.TargetPlatform();
+      target_index = target.Index();
+   }
+   else
+   {
+      target = getDeadPlat(aWeaponEngagement,"target");
+      target_index = target.AuxDataInt("platID");
+   }
+   
+   if(aWeaponEngagement.FiringPlatform().IsValid())
+   {
+      shooter = aWeaponEngagement.FiringPlatform();
+      shooter_index = shooter.Index();
+   }
+   else
+   {
+      shooter = getDeadPlat(aWeaponEngagement,"shooter");
+      shooter_index = shooter.AuxDataInt("platID");
+   }
+
+   msl_sht_tgt.PushBack(weapon_index);
+   msl_sht_tgt.PushBack(shooter_index);
+   msl_sht_tgt.PushBack(target_index);
+   
+   string weapon_name = aWeaponEngagement.WeaponPlatformName();
+   string weapon_type = aWeaponEngagement.WeaponSystemType();
+   
+   if (log_print)
+   {
+      log.Writeln(write_str(" MISSILE ",weapon_name," ( ",weapon_type," ) FIRED AT ",target_index,"      BY  ",
+      shooter_index," AT TIME ",Format.Fixed(TIME_NOW,2)));
+      log.Writeln(write_str("         RANGE  =  ",Format.Fixed(shooter.SlantRangeTo(target)*MATH.NM_PER_M(),1)," nmi,   ASPECT =  ",
+       Format.Fixed(target.RelativeBearingTo(shooter),1)," deg,   OBA =  ",Format.Fixed(shooter.RelativeBearingTo(target),1)," deg"));
+      #CJV - Need to actually do LAUNCH MODE
+      log.Writeln(write_str("         LAUNCH MODE=CMD_GUIDED_DES_RDR "));
+      log.Writeln(write_str("         AZIMUTH = ",Format.Fixed(target.RelativeBearingTo(shooter) - 180,1),
+       " deg, ELEVATION = ",Format.Fixed(MATH.ASin((target.Altitude() - shooter.Altitude()) / 
+       shooter.SlantRangeTo(target)),1)," deg"));
+      log.Writeln(write_str("         LAUNCHER POSITION: X= ",Format.Fixed(Get_X(origin,shooter.Location()),1),
+       " Y= ",Format.Fixed(Get_Y(origin,shooter.Location()),1),
+       " Z= ",Format.Fixed(shooter.Altitude()*MATH.FT_PER_M(),1)," MACH= ",Format.Fixed(shooter.MachNumber(),2)," "));
+      log.Writeln(write_str("         LAUNCHER MACH: ",Format.Fixed(shooter.MachNumber(),2),
+       "  ALTITUDE: ",Format.Fixed(shooter.Altitude()*MATH.FT_PER_M(),2)));
+      log.Writeln(write_str("         TARGET MACH: ",Format.Fixed(target.MachNumber(),2),
+       "    ALTITUDE: ",Format.Fixed(target.Altitude()*MATH.FT_PER_M(),1)));
+      #CJV - Need to actually do LAUNCHING, ILLUMINATING, and DATALINK
+#     log.Writeln(write_str("         LAUNCHING A/C= ",shooter_index," ILLUMINATING A/C= ",shooter_index," A/C PROVIDING DATALINK= ",shooter_index));
+      #CJV - Need to actually do GUIDANCE CONFIGURATION
+      log.Writeln(write_str("         GUIDANCE CONFIGURATION = NORMAL"));
+      log.Writeln(write_str("         PERCEPTION ERROR: RNG ERR= ",Format.Fixed((MATH.Fabs(shooter.SlantRangeTo(aTargetTrack) - 
+       shooter.SlantRangeTo(target))*MATH.FT_PER_M())*MATH.FT_PER_M(),1)," ft, ASPECT ERR = ",
+       Format.Fixed(MATH.Fabs(MATH.Fabs(shooter.RelativeBearingTo(target))
+       - MATH.Fabs(shooter.RelativeBearingTo(aTargetTrack))),1)," deg, OBA ERR = ",
+       Format.Fixed(MATH.Fabs(MATH.Fabs(target.RelativeBearingTo(shooter))
+       - MATH.Fabs(aTargetTrack.RelativeBearingTo(shooter))),1)," deg"));
+      log.Writeln(write_str("         SHOT AZ & ELEV IN TGT BODY AXIS (DEG,DEG)   ",
+       Format.Fixed(target.RelativeBearingTo(shooter) - 180,1),"   ",
+       Format.Fixed(MATH.ASin((target.Altitude() - shooter.Altitude()) / shooter.SlantRangeTo(target)),1)));
+   }
+end_script
+
+script void ImpactedGround(WsfPlatform aPlatform)
+   int ac = aPlatform.Index();
+   double fuel_remaining = aPlatform.FuelRemaining();
+   string side = aPlatform.Side();
+
+   if(side == "red")
+   {
+      if (aPlatform.CategoryMemberOf("aircraft"))
+      {
+         red_aircraft = red_aircraft - 1;
+         total_aircraft = total_aircraft - 1;
+      }
+   }
+   
+   if(side == "blue")
+   {
+      if (aPlatform.CategoryMemberOf("aircraft"))
+      {
+         blue_aircraft = blue_aircraft - 1;
+         total_aircraft = total_aircraft - 1;
+      }
+   }
+
+   if (log_print)
+   {
+      log.Writeln(write_str(" AC  ",ac," IMPACTED GROUND.  FUEL LEVEL =     ",Format.Fixed(fuel_remaining,1)));
+   }
+end_script
+
+script void PlatformAdded (WsfPlatform aPlatform)
+   string side = aPlatform.Side();
+   total_entities+=1;
+   if (aPlatform.CategoryMemberOf("aircraft"))
+   { //have to use category since spatial domain returns "air" for missiles and aircraft
+      total_aircraft = total_aircraft + 1;
+      total_total_ac = total_total_ac + 1;
+   }
+   else if (aPlatform.SpatialDomain() == "land")
+   {
+      total_sam = total_sam + 1;
+      total_total_sam = total_total_sam + 1;
+   }
+   
+   if (side == "blue")
+   {
+      if (aPlatform.CategoryMemberOf("aircraft"))
+      { //have to use category since spatial domain returns "air" for missiles and aircraft
+         blue_aircraft = blue_aircraft + 1;
+         blue_total_ac = blue_total_ac + 1;
+      }
+      else if (aPlatform.SpatialDomain() == "land")
+      {
+         blue_sam = blue_sam + 1;
+         blue_total_sam = blue_total_sam + 1;
+      }
+   }
+   
+   if (side == "red")
+   {
+      if (aPlatform.CategoryMemberOf("aircraft"))
+      { //have to use category since spatial domain returns "air" for missiles and aircraft
+         red_aircraft = red_aircraft + 1;
+         red_total_ac = red_total_ac + 1;
+      }
+      else if (aPlatform.SpatialDomain() == "land")
+      {
+         red_sam = red_sam + 1;
+         red_total_sam = red_total_sam + 1;
+      }         
+   }
+
+end_script
+
+script void SimStart ()
+   if (log_print)
+   {
+      log.Writeln(write_str(" "));
+      log.Writeln(write_str("INITIAL SET UP:"));
+      log.Writeln(write_str("   A/C  SIDE              POSITION             HEADING       MACH     WEIGHT     FUEL"));
+      log.Writeln(write_str("                      (NMI, NMI, KFT)                       NUMBER    (LBS)      (LBS)"));
+
+      int start_platforms = WsfSimulation.PlatformCount();
+      Array<int> start_array = Array<int> ();
+      for(int i = 0; i < start_platforms; i = i + 1)
+      {
+         start_array.PushBack(i);
+      }
+
+      foreach(int p in start_array)
+      {
+         if(WsfSimulation.PlatformEntry(p).CategoryMemberOf("aircraft"))
+         {
+            double hdg=WsfSimulation.PlatformEntry(p).Heading();
+            if(hdg < 0.){hdg=hdg+360.;}
+            log.Writeln(write_str("    ",Format.Fixed(WsfSimulation.PlatformEntry(p).Index(),0).Pad(3)," ",
+             WsfSimulation.PlatformEntry(p).Side().Pad(-4),"       ",
+             Format.Fixed(Get_X(origin,WsfSimulation.PlatformEntry(p).Location())*MATH.NM_PER_FT(),1).Pad(6)," ",
+             Format.Fixed(Get_Y(origin,WsfSimulation.PlatformEntry(p).Location())*MATH.NM_PER_FT(),1).Pad(6),"   ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).Altitude()*MATH.FT_PER_M()/1000.,1).Pad(4),"         ",
+             Format.Fixed(hdg,1).Pad(5),"        ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).MachNumber(),1).Pad(4),"     ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).TotalMass(),1).Pad(6),"    ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).FuelMass(),1).Pad(7)));                 
+         }
+      }
+      log.Writeln(write_str(""));
+   }
+end_script
+
+script void EndTotal()
+   if (log_print)
+   {
+      log.Writeln(write_str(" "));
+      log.Writeln(write_str(" CURRENT STATUS FOR REMAINING AIRCRAFT: TIME IS  ",TIME_NOW," SECONDS."," "));
+      log.Writeln(write_str("         A/C   SIDE   CURRENT     BINGO       CURRENT-POSITION        MACH"));
+      log.Writeln(write_str("                        FUEL      FUEL        (NMI, NMI, FEET)       NUMBER"));
+      log.Writeln(write_str(" "));
+
+      int alive_platforms = WsfSimulation.PlatformCount();
+      Array<int> alive_array = Array<int> ();
+      for(int i = 0; i < alive_platforms; i = i + 1)
+      {
+         alive_array.PushBack(i);
+      }
+   
+      foreach(int p in alive_array)
+      {
+         if(WsfSimulation.PlatformEntry(p).CategoryMemberOf("aircraft"))
+         {
+             log.Writeln(write_str("         ",Format.Fixed(WsfSimulation.PlatformEntry(p).Index(),0).Pad(3),"   ",
+             WsfSimulation.PlatformEntry(p).Side().Pad(-4),"   ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).FuelRemaining(),1).Pad(7),"   ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).FuelBingoQuantity(),1).Pad(7),"      ",
+             Format.Fixed(Get_X(origin,WsfSimulation.PlatformEntry(p).Location())*MATH.NM_PER_FT(),1).Pad(6)," ",
+             Format.Fixed(Get_Y(origin,WsfSimulation.PlatformEntry(p).Location())*MATH.NM_PER_FT(),1).Pad(6),"  ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).Altitude()*MATH.FT_PER_M()/1000.,1).Pad(4),"      ",
+             Format.Fixed(WsfSimulation.PlatformEntry(p).MachNumber(),2).Pad(4)));                          
+         }
+      }
+   
+      log.Writeln(write_str(" "));
+   
+      log.Writeln(write_str("        ",Format.Fixed(blue_total_ac,0).Pad(3)," BLUE AC   + ",Format.Fixed(red_total_ac,0).Pad(3)," RED AC  = ",Format.Fixed(total_total_ac,0).Pad(3)," TOTAL   ",
+       Format.Fixed(blue_aircraft,0).Pad(3)," BLUE AC  ALIVE  + ",Format.Fixed(red_aircraft,0).Pad(3)," RED AC  ALIVE =  ",Format.Fixed(total_aircraft,0).Pad(3)," TOTAL"));
+      log.Writeln(write_str("        ",Format.Fixed(blue_total_sam,0).Pad(3)," BLUE SAM  + ",Format.Fixed(red_total_sam,0).Pad(3)," RED SAM = ",Format.Fixed(total_total_sam,0).Pad(3)," TOTAL   ",
+       Format.Fixed(blue_sam,0).Pad(3)," BLUE SAM ALIVE  + ",Format.Fixed(red_sam,0).Pad(3)," RED SAM ALIVE =  ",Format.Fixed(total_sam,0).Pad(3)," TOTAL"));
+      log.Writeln(write_str("AFSIM Run Complete"));
+   }
+   
+   if (iout_print) 
+   { 
+      iout.Close();
+   }
+   if (log_print)
+   {
+      log.Close();
+   }
+end_script
+
+script void SimInitialize()
+   // NAS - need to set the math random seed on sim initialize, seems kind of rediculous that a monte carlo sim would not automate this
+   MATH.SetSeed(WsfSimulation.RandomSeed());
+   if (iout_print)
+   {
+       iout.Open(iout_path, "out");
+       iout.Writeln(write_str(" Starting seed ",WsfSimulation.RandomSeed()));
+       iout.Close();
+       iout.Open(iout_path,"append");
+   }
+   if (log_print)
+   {
+       log.Open(log_path, "out");
+       log.Writeln(write_str(" TEST... Starting seed ", WsfSimulation.RandomSeed()));
+       log.Close();
+       log.Open(log_path,"append");
+   }
+end_script
+
+observer
+    enable PLATFORM_INITIALIZED platformInitialized
+    enable PLATFORM_DELETED PlatformKilled
+    enable WEAPON_TERMINATED mslendMissile
+    enable WEAPON_TERMINATED mslendMSL
+    enable WEAPON_FIRED FiredAt
+    enable CRASHED_INTO_GROUND ImpactedGround
+    enable PLATFORM_ADDED PlatformAdded
+    enable SIMULATION_COMPLETE EndTotal
+    enable SIMULATION_STARTING SimStart
+    enable SIMULATION_INITIALIZING SimInitialize
+#   enable platformInitialized
+end_observer 

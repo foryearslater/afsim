@@ -1,0 +1,126 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE   This processor will cue one sensor based on the input tracks originating from other sensor sources
+AUTHOR   Boeing
+Classification: UNCLASSIFIED//FOUO
+
+
+Technical Description:
+   mSourceSensorName is a list of sensor names that can cue the radar
+   mCuedSensorName is the name of the sensor being cued by other sources
+   mTrackModeName is the mode of the cued sensor to be used for tracking
+
+
+*/
+
+processor SENSOR_CUE_PROCESSOR WSF_TASK_PROCESSOR
+   number_of_servers 10
+#   script_debug_writes enable
+   script_variables
+      # Sensor names of valid source tracks
+      Set<string> mSourceSensorNames = Set<string>();
+      
+      # Name of cued sensor
+      string mCuedSensorName = "";
+      
+      # Name of the tracking mode on the cued sensor
+      string mTrackModeName = "";
+      
+      # Does the sensor require track designation to cue to the tracks
+      bool mDesignationRequired = false;
+      
+      # DO NOT EDIT THESE VARIABLES
+      WsfSensor mCuedSensor;
+      string mDesignatorString = write_str("DESIGNSATED_", PLATFORM.Name());
+   end_script_variables
+   
+   on_initialize 
+      mCuedSensor = PLATFORM.Sensor(mCuedSensorName);
+      if (!mCuedSensor.IsValid())
+      {
+         writeln("ERROR: ", mCuedSensorName, " is not a valid sensor on ", PLATFORM.Name());
+         PROCESSOR.SetOperational(false);
+      }
+   end_on_initialize
+   
+   on_track_drop
+      mCuedSensor.StopTracking(TRACK.TrackId());
+      writeln_d("T=", TIME_NOW, " - ", PLATFORM.Name(), " dropped track for: ", TRACK.TargetName());
+      if (mCuedSensor.ActiveRequestCount(mTrackModeName) <= 0) { mCuedSensor.CueToRelativeAzEl(0.0, -3.0); }   // platform flies at 3 deg AoA at all times
+   end_on_track_drop
+
+   
+   
+   evaluation_interval DETECTED 1 sec
+   state DETECTED
+      next_state CUED
+         if (TRACK.IsValid() && TRACK.TimeSinceUpdated() < 30.0 && TIME_NOW > 60)
+         {
+            bool rangedTrackFound = false;
+            for (int rawI = 0; rawI < TRACK.RawTrackCount(); rawI += 1)
+            {
+               WsfTrack rawTrack = TRACK.RawTrack(rawI);
+               if (rawTrack.Originator() == PLATFORM &&
+                  (mSourceSensorNames.Exists(rawTrack.SensorName()) ||
+                   mSourceSensorNames.Exists("*")))
+               {
+                  if (rawTrack.LocationValid() || rawTrack.LocationValid2D())
+                  {
+                     rangedTrackFound = true;
+                     if ((!mDesignationRequired || TRACK.AuxDataBool(mDesignatorString)) &&
+                         mCuedSensor.ActiveRequestCount(mTrackModeName) < mCuedSensor.MaximumRequestCount(mTrackModeName))
+                     {
+                           writeln_d("T=", TIME_NOW, " - ", PLATFORM.Name(), " starting to track: ", TRACK.TargetName());
+                           mCuedSensor.StartTracking(TRACK, mTrackModeName);
+                           
+                        return true;
+                     }
+                  }
+               }
+            }
+            
+            if (!rangedTrackFound)
+            {
+               return true;
+            }
+         }
+         return false;
+      end_next_state
+   end_state
+   
+   evaluation_interval CUED 1 sec
+   state CUED
+      next_state DETECTED
+         if (!TRACK.IsValid() || TRACK.TimeSinceUpdated() > 30.0 ||
+            (mDesignationRequired && !TRACK.AuxDataBool(mDesignatorString)))
+         {
+            writeln_d("T=", TIME_NOW, " - ", PLATFORM.Name(), " stop tracking. ",TRACK.TargetName());
+            writeln_d("  Track Valid: ", TRACK.IsValid(), " - Time Since Updated: ", TRACK.TimeSinceUpdated());
+            mCuedSensor.StopTracking(TRACK.TrackId());
+            return true;
+         }
+         
+         if (!TRACK.LocationValid() && !TRACK.LocationValid2D())
+         {
+#            writeln("T=", TIME_NOW, " - ", PLATFORM.Name(), " cueing ", mCuedSensorName, " to ", TRACK.TargetName());
+            mCuedSensor.CueToAzEl(TRACK.Bearing() - PLATFORM.Heading(), TRACK.Elevation());
+         }
+         else
+         {
+#            writeln("T=", TIME_NOW, " - ", PLATFORM.Name(), " cueing ", mCuedSensorName, " to ", TRACK.TargetName()
+#            ," bearing error = ",PLATFORM.RelativeBearingTo(TRACK) - PLATFORM.RelativeBearingTo(TRACK.Target()));
+#            mCuedSensor.CueToAzEl(PLATFORM.RelativeBearingTo(TRACK),TRACK.Elevation());
+            mCuedSensor.StartTracking(TRACK, mTrackModeName);
+         }
+         return false;
+      end_next_state
+   end_state
+end_processor

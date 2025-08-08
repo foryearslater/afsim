@@ -1,0 +1,100 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/* Brawler Production RULES Data
+Classification: UNCLASSIFIED//FOUO
+Author: Snyder
+
+Purpose of this is to replicate Brawler PRDATA/RULES structure used at EZJA
+
+*/
+script_variables 
+// Start PRDATA variables
+string START_TYPE = "route"; 
+double EXEC_VAR     =5.0 *MATH.M_PER_NM();    //! Tactics variation range, zero not to use
+double THRT_ASPCT   =60.0;                    //! Aspect off nose at which threat is definitely cold/unaware
+double REACT_RNG    =35.0 *MATH.M_PER_NM();   //! 0 for no threat reaction/decoy/delay/defense etc...
+double TDRAG        =80.0;                    //! Time for beam/drag
+double RISK_AVRS    =1.0;                     //! Always pump/react, 0 to 1
+double THRT_VAL     =0.5;                     //! Level of threat posed by a threat entity which I start to feel threatened by, calculated in CalculateThreatLevel()
+double PRE_PLAN     =0.0;                     //! Probability of performing a pre-planned maneuver at "REACT_RNG"
+double RISK_WPN     =1.0;                     //! When supporting, always pump/react, 0 to 1
+double PMSL_EVD     =1.0;                     //! Prob of biasing evade_msl 
+bool ALT_CTRL       =true;                    //! Use rules to control altitude
+WsfCommandChain FORM_FLY_CHAIN = ielement;    //! When formation flying, formation fly with everyone in this command chain (default, iflite, ielement)
+WsfCommandChain FTR_RULES_CHAIN = ielement;   //! When changing faz within fighter rules, change faz of everyone within this command chain (default, iflite, ielement)
+string MISSION_TYPE ="ESCORT";                 //! options: DCA,HVAADCA,SEAD,SWEEP,ESCORT *** now mission_task ***
+Array<int> PLAYBOOK ={2,3,3};                 //! Selects Desired Tactics
+//!  **** PLAYBOOK ****
+//!      COMMIT TACTIC / REACT to THREAT     / PUMP CRITERIA                  / DESCRIPTION
+//!1xx          PURSUIT/ xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / Pure pursuit at commit
+//!2xx          LEAD   / xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / Point at estimated point of intercept of my missile and target
+//!3xx          INTRCPT/ xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / Point at estimated point of intercept of myself and target
+//!4xx          VCTR   / xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / Bracket threat
+//!5xx          WVR    / xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / WVR Tactics
+//!6xx          AVOID  / xxxxxxxxxxxxxxxx    / xxxxxxxxxxx                    / Generally try to stiff arm threats and avoid confrontation  
+//!x1x          xxxxxx / 60 DEG OFFSET       / xxxxxxxxxxx                    / If performing pre-planned maneuver, maneuver is a 60 degree offset from threat
+//!x2x          xxxxxx / 90 DEG OFFSET       / xxxxxxxxxxx                    / If performing pre-planned maneuver, maneuver is a 90 degree offset from threat
+//!x3x          xxxxxx / SLICE               / xxxxxxxxxxx                    / If performing pre-planned maneuver, maneuver is a slice to pump_altitude and pump_spd
+//!xx1          xxxxxx / xxxxxxxxxxxxxxxx    / ALWAYS PUMP AT DOR             / Always turn cold if DOR range reached (Desired Out Range)
+//!xx2          xxxxxx / xxxxxxxxxxxxxxxx    / ALWAYS PUMP WHEN THREATENED    / Always turn cold if "threatened", determined in SA Processor update
+//!xx3          xxxxxx / xxxxxxxxxxxxxxxx    / PRESS TO MERGE                 / Never turn cold, press to merge
+Array<double> VECTOR_FORMATION ={1,0,10*Math.M_PER_NM(),2000*MATH.M_PER_FT()};         //! formation to get into when faz = ingress or in route rules
+//!        **** FORMATION ****
+//!    FORMATION_TYPE         /  DEPTH (NM)      /  WIDTH (NM) /  ALTITUDE  offset (ft)
+//!x0   No Formation
+//!x1   2-ship                /  DEPTH (NM)      /  WIDTH (NM) /  ALTITUDE  offset (ft) 
+//!x2   3-ship                /  DEPTH (NM)      /  WIDTH (NM) /  ALTITUDE  offset (ft) 
+//!x3   4-ship (container)    /  DEPTH (NM)      /  WIDTH (NM) /  ALTITUDE  offset (ft) 
+//!x4   4-ship (wall)         /  DEPTH (NM)      /  WIDTH (NM) /  ALTITUDE  offset (ft)    
+Array<double> ESCORT_FORMATION = {0.0, 20.0*MATH.M_PER_NM()};            //! X and Y offset from the protected entity (relative to PE's bearing)                       
+bool MSL1_SLCT    =0.0  *MATH.M_PER_NM();       //! Range to select Fox1, zero to skip
+double SRM_SLCT   = 5.0 *MATH.M_PER_NM();       //! SRM select range (nm)
+double PUMP_RNG   =50.0 *MATH.M_PER_NM();       //! Range From Hostile To Pump-In If Not Spiked
+double COMMIT_RNG =60 *MATH.M_PER_NM();       //! Range to begin ATTACK (nmi)
+double DISPLN_X   =60.0 *MATH.M_PER_NM();      //! mission crucial range from protect (nmi)
+Array<string> PROTECTING ={"bomber1"};                 //! What is being protected, if DCA, then it is lat/long. If HVAADCAA or ESCORT, then it is protected entity
+double MERGE_RNG  =5.0 *MATH.M_PER_NM();        //! Range to enter MERGE (nmi)
+bool NOTCH        =false;                       //! Indicates whether notch tactics are used
+double DOR =30. *MATH.M_PER_NM();               //! Desired out range
+double MAR =15. *MATH.M_PER_NM();               //! Minimum abort range
+Array<int> WINCHESTER  ={-1,-1,-1,-1,0};        //! Fox3,Fox2,Fox1,AGM, Total Missiles INT - BINGO Weapons for the flight
+double BINGO_FUEL = 5000.0 * MATH.KG_PER_LB();  //! Amount of fuel (lbs) in which the A/C must disengage threat in order to make it back to base/tanker
+double JOKER_FUEL = 7000.0 * MATH.KG_PER_LB();  //! Fuel level > bingo fuel in which the A/C has just enough gas to complete the mission before reaching bingo, without anymore out maneuvers
+double COMMIT_SPD =0.9;                         //! Speed (mach) when flying at threat
+double COMMIT_ALT =30000*MATH.M_PER_FT();       //! Altitude (ft) when flying at threat
+double SPRINT_SPD =0.0;                         //! Speed (mach) added to direct on first pass
+double APOLE_SPD  =0.9;                         //! OFFSET (during apole) Speed (mach)
+double APOLE_RDR  = 50.0;                       //! Tgt bearing from Centerline for offset,0 not to use
+double EGRESS_SPD =0.9;                         //! desired (mach) on egress
+double EGRESS_ALT =30000. *MATH.M_PER_FT();     //! altitude (ft)
+double PUMP_SPD   =1.2;                         //! desired mach when pumping
+double PUMP_ALT   =20000. *MATH.M_PER_FT();     //! desired altitude when pumping
+int SHOT_DOC      =-3;                          //! SHOT DOCTRINE (see select_wpn behavior node)
+double LOFT_ASSIST = 0;                         //! Pilot assisted loft angle (0 not to use)
+Array<double> RPEAK_LOC ={1.0,0.8,0.75,1.0,1.0}; //! MRM RMAX% FOR SHOT (fox1,fox2,fox3,agm,gun)
+double PITBULL    =10.0 *MATH.M_PER_NM();       //! Msl range to target when autonomous (nm)
+string ENG_TGT       ="";                       //! Tail number of threat I want to prioritize
+double MXSHOT_RNG =200.0 *MATH.M_PER_NM();       //! Max wpn shot rng
+bool FWD_PASS       = true;                     //! True if I can forward pass
+int MX_PUMP         =0;                         //! min number of pumps before accepting a merge
+double SAM_ANG_AVD  =30.0;                       //! angle off to start feeling threatened by a SAM inside SAM_AVD_RNG
+double SAM_AVD_RNG  =0.0 *MATH.M_PER_NM();      //! SAM NOTCH RANGE (nm)
+double SAM_PMP_RNG  =0.0 *MATH.M_PER_NM();      //! SAM PUMP RANGE (nm)
+double SEAD_SHT_RNG = 0.0*MATH.M_PER_NM();      //! Range to employ SEAD weapon
+int I_SUPPORT       =4;                         //! Max # of weapons I can support at once
+int I_LAUNCHED      =4;                         //! Max # of weapons I can have in the air at once
+int I_LNCHATTGT     =2;                         //! Max # of weapons I can employ against a single target
+int I_MXTGTD        =2;                         //! Max # of weapons that can be employed by anyone on my side against a single target
+//
+// Orbit Rules Specific Variables
+ double orbit_leg_length = 10.0*MATH.M_PER_NM();         //! Orbit leg length (NM)
+ double orbit_spd        = 0.7;          //! Orbit speed (mach) 
+ double orbit_gees       = 3;          //! Desired gees on turn
+end_script_variables

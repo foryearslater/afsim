@@ -1,0 +1,425 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once ../platforms/lte_fighter.txt
+script_variables 
+   WsfGeoPoint steadyPrediction        = WsfGeoPoint();
+   WsfGeoPoint turnLeftPrediction      = WsfGeoPoint();
+   WsfGeoPoint turnRightPrediction     = WsfGeoPoint();
+   WsfGeoPoint slicePrediction         = WsfGeoPoint();
+   WsfGeoPoint turnToHeadingPrediction = WsfGeoPoint();
+   WsfGeoPoint goToPointPrediction     = WsfGeoPoint();
+   WsfGeoPoint splitEssPrediction      = WsfGeoPoint();
+end_script_variables
+
+platform Talon_1_1 BLUE_FIGHTER_PM6
+   side blue
+   commander SELF
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+   heading 90 deg   
+
+   route
+      position 00:00:00.00n 00:00:00.00w altitude 30000.00 ft speed 300 m/s
+      position 00:00:00.00n 00:01:00.00e altitude 30000.00 ft speed 300 m/s
+   end_route
+
+   edit processor assessment
+      on
+   
+      enemy_type    red_maneuver_target
+      friendly_type blue_maneuver_target
+      flight_id     1
+      id_flag       1
+      
+   end_processor
+   
+   execute at_time 20 sec absolute 
+      double predictTime = 100;
+      WsfSA_Processor saProc = (WsfSA_Processor)Processor("assessment");
+      WsfDraw draw = WsfDraw();
+      
+      double levelTurnGees = 2;
+      
+      // Set the perceived entity
+      WsfSA_EntityPerception perceivedEntity = saProc.PerceivedBandits()[0];
+      
+      # Forward
+      {
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionForward(time,
+                                          perceivedEntity));
+         }
+
+         steadyPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_steady");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Level turn left
+      {
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionLevelTurnLeft(time,
+                                                perceivedEntity,
+                                                levelTurnGees));
+         }
+
+         turnLeftPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_level_turn_left");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Level turn right
+      {
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionLevelTurnRight(time,
+                                                 perceivedEntity,
+                                                 levelTurnGees));
+         }
+
+         turnRightPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_level_turn_right");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Slice
+      {
+         double predictGees    = 2;     // Gees to use for prediction
+         double predictAngle   = 135.0; // Angle to use for prediction
+         double predictHeading = 45.0;  // Angle to use for prediction
+
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionSlice(time,
+                                        perceivedEntity,
+                                        predictHeading,
+                                        predictAngle,
+                                        predictGees));
+         }
+         
+         slicePrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_slice");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Turn to Heading
+      {
+         double predictGees    = 2;     // Gees to use for prediction
+         double predictHeading = 145.0; // Heading to use for prediction
+
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionTurnToHeading(time,
+                                                perceivedEntity,
+                                                predictHeading,
+                                                predictGees));
+         }
+
+         turnToHeadingPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_turn_to_heading");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Go to Point
+      {
+         double      predictGees  = 2; // Gees to use for prediction
+         WsfGeoPoint predictPoint = WsfGeoPoint.Construct(1.0, 0.5, 10000.0);
+
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionGoToPoint(time,
+                                            perceivedEntity,
+                                            predictPoint,
+                                            predictGees));
+         }
+
+         goToPointPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_go_to_point");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+      
+      # Split-S
+      {
+         double predictGees = 4; // Gees to use for prediction
+
+         // Get a list of points to plot by running the prediction
+         // at many time points in the future.
+         Array<WsfGeoPoint> pointsToPlot = Array<WsfGeoPoint>();
+         for (int time = 0; time <= predictTime; time += 5)
+         {
+            pointsToPlot.PushBack(
+            saProc.ProjectPositionSplitS(time, perceivedEntity, predictGees));
+         }
+
+         splitEssPrediction.Set(pointsToPlot.Back());
+
+         // Do the drawing here
+         draw.SetLayer("predict_split_s");
+         draw.SetLineStyle("solid");
+         draw.BeginPolyline();
+         draw.SetColor(0.3, 0.3, 0.5);
+         for (int i = 0; i < pointsToPlot.Size(); i += 1)
+         {
+            draw.Vertex(pointsToPlot.Get(i));
+         }
+         draw.End();
+      }
+   end_execute
+   
+end_platform
+
+platform_type red_maneuver_target RED_FIGHTER_PM6
+   side dark_red
+   commander SELF
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+   heading 270 deg
+      
+   route
+      position 00:00:00.00n 01:10:00.00e  altitude 30000.00 ft speed 300 m/s
+      position 00:00:00.00n 01:00:00.00e  altitude 30000.00 ft speed 300 m/s
+   end_route
+
+   delete processor assessment
+
+end_platform_type
+
+platform_type red_maneuver_test red_maneuver_target
+   side red
+   
+   script_variables
+      WsfDraw draw = WsfDraw();
+      draw.SetLayer("flyout_" + PLATFORM.Name());
+      draw.SetPointSize(3);
+      draw.BeginPoints();
+      draw.SetColor(0.6, 0.6, 1.0);
+   end_script_variables
+   
+   execute at_interval_of 2 sec
+      WsfGeoPoint location = WsfGeoPoint.ConstructWCS(PLATFORM.LocationWCS());
+      draw.BeginPoints();
+      draw.Vertex(location);
+      draw.Vertex(location);
+      draw.End();
+   end_execute
+   
+end_platform_type
+
+platform_type blue_maneuver_target BLUE_FIGHTER_PM6
+   side dark_blue
+   commander Talon_1_1
+   command_chain IFLITE Talon_1_1
+   command_chain ELEMENT Talon_1_1
+   heading 270 deg
+      
+   route
+      position 00:01:00.00n 00:00:00.00w altitude 30000.00 ft speed 300 m/s
+      position 00:01:00.00n 00:01:00.00e altitude 30000.00 ft speed 300 m/s
+   end_route
+
+   delete processor assessment
+
+end_platform_type
+
+platform_type blue_maneuver_test blue_maneuver_target
+   side blue
+end_platform_type
+
+platform predict_bandit red_maneuver_target end_platform
+
+platform steady red_maneuver_test end_platform
+
+platform left_turn red_maneuver_test 
+   
+   /// Level turn orbit
+   execute at_interval_of 10 sec 
+      if (TIME_NOW < 15) { return; }
+      
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      mover.SetBankAngleMax(60.0); # 2-g turn
+      PLATFORM.TurnToHeading(mover.GetHeading() - 120.0);
+   end_execute
+   
+end_platform
+
+platform right_turn red_maneuver_test 
+   
+   /// Level turn orbit
+   execute at_interval_of 10 sec 
+      if (TIME_NOW < 15) { return; }
+      
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      mover.SetBankAngleMax(60.0); # 2-g turn
+      PLATFORM.TurnToHeading(mover.GetHeading() + 120.0);
+   end_execute
+   
+end_platform
+
+platform slice red_maneuver_test 
+   
+   /// Slice
+   execute at_time 20 sec absolute      
+      double finalHeading = PLATFORM.Heading() + 135.0;
+   
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      
+      WsfSixDOF_RollDeltaManeuver rollIn =  WsfSixDOF_RollDeltaManeuver.Construct(135.0);
+                
+      WsfSixDOF_PitchGLoadManeuver pull =  WsfSixDOF_PitchGLoadManeuver.Construct(2.0);      
+      pull.SetEntryConstraint(WsfSixDOF_ManeuverConstraint.AT_RELATIVE_TIME(1.0));      
+      pull.SetExitConstraint(WsfSixDOF_ManeuverConstraint.AT_HEADING(finalHeading));      
+      
+      WsfSixDOF_TurnToHeadingManeuver rollOut = WsfSixDOF_TurnToHeadingManeuver.Construct(finalHeading);
+      #rollOut.SetEntryConstraint(WsfSixDOF_ManeuverConstraint.AT_HEADING(finalHeading));      
+
+      WsfSixDOF_ManeuverSequence sequence = WsfSixDOF_ManeuverSequence.Construct();
+      sequence.Append(rollIn);
+      sequence.Append(pull);
+      sequence.Append(rollOut);
+      
+      mover.ExecuteManeuverSequence(sequence);
+   end_execute
+   
+end_platform
+
+platform go_to_point red_maneuver_test 
+   
+   /// Level turn orbit
+   execute at_interval_of 10 sec 
+      if (TIME_NOW < 15) { return; }
+      
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      mover.SetBankAngleMax(60.0); # 2-g turn
+      
+      PLATFORM.GoToLocation(WsfGeoPoint.Construct(1.0, 0.5, 10000.0));
+      
+   end_execute
+   
+end_platform
+
+platform turn_to_heading red_maneuver_test 
+   
+   /// Level turn orbit
+   execute at_interval_of 10 sec 
+      if (TIME_NOW < 15) { return; }
+      
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      mover.SetBankAngleMax(60.0); # 2-g turn
+      PLATFORM.TurnToHeading(145.0);
+   end_execute
+   
+end_platform
+
+platform split_s red_maneuver_test 
+   
+   /// Slice
+   execute at_time 20 sec absolute      
+      double finalHeading = 90.0;
+   
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) PLATFORM.Mover();
+      
+      WsfSixDOF_RollDeltaManeuver rollIn =  WsfSixDOF_RollDeltaManeuver.Construct(180.0);
+                
+      WsfSixDOF_PitchGLoadManeuver pull =  WsfSixDOF_PitchGLoadManeuver.Construct(4.0);      
+      pull.SetEntryConstraint(WsfSixDOF_ManeuverConstraint.AT_RELATIVE_TIME(5.0));      
+      pull.SetExitConstraint(WsfSixDOF_ManeuverConstraint.AT_FLIGHT_PATH_ANGLE(0.0));      
+      
+      WsfSixDOF_TurnToHeadingManeuver rollOut = WsfSixDOF_TurnToHeadingManeuver.Construct(finalHeading);
+      #rollOut.SetEntryConstraint(WsfSixDOF_ManeuverConstraint.AT_PITCH_ANGLE(0.0));      
+
+      WsfSixDOF_ManeuverSequence sequence = WsfSixDOF_ManeuverSequence.Construct();
+      sequence.Append(rollIn);
+      sequence.Append(pull);
+      sequence.Append(rollOut);
+      
+      mover.ExecuteManeuverSequence(sequence);
+   end_execute
+   
+end_platform

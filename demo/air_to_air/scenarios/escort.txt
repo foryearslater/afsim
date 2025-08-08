@@ -1,0 +1,520 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once platforms/escort.txt
+include_once platforms/dca.txt
+include_once sensors/radar/aesa.txt
+
+route test_route
+   position 00:00:00.035n 01:47:21.156e altitude 30000 ft msl speed 900 ft/s
+   position 00:00:00.035n 02:57:21.156e altitude 30000 ft msl speed 900 ft/s
+end_route
+
+route red_route
+   position 00:24:22.19n 00:15:18.43e altitude 30000 ft msl speed 900 ft/s
+   position 00:06:05.59n 00:09:20.43w altitude 30000 ft msl speed 900 ft/s
+   position 00:03:28.06n 00:36:38.36w altitude 30000 ft msl speed 900 ft/s
+end_route
+
+# These are simple, generic signatures, using 10 sq meter target and
+# a basic 10 watts/steradian IR signature
+infrared_signature SIMPLE_BOMBER_INFRARED_SIGNATURE
+   constant 10 watts/steradian
+end_infrared_signature
+optical_signature  SIMPLE_BOMBER_OPTICAL_SIGNATURE
+   constant 10 m^2
+end_optical_signature
+radar_signature    SIMPLE_BOMBER_RADAR_SIGNATURE
+   constant 10 m^2
+end_radar_signature
+
+platform bomber1 WSF_PLATFORM
+   icon b-1
+   side blue
+   indestructible 
+#  draw_nominal_states
+
+   infrared_signature SIMPLE_BOMBER_INFRARED_SIGNATURE
+   optical_signature  SIMPLE_BOMBER_OPTICAL_SIGNATURE
+   radar_signature    SIMPLE_BOMBER_RADAR_SIGNATURE
+
+   # define global script variables attached to this platform type - these are used in the EZJA behavior tree
+   include rules/ezja_script_variables.txt
+
+   commander blue_1
+   command_chain BOMBER blue_1
+   
+   heading 90 deg
+   position 00:02:50.00n 02:10:00.00w  altitude 30000.00 ft
+
+   add sensor rdr1 aesa 
+      on 
+      internal_link data_mgr
+   end_sensor
+
+   add processor data_mgr WSF_TRACK_PROCESSOR
+      master_track_processor 
+      purge_interval  60 sec
+      report_interval 10.0 sec 
+      unchanged_track_reporting false
+      circular_report_rejection enable
+      # report_raw_tracks 
+      internal_link tsk_mgr
+      report_fused_tracks
+      report_to commander via    datalink
+      report_to subordinates via datalink
+      report_to peers via        datalink
+   end_processor
+
+   track_manager 
+      fusion_method weighted_average
+      end_fusion_method
+   end_track_manager
+   
+   add processor tsk_mgr WSF_TASK_PROCESSOR 
+      on
+      internal_link data_mgr
+   end_processor
+
+   add mover WSF_AIR_MOVER end_mover
+   route 
+      position 00:00:00.00n 01:30:00.00w  altitude 30000.0 ft  
+      speed 850 ft/s
+      position 00:00:00.00n 02:50:00.00e  altitude 30000.0 ft
+   end_route
+
+   // Give it a weapon to shoot at a ground target
+   // Note: this weapon was intended for air targets and usually doesn't hit the ground target
+   add weapon agm MEDIUM_RANGE_RADAR_MISSILE 
+      quantity 2
+   end_weapon
+
+   add processor limited_assessment WSF_SA_PROCESSOR 
+      on
+      update_interval 1.0 sec
+
+      # Flight Information
+      flight_id  10
+      id_flag    B
+
+      # Data collection rates
+      report_interval               1.00 sec
+      flight_data_update_interval   1.00 sec
+      fuel_data_update_interval    10.00 sec
+      nav_data_update_interval     10.00 sec
+      asset_data_update_interval    3.00 sec      
+      
+      enemy_side       red
+      enemy_type       RED_STRIKER
+      friendly_type    BLUE_STRIKER
+      
+      max_range_for_perceived_assets              150 nm
+      max_range_for_perceived_bogies_and_bandits  150 nm
+      max_range_for_engagement_data                 0 nm
+      assumed_range_for_angle_only_targets        150 nm      
+      
+      // Set filters to result in the fewest items for engagement data
+      filter_requires_not_same_side          true
+      filter_requires_not_air_domain         true
+      filter_requires_not_subsurface_domain  true
+      filter_requires_not_space_domain       true
+      filter_requires_sa_processor           true
+      
+      report_to commander    via datalink
+      report_to peers        via datalink
+      report_to subordinates via datalink
+
+      # Assets/friends settings
+      asset_perception  truth commander:peers:subordinates
+      perceive_self     false
+      reporting_self    true
+      reporting_others  true
+      max_asset_load    100
+
+      # Bogie and bandit/threat settings
+      max_threat_load   12
+      
+      # Expendable countermeasures
+      use_simple_countermeasures true
+      num_chaff                  120
+      num_flares                  80
+      num_decoys                  20  
+      
+   end_processor
+
+   add comm datalink WSF_COMM_TRANSCEIVER
+      propagation_speed 0 m/s   #instantaneous propogation (faster than speed of light)
+      network_name brawler_net
+      internal_link data_mgr
+      internal_link tsk_mgr
+      internal_link limited_assessment
+   end_comm
+
+   execute at_interval_of 5 s 
+      foreach (WsfLocalTrack ltrk in PLATFORM.MasterTrackList())
+      {
+         if (ltrk.IsValid() && ltrk.Target().IsValid() && ltrk.TargetName() == "ground_target")
+         {
+            if ( PLATFORM.SlantRangeTo(ltrk) < 20.0 *MATH.M_PER_NM() 
+            && PLATFORM.Weapon("agm").QuantityRemaining() > 0 )
+            {
+               PLATFORM.Weapon("agm").FireSalvo(ltrk,2);
+            }
+            if (PLATFORM.Weapon("agm").QuantityRemaining() == 0)
+            {
+               PLATFORM.TurnToHeading(270);
+            }
+         }
+      }
+   end_execute
+end_platform
+
+platform blue_1 ESCORT 
+   side blue
+#  draw_nominal_states
+   commander SELF
+   command_chain IFLITE  SELF
+   command_chain ELEMENT SELF   
+   command_chain BOMBER  SELF
+
+   heading 90 deg
+   position 00:05:00.00n 01:20:00.00w  altitude 30000.00 ft
+
+   edit weapon fox3
+      quantity 6 
+   end_weapon
+
+   edit processor assessment
+      flight_id 1
+      id_flag   1
+   end_processor
+   
+   script_variables
+      ENG_TGT = "";
+      RPEAK_LOC ={1.0,0.8,0.95,1.0,1.0};
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,0,0,0};
+      ESCORT_FORMATION = {30.0*MATH.M_PER_NM(), -25.0*MATH.M_PER_NM()};   //! X and Y offset from the protected entity (relative to PE's bearing)                       
+
+   end_script_variables
+
+   execute at_interval_of 5 s 
+      // stiff arm guys not in my lane
+      WsfSA_Processor saPROC = (WsfSA_Processor)iacid.Processor("assessment");
+      WsfPlatform PE = WsfSimulation.FindPlatform(PROTECTING[0]);
+      if (!PE.IsValid() || PE.IsNull()) { return; }
+      foreach (WsfSA_EntityPerception ent in saPROC.PerceivedBandits())
+      {
+         if (ent.Track().IsValid() && ent.Track().LocationValid())
+         {
+            if (PE.RelativeBearingTo(ent.Track()) < 0 && PE.SlantRangeTo(ent.Track()) > DISPLN_X )
+            {
+               mapSTIFF_ARM.Set(ent,true);
+#              writeln(iacid.Name()," STIFF ARM ",ent.PerceivedName());
+            }
+         }
+      }
+   end_execute
+
+end_platform
+
+platform blue_2 ESCORT 
+   side blue
+#  draw_nominal_states
+   commander blue_1
+   command_chain IFLITE  blue_1
+   command_chain ELEMENT blue_1   
+   command_chain BOMBER  blue_1
+
+   heading 90 deg
+   position 00:00:00.00n 01:20:00.00w  altitude 30000.00 ft
+
+   edit weapon fox3
+      quantity 6 
+   end_weapon
+   
+   edit processor assessment
+      flight_id 1
+      id_flag   2
+   end_processor
+
+   script_variables
+      RPEAK_LOC ={1.0,0.8,0.95,1.0,1.0};
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,0,10.0*MATH.M_PER_NM(),0};
+      ESCORT_FORMATION = {30.0*MATH.M_PER_NM(), -15.0*MATH.M_PER_NM()};   //! X and Y offset from the protected entity (relative to PE's bearing)                       
+   end_script_variables
+
+   execute at_interval_of 5 s 
+      // stiff arm guys not in my lane
+      WsfSA_Processor saPROC = (WsfSA_Processor)iacid.Processor("assessment");
+      WsfPlatform PE = WsfSimulation.FindPlatform(PROTECTING[0]);
+      if (!PE.IsValid() || PE.IsNull()) { return; }
+      foreach (WsfSA_EntityPerception ent in saPROC.PerceivedBandits())
+      {
+         if (ent.Track().IsValid() && ent.Track().LocationValid())
+         {
+            if (PE.RelativeBearingTo(ent.Track()) < 0 && PE.SlantRangeTo(ent.Track()) > DISPLN_X )
+            {
+               mapSTIFF_ARM.Set(ent,true);
+            }
+         }
+      }
+   end_execute
+end_platform
+
+platform blue_3 ESCORT 
+   side blue
+#  draw_nominal_states
+   commander blue_1
+   command_chain IFLITE  blue_1
+   command_chain ELEMENT SELF   
+   command_chain BOMBER  blue_1
+
+   heading 90 deg
+   position 00:05:00.00s 01:20:00.00w  altitude 30000.00 ft
+
+   edit processor assessment
+      flight_id   1
+      id_flag     3
+   end_processor
+
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,-15.0*MATH.M_PER_NM(),5.0*MATH.M_PER_NM(),0};
+      ESCORT_FORMATION = {30.0*MATH.M_PER_NM(), 15.0*MATH.M_PER_NM()};   //! X and Y offset from the protected entity (relative to PE's bearing)                       
+      COMMIT_RNG =70.0 *MATH.M_PER_NM();
+   end_script_variables
+   
+end_platform
+
+platform blue_4 ESCORT
+   side blue
+#  draw_nominal_states
+   commander blue_1
+   command_chain IFLITE  blue_1
+   command_chain ELEMENT blue_3   
+   command_chain BOMBER  blue_1
+
+   heading 90 deg
+   position 00:10:00.00s 01:20:00.00w  altitude 30000.00 ft
+
+   edit processor assessment
+      flight_id   1
+      id_flag     4
+   end_processor
+
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,-15.0*MATH.M_PER_NM(),15.0*MATH.M_PER_NM(),0};
+      ESCORT_FORMATION = {30.0*MATH.M_PER_NM(), 25.0*MATH.M_PER_NM()};   //! X and Y offset from the protected entity (relative to PE's bearing)                       
+      COMMIT_RNG =70.0 *MATH.M_PER_NM();
+   end_script_variables
+
+end_platform
+
+infrared_signature SIMPLE_GROUND_TARGET_INFRARED_SIGNATURE
+   constant 1 watts/steradian
+end_infrared_signature
+optical_signature  SIMPLE_GROUND_TARGET_OPTICAL_SIGNATURE
+   constant 1 m^2
+end_optical_signature
+radar_signature    SIMPLE_GROUND_TARGET_RADAR_SIGNATURE
+   constant 1 m^2
+end_radar_signature
+
+platform ground_target WSF_PLATFORM 
+   side red
+   icon bullseye
+   category surface   
+   spatial_domain surface
+   
+   infrared_signature SIMPLE_GROUND_TARGET_INFRARED_SIGNATURE
+   optical_signature  SIMPLE_GROUND_TARGET_OPTICAL_SIGNATURE
+   radar_signature    SIMPLE_GROUND_TARGET_RADAR_SIGNATURE
+
+   position 00:00:00.00n 02:50:00.00e altitude 0.0 ft
+end_platform
+
+platform red_1 DCA
+   side red
+   icon su27
+   commander SELF
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+
+   position 00:41:03.54n 00:29:27.16e altitude 30000.00 ft
+   heading 230 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+
+   script_variables
+      START_TYPE = "route";
+      APOLE_RDR = 0;
+      PLAYBOOK = {2,3,2};
+      ENG_TGT = "";
+      PRE_PLAN = 0.0;
+      ROUTE.Append("red_route");
+   end_script_variables
+   
+   edit processor assessment
+      flight_id   202
+      id_flag     1
+   end_processor
+
+end_platform
+
+platform red_2 DCA
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE red_1
+   command_chain ELEMENT red_1
+
+   position 00:56:43.69n 00:21:01.39e altitude 30000.00 ft
+   heading 230 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+ 
+   script_variables
+      START_TYPE = "route";
+      APOLE_RDR = 0;
+      PLAYBOOK = {2,3,2};
+      ENG_TGT = "";
+      PRE_PLAN = 0.0;
+      ROUTE.Append("red_route");
+   end_script_variables
+
+   edit processor assessment
+      flight_id   202
+      id_flag     2
+   end_processor
+
+end_platform
+
+platform red_3 DCA 
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+
+   position 00:05:00.00s 02:10:00.00e altitude 30000.00 ft
+   heading 90 deg
+ 
+   script_variables
+      START_TYPE = "orbit";
+      PRE_PLAN = 0.5;
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+   end_script_variables
+
+   edit processor assessment
+      flight_id   202
+      id_flag     3
+   end_processor
+
+end_platform
+
+platform red_4 DCA
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE red_3
+   command_chain ELEMENT red_3
+
+   position 00:10:00.00s 02:10:00.00e altitude 30000.00 ft
+   heading 90 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+
+   script_variables
+      START_TYPE = "orbit";
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+   end_script_variables
+
+   edit processor assessment
+      flight_id   202
+      id_flag     4
+   end_processor
+
+end_platform
+
+platform red_5 DCA 
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+
+   position 00:02:00.00n 02:30:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+
+   script_variables
+      START_TYPE = "orbit";
+      PRE_PLAN = 0.5;
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+   end_script_variables
+
+   edit processor assessment
+      flight_id   202
+      id_flag     5
+   end_processor
+
+end_platform
+
+platform red_6 DCA 
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE red_5
+   command_chain ELEMENT red_5
+
+   position 00:02:00.00s 02:30:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 03:00:00.0e");
+   end_script_variables
+
+   script_variables
+      START_TYPE = "orbit";
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+   end_script_variables
+
+   edit processor assessment
+      flight_id   202
+      id_flag     6
+   end_processor
+
+end_platform

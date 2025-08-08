@@ -1,0 +1,70 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# Snyder - simple task processor, assigns an intercept task to the IFLITE command chain lead
+#          cancels task on_task_complete
+processor HVAA_TASKER WSF_TASK_PROCESSOR 
+   on 
+   evaluation_interval DETECTED 1 sec
+   state DETECTED
+      next_state ASSIGNED
+#         writeln("HERE1 ", TRACK.IsValid()," ",TRACK.TimeSinceUpdated()," ",TRACK.LocationValid()," ",TRACK.VelocityValid()
+#         ," ",PLATFORM.SlantRangeTo(TRACK)*MATH.NM_PER_M());
+         if (TRACK.IsValid() && TRACK.TimeSinceUpdated() < 30.0 && TRACK.LocationValid() && TRACK.VelocityValid()
+         && PLATFORM.SlantRangeTo(TRACK) <= 200.0*MATH.M_PER_NM())
+         {
+            foreach (WsfPlatform sub in PLATFORM.Subordinates())
+            {
+               if (sub.Name() == sub.CommanderName("IFLITE") && PROCESSOR.TasksAssignedTo(sub) == 0)
+               {
+                  bool test = PROCESSOR.AssignTask(TRACK,"INTERCEPT",sub);
+                  if (test)
+                  {
+                     writeln(PLATFORM.Name()," Assigned INTERCEPT task to ",sub.Name()," for Track ",
+                             TRACK.TargetName()," at time ",TIME_NOW);
+                     // assign the same task to everyone in my iflite
+                     foreach (WsfPlatform ssub in sub.Subordinates("IFLITE"))
+                     {
+                        if (ssub.CategoryMemberOf("missile")) {continue;} // skip missiles
+                        WsfTaskProcessor sub_tsk_mgr = sub->tsk_mgr;
+                        sub_tsk_mgr.AssignTask(TRACK,"INTERCEPT",ssub);
+                     }
+                  }
+                  else
+                  {
+                     writeln("FAILED TO ASSIGN TASK");
+                  }
+                  return test;
+               }
+            }
+         }
+         return false;
+      end_next_state
+   end_state
+
+   evaluation_interval ASSIGNED 1 sec
+   state ASSIGNED
+      next_state DETECTED
+         if (TRACK.IsValid() && TRACK.TimeSinceUpdated() < 10.0)
+         {
+            if (PROCESSOR.TasksAssignedFor(TRACK.TrackId()) > 0)
+            {
+               return false;
+            }
+            return true;
+         }
+         return false;
+      end_next_state
+   end_state
+
+   script void on_task_complete(WsfTask tsk)
+      PROCESSOR.CancelTask(tsk.TrackId());
+   end_script
+
+end_processor

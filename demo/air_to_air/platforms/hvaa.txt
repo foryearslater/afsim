@@ -1,0 +1,127 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+// sensors
+include_once processors/sensor_cue_processor.txt
+include_once sensors/radar/aesa.txt
+include_once sensors/radar/long_range.txt
+include_once sensors/radar/aesa_antenna.txt
+include_once sensors/esm_rwr/esm.txt
+// platform type
+include_once platforms/brawler_test.txt
+// weapons
+include_once weapons/aam/medium_range_radar_missile.txt
+include_once weapons/aam/short_range_ir_missile.txt
+// processor
+include_once processors/hvaa_tasker.txt
+
+# This brawler enabled platform has the following defined:
+# 1. A WSF_BRAWLER_PROCESSOR    (typically named task_mgr or thinker)
+# 2. A WSF_BRAWLER_MOVER        (possibly could use WSF_P6DOF_MOVER in future)
+# 3. A WSF_PERCEPTION_PROCESSOR (typically named perception)
+# 4. A WSF_THREAT_PROCESSOR     (typically named incoming_threats)
+# 5. A WSF_BRAWLER_FUEL         (optional: the brawler mover implicitely models brawler fuel provided by the 'aero_file')
+
+radar_signature 10dB_FuzzBall WSF_RADAR_SIGNATURE 
+constant 10 dBsm
+end_radar_signature
+
+#platform_type  BRAWLER_PLATFORM  WSF_BRAWLER_PLATFORM
+platform_type  HVAA  BRAWLER_TEST
+   icon f15c
+   include prdata/blue.txt
+
+   radar_signature 10dB_FuzzBall
+
+   mover WSF_BRAWLER_MOVER
+      aero_file platforms/fxw/lte_fighter.fxw
+      update_time_tolerance 0.01 s
+   end_mover
+
+   fuel WSF_BRAWLER_FUEL
+      aero_file platforms/fxw/lte_fighter.fxw
+      initial_quantity 20000 pounds
+   end_fuel
+
+   weapon fox3 MEDIUM_RANGE_RADAR_MISSILE # fox 3 (MRM)
+      quantity 0
+   end_weapon
+
+   weapon fox2 SHORT_RANGE_IR_MISSILE # fox 2 (SRM)
+      quantity 0
+   end_weapon
+
+   weapon fox1 SHORT_RANGE_IR_MISSILE # fox 1 (other)
+      quantity 0
+   end_weapon
+   
+   weapon agm SHORT_RANGE_IR_MISSILE # air-to-ground missile, use SRM just to populate something
+      quantity 0
+   end_weapon
+
+   comm weapon_datalink WSF_COMM_TRANSCEIVER      // uplink to weapons
+      network_name weapons_subnet
+      internal_link data_mgr
+   end_comm
+
+   sensor rdr1 long_range  
+      on
+      internal_link data_mgr
+      internal_link tsk_mgr
+   end_sensor
+
+   sensor eyes WSF_GEOMETRIC_SENSOR
+      on
+      azimuth_field_of_view   -180.0 degrees  180.0 degrees
+      elevation_field_of_view  -90.0 degrees   90.0 degrees
+      maximum_range 10 nmi
+      frame_time    0.5 sec
+      range_error_sigma 2000 ft
+      range_rate_error_sigma 100 ft/s
+      azimuth_error_sigma 0.1 deg
+      elevation_error_sigma 0.1 deg
+      reports_velocity 
+      reports_range
+      reports_bearing 
+      reports_iff
+      internal_link data_mgr
+      ignore_same_side
+   end_sensor
+  
+    sensor rwr esm                       // 3
+      on
+      ignore IGNORE
+      ignore_same_side
+      internal_link data_mgr
+   end_sensor
+
+   processor radar_track_cueing SENSOR_CUE_PROCESSOR
+      script_variables 
+         mSourceSensorNames.Insert("*");
+         mCuedSensorName = "rdr1";
+         mTrackModeName = "TWS";
+      end_script_variables
+   end_processor
+
+   processor weapon_datalink_manager WEAPON_DL_MANAGER
+      script_variables 
+         mUplinkSensorNames.PushBack("rdr1");
+      end_script_variables
+   end_processor
+
+   processor tasker HVAA_TASKER
+      internal_link data_mgr
+   end_processor 
+   
+   edit comm datalink 
+      internal_link tasker
+   end_comm
+
+end_platform_type
+

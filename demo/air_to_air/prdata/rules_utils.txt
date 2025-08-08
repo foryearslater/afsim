@@ -1,0 +1,2440 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+script Vec3 RelPositionNED(WsfGeoPoint from, WsfGeoPoint to)
+   double deg2ft = 364812.76313;
+   double deg2m = deg2ft * Math.M_PER_FT();
+   Vec3 vec = Vec3.Construct( (to.Latitude() -from.Latitude() )*deg2m,
+                              (to.Longitude()-from.Longitude())*deg2m*MATH.Cos(from.Latitude()*MATH.RAD_PER_DEG()),
+                             -(to.Altitude() -from.Altitude() ));
+   return vec;
+end_script
+
+
+script Array<WsfLocalTrack> ill_reqd(WsfPlatform me, Array<WsfSA_EntityPerception> aBanditList, Array<WsfPlatform> g_list)
+/*
+PURPOSE   evaluate when or if weapons need support, create list of targets
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me         WsfPlatform - Platform being analyzed, loop through my flight
+   IN  bg_list    Array<WsfLocalTrack> - My bad guy track list, built in fighter assess
+   IN  guid_list  Array<WsfPlatform>   - List of weapons I am supporting
+   OUT me->needil BOOL - True if a weapon requires my support
+   OUT ill_list   Array - Array of target tracks I'm supporting weapons against
+   OUT me->beans  int  - number of missiles that require my support 
+
+Technical Description:
+   Loop over all of my tracks, if there is an active weapon that I own against any one of 
+   my tracks, and missile range to go is > pitbull range
+
+TO DO: 
+   -make this work for forward pass shots/third party/net enabled
+   -add logic for snipping missiles or assessing to fail 
+*/
+   bool support = false;
+   Array<WsfLocalTrack> i_list = Array<WsfLocalTrack>();
+
+
+   foreach (WsfPlatform msl in g_list)
+   {
+      if (msl.IsNull() || !msl.IsValid()){continue;}
+      WsfTrack trk = msl.CurrentTargetTrack();
+      if (msl.SlantRangeTo(trk) > me->PITBULL)
+      { 
+         support = true ; 
+         foreach (WsfSA_EntityPerception saent in aBanditList)
+         {
+            if (saent.Track().IsValid() && !saent.Track().IsNull() && saent.Track().Target().IsValid() 
+                && saent.Track().TargetName() == trk.TargetName())
+            {
+               WsfLocalTrack ltrk = me.MasterTrackList().Find(saent.Track().TrackId());
+               i_list.PushBack(ltrk);
+            }
+         }
+      } 
+   }
+   me->beans = i_list.Size(); // total number of missiles requiring my support
+   me->needil = support; // set platform global variable needil
+   return i_list;
+end_script
+
+script WsfPlatform remote_test(WsfPlatform shooter, WsfTrack trk)
+/*
+PURPOSE  determine who the desired guider of a missile is
+AUTHOR   Snyder
+
+Parameter Description
+   IN  shooter    WsfPlatform - Shooter 
+   IN  ltrk       WsfLocalTrack - Track of interest
+   OUT WsfPlatform - Desired platform to guide the shot
+
+Technical Description:
+   Initialize the desired guiding platform to the shooting platform. Then loop through 
+   the IFLITE command chain to see if anyone is capable of guiding my shot 
+   
+   Criteria to select someone:
+      - Platform is in my IFLITE command chain structure
+      - Platform has a raw track of the same target (ensures he has own ship sensor track)
+      - Platform's range to target is greater than my range to target
+      - I am within the FOR of the platform's radar, ensuring he can send weapon uplinks to my missile
+
+*/
+#   FileIO iout = FileIO();
+   extern FileIO iout;
+   extern bool iout_print;
+   extern string iout_path;
+   if (iout_print)
+   {
+#      iout.Close();
+#      iout.Open(iout_path, "append");
+      iout.Write(write_str(" remote_test...","\n"));
+   }
+   if (!shooter->FWD_PASS)
+   {
+      if (iout_print)
+      {
+         iout.Write(write_str("    Forward Pass Disabled...guider = ",shooter.Name(),"\n"));
+#         iout.Close();
+      }
+      return shooter;
+   }
+   WsfPlatform guider = shooter; // initialize this to the shooter
+
+   Array<WsfPlatform> mate_list = Array<WsfPlatform>();
+   // add commander to flight mate list
+   if (shooter.Commander().IsValid())
+   {
+      mate_list.PushBack(shooter.Commander());
+   }
+   // loop through peers
+   foreach (WsfPlatform mate in shooter.Peers("IFLITE"))
+   {
+      if (mate.IsValid() && !mate.CategoryMemberOf("missile") && mate!=shooter)
+      {
+         mate_list.PushBack(mate);
+      }
+   }
+   // loop through subs
+   foreach (WsfPlatform mate in shooter.Subordinates("IFLITE"))
+   {
+      if (mate.IsValid() && !mate.CategoryMemberOf("missile"))
+      {
+         mate_list.PushBack(mate);
+      }
+   }
+   
+   if (mate_list.Size() == 0)
+   {
+      if (iout_print)
+      {
+         iout.Write(write_str("    No Available Flight Mates...guider = ",shooter.Name(),"\n"));
+#         iout.Close();
+      }
+   }
+   
+   // loop through my flight mates and see if anyone meets the forward pass criteria
+   for (int i=0; i<mate_list.Size(); i+=1)
+   {
+      WsfPlatform mate = mate_list[i];
+      // check if mate's range is 10 or more nmi more than my range
+      // check if target within mate's FOV
+      // check if shooter within mate's FOV
+      // check beans
+      WsfSensor sensor = mate.Sensor("rdr1");
+      if (mate.SlantRangeTo(trk.CurrentLocation()) >= (10.0*MATH.M_PER_NM() + shooter.SlantRangeTo(trk.CurrentLocation())))
+      {
+         if (sensor.WithinFieldOfView(trk.CurrentLocation()) && sensor.WithinFieldOfView(shooter.Location()))
+         {
+            if (mate->beans < mate->I_SUPPORT)
+            {
+               foreach (WsfTrack trk in mate.MasterRawTrackList())
+               {
+                  // check if mate has a raw track of the target
+                  if (trk.IsValid() && !trk.IsNull() && trk.Target().IsValid() && trk.Target() == trk.Target())
+                  {
+                     guider = mate;
+                     if (iout_print)
+                     {
+                        iout.Write(write_str("    guider = ",guider.Name(),"\n"));
+#                        iout.Close();
+                     }
+                     return guider;
+                  }
+               }
+            }
+            else
+            {
+               if (iout_print)
+               {
+                  iout.Write(write_str("    ",mate.Name()," CANNOT GUIDE...REASON: BEANS - Cannot guide anymore missiles","\n"));
+#                  iout.Close();
+               }
+            }
+         }
+         else
+         {
+            if (iout_print)
+            {
+               iout.Write(write_str("    ",mate.Name()," CANNOT GUIDE...REASON: OUTSIDE FOV","\n"));
+#               iout.Close();
+            }
+         }
+      }
+      else
+      {
+         if (iout_print)
+         {
+            iout.Write(write_str("    ",mate.Name()," CANNOT GUIDE...REASON: DOWN RANGE <10 NMI ",
+            mate.SlantRangeTo(trk.CurrentLocation())*MATH.NM_PER_M()," ",
+            shooter.SlantRangeTo(trk.CurrentLocation())*MATH.NM_PER_M(),"\n"));
+         }
+      }
+   }
+
+   if (iout_print)
+   {
+#      iout.Close();
+   }
+   return guider;
+end_script
+
+script bool spike_me(WsfPlatform me)
+/*
+PURPOSE   evaluate if I am spiked
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me         WsfPlatform - Platform being analyzed
+   OUT spiked     BOOL - True if an entity is spiking me 
+
+Technical Description:
+   Loop over all of my ESM tracks, if there is a radar tracking me then I am spiked
+
+   This routine "cheats" by assuming my esm system can type a tracking waveform
+   I'f i'm tracking a radar and that radar is tracking me, then i am spiked
+
+   assumes your esm or rwr system's name is "esm" or "rwr"
+
+*/
+   bool spiked = false;
+//  loop through all my raw tracks
+   if (me.MasterRawTrackList().IsValid())
+   {   
+      foreach (WsfTrack trk in me.MasterRawTrackList())
+      {  
+         if (trk.IsValid() && trk.AirDomain())
+         {      
+//          look at ESM tracks of radars
+            if ((trk.SensorName() == "esm" || trk.SensorName() == "rwr") && trk.EmitterCount() > 0)
+            {   
+//              I have a track of another radar...is that radar tracking me?
+               WsfPlatform target_plat = WsfSimulation.FindPlatform(trk.TargetName());
+               if (!target_plat.IsValid()){continue;}
+               foreach (WsfTrack ttrk in target_plat.MasterRawTrackList())
+               {  
+                  if ((ttrk.SensorName() == "rdr1" || ttrk.SensorMode() == "TWS" || ttrk.SensorMode() == "STT") && 
+                        target_plat.Side() != me.Side() && ttrk.TargetName() == me.Name())
+                  { 
+                     spiked = true;
+                     return spiked;
+//                     writeln(target_plat.Name()," detecting ",me.Name()," via ",ttrk.SensorType()); 
+                  }
+               }
+            }
+         }
+      }
+   }
+   return spiked;
+end_script
+
+script bool sam_spike_me(WsfPlatform me)
+/*
+PURPOSE   evaluate if I am spiked by a SAM
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me         WsfPlatform - Platform being analyzed
+   OUT spiked     BOOL - True if an ground entity is spiking me 
+
+Technical Description:
+   Loop over all of my ESM tracks, if there is a radar tracking me and that entity's speed
+   is 0, I can assume that is a ground entity, if that ground entity's frequency is > 2GHz,
+   then I probably care that it has a track of me 
+   
+*/
+   bool spiked = false;
+//  loop through all my raw tracks
+   if (me.MasterRawTrackList().IsValid())
+   {   
+      foreach (WsfTrack trk in me.MasterRawTrackList())
+      { 
+//       only care if tracks are of ground platforms
+         if (trk.IsValid() && trk.LandDomain())
+         {           
+//          look at ESM tracks of radars
+            if (trk.SensorType() == "WSF_ESM_SENSOR" && trk.TargetType() == "WSF_RADAR_SENSOR")
+            {
+//             I have a track of another radar...is that radar tracking me?...using truth
+               WsfPlatform target_plat = WsfSimulation.FindPlatform(trk.TargetName());
+               if (target_plat.IsValid() && target_plat.MasterRawTrackList().IsValid())
+               {
+                  foreach (WsfTrack ttrk in target_plat.MasterRawTrackList())
+                  { 
+                     if (ttrk.SensorType() == "WSF_RADAR_SENSOR" && target_plat.Side() != me.Side()
+                        && trk.Frequency() > 2000 && ttrk.TargetName() == me.Name() ) // MHz?
+                     // trk.Frequency() not returning a value, need to figure out how to access frequency of emitter 
+                     {
+                        spiked = true; 
+                     } 
+                  } 
+               }
+            }
+         }
+      }
+   }
+   return spiked;
+end_script
+
+script double calc_obang(WsfPlatform me, WsfLocalTrack ltrk, int mode)
+/*
+PURPOSE   Return the off-boresite angle of me/track (mode 1) or track/me (mode 2)
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me          WsfPlatform  - Platform being analyzed
+   IN  ltrk        WsfLocalTrack - threatening range 
+   IN  mode        INT    - Mode = 1 outputs tgt OBA w/ respect to me, mode = 2 outputs
+                            my OBA w/ respect to target
+   OUT obang_me    DOUBLE - Off-boresite angle
+
+Technical Description:
+   if mode = 1
+      Calculate threat entity's OBA w/ respect to my heading by taking the dot product of 
+      the line of sight to track and my velocity
+      a.b = |a|*|b|*cos(theta)
+      LOS.V = |LOS|*|V|*cos(obang)
+   if mode = 2
+      Calculate my OBA w/ respect to threat entity's heading by taking the dot product of threat's 
+      velocity and line of sight 
+      a.b = |a|*|b|*cos(theta)
+      V.LOS = |V|*|LOS|*cos(obang)
+*/
+   double obang;
+   if (mode == 1) // my observed off-boresite of track
+   {
+      // Create Velocity vector, ignoring Z component 
+      Vec3 Velocity = Vec3.Construct(me.VelocityWCS()[0],me.VelocityWCS()[1],0);
+      // create line of sight vector between me and my track, ignoring Z component
+      Vec3 LOS = Vec3.Construct(me.X()-ltrk.X(),me.X()-ltrk.Y(),0);
+//     calculate OBA
+      obang = MATH.ACos(Vec3.Dot(LOS,Velocity) / (Velocity.Magnitude()*LOS.Magnitude()));
+   }
+//
+   if (mode == 2) // track's off-boresite of me
+   {
+      if (ltrk.VelocityWCS().IsValid()) // first check if track has velocity component
+      {  // Create Velocity vector, ignoring Z component 
+         Vec3 Velocity = Vec3.Construct(ltrk.VelocityWCS()[0],ltrk.VelocityWCS()[1],0);
+         // create line of sight vector between my track and me, ignoring Z component
+         Vec3 LOS = Vec3.Construct(ltrk.X()-me.X(),ltrk.Y()-me.Y(),0);
+         obang = MATH.ACos(Vec3.Dot(Velocity,LOS) / (Velocity.Magnitude()*LOS.Magnitude()));
+
+      }
+      else
+      { obang = 0.0; writeln("WARNING...IN OBANG - TRACK DOES NOT HAVE VELOCITY COMPONENT");}
+   }
+return obang;
+end_script
+
+script bool pointing_me(WsfPlatform me, double crit_rng, double crit_ang, Array<WsfSA_EntityPerception> aBanditList)
+/*
+PURPOSE   evaluate if a threat is pointing at me within a threatening range
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me          WsfPlatform  - Platform being analyzed
+   IN  crit_rng    DOUBLE - threatening range 
+   IN  crit_ang    DOUBLE - threatening angle
+   OUT pointing_me BOOL - True if a threat is pointing at me and within a threatening range
+
+Technical Description:
+   Loop over all of my local tracks, determine if the track is threatening and pointing
+   at me
+*/
+   bool pointing = false;
+   double obang; // set off bore-site angle of me WRT my track
+
+//  loop through all my local tracks
+   foreach ( WsfSA_EntityPerception saent in aBanditList )
+   {
+      if (saent.Track().IsValid() && saent.Track().Target().IsValid() && saent.Track().AirDomain() && !saent.Track().Target().CategoryMemberOf("missile"))
+      {
+//       calculate threat's off-boresite angle of myself based on my track of threat
+         obang = saent.Track().RelativeBearingTo(me);
+         // if within threat range, within threat OBA, and track entity is not of my side
+         if (me.SlantRangeTo(saent.Track()) < crit_rng && MATH.Fabs(obang) < crit_ang
+            && me.Side() != saent.Track().Side())
+         {
+            pointing = true;  
+         }
+      }
+   } 
+   return pointing;
+end_script
+
+script bool threatn_me(WsfPlatform me, double crit_rng1, double crit_rng2)
+/*
+PURPOSE   evaluate if a track is threatening to me
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me          WsfPlatform  - Platform being analyzed
+   IN  crit_rng1   DOUBLE - Hostile is always a threat if inside this range
+   IN  crit_rng2   DOUBLE - Hostile is a threat if inside this range and hot to me
+   OUT threatn_me  BOOL   - true if I feel threatened
+
+Technical Description:
+   Loop over all of my local tracks, track is not threatening if: 
+      - outside crit_rng1
+      - on my side or a missile
+      - inside crit_rng2 but not hot to me
+*/
+
+   bool threatn_me = false; //initialize to false, set to true if these condition
+//  loop through all my local tracks
+   foreach ( WsfLocalTrack ltrk in me.MasterTrackList() )
+   {
+//GCA only want to consider aircraft
+      if (ltrk.IsValid() && ltrk.Target().IsValid() &&ltrk.AirDomain() && 
+      me.Side() != ltrk.Side() && !ltrk.Target().CategoryMemberOf("missile"))
+      if (ltrk.Target().IsValid() && ltrk.AirDomain() && me.Side() != ltrk.Side() && !ltrk.Target().CategoryMemberOf("missile"))
+      {
+         if (me.SlantRangeTo(ltrk) < crit_rng1) { threatn_me = true;}
+         if (me.SlantRangeTo(ltrk) < crit_rng2 && MATH.Fabs(me.RelativeBearingTo(ltrk)) < me->THRT_ASPCT ) { threatn_me = true; }
+      }
+   } 
+   return threatn_me;
+end_script
+
+script bool sam_threatn_me(WsfPlatform me, double crit_rng1, double crit_rng2, double crit_ang)
+/*
+PURPOSE  Determine is a SAM is a threat to me
+AUTHOR   Armstrong
+
+Parameter Description
+   IN  me          WsfPlatform  - Platform being analyzed
+   IN  crit_rng1   DOUBLE - SAM is always a threat if inside this range
+   IN  crit_rng2   DOUBLE - SAM is a threat if inside this range and at an OBA higher than crit_ang (should be higher than crit_rng1)
+   IN  crit_ang    DOUBLE - Off-boresite angle out of which SAMs are a threat at crit_ang2 
+   OUT sam_threatn_me  BOOL   - true if I feel threatened by a SAM
+
+Technical Description:
+   Look at all SAM tracks; a SAM is a threat if:
+      If a SAM is within crit_rng1 (PRDATA SAM_PMP_RNG)
+      If a SAM is within crit_rng2 (PRDATA SAM_AVD_RNG) and at an OBA higher than crit_ang (SAM_AVD_ANG)
+*/
+
+   bool sam_threatn_me = false; //initialize to false, set to true if these condition
+   foreach ( WsfLocalTrack ltrk in me.MasterTrackList() )
+   {
+      if (ltrk.IsValid() && me.Side() != ltrk.Side() && ltrk.LandDomain())
+      {
+         if (MATH.Fabs(me.RelativeBearingTo(ltrk)) > crit_ang && me.SlantRangeTo(ltrk) < crit_rng2) {sam_threatn_me = true;}
+         if (me.SlantRangeTo(ltrk) < crit_rng1) {sam_threatn_me = true;}
+      }
+   }
+   return sam_threatn_me;
+end_script
+
+script bool time_check(WsfPlatform me)
+/*
+PURPOSE   determine if i've been in my current phase long enough
+AUTHOR   Snyder
+
+Parameter Description
+   t_phase time in which I can change phase
+   user required to set t_phase when changing faz
+*/
+bool time_ok=false;
+if (TIME_NOW > me->t_phase) { time_ok = true; }
+return time_ok;
+end_script
+
+script bool chk_dead_buddy(WsfPlatform me)
+/*
+PURPOSE   determine if anyone in my flight is dead
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me              WsfPlatform  - Platform being analyzed
+   OUT chk_dead_buddy  BOOL   - true if any flight mates are dead
+
+Technical Description:
+   
+   if I'm red, loop through everyone in my first group I'm apart of and check 
+   if that entity is valid. The group is part of my own convention i'm creating
+   and it requires each A/C's first group they are apart of to be their flight
+
+*/
+   bool chk_dead_buddy = false;
+   WsfCommandChain cc = me.CommandChain("ELEMENT");
+   bool lead = me == cc.Commander();
+   if (lead)
+   {
+      chk_dead_buddy = cc.SubordinateCount()==0;
+   }
+   else
+   {
+      chk_dead_buddy = (cc.PeerCount() + cc.Commander().IsValid())==0;
+   }
+   return chk_dead_buddy;   
+end_script
+
+script bool msl_alert(WsfPlatform me)
+/*
+PURPOSE   evaluate whether or not I'm aware of a missile in-bound and try to asses
+         if the missile is a threat to me
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me     WsfPlatform - Platform being analyzed
+   OUT alert  BOOL - True if I think a missile is inbound to me
+
+Technical Description:
+   Loop over all of my ESM tracks, if there is a missile radar tracking me then return msl_spiked=true
+   if I'm within 30 deg of weapon's bore-site then it is a threat to me
+
+   This assumes perfect correlation/CID 
+
+*/
+   bool alert = false;
+
+// determine if i'm spiked by a missile 
+//  loop through all my raw tracks
+   if (me.MasterRawTrackList().IsValid())
+   {   
+      foreach (WsfTrack trk in me.MasterRawTrackList())
+      {
+//        look at ESM tracks of missile radars
+         if (trk.SensorType() == "WSF_ESM_SENSOR" && WsfSimulation.FindPlatform(trk.TargetName()).IsValid()
+            && WsfSimulation.FindPlatform(trk.TargetName()).CategoryMemberOf("missile"))
+         {
+//           I have a track of missile's radar...is that missile tracking me?
+            WsfPlatform target_plat = WsfSimulation.FindPlatform(trk.TargetName());
+            foreach (WsfTrack ttrk in target_plat.MasterRawTrackList())
+            {
+               if (target_plat.Side() != me.Side() && ttrk.TargetName() == me.Name()
+                  && ttrk.SensorType() == "WSF_RADAR_SENSOR")
+               { 
+                  alert = true; 
+                  me->msl_spike = true; 
+               } 
+            } 
+         }
+
+      }
+   }
+//  determine if i'm aware of a missile and if it's a threat to me
+   foreach (WsfLocalTrack ltrk in me.MasterTrackList())
+   {
+      // if i'm tracking a missile and I'm within 30 degrees bore-site of missile
+      if ( WsfSimulation.FindPlatform(ltrk.TargetName()).IsValid()
+         && WsfSimulation.FindPlatform(ltrk.TargetName()).CategoryMemberOf("missile")
+         && MATH.Fabs(ltrk.RelativeBearingTo(me)) <= 30.0 && WsfSimulation.FindPlatform(ltrk.TargetName()).Side()
+         != me.Side())
+      { alert = true; }
+   }
+   return alert;
+end_script
+
+script double rng_close_host(WsfPlatform me, Array<WsfSA_EntityPerception> aBanditList)
+/*
+PURPOSE   determine range to closest hostile
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me    WsfPlatform - Platform being analyzed
+   OUT rhst  DOUBLE - Range to closest hostile
+
+Technical Description:
+   Loop over all of my local tracks and determine which track is of a hostile and is closest to me
+
+   This assumes perfect correlation/CID 
+
+*/
+   double rhst = 200.0 * MATH.M_PER_NM();
+   double rng;
+//  loop through my local tracks
+   foreach (WsfSA_EntityPerception saent in aBanditList)
+   {
+//     if i'm tracking a hostile A/C
+      if (saent.Track().IsValid() && saent.Track().Target().IsValid() && saent.Track().AirDomain() && 
+      saent.Track().Target().Side() != me.Side() && !saent.Track().Target().CategoryMemberOf("missile") ) 
+      {  
+         rng = me.SlantRangeTo(saent.Track());
+         if (rng < rhst) 
+         { 
+            rhst = rng; 
+         } 
+      }
+   }
+   return rhst;
+end_script
+
+script WsfLocalTrack closest_host_track(WsfPlatform me,Array<WsfSA_EntityPerception> bg_list)
+/*
+PURPOSE  return track object of closest hostile
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me    WsfPlatform - Platform being analyzed
+   OUT WsfTrack - Track object of closest hostile
+
+Technical Description:
+   Loop over all of my local tracks and determine which track is of a hostile and is closest to me
+
+   This assumes perfect correlation/CID 
+
+*/
+   double rhst = 400.0 * MATH.M_PER_NM();
+   double rng;
+   WsfLocalTrack cls_host;
+//  loop through my local tracks
+   foreach (WsfSA_EntityPerception saent in bg_list)
+   {
+      if (saent.Track().IsValid() && saent.Track().Target().IsValid() && saent.Track().AirDomain() && 
+      saent.Track().Target().Side() != me.Side() && !saent.Track().Target().CategoryMemberOf("missile") ) 
+      {  
+         rng = me.SlantRangeTo(saent.Track());
+         if (rng < rhst) 
+         { 
+            rhst = rng;
+            cls_host = me.MasterTrackList().Find(saent.Track().TrackId());             
+         } 
+      }
+   }
+   return cls_host;
+end_script
+
+script double rng_close_sam(WsfPlatform me)
+/*
+PURPOSE   determine range to closest hostile sam
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me    WsfPlatform - Platform being analyzed
+   OUT rhst  DOUBLE - Range to closest hostile sam
+
+Technical Description:
+   Loop over all of my local tracks and determine which track is of a hostile sam and is closest to me
+
+   This assumes perfect correlation/CID 
+
+*/
+   double rng_sam = 200.0 * MATH.M_PER_NM();
+   double rng;
+//  loop through my local tracks
+   foreach (WsfLocalTrack ltrk in me.MasterTrackList())
+   {
+//    if i'm tracking a hostile
+      if (ltrk.IsValid() && ltrk.LandDomain() && ltrk.Target().IsValid() && ltrk.Target().Side() != me.Side()) 
+      {  
+         rng = me.SlantRangeTo(ltrk);
+         if (rng < rng_sam) 
+         { 
+            rng_sam = rng; 
+         } 
+      }
+   }
+   return rng_sam;
+end_script
+
+script double pr_vctr_hdg(WsfPlatform me, Array<int> plan, Array<double> formation)
+/*
+PURPOSE   determine desired heading if in vector phase
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me   WsfPlatform - Platform being analyzed
+   OUT hdg  DOUBLE - Desired Vector Heading
+
+Technical Description:
+   Use the formation set by the user in PRDATA, The flight lead will be the focal point flying towards his target
+   The flight mates will get into a the specified formation relative to the flight lead
+   
+   If no formation specified, the flight will fly on a default vector heading bracketing the threats.
+   This heading is a 15 degree offset from their current target, either left or right, depending on 
+   the amount of targets to the platforms left or right. This only works for a "few v few" classic Brawler
+   type fight. At the mission level, we will need to consider a group of targets to vector against, not 
+   every target I am tracking 
+
+   This assumes perfect correlation/CID 
+
+*/
+double hdg = me.Heading(); // initialize to current heading
+double oba = 0;            // 
+WsfTrack eng_trk;     // this is my track of ENG_TGT if it exists
+WsfTrack ppmjid_trk;   // track of my prioritized target
+int left_count = 0;        // hostiles on my left
+int right_count = 0;       // hostiles on my right
+int offset = 5;           // offset my threats to bracket them
+WsfSA_Processor saPROC;
+   for (int i=0;i<me.ProcessorCount();i+=1)
+   {
+      if (me.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         saPROC = (WsfSA_Processor)me.ProcessorEntry(i);
+         break;
+      }
+   }
+   if (saPROC.IsNull() || !saPROC.IsValid()) 
+   {
+      return hdg;
+   }
+// loop through all my local tracks, determine how many bad guys are on my left and right
+   foreach (WsfSA_EntityPerception saent in saPROC.PerceivedBandits())  
+   {  
+      if (!saent.Track().IsValid())
+      {
+         continue;
+      }
+      oba = me.RelativeBearingTo(saent.Track());     // off-boresite angle to my local track
+      if (saent.Track().TargetName() == me->ENG_TGT) {  eng_trk = saent.Track(); } // save this track so we can vector to this track
+      if (saent == me->ppmjid)  { ppmjid_trk = saent.Track();} // save this track 
+      if (saent.Track().Side() != me.Side() && saent.Track().Target().IsValid() && !saent.Track().Target().CategoryMemberOf("missile")) // this is a hostile A/C
+      {
+         if (oba < 0) { left_count = left_count + 1; }
+         else if (oba > 0) { right_count = right_count + 1; }
+      }
+   }
+   if ( eng_trk.IsValid() ) // I have a track of my PRDATA specified target of interest...vector towards it
+   {  
+      double bearing = MATH.ATan2( eng_trk.Y()-me.Y() , eng_trk.X()-me.X() ); // determine absolute bearing between my position and track position
+      if (left_count > right_count) { hdg = me.TrueBearingTo(eng_trk) + offset; }
+      if (right_count > left_count) { hdg = me.TrueBearingTo(eng_trk) - offset; }
+      return hdg;
+   }
+   if (ppmjid_trk.IsValid()) 
+   {  
+      double bearing = MATH.ATan2( ppmjid_trk.Y()-me.Y() , ppmjid_trk.X()-me.X() ); // determine absolute bearing between my position and track position
+      if (left_count > right_count) { hdg = me.TrueBearingTo(ppmjid_trk) + offset; }
+      if (right_count > left_count) { hdg = me.TrueBearingTo(ppmjid_trk) - offset; }
+   }   
+
+   return hdg;
+end_script
+
+script double pr_sam_vctr_hdg(WsfPlatform me)
+/*
+PURPOSE   determine desired heading if in SAM vector phase
+AUTHOR   Armstrong
+
+Parameter Description
+   IN  me   WsfPlatform - Platform being analyzed
+   OUT hdg  DOUBLE - Desired Vector Heading
+
+Technical Description: Currently just flys directly at SAM of interest
+
+*/
+double hdg = me.Heading(); // initialize to current heading
+WsfSA_EntityPerception ppm = me->ppmjid;
+WsfTrack ppmjid_trk = ppm.Track();
+#   FileIO iout = FileIO();
+   if (me->ENG_TGT != "" ) // if eng_tgt is set
+   {
+      foreach (WsfLocalTrack ltrk in me.MasterTrackList())  
+      {
+         if (ltrk.IsValid() && ltrk.TargetName() == me->ENG_TGT) //dont need a check if ENG_TGT is alive right???
+         {
+            if (ltrk.LandDomain()) //only care if eng_tgt is a SAM
+            {
+               hdg = me.TrueBearingTo(ltrk);
+            }
+         }
+      }
+   }
+   else //fly at ppmjid (should only ever be a SAM if in sam_vctr phase)
+   {
+      if (ppmjid_trk.IsValid()) 
+      {
+         hdg = me.TrueBearingTo(ppmjid_trk);
+      }
+   }
+
+//
+// IF SIG MANAGE CODE
+// adjust hdg by sig_manage output
+//   
+
+   return hdg;
+
+end_script
+
+
+script double pole_hdg(WsfPlatform me)
+/*
+PURPOSE   determine desired heading if in crank phase
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me   WsfPlatform - Platform being analyzed
+   OUT hdg  DOUBLE - Desired Vector Heading
+
+   me->APOLE_HDG - PRDATA variable of the crank angle offset in degrees
+
+Technical Description:
+   Loop through everyone in ill_list, which is a list of all targets i'm guiding missiles against
+   populated in the call to ill_reqd. A min and max off-boresite angle is populated and used with APOLE_HDG
+   to determine the final heading 
+
+   This assumes perfect correlation/CID 
+
+*/
+double hdg = me.Heading(); // initialize to current heading
+int crank_side = 0;        // initialize this to 0, user can write script to do something else, -1 = CCW, 1 = CW
+double min_oba = 0;        // min off-boresite of all targets I'm guiding against
+double max_oba = 0;        // max off-boresite of all targets i'm guiding against
+double oba;  
+WsfLocalTrack ppmjid_trk;
+
+Array<WsfLocalTrack> ill_list = me->ill_list;
+//  loop through everyone on my ill_list
+   foreach (WsfLocalTrack ltrk in ill_list)
+//     
+   {   
+      if (ltrk == me->ppmjid) { ppmjid_trk = ltrk; }
+
+      if (me.SlantRangeTo(ltrk) >= me->COMMIT_RNG || me.Side() == ltrk.Side()) 
+      {/* ignore these platforms */}
+      else
+      {  
+         oba = me.RelativeBearingTo(ltrk); //
+         if (oba < min_oba ) { min_oba = oba; }
+         else if (oba > max_oba ) { max_oba = oba; }
+      }
+      if (crank_side == 0)
+      {  
+         if (max_oba >= 0.0 && min_oba >=5.0) { crank_side = -1; } //counter-clockwise
+         else if (max_oba < -5.0 && min_oba <= 0.0) { crank_side = 1; } //clock wise
+         else if ((max_oba + min_oba)/2 >= 5.0) { crank_side = -1; } //counter-clockwise
+         else if ((max_oba + min_oba)/2 <= -5.0) { crank_side = 1; } // clock wise
+         else if ((max_oba + min_oba)/2 >= 0.0) { crank_side = -1; } //counter-clockwise
+         else if ((max_oba + min_oba)/2 <= 0.0) { crank_side = 1; } // clock wise
+      }
+   }
+   double crank_angle = MATH.Fabs(me->APOLE_RDR);
+   if (ill_list.Size() == 0)
+   {  
+      return hdg; 
+   }
+   if (crank_side == -1)
+   {  
+      hdg = ( me.Heading() - (crank_angle-max_oba)); 
+   }
+   else
+   { 
+      hdg = ( me.Heading() + (crank_angle+min_oba)); 
+   }
+
+// *** postpone this until I figure out what we're doing w/ shoot stat ***
+////  lean in if i'm ready to shoot again
+//   if (me->shoot_stat == 1) // in brawler, this means we're ready to shoot
+//   {  double lean_angl = MATH.Min(30.0,MATH.Fabs(me->APOLE_RDR));
+//      if (ppmjid_trk.IsValid()) 
+//      {   
+//         if (crank_side == -1) 
+//         { hdg = me.Heading() - (lean_angl - me.RelativeBearingTo(ppmjid_trk)); }
+//         else if (crank_side == 1)
+//         { hdg = me.Heading() + (lean_angl + me.RelativeBearingTo(ppmjid_trk)); } 
+//      }
+//      else 
+//      { 
+//         writeln("POLE_HDG...WARNING ppmjid_trk not valid for A/C ",me.Name()); 
+//      }
+//   }
+
+   return hdg;
+end_script
+
+script double escape_hdg(WsfPlatform me)
+/*
+PURPOSE   determine desired out maneuver heading 
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me   WsfPlatform - Platform being analyzed
+   OUT hdg  DOUBLE - Desired Vector Heading
+
+Technical Description:
+   loop through my local tracks, determine if a platform is threatening to me.
+   Choose a heading based on heading off all threatening tracks to me. Track is 
+   threatening to me if: track is hostile, pointing at me, and within DOR * 2
+   Heading is the average bearing off all threats to me + 180 degrees
+
+   This assumes perfect correlation/CID 
+
+*/
+double hdg = me.Heading();    // initialize to current heading
+int num_threats =0;           // number of threatening tracks
+double bearing;
+double rel_bearing;
+WsfSA_Processor saPROC;
+for (int i=0; i<me.ProcessorCount(); i+=1)
+{
+   if (me.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+   {
+      saPROC = (WsfSA_Processor)me.ProcessorEntry(i);
+      break;
+   }
+}
+Array<WsfSA_EntityPerception> bandit_list = saPROC.PerceivedBandits();
+
+// loop through all my local tracks, determine if bad guy is threatening
+   foreach (WsfSA_EntityPerception ent in bandit_list)
+   { 
+      if (!ent.IsValid() || ent.IsNull())
+      {
+         continue;
+      }
+      if (ent.Track().IsValid() && ent.Track().Target().IsValid() && ent.Track().Target().Side() != me.Side())
+      {
+         if (ent.Track().AirDomain() && !ent.Track().Target().CategoryMemberOf("missile"))
+         {
+            if (me.SlantRangeTo(ent.Track()) <= me->DOR*2 && MATH.Fabs(ent.Track().RelativeBearingTo(me)) <= me->THRT_ASPCT)
+            {
+               bearing = bearing + me.TrueBearingTo(ent.Track());
+               rel_bearing = rel_bearing + me.RelativeBearingTo(ent.Track());
+               num_threats = num_threats + 1;
+            }
+         }
+         else if (ent.Track().LandDomain())
+         {
+            if (me.SlantRangeTo(ent.Track()) <= me->SAM_AVD_RNG*2)
+            {
+               bearing = bearing + me.TrueBearingTo(ent.Track());
+               rel_bearing = rel_bearing + me.RelativeBearingTo(ent.Track());
+               num_threats = num_threats + 1;
+            }
+         }
+      }
+   }
+   if (num_threats > 0)
+   {  
+      if ( rel_bearing/num_threats < 0) { hdg = (bearing/num_threats) + 180; }
+      if ( rel_bearing/num_threats > 0) { hdg = (bearing/num_threats) - 180; }
+   }
+   return hdg;
+end_script
+
+
+script double react_hdg(WsfPlatform me, int plan_2)
+/*
+PURPOSE   determine desired reaction phase heading 
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me     WsfPlatform - Platform being analyzed
+   IN  plan_2 INT    - playbook 2 value, determines react phase maneuver
+                       1 - 60 degree offset
+                       2 - 90 degree offset
+                       3 - slice maneuver
+   OUT hdg    DOUBLE - Desired Vector Heading
+
+Technical Description:
+   loop through my local tracks, determine if a platform is threatening to me.
+   Choose a heading based on heading off all threatening tracks to me. Track is 
+   threatening to me if: track is hostile, pointing at me, and within DOR * 2
+   Heading is the average bearing off all threats to me + 180 degrees
+
+   This assumes perfect correlation/CID 
+
+*/
+double hdg = me.Heading();    // initialize to current heading
+int num_threats =0;           // number of threatening tracks
+double bearing;
+double rel_bearing;
+double offset;
+
+   if (plan_2 == 1)
+   {
+      offset = 60.0;
+   }
+   else if (plan_2 == 2)
+   {
+      offset = 90.0;
+   }
+   WsfSA_Processor saPROC;
+   for (int i=0; i<me.ProcessorCount(); i+=1)
+   {
+      if (me.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         saPROC = (WsfSA_Processor)me.ProcessorEntry(i);
+         break;
+      }
+   }
+   Array<WsfSA_EntityPerception> bandit_list = saPROC.PerceivedBandits();
+
+// loop through all my local tracks, determine if bad guy is threatening
+   foreach (WsfSA_EntityPerception ent in bandit_list)
+   { 
+      if (!ent.IsValid() || ent.IsNull())
+      {
+         continue;
+      }
+      if (ent.Track().IsValid() && ent.Track().Target().IsValid() && ent.Track().Target().Side() != me.Side() 
+          && MATH.Fabs(ent.Track().RelativeBearingTo(me)) <= 60 && ent.Track().AirDomain()) // this is a hostile
+      {  //writeln(ltrk.TargetName()," obang ",calc_obang(me,ltrk,2));
+         bearing = bearing + me.TrueBearingTo(ent.Track());
+         rel_bearing = rel_bearing + me.RelativeBearingTo(ent.Track());
+         num_threats = num_threats + 1;
+      }
+   }
+   if (num_threats > 0)
+   {  
+      if ( rel_bearing/num_threats < 0) { hdg = (bearing/num_threats) + offset; }
+      if ( rel_bearing/num_threats > 0) { hdg = (bearing/num_threats) - offset; }
+   }
+   else 
+   {  
+      hdg = hdg + offset;
+   }
+//writeln(num_threats," ",hdg);
+   return hdg;
+end_script
+
+
+script void drawCircle(WsfPlatform aPlat, double update, string layerName, string textName, string lineStyle, double lineSize, string EllipseMode, Vec3 color, double radius)
+/*
+PURPOSE   draw a circle around the platform w/ it's phase 
+AUTHOR   Boeing 
+
+Technical Description:
+
+*/
+      WsfDraw aDraw = WsfDraw();
+      aDraw.SetDuration(update);
+      aDraw.SetLayer(layerName);
+      aDraw.SetColor(color[0], color[1], color[2]);
+      aDraw.SetLineSize(lineSize);
+      aDraw.SetLineStyle(lineStyle);
+      aDraw.SetEllipseMode(EllipseMode);
+      aDraw.SetTextSize(8);   // Default = 12
+      aDraw.BeginText(textName);
+         aDraw.VertexNED(aPlat, (radius+1000)*MATH.Sin(30.0), (radius+1000)*MATH.Cos(30.0), 0.0);
+      aDraw.End();
+//      aDraw.BeginCircle(0, radius);
+         aDraw.Vertex(aPlat.Location());
+      aDraw.End();
+   end_script
+
+script Array<int> count_shot(WsfPlatform me, WsfSA_EntityPerception saent, Array<WsfSA_EntityPerception> bg_list)
+/*
+PURPOSE   replicates brawler count_shot routine (local to EZJA)  
+AUTHOR   Snyder
+
+Parameter Description
+   IN  me       - Platform being analyzed
+   IN  ltrk     - desired track object to test against
+   IN  bg_list  - Array of local track objects of hostiles
+Technical Description:
+   returns: [0] number of missiles launched at specified threat by anyone (tgtd_ihost)
+            [1] number of missiles I have launched at specified threat (num_i_shot)
+            [2] total number of missiles I have in the air right now (num_in_air)
+
+   This assumes perfect correlation/CID 
+
+*/
+   Array<int> output = {0,0,0};
+   WsfSA_Processor saPROC;
+   for (int i=0; i<me.ProcessorCount(); i+=1)
+   {
+      if (me.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         saPROC = (WsfSA_Processor)me.ProcessorEntry(i);
+         break;
+      }
+   }
+   if (saent.Track().IsValid())
+   {
+      output[0] = me.WeaponsActiveFor(saent.Track().TrackId()); // start w/ how many I've shot at hostile
+      // loop through all my percieved assets and see if they have launched missiles at specified
+      // hostile, this is assuming you would be aware of asset missile launches (voice comms, datalink, etc)
+      for (int i = 0; i < saPROC.PerceivedAssets().Size(); i+=1)
+      {  
+         WsfSA_EntityPerception asset = saPROC.PerceivedAssets()[i];
+         WsfPlatform buddy = WsfSimulation.FindPlatform(asset.PerceivedName());
+         if (!buddy.IsValid()) {continue;} 
+         for (int i=0; i<buddy.ProcessorCount(); i+=1)
+         {
+            if (buddy.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+            {
+               WsfSA_Processor bsaPROC = (WsfSA_Processor)buddy.ProcessorEntry(i);
+               foreach (WsfSA_EntityPerception b_saent in bsaPROC.PerceivedBandits())
+               {  
+                  if (saent.PerceivedName() == b_saent.PerceivedName() && b_saent.Track().IsValid())
+                  {
+                     output[0] = output[0] + buddy.WeaponsActiveFor(b_saent.Track().TrackId());  
+                  }
+               }      
+            }      
+         }
+      }
+
+      // number of weapons active against specified threat
+      output[1] = me.WeaponsActiveFor(saent.Track().TrackId()); // final value of this variable 
+   }
+   // loop through all my hostile tracks and add up total number of missiles I've launched
+   output[2] = 0;
+   foreach (WsfSA_EntityPerception ent in bg_list)
+   { 
+      if (ent.Track().IsValid())
+      {
+         output[2] = output[2] + me.WeaponsActiveFor(ent.Track().TrackId()); 
+      }
+   }
+   return output;   
+end_script
+
+script WsfGeoPoint future_location(WsfPlatform plat, double time)
+/*
+PURPOSE   Determine future location of a platform  
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be projected
+   IN  time - delta time from now to project to
+Technical Description:
+   returns a WsfGeoPoint of the projected location of a platform 
+
+   Projects from truth platform speed
+
+   Project the future WCS location by taking current WCS location and 
+   adding VelocityWCS * time 
+
+   created this because WsfPlatform.FutureLocation() is not supported by the Brawler mover
+
+*/
+
+   double lat = plat.LocationWCS()[0] + plat.VelocityWCS()[0]*time;
+   double lon = plat.LocationWCS()[1] + plat.VelocityWCS()[1]*time;
+   double alt = plat.LocationWCS()[2] + plat.VelocityWCS()[2]*time;
+   Vec3 fut_loc = Vec3.Construct(lat,lon,alt);
+   WsfGeoPoint location = WsfGeoPoint.ConstructWCS(fut_loc);
+
+   return location;
+end_script
+
+script bool flight_weapon_left(WsfPlatform plat, Array<int> winchester,WsfCommandChain chain)
+/*
+PURPOSE   Determine if my flight has met winchester conditions  
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  winchester - Array<int> (fox3,fox2,fox1,agm,tot_missile) min number of missiles to hit bingo 
+   IN  chain - WsfCommandchain, command chain to check against (either IFLITE or ELEMENT)
+   OUT flight_weapon_left - true if my flight is bingo missile
+Technical Description:
+   loop through my flight mates and check total number of missiles of each guy
+
+*/
+   bool bingo_misl = false;
+   int fox1_left = 0;
+   int fox2_left = 0;
+   int fox3_left = 0;
+   int tot_missiles = 0;
+   WsfPlatform lead;
+   if (chain.Commander() == plat)
+   {
+      lead = plat;
+   }
+   else
+   {
+      lead = chain.Commander();
+   }
+   WsfCommandChain lead_chain = lead.CommandChain(chain.Name());
+   for( int j = 0; j < lead.WeaponCount(); j = j + 1)
+   {  // loop through lead's weapons first
+      if (j == 2)
+      {
+         fox1_left = fox1_left + lead.WeaponEntry(j).QuantityRemaining();
+      }
+      if (j == 1)
+      {
+         fox2_left = fox2_left + lead.WeaponEntry(j).QuantityRemaining();
+      }
+      if (j == 0)
+      {
+         fox3_left = fox3_left + lead.WeaponEntry(j).QuantityRemaining();
+      }
+   }
+   for (int i = 0 ; i < lead_chain.SubordinateCount(); i +=1)
+   {
+      if (!lead_chain.SubordinateEntry(i).IsValid() || lead_chain.SubordinateEntry(i).IsNull() || lead_chain.SubordinateEntry(i).CategoryMemberOf("missile"))
+      {
+         continue;
+      }
+      WsfPlatform AC = lead_chain.SubordinateEntry(i);
+//     loop through all weapon instances on this platform
+      for( int j = 0; j < AC.WeaponCount(); j = j + 1)
+      {  // compare against PRDATA - Array<int> WINCHESTER{fox3,fox2,fox1,total_missiles}; 
+         if (j == 2)
+         {
+            fox1_left = fox1_left + AC.WeaponEntry(j).QuantityRemaining();
+         }
+         if (j == 1)
+         {
+            fox2_left = fox2_left + AC.WeaponEntry(j).QuantityRemaining();
+         }
+         if (j == 0)
+         {
+            fox3_left = fox3_left + AC.WeaponEntry(j).QuantityRemaining();
+         }
+      }
+   }
+   tot_missiles = fox1_left + fox2_left + fox3_left; 
+   if (tot_missiles <= winchester[4] || fox1_left <= winchester[2] || fox2_left <= winchester[1] || fox3_left <= winchester[0])
+   {
+      bingo_misl = true;  
+   }
+#   if (bingo_misl){writeln(plat.Name()," ",fox1_left," ",fox2_left," ",fox3_left," ",tot_missiles);}
+   return bingo_misl;
+end_script
+
+script bool platform_weapon_left(WsfPlatform plat, Array<int> winchester)
+/*
+PURPOSE   Determine if my platform has met winchester conditions  
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   OUT flight_weapon_left - true if I am bingo missile
+Technical Description:
+   loop through my weapons remaining
+
+*/
+   bool bingo_misl = false;
+   int tot_missiles = 0;
+
+//  loop through all weapon instances on this platform
+   for( int i = 0; i < plat.WeaponCount(); i = i + 1)
+   {  // compare against PRDATA - Array<int> WINCHESTER{fox3,fox2,fox1,agm,total_missiles};
+      if(plat.WeaponEntry(i).QuantityRemaining() <= winchester[i]) 
+      { 
+         bingo_misl = true;
+      }
+      tot_missiles = tot_missiles + plat.WeaponEntry(i).QuantityRemaining();
+   }
+   if (tot_missiles <= winchester[4]) 
+   { 
+      bingo_misl = true; 
+   }
+   
+   return bingo_misl;
+end_script
+
+script void pr_vector(WsfPlatform plat, double heading, double speed, double altitude, double gees)
+/*
+PURPOSE  Function call to fly a brawler platform on a specific heading  
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  heading - double, desired heading to fly on (deg)
+   IN  speed - double, desired speed to fly (meters)
+   IN  altitude - double, desired altitude to fly (meters)
+   IN  gees - double, desired gees (max)
+Technical Description:
+
+*/
+   bool BrawlMover;
+   bool SixDofMover;
+   if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+   {
+      BrawlMover = true;
+   }
+   if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+   {
+      SixDofMover = true;
+   }
+   Atmosphere atm = Atmosphere.Construct("default");
+   if (plat->pitch_up)
+   {
+      //create a vector to fly that pitches the A/C
+      WsfGeoPoint future_loc = future_location(plat,1.0);
+      future_loc.Set(future_loc.Latitude(),future_loc.Longitude(),plat.Altitude()+plat.Speed()*MATH.Sin(plat->LOFT_ASSIST));
+      Vec3 desdir = RelativePositionNED(plat.Location(),future_loc); // 1 sec in future
+      Vec3 dir0 = desdir.Normal();
+      if (BrawlMover || SixDofMover)
+      {
+         plat.FlyVectorWithSpeed(dir0,gees,speed);
+      }
+      else
+      {
+         // calculate the right climb rate so that we go to the desired pitch
+         plat.GoToAltitude(plat.Altitude()+2000,plat.Speed()*MATH.Tan(plat->LOFT_ASSIST));
+      }
+   }
+   else if (MATH.Fabs(plat.Heading() - heading) < 5 // within 5 degrees of my heading
+            && MATH.Fabs(altitude - plat.Altitude()) > 1000*MATH.M_PER_FT()) // > 1000 ft from desired altitude
+   {
+      if (BrawlMover)
+      {
+         WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+         mover.Slice(heading,altitude,speed);
+      }
+      else if (SixDofMover)
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+         mover.Slice(heading,altitude,speed);
+      }
+      else
+      {
+         plat.GoToAltitude(altitude);
+         plat.TurnToHeading(heading);
+         plat.GoToSpeed(speed);
+      }
+#      plat.FlyHeadingSpeedAltitude(heading,speed,altitude,gees,100.0);
+   } 
+   else
+   {     
+      if (BrawlMover)
+      {
+         WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();   
+         mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),gees);
+      }
+      else if (SixDofMover)
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+         mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),gees);
+      }
+      else
+      {
+         plat.GoToAltitude(altitude);
+         plat.TurnToHeading(heading);
+         plat.GoToSpeed(speed);
+      }
+   }
+ 
+end_script
+
+script void pr_intercept(WsfPlatform plat, WsfTrack eng_trk, double speed)
+/*
+PURPOSE  Function call to fly a brawler mover to intercept a specified track 
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  eng_trk - WsfTrack, track to intercept
+   IN  speed - double - speed at which to intercept track (m/s)
+   IN  BRAWLER - WsfBrawlerProcessor - Brawler processor object
+Technical Description:
+
+*/
+   Vec3 dir0;
+   double gmx = 1.0;
+   double spd0 = 3.0;
+   WsfWaypoint aimptWP = WsfWaypoint();
+#   WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+   Atmosphere atm = Atmosphere.Construct("default");
+      bool alt_ctrl = plat->ALT_CTRL && plat->faz!="merge";   //see ali38()
+      bool msl_loft = false;   //see line 147 (no productions rules right now)
+
+      double intTime = plat.InterceptLocation3D(eng_trk, aimptWP);
+      if (alt_ctrl)
+      {
+         aimptWP.SetAltitude(plat->COMMIT_ALT,false);
+      }
+      if (plat->pitch_up && plat->faz!="merge")
+      {  // calculate an altitude for the aimpoint the will force a pitch up maneuver
+         double new_altitude;
+         new_altitude = plat.Altitude() + MATH.Tan(plat->LOFT_ASSIST) * plat.GroundRangeTo(eng_trk.CurrentLocation());
+         aimptWP.SetAltitude(new_altitude,false);
+      }
+
+      Vec3 desdir = RelativePositionNED(plat.Location(), aimptWP.Location());
+      desdir.Normalize();
+      double spddes = speed;
+      spd0 = spddes;   //from des1v1
+      dir0 = desdir;   //from des1v1 
+      int spdmod = 1;   //(desspd = 1, thrttl = 2, desacc = 3)
+      if (plat.Speed() <= spd0+(100.0*Math.M_PER_FT()))
+      {
+         double gmxsut;
+         double gmxsu;
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+            gmxsut = BRAWLER.MaxSustainedGs();
+            gmxsu = BRAWLER.MaxTacticalGs();
+         }
+         else
+         {
+            gmxsut=4;
+            gmxsu=5;
+         }
+         double wt = ramp(spd0-(100.0*Math.M_PER_FT()), plat.Speed(), spd0+(100.0*Math.M_PER_FT()));
+         gmx = wt*MATH.Max(2.0,MATH.Max(gmxsut,gmxsu)) + (1.0-wt)*MATH.Min(gmxsut,gmxsu);
+         gmx = MATH.Max(gmx,2.0);
+      }
+      else
+      {
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+            gmx = BRAWLER.MaxAvailableGs();    //gmxin            
+         }
+         else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+         {
+            WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();
+            gmx = mover.MaxPotentialManeuverGLoad();
+         }
+         else
+         {
+            gmx=6;
+         }      
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER" && plat->faz != "merge" && plat->faz != "notch")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");         
+            gmx = BRAWLER.MaxSustainedGs(); //-NAS lets chill out if we're BVR
+         }
+      }
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else
+      {
+         plat.GoToLocation(aimptWP.Location());
+         plat.GoToSpeed(speed);     
+      }
+ 
+end_script
+
+script void pr_pursuit(WsfPlatform plat, WsfTrack eng_trk, double speed)
+/*
+PURPOSE  Function call to fly a brawler mover in a pure pursuit tactic
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  eng_trk - WsfTrack, track to intercept
+   IN  speed - speed at which to intercept track
+   IN  BRAWLER - Brawler Processor object
+Technical Description:
+
+*/
+   Vec3 dir0;
+   double gmx = 1.0;
+   double spd0 = 3.0;
+   WsfWaypoint aimptWP = WsfWaypoint();
+#   WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+   Atmosphere atm = Atmosphere.Construct("default");
+      bool alt_ctrl = plat->ALT_CTRL && plat->faz!="merge";   //see ali38()
+      bool msl_loft = false;   //see line 147 (no productions rules right now)
+      if (!eng_trk.LocationValid())
+      {
+         write("WARNING...aim_missile - eng_trk location not valid \n");
+         return;
+      } 
+
+      aimptWP = WsfWaypoint.Create(eng_trk.CurrentLocation(),speed);
+      if (alt_ctrl)
+      {
+         aimptWP.SetAltitude(plat->COMMIT_ALT,false);
+      }
+      if (plat->pitch_up && plat->faz!="merge")
+      {  // calculate an altitude for the aimpoint the will force a pitch up maneuver
+         double new_altitude;
+         new_altitude = plat.Altitude() + MATH.Tan(plat->LOFT_ASSIST) * plat.GroundRangeTo(eng_trk.CurrentLocation());
+         aimptWP.SetAltitude(new_altitude,false);
+      }
+
+      Vec3 desdir = RelativePositionNED(plat.Location(), aimptWP.Location());
+      desdir.Normalize();
+      double spddes = speed;
+      spd0 = spddes;   //from des1v1
+      dir0 = desdir;   //from des1v1 
+      int spdmod = 1;   //(desspd = 1, thrttl = 2, desacc = 3)
+      if (plat.Speed() <= spd0+(100.0*Math.M_PER_FT()))
+      {
+         double gmxsut;
+         double gmxsu;
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+            gmxsut = BRAWLER.MaxSustainedGs();
+            gmxsu = BRAWLER.MaxTacticalGs();
+         }
+         else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+         {
+            WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();
+            gmxsut = mover.MaxPotentialManeuverGLoad();
+            gmxsu = mover.MaxPotentialManeuverGLoad();
+         }
+         else
+         {
+            gmxsut=4;
+            gmxsu=5;
+         }
+         double wt = ramp(spd0-(100.0*Math.M_PER_FT()), plat.Speed(), spd0+(100.0*Math.M_PER_FT()));
+         gmx = wt*MATH.Max(2.0,MATH.Max(gmxsut,gmxsu)) + (1.0-wt)*MATH.Min(gmxsut,gmxsu);
+         gmx = MATH.Max(gmx,2.0);
+      }
+      else
+      {
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+            gmx = BRAWLER.MaxAvailableGs();    //gmxin            
+         }
+         else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+         {
+            WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();
+            gmx = mover.MaxPotentialManeuverGLoad();
+         }
+         else
+         {
+            gmx=6;
+         }      
+         if (plat.Mover().Type() == "WSF_BRAWLER_MOVER" && plat->faz != "merge" && plat->faz != "notch")
+         {
+            WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");         
+            gmx = BRAWLER.MaxSustainedGs(); //-NAS lets chill out if we're BVR
+         }
+      }
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else
+      {
+         plat.TurnToHeading(plat.TrueBearingTo(aimptWP.Location()));
+         plat.GoToAltitude(aimptWP.Altitude());
+         plat.GoToSpeed(speed);    
+      }
+ 
+end_script
+
+script void pr_aim_missile(WsfPlatform plat, WsfTrack eng_trk, double speed)
+/*
+PURPOSE  Function call to fly a brawler mover to the intercept location of it's missile and the target track
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  eng_trk - WsfTrack, track to intercept
+   IN  speed - speed at which to intercept track
+   IN  BRAWLER - Brawler Processor 
+Technical Description:
+
+*/
+   if (eng_trk.IsNull() || !eng_trk.IsValid())
+   {
+      return;
+   }
+   Vec3 dir0;
+   double gmx = 1.0;
+   double spd0 = 3.0;
+   WsfWaypoint aimptWP = WsfWaypoint();
+#   WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+   Atmosphere atm = Atmosphere.Construct("default");
+   bool alt_ctrl = plat->ALT_CTRL && plat->faz!="merge";   //see ali38()
+   bool msl_loft = false;   //see line 147 (no productions rules right now)
+   double weaponSpeedMetersPerSec = 2904 * Math.M_PER_FT();   //(mach 3) ft/sec (from 37-65 kft altitude)
+   double intTime = plat.InterceptLocation3D(eng_trk, aimptWP, weaponSpeedMetersPerSec, 5.0);
+   if (alt_ctrl)
+   {
+      aimptWP.SetAltitude(plat->COMMIT_ALT,false);
+   }
+   if (plat->pitch_up && plat->faz!="merge")
+   {  // calculate an altitude for the aimpoint the will force a pitch up maneuver
+      double new_altitude;
+      new_altitude = plat.Altitude() + MATH.Tan(plat->LOFT_ASSIST) * plat.GroundRangeTo(eng_trk.CurrentLocation());
+      aimptWP.SetAltitude(new_altitude,false);
+   }
+   Vec3 desdir = RelativePositionNED(plat.Location(), aimptWP.Location());
+   desdir.Normalize();
+   double spddes = speed;
+   spd0 = spddes;   //from des1v1
+   dir0 = desdir;   //from des1v1 
+   int spdmod = 1;   //(desspd = 1, thrttl = 2, desacc = 3)
+   if (plat.Speed() <= spd0+(100.0*Math.M_PER_FT()))
+   {
+      double gmxsut;
+      double gmxsu;
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+         gmxsut = BRAWLER.MaxSustainedGs();
+         gmxsu = BRAWLER.MaxTacticalGs();
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();
+         gmxsut = mover.MaxPotentialManeuverGLoad();
+         gmxsu = mover.MaxPotentialManeuverGLoad();
+      }
+      else
+      {
+         gmxsut=4;
+         gmxsu=5;
+      }
+      double wt = ramp(spd0-(100.0*Math.M_PER_FT()), plat.Speed(), spd0+(100.0*Math.M_PER_FT()));
+      gmx = wt*MATH.Max(2.0,MATH.Max(gmxsut,gmxsu)) + (1.0-wt)*MATH.Min(gmxsut,gmxsu);
+      gmx = MATH.Max(gmx,2.0);
+   }
+   else
+   {
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");
+         gmx = BRAWLER.MaxAvailableGs();    //gmxin            
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();
+         gmx = mover.MaxPotentialManeuverGLoad();
+      }
+      else
+      {
+         gmx=6;
+      }      
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER" && plat->faz != "merge" && plat->faz != "notch")
+      {
+         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");         
+         gmx = BRAWLER.MaxSustainedGs(); //-NAS lets chill out if we're BVR
+      }
+   }
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         plat.FlyVectorWithSpeed(dir0, gmx, spd0);
+      }
+      else
+      {
+         plat.TurnToHeading(plat.TrueBearingTo(aimptWP.Location()));
+         plat.GoToAltitude(aimptWP.Altitude());
+         plat.GoToSpeed(speed);   
+      }
+end_script
+
+script void pr_slice(WsfPlatform plat, double heading, double speed, double altitude)
+/*
+PURPOSE   Function call to command a Brawler mover to perform a slice maneuver 
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  heading - double, desired heading to fly on (deg)
+   IN  speed - double, desired speed to fly (meters)
+   IN  altitude - double, desired altitude to fly (meters)
+   IN  BRAWLER - WsfBrawlerProcessor, processor object of the brawler processor attached to plat
+Technical Description:
+
+
+*/
+   if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+   {
+      WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+      mover.Slice(heading,altitude,speed);
+   }
+   else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+   {
+      WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+      mover.Slice(heading,altitude,speed);
+   }
+   else
+   {
+      plat.GoToAltitude(altitude);
+      plat.GoToSpeed(speed);
+      plat.TurnToHeading(heading);
+   }
+#   plat.FlyHeadingSpeedAltitude(heading,speed,altitude,BRAWLER.MaxSustainedGs(),200.0*MATH.M_PER_FT());
+ 
+end_script
+
+script void pr_formation(WsfPlatform plat, double heading, double speed, double altitude, WsfCommandChain iflite)
+/*
+PURPOSE  Function call to command a Brawler mover to fly in formation with his flight mates 
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  heading - double, desired heading to fly on (deg)
+   IN  speed - double, desired speed to fly (meters)
+   IN  altitude - double, desired altitude to fly (meters)
+   IN  BRAWLER - WsfBrawlerProcessor, processor object of the brawler processor attached to plat
+   IN  iflite  - WsfCommandChain, command chain object of my flight
+Technical Description:
+
+   Calculate a geo point to fly to. Geo point based on an x,y,z offset from the flight lead.
+   Project the geo point forward in time in order to fly an intercept trajectory. 
+   Increase own speed and slow down flight lead if far away from formation point.
+
+*/
+   string flt_leader = iflite.CommanderName();
+   Array<double> FORMATION = plat->VECTOR_FORMATION;
+   double maxgees; double maxROC;
+   Atmosphere atm = Atmosphere.Construct("default");
+   Vec3 desdir;
+   Vec3 dir0;
+   bool lead = iflite.Commander() == plat;
+   WsfSA_Processor saPROC;
+   for (int i=0; i<plat.ProcessorCount(); i+=1)
+   {
+      if (plat.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         saPROC = (WsfSA_Processor)plat.ProcessorEntry(i);
+         break;
+      }
+   }   
+
+   if (FORMATION[0] == 1) // 2-ship
+   {  // if i'm flight lead
+      if (lead) 
+      { 
+         // check if my buddies are in position, if not then slow down
+         for (int i = 0; i < iflite.SubordinateCount(); i += 1)
+         {  
+            WsfPlatform buddy = iflite.SubordinateEntry(i);
+            if (buddy.CategoryMemberOf("missile")){continue;}
+            if ( buddy.IsValid() && (buddy.Name() == plat.Name() || buddy->in_pos) ) 
+            {/*writeln(buddy," in position");*/}
+            else
+            {  
+               speed = speed * 0.7; 
+               break;
+            }
+         }
+         if (plat->ALT_CTRL && MATH.Fabs(plat.Altitude() - altitude) < 300 )
+         {
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");            
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),BRAWLER.MaxSustainedGs());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),mover.MaxPotentialManeuverGLoad());
+            }
+            else
+            {
+               plat.TurnToHeading(heading);
+               plat.GoToSpeed(speed);
+               plat.GoToAltitude(altitude);
+            }
+         }
+         else
+         {
+            plat.TurnToHeading(heading);
+            plat.GoToSpeed(speed);
+            plat.GoToAltitude(altitude);         
+         }
+      }
+      // i'm not flight lead, locate the position I need to get to 
+      else
+      {  
+         WsfSA_EntityPerception lead;
+         foreach (WsfSA_EntityPerception asset in saPROC.PerceivedAssets()) 
+         {  
+            if (asset.PerceivedName() == flt_leader) { lead = asset;} // save off flight lead
+         }
+
+         // if i don't have a perception of my flight lead, return
+         if (!lead.IsValid()) {write("FORMATION...FLT LEAD NOT VALID - return \n");return;}
+
+         // find the location that i should be in for this formation
+         WsfGeoPoint FormationPointa = WsfGeoPoint().Construct(lead.Lat(),lead.Lon(),lead.Altitude()); // clone the flight lead's position
+         WsfGeoPoint FormationPointb = WsfGeoPoint().Construct(lead.Lat(),lead.Lon(),lead.Altitude());
+         WsfGeoPoint FormationPoint = WsfGeoPoint();
+//       check if i'm closer to the left or right point of the flight lead
+         FormationPointa.Extrapolate(lead.Heading(),FORMATION[1]);
+         FormationPointb.Extrapolate(lead.Heading(),FORMATION[1]);
+         
+         FormationPointa.Extrapolate(lead.Heading()+90,FORMATION[2]);
+         FormationPointb.Extrapolate(lead.Heading()-90,FORMATION[2]);
+                    
+         double rng_a = plat.GroundRangeTo(FormationPointa);
+         double rng_b = plat.GroundRangeTo(FormationPointb);
+//       choose which point based on whichever is closer         
+         if (rng_a < rng_b) 
+         {  
+            FormationPoint.Set(FormationPointa);
+         }
+         else if (rng_b < rng_a ) 
+         {  
+            FormationPoint.Set(FormationPointb);
+         }
+         else 
+         {  
+            writeln("Error in behavior_formation.txt...range to formation point");
+            return;
+         }
+
+//       slow down the flight lead if i'm far away and increase my own speed
+         string lead_name = flt_leader;
+         WsfPlatform lead_plat = WsfSimulation.FindPlatform(lead_name);
+         plat->in_pos = false;         
+         if (plat.GroundRangeTo(FormationPoint) > 10*MATH.M_PER_NM())
+         {  
+            speed = lead_plat->COMMIT_SPD * 1.2* atm.SonicVelocity(lead_plat.Altitude());
+//          adjust formation point so I approach at an intercept angle               
+            FormationPoint.Extrapolate(lead_plat.Heading(),lead_plat.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);    
+            dir0 = desdir.Normal();             
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);                
+            }              
+         }      
+         else if (plat.GroundRangeTo(FormationPoint) > 1*MATH.M_PER_NM())
+         {  
+            speed = lead_plat->COMMIT_SPD * 1.1* atm.SonicVelocity(lead_plat.Altitude());
+//           adjust formation point so I approach at an intercept angle            
+            FormationPoint.Extrapolate(lead_plat.Heading(),lead_plat.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);    
+            dir0 = desdir.Normal();       
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             
+            }                
+         }   
+         else //if (plat.GroundRangeTo(FormationPoint) < 5*MATH.M_PER_NM())
+         { // i'm close enough, fly same heading and speed as flight lead
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyHeadingSpeedAltitude(lead_plat.Heading(),lead_plat.Speed(),
+               lead_plat.Altitude()-FORMATION[3]*MATH.M_PER_FT(),BRAWLER.MaxSustainedGs(),
+               300*MATH.M_PER_FT());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyHeadingSpeedAltitude(lead_plat.Heading(),lead_plat.Speed(),
+               lead_plat.Altitude()-FORMATION[3]*MATH.M_PER_FT(),mover.MaxPotentialManeuverGLoad(),
+               300*MATH.M_PER_FT());
+            }
+            else
+            {
+               plat.TurnToHeading(lead_plat.Heading());
+               plat.GoToSpeed(lead_plat.Speed());
+               plat.GoToAltitude(lead_plat.Altitude()-FORMATION[3]*MATH.M_PER_FT());
+            }           
+#            lead_plat->pr_speed = lead_plat->COMMIT_SPD* atm.SonicVelocity(lead_plat.Altitude()); 
+            plat->in_pos = true;          
+         }
+      } 
+   }
+
+   else if (FORMATION[0] == 2) // 3-ship
+   {  // if i'm flight lead
+      if (lead) 
+      { 
+         // check if my buddies are in position, if not then slow down
+         for (int i = 0; i < iflite.SubordinateCount(); i += 1)
+         {  
+            WsfPlatform buddy = iflite.SubordinateEntry(i);
+            if (buddy.CategoryMemberOf("missile")){continue;}
+            if ( buddy.IsValid() && (buddy.Name() == plat.Name() || buddy->in_pos) ) 
+            {/*writeln(buddy," in position");*/}
+            else
+            {  
+               speed = speed * 0.7; 
+               break;
+            }
+         }
+         if (plat->ALT_CTRL && MATH.Fabs(plat.Altitude() - altitude) < 300 )
+         {
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");            
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),BRAWLER.MaxSustainedGs());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),mover.MaxPotentialManeuverGLoad());
+            }
+            else
+            {
+               plat.TurnToHeading(heading);
+               plat.GoToSpeed(speed);
+               plat.GoToAltitude(altitude);
+            }
+         }
+         else
+         {
+            plat.TurnToHeading(heading);
+            plat.GoToSpeed(speed);
+            plat.GoToAltitude(altitude);         
+         }
+      }
+      // i'm not flight lead, locate the position I need to get to 
+      else
+      {  
+         plat->in_pos = false;
+         WsfPlatform lead = WsfSimulation.FindPlatform(flt_leader);
+
+         // if i don't have a perception of my flight lead, return
+         if (!lead.IsValid()) {return;}
+
+         // build formation points
+         WsfGeoPoint FormationPoint = WsfGeoPoint();
+         double me_rng_a; double buddy_rng_a;
+         double me_rng_b; double buddy_rng_b;
+         WsfGeoPoint FormationPointa = WsfGeoPoint(lead.Location());
+         WsfGeoPoint FormationPointb = WsfGeoPoint(lead.Location());
+
+         if (FORMATION[1] >= 0)
+         {
+            FormationPointa.Extrapolate(lead.Heading(),MATH.Fabs(FORMATION[1]));
+            FormationPointb.Extrapolate(lead.Heading(),MATH.Fabs(FORMATION[1]));
+         }
+         else
+         {
+            FormationPointa.Extrapolate(lead.Heading()+180,MATH.Fabs(FORMATION[1]));
+            FormationPointb.Extrapolate(lead.Heading()+180,MATH.Fabs(FORMATION[1]));
+         }
+         FormationPointa.Extrapolate(lead.Heading()+90,FORMATION[2]);
+         FormationPointb.Extrapolate(lead.Heading()-90,FORMATION[2]);
+
+//       choose my formation point by whoever is closest to each point
+         for (int i = 0; i < iflite.PeerCount(); i += 1)
+         {  
+            WsfPlatform mate = iflite.PeerEntry(i);
+            if(mate.IsNull() || !mate.IsValid()){continue;}
+            if (mate.Name() == flt_leader)
+            {  /* do nothing */}
+            else if (mate.Name() == plat.Name()) // this is me, calculate rng to each point
+            {  
+               me_rng_a = plat.GroundRangeTo(FormationPointa);
+               me_rng_b = plat.GroundRangeTo(FormationPointb);
+            }
+            else if (mate.Name() != plat.Name()) //not me or flt_lead, must be my other buddy
+            {  
+               buddy_rng_a = mate.GroundRangeTo(FormationPointa);
+               buddy_rng_b = mate.GroundRangeTo(FormationPointb);
+            }
+         }   
+      
+         // i'm closer to both
+         if (me_rng_a < buddy_rng_a && me_rng_b < buddy_rng_b)
+         {  //do nothing for now
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");            
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),BRAWLER.MaxSustainedGs());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),mover.MaxPotentialManeuverGLoad());
+            }
+            else
+            {
+               plat.TurnToHeading(heading);
+               plat.GoToSpeed(speed);
+               plat.GoToAltitude(altitude);
+            }
+            return;
+         }
+         //i'm further from both, goto closest
+         else if (me_rng_a > buddy_rng_a && me_rng_b > buddy_rng_b)
+         {  
+            if (me_rng_a < me_rng_b) 
+            {
+               FormationPoint.Set(FormationPointa);
+            }
+            else 
+            {   
+               FormationPoint.Set(FormationPointb);   
+            }
+         }
+         else if (me_rng_b < buddy_rng_b) // i'm closer to b
+         {  FormationPoint.Set(FormationPointb);}
+         else if (me_rng_a < buddy_rng_a) // i'm closer to a
+         {  FormationPoint.Set(FormationPointa);}
+         else 
+         {
+            #writeln("a ",me_rng_a," ",buddy_rng_a," b ",me_rng_b," ",buddy_rng_b);
+            return;   
+         }
+                  
+//        if i'm far away, increase my own speed
+         if (plat.GroundRangeTo(FormationPoint) > 10*MATH.M_PER_NM())
+         {  
+            speed = lead->COMMIT_SPD * 1.2* atm.SonicVelocity(lead.Altitude());
+//           adjust formation point so I approach at an intercept angle            
+            FormationPoint.Extrapolate(lead.Heading(),lead.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);
+            dir0 = desdir.Normal();
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             } 
+         }      
+         else if (plat.GroundRangeTo(FormationPoint) > 2*MATH.M_PER_NM())
+         {  
+//          adjust formation point so I approach at an intercept angle     
+            speed = lead->COMMIT_SPD * atm.SonicVelocity(plat.Altitude());       
+            FormationPoint.Extrapolate(lead.Heading(),lead.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);    
+            dir0 = desdir.Normal();        
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             } 
+         }   
+         else //
+         {  
+            // i'm close enough, fly same heading and speed as flight lead                     
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               mover.Prlvl(lead.Heading(),lead.Speed()/atm.SonicVelocity(plat.Altitude()),BRAWLER.MaxSustainedGs());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               mover.Prlvl(lead.Heading(),lead.Speed()/atm.SonicVelocity(plat.Altitude()),mover.MaxPotentialManeuverGLoad());
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             }          
+            plat->in_pos = true;
+         }
+      } 
+   }
+//  4-ship formation   
+   else if (FORMATION[0] == 3)
+   {  
+      // if i'm flight lead
+       if (lead) 
+      { 
+         // check if my buddies are in position, if not then slow down
+         for (int i = 0; i < iflite.SubordinateCount(); i += 1)
+         {  
+            WsfPlatform buddy = iflite.SubordinateEntry(i);
+            if (buddy.IsValid() && buddy.CategoryMemberOf("missile")){continue;}
+            if ( buddy.IsValid() && (buddy.Name() == plat.Name() || buddy->in_pos) ) 
+            {/*writeln(buddy," in position");*/}
+            else
+            {  
+               speed = speed * 0.7; 
+               break;
+            }
+         }
+         if (plat->ALT_CTRL && MATH.Fabs(plat.Altitude() - altitude) < 300 )
+         {
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");            
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),BRAWLER.MaxSustainedGs());
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               mover.Prlvl(heading,speed/atm.SonicVelocity(plat.Altitude()),mover.MaxPotentialManeuverGLoad());
+            }
+            else
+            {
+               plat.TurnToHeading(heading);
+               plat.GoToSpeed(speed);
+               plat.GoToAltitude(altitude);
+            }
+         }
+         else
+         {
+            plat.TurnToHeading(heading);
+            plat.GoToSpeed(speed);
+            plat.GoToAltitude(altitude);         
+         }
+      }
+      // i'm not flight lead, locate the position I need to get to 
+      // for this, it'll be a little complicated to calculate closest player
+      // to each formation point, so I'm planning on just assigning a formation 
+      // point by the index of each player in their flight group
+      else
+      { 
+         WsfSA_EntityPerception lead;
+         plat->in_pos = false; 
+         foreach (WsfSA_EntityPerception asset in saPROC.PerceivedAssets()) 
+         {  
+            if (asset.PerceivedName() == flt_leader) { lead = asset;} // save off flight lead
+         }
+
+         // if i don't have a perception of my flight lead, return
+         if (!lead.IsValid()) {return;}
+
+         int lead_index = -1;
+         int my_index = -1;
+         WsfGeoPoint FormationPoint = WsfGeoPoint().Construct(lead.Lat(),lead.Lon(),lead.Altitude());
+         for (int i=0; i<iflite.PeerCount(); i=i+1)
+         {
+            if (iflite.PeerEntry(i).Name() == flt_leader)
+            {  
+               lead_index=i;
+            }
+            else if (iflite.PeerEntry(i).Name() == plat.Name())
+            {  
+               my_index = i;
+            }
+         }
+         if (FORMATION[1] >= 0)
+         {  
+            FormationPoint.Extrapolate(lead.Heading(),MATH.Fabs(FORMATION[1]));
+         }
+         else
+         {     
+            FormationPoint.Extrapolate(lead.Heading()+180,MATH.Fabs(FORMATION[1]));
+         }
+         if (FORMATION[2] >= 0)
+         {  
+            FormationPoint.Extrapolate(lead.Heading()+90,MATH.Fabs(FORMATION[2]));
+         }
+         else
+         {  
+            FormationPoint.Extrapolate(lead.Heading()-90,MATH.Fabs(FORMATION[2]));
+         }
+
+         string lead_name = flt_leader;
+         WsfPlatform lead_plat = WsfSimulation.FindPlatform(lead_name);         
+         if (plat.GroundRangeTo(FormationPoint) > 10*MATH.M_PER_NM())
+         {  
+            speed = lead_plat->COMMIT_SPD * 1.2* atm.SonicVelocity(lead_plat.Altitude());
+//           adjust formation point so I approach at an intercept angle            
+            FormationPoint.Extrapolate(lead_plat.Heading(),lead_plat.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);
+            dir0 = desdir.Normal();
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             } 
+         }      
+         else if (plat.GroundRangeTo(FormationPoint) > 2*MATH.M_PER_NM())
+         {  
+            speed = lead_plat->COMMIT_SPD*1.1* atm.SonicVelocity(lead_plat.Altitude());         
+            FormationPoint.Extrapolate(lead_plat.Heading(),lead_plat.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));
+            desdir = RelativePositionNED(plat.Location(),FormationPoint);
+            dir0 = desdir.Normal();          
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             } 
+         }   
+         else //if (plat.GroundRangeTo(FormationPoint) < 5*MATH.M_PER_NM())
+         { // i'm close enough, fly same heading and speed as flight lead
+            if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+            {
+               WsfBrawlerMover mover = (WsfBrawlerMover) plat.Mover();
+               WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");                 
+               plat.FlyHeadingSpeedAltitude(lead_plat.Heading(),lead_plat.Speed(),
+               lead_plat.Altitude()-FORMATION[3]*MATH.M_PER_FT(),BRAWLER.MaxSustainedGs(),
+               100*MATH.M_PER_FT());            
+            }
+            else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+            {
+               WsfSixDOF_Mover mover = (WsfSixDOF_Mover) plat.Mover();
+               plat.FlyHeadingSpeedAltitude(lead_plat.Heading(),lead_plat.Speed(),
+               lead_plat.Altitude()-FORMATION[3]*MATH.M_PER_FT(),mover.MaxPotentialManeuverGLoad(),
+               100*MATH.M_PER_FT());
+            }
+            else
+            {
+               plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+               plat.GoToAltitude(FormationPoint.Altitude());
+               plat.GoToSpeed(speed);             }          
+            plat->in_pos = true;  
+         }   
+      }
+   }
+end_script
+
+script void change_rultype(WsfPlatform plat, WsfCommandChain cc, string current_type, string new_type, string reason)
+/*
+PURPOSE  Function call to change the rule type of everyone in the designated command chain
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  cc   - WsfCommandChain, change ruletype for all members of this command chain
+   IN  current_type - string, current rule type
+   IN  new_type - string, rule type to change to
+   IN  reason - string, reason for switching rule types
+Technical Description:
+
+*/
+
+#FileIO log = FileIO();
+extern FileIO log;
+extern bool log_print;
+extern string log_path;
+if (log_print)
+{
+#   log.Close();
+#   log.Open(log_path, "append");
+}
+
+// command chain not valid on this platform
+if (!plat.CommandChain(cc.Name()).IsValid()) 
+{
+   if (log_print) 
+   {
+      log.Write(write_str("WARNING... ",cc.Name()," not a valid command chain for platform ",plat.Name(),"\n"));
+   }
+   return;
+} 
+
+// check if I'm the cc lead
+bool cc_lead = ( plat.Name() == cc.CommanderName() );
+
+if (cc_lead) // change my ruletype and all subordinates rule type
+{
+   if (log_print){log.Write(write_str(plat.Name()," CHANGING RULE_TYPE FROM ",plat->rule_type," TO ",new_type," REASON: ",reason,"\n"));}
+   plat->rule_type = new_type;   
+   for (int i_sub=0; i_sub < plat.Subordinates(cc.Name()).Count(); i_sub+=1)
+   {
+      string mates = cc.SubordinateEntry(i_sub).Name();
+      WsfPlatform sub = WsfSimulation.FindPlatform(mates);
+      if (sub.CategoryMemberOf("missile")) {continue;} // skip missiles
+      if (log_print){log.Write(write_str(mates," CHANGING RULE_TYPE FROM ",sub->rule_type," TO ",new_type," REASON: ",reason,"\n"));}
+      for (int i=0; i<sub.ProcessorCount(); i+=1)
+      {
+         if (sub.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+         {
+            sub.ProcessorEntry(i).SetState(new_type);
+            sub->rule_type = new_type;
+            sub->RuleReason = reason;
+         }
+      }      
+   }
+}
+else // i'm not the flight lead, change: flight lead, peers, subs
+{
+   if (log_print){log.Write(write_str(cc.CommanderName()," CHANGING RULE_TYPE FROM ",cc.Commander()->rule_type," TO ",new_type," REASON: ",reason,"\n"));}
+   cc.Commander()->rule_type = new_type;
+   cc.Commander()->RuleReason = reason;    
+   WsfCommandChain cmdr_cc = cc.Commander().CommandChain(cc.Name());
+   for (int i_sub=0; i_sub < cmdr_cc.SubordinateCount(); i_sub+=1)
+   {
+      string mates = cmdr_cc.SubordinateEntry(i_sub).Name();
+      WsfPlatform sub = WsfSimulation.FindPlatform(mates);
+      if (sub.CategoryMemberOf("missile")) {continue;} // skip missiles
+      if (log_print){log.Write(write_str(mates," CHANGING RULE_TYPE FROM ",sub->rule_type," TO ",new_type," REASON: ",reason,"\n"));}
+      for (int i=0; i<sub.ProcessorCount(); i+=1)
+      {
+         if (sub.ProcessorEntry(i).IsA_TypeOf("WSF_SA_PROCESSOR"))
+         {
+            sub.ProcessorEntry(i).SetState(new_type);
+            sub->rule_type = new_type;   
+            sub->RuleReason = reason;                     
+         }
+      } 
+   }   
+}
+
+#log.Close();
+return;      
+
+end_script
+
+script void pr_escort_formation(WsfPlatform plat)
+/*
+PURPOSE  Function call to command a Brawler mover to fly in formation with his protected entity
+AUTHOR   Snyder
+
+Parameter Description
+   IN  plat - WsfPlatform, platform to be analysed
+   IN  BRAWLER - WsfBrawlerProcessor, processor object of the brawler processor attached to plat
+Technical Description:
+
+   Calculate a geo point to fly to. Geo point based on an x,y,z offset from the protected entity.
+   Project the geo point forward in time in order to fly an intercept trajectory. 
+   Increase own speed if far away from formation point.
+
+*/
+   Array<string> protec = plat->PROTECTING;
+   Array<double> formation = plat->ESCORT_FORMATION;
+   Atmosphere atm = Atmosphere.Construct("default");
+   Vec3 desdir;
+   Vec3 dir0;
+   if (protec.Size() == 0) {return;} // not protecting anyone
+   WsfPlatform pe = WsfSimulation.FindPlatform(protec[0]);
+   if (!pe.IsValid() || pe.IsNull()) {return;} // not a valid platform in the sim
+   WsfGeoPoint FormationPoint = WsfGeoPoint(pe.Location());
+   FormationPoint.Extrapolate(pe.Heading(),formation[0]);
+   FormationPoint.Extrapolate(pe.Heading()+90,formation[1]);
+   double speed = pe.Speed();
+   if (plat.GroundRangeTo(FormationPoint) > 10*MATH.M_PER_NM())
+   {  
+      speed = speed * 1.2;
+      //adjust formation point so I approach at an intercept angle  
+      FormationPoint.Extrapolate(pe.Heading(),pe.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));          
+      desdir = RelativePositionNED(plat.Location(),FormationPoint);    
+      dir0 = desdir.Normal(); 
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         WsfBrawlerMover mover = (WsfBrawlerMover)plat.Mover();    
+         mover.Prlvl(plat.TrueBearingTo(FormationPoint),speed/atm.SonicVelocity(plat.Altitude()));
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();    
+         mover.Prlvl(plat.TrueBearingTo(FormationPoint),speed/atm.SonicVelocity(plat.Altitude()));
+      }
+      else
+      {
+         plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+         plat.GoToAltitude(FormationPoint.Altitude());
+         plat.GoToSpeed(speed);       }
+#      plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+      
+   }      
+   else if (plat.GroundRangeTo(FormationPoint) > 1*MATH.M_PER_NM())
+   {  
+      speed = speed * 1.1;
+      //adjust formation point so I approach at an intercept angle  
+      FormationPoint.Extrapolate(pe.Heading(),pe.Speed()*(plat.GroundRangeTo(FormationPoint)/plat.Speed()));          
+      desdir = RelativePositionNED(plat.Location(),FormationPoint);    
+      dir0 = desdir.Normal();     
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");   
+         plat.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),speed);
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();    
+         plat.FlyVectorWithSpeed(dir0,mover.MaxPotentialManeuverGLoad(),speed);
+      }
+      else
+      {
+         plat.TurnToHeading(plat.TrueBearingTo(FormationPoint));
+         plat.GoToAltitude(FormationPoint.Altitude());
+         plat.GoToSpeed(speed);       }      
+   }      
+   else //if (plat.GroundRangeTo(FormationPoint) < 5*MATH.M_PER_NM())
+   { // i'm close enough, fly same heading and speed as flight lead
+      if (plat.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         WsfBrawlerProcessor BRAWLER = (WsfBrawlerProcessor)plat.Processor("thinker");   
+         plat.FlyHeadingSpeedAltitude(pe.Heading(),pe.Speed(), pe.Altitude(),BRAWLER.MaxSustainedGs(),
+                                   300*MATH.M_PER_FT());      
+      }
+      else if (plat.Mover().IsA_TypeOf("WSF_SIX_DOF_MOVER"))
+      {
+         WsfSixDOF_Mover mover = (WsfSixDOF_Mover)plat.Mover();    
+         plat.FlyHeadingSpeedAltitude(pe.Heading(),pe.Speed(), pe.Altitude(),mover.MaxPotentialManeuverGLoad(),
+                                   300*MATH.M_PER_FT());
+      }
+      else
+      {
+         plat.GoToSpeed(pe.Speed());
+         plat.GoToAltitude(pe.Altitude());
+         plat.TurnToHeading(pe.Heading());
+      }    
+   }
+end_script

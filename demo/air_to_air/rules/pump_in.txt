@@ -1,0 +1,156 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE  pump_in behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+*/
+advanced_behavior pump_in
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+      extern WsfSA_EntityPerception ppmjid;
+      extern double t_faz_switch;
+      extern bool flt_lead;
+      extern bool solo;
+      extern bool sam_spiked;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+      extern bool iout_print;
+         extern string iout_path;
+      WsfSA_Processor saPROC = (WsfSA_Processor)PROCESSOR;
+      extern Array<int> PLAYBOOK;      
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr" && PLATFORM->faz == "pump_in")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   execute 
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," pump_in");   
+      bool BrawlMover;
+      WsfBrawlerProcessor BRAWLER;
+      if (iacid.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         for (int i=0; i<iacid.ProcessorCount();i+=1)
+         {
+            if (iacid.ProcessorEntry(i).Type() == "WSF_BRAWLER_PROCESSOR")
+            {
+               BrawlMover = true;
+               BRAWLER = (WsfBrawlerProcessor)iacid.ProcessorEntry(i);
+               break;
+            }
+         }
+      }   
+#      FileIO iout = FileIO();
+#      if (iout_print)
+#      {
+#         iout.Open(iout_path, "append");
+#      }
+      faz_desired = "pump_in";
+      int plan_1 = PLAYBOOK[0]; 
+      int plan_2 = PLAYBOOK[1]; // create local version of these to manipulate in this routine
+      int plan_3 = PLAYBOOK[2];
+      int nbg = saPROC.PerceivedBandits().Size();
+      string flight_lead = iflite.CommanderName();
+      pr_heading = iacid.Heading(); // initialize to current heading
+      first_pass = false;
+
+      if (!flt_lead && !solo) { pr_heading = WsfSimulation.FindPlatform(flight_lead).Heading(); }
+      if (sam_spiked) 
+      {  
+         faz_desired = "pump";
+         reason = "DEFEND AGAINST SAM";
+      }
+
+      double avg_hdg; double min_hdg = 180;
+      if (ppmjid.Track().IsValid() && ppmjid.Track().BearingValid())
+      {
+         pr_heading = iacid.TrueBearingTo(ppmjid.Track());
+      }
+      else if (nbg > 0 && (flt_lead || solo) )
+      {  
+         foreach ( WsfSA_EntityPerception saent in saPROC.PerceivedBandits() ) 
+         { 
+            if (!saent.Track().IsValid() || !saent.Track().LocationValid()) 
+            {   
+               continue;
+            }
+            avg_hdg = avg_hdg + iacid.TrueBearingTo(saent.Track()); // get the average heading
+            if (MATH.Fabs(iacid.RelativeBearingTo(saent.Track())) < min_hdg ) 
+            {  
+               min_hdg = MATH.Fabs(iacid.RelativeBearingTo(saent.Track()));
+            }
+         } 
+         avg_hdg = avg_hdg / nbg;
+         pr_heading = avg_hdg;
+      }
+      else if (TIME_NOW - t_faz_switch < 2.0) // if i'm not aware of any bad guys, just turn 180 degress from my current escape heading
+      {
+         pr_heading = iacid.Heading() + 180;
+      }
+
+      pr_speed = iacid->COMMIT_SPD * atmos.SonicVelocity(iacid.Altitude());
+      pr_altitude = iacid->COMMIT_ALT; 
+      extern double pr_gees;
+      if (BrawlMover)
+      {
+         pr_gees = BRAWLER.MaxSustainedGs();
+      }
+      else
+      {
+         pr_gees = 3;
+      }
+      pr_vector(iacid,pr_heading,pr_speed,pr_altitude,pr_gees);
+
+      if (time_ok && MATH.Fabs(iacid.Heading() - pr_heading) <= 20 ) 
+      {  
+         if (plan_1 <= 3) { faz_desired = "direct"; reason = "plan_1 = direct"; }
+         else if (plan_1 == 4) { faz_desired = "vectoring"; reason = "plan_1 = vectoring"; }
+         else { writeln("WARNING...ftr_faz invalid playbook value for ",iacid.Name());}
+      }
+      if (iout_print) {iout.Write(write_str(" pump_in... hdg = ",pr_heading,"\n"));}
+#      if (iout_print){iout.Close();}
+      return Success(reason);      
+   end_execute
+
+end_advanced_behavior

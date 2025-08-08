@@ -1,0 +1,336 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE:         This routine governs weapon selection
+AUTHOR:         Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Parameter Description
+
+   shot_doc  - PRDATA variable determining shot doctrine and weapon selection
+               This routines sets the values for mxtgt_ac, prmisl_ac, and mxtgtd
+
+
+             -3: Shoot-Shoot-Look: SRM at anything within SRM range.Fox3 for primary
+                 LAR calculation but requires RDR or IRST track to support. Fox3 double 
+                 tap option inside of 90% WEZ
+             -2: Shoot-Shoot-Look: SRM at anything within SRM range. Fox3 for primary
+                 LAR calculation and no track requirement. Fox3 double 
+                 tap option inside of 90% WEZ
+             -1: Shoot-Look-Shoot: Default selection to Fox3 with no MXTGT_AC change (MXTGTD default)
+                 fox2 if within SRM range
+              0: Shoot-Look-Shoot always
+              1: Shoot-Shoot-Look: Single Tap with SRMs, Two total shots at threat
+                 Single tap anything 100% of Fox3 WEZ
+                 Double tap option for the following scenarios:
+                   -Tgt is threatening my protected entity/location
+                   -Tgt is within 75% of threatened range and fox3 GE 4
+                   -Tgt is within 50% of threatened range and fox3 GE 2
+              2: Shoot-Shoot-Look: Double tap with SRM at anyting within SRM range
+                 Double tap with MRM at anything within 100% WEZ
+
+              This routine sets the following variables: 
+
+Map<WsfLocalTrack,int>    mapMXTGT_AC(ltrk)  - Max number of missiles at a single target by a single player
+Map<WsfLocalTrack,int>    mapMXTGTD(ltrk)    - Max number of missiles at a single target
+Map<WsfLocalTrack,string> mapPRMISL_AC(ltrk) - fox number selected for employment against mapped track
+
+Technical Description:
+   Loops through everyone in my shoot list and assigns a weapon/target pair
+   Utilizes the PRDATA variable "shot_doc", which is set to a value between -4 and 3.
+   Determines shot doctrine and weapon selection
+   
+-NAS
+   Decided to loop through all threat tracks, issue with tgt_bias sets a low score on a guy becuase he thinks the target is mxtgtd
+   but mxtgtd has not been set yet (happens in this routine), that target never makes it on the shoot list and never gets his mxtgtd value set
+
+//   This assumes perfect correlation/CID 
+
+*/
+//include prdata/rules_utils.txt
+advanced_behavior select_wpn
+
+   script_debug_writes disable
+
+   
+   script_variables
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;  
+      extern Map<WsfSA_EntityPerception, string> mapPRMISL_AC;
+      extern Map<WsfSA_EntityPerception, int> mapMXTGTD;
+      extern Map<WsfSA_EntityPerception, int> mapMXTGT_AC;
+      extern bool iout_print;
+      extern string iout_path;
+      extern string reason;
+      extern Array<double> RPEAK_LOC;
+      extern Array<string> PROTECTING;
+   end_script_variables
+   on_init
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+   end_on_init
+
+   precondition  
+      extern WsfPlatform iacid;
+#      FileIO iout = FileIO();
+#      if (iout_print) {iout.Open(iout_path, "append");}
+#      if (PLATFORM->rule_type != "ftr"){ return false;}
+ 
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+      else {return Success();}
+   end_precondition
+
+
+   execute
+      writeln_d("T = ",TIME_NOW," ",iacid.Name()," select_wpn");
+#WsfPlatform iacid = PLATFORM;
+      extern WsfPlatform iacid;
+      Array<int> bng_msl = iacid->WINCHESTER;
+      int fox3_left = iacid.Weapon("fox3").QuantityRemaining();
+      int fox2_left = iacid.Weapon("fox2").QuantityRemaining();
+      int fox1_left = iacid.Weapon("fox1").QuantityRemaining();
+      WsfWeapon weap;
+      bool in_rtr;
+      double rmax_fraction;
+      bool debug;
+// SA PROCESSOR default to fox3 for weapon selected
+      WsfSA_Processor saPROC = (WsfSA_Processor)PROCESSOR;
+      saPROC.SetMasterArm(true); 
+      saPROC.SetSelectedWeapon("fox3");               
+      if (iout_print)
+      {
+         iout.Write(write_str(" select_wpn ","\n"));
+      }
+      foreach (WsfSA_EntityPerception saent in saPROC.PerceivedBandits())
+      {
+         if (!saent.Track().IsValid()){continue;}
+         //Always shoot "agm" against SAMs regard less of SHOT_DOC - will need to change if you have multiple Air-to-Ground weapons
+         if(saent.Track().LandDomain())
+         {
+            mapPRMISL_AC[saent] = "agm";
+            mapMXTGTD[saent] = 1; //single target SAMs - change if needed
+            mapMXTGT_AC[saent] = 1;
+            if(iout_print) {iout.Write(write_str("  ",saent.Track().TargetName().Pad(-12),mapPRMISL_AC[saent].Pad(-5),"\n"));}
+            continue;
+         }
+
+         if (fox3_left == 0 && fox2_left == 0 && fox1_left == 0)
+         { // out of missiles,  
+            continue;
+         }
+         // initialize these variables 
+         mapMXTGTD[saent] = 1; // in Brawler, this is initialized in the SCNRIO in the flight section
+         mapMXTGT_AC[saent] = 1; // in Brawler, this is initialized in the SCNRIO in the flight section
+         mapPRMISL_AC[saent] = "fox3"; // initialize to MRM
+         Array<int> shot_count = count_shot(iacid,saent,saPROC.PerceivedBandits());
+   /* 
+                -3: SRM at anything within SRM range. Fox3 for primary
+                    LAR calculation but requires RDR or IRST track to support. Fox3 double 
+                    tap option inside of 90% WEZ
+   */
+         if (iacid->SHOT_DOC == -3)
+         {
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}
+            mapMXTGTD[saent] = 1;
+            // Fox2 if within SRM range
+            if (iacid.SlantRangeTo(saent.Track()) <= iacid->SRM_SLCT && fox2_left > 0 
+                && iacid.Weapon("fox2").LaunchComputer().LookupResult(saent.Track())[0] <= RPEAK_LOC[1])
+            {
+               mapPRMISL_AC[saent] = "fox2";
+               if (fox2_left > 2){mapMXTGT_AC[saent] = 3;}
+            }
+            if (fox3_left>=2 && iacid.SlantRangeTo(saent.Track())/iacid.Weapon("fox3").LaunchComputer().LookupResult(saent.Track())[0] <= 0.9)
+            {
+               mapMXTGTD[saent] = 2;
+               // check if I have a radar or irst track on ltrk target
+               if (iacid.MasterRawTrackList().IsValid())
+               {
+                  foreach (WsfTrack trk in iacid.MasterRawTrackList())
+                  {
+                     if (trk.TargetName() == saent.Track().TargetName() 
+                         && (trk.SensorType() == "WSF_RADAR_SENSOR" || trk.SensorType() == "WSF_IRST_SENSOR"))
+                     {  
+                        mapPRMISL_AC[saent] = "fox3";
+                     }
+                  }
+               }
+            }
+         }
+   /* 
+                -2: SRM at anything within SRM range. Fox3 for primary
+                    LAR calculation and no track requirement. Fox3 double 
+                    tap option inside of 90% WEZ
+   */
+         else if (iacid->SHOT_DOC == -2)
+         {
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}
+            mapMXTGTD[saent] = 1;
+            // Fox2 if within SRM range
+            if (iacid.SlantRangeTo(saent.Track()) <= iacid->SRM_SLCT && fox2_left > 0 
+                && iacid.Weapon("fox2").LaunchComputer().LookupResult(saent.Track())[0] <= RPEAK_LOC[1])
+            {
+               mapPRMISL_AC[saent] = "fox2";
+               if (fox2_left > 2){mapMXTGT_AC[saent] = 3;}
+            }
+         
+            if (fox3_left>=2 && iacid.Weapon("fox3").LaunchComputer().LookupResult(saent.Track())[0] <= 0.9)
+            {
+               mapMXTGTD[saent] = 2;
+               mapPRMISL_AC[saent] = "fox3";
+            }
+         }
+   /* 
+                -1: Default selection to Fox3 with no MXTGT_AC change (MXTGTD default)
+   */
+         else if (iacid->SHOT_DOC == -1)
+         {
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}
+            // fox2 if within SRM range
+            if(fox2_left && iacid.SlantRangeTo(saent.Track()) <= iacid->SRM_SLCT && iacid.SlantRangeTo(saent.Track())
+               < iacid.Weapon("fox2").LaunchComputer().LookupResult(saent.Track())[0])
+            {
+               mapPRMISL_AC[saent] = "fox2";
+               mapMXTGTD[saent] = 2;
+               if (fox2_left > 2) { mapMXTGT_AC[saent] = 2; }
+            }
+         }
+   /* 
+                0: Default selection
+   */
+         else if (iacid->SHOT_DOC == 0)
+         {
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}      
+         }
+   /* 
+                 1: Single Tap with SRMs, Two total shots at threat
+                    Single tap anything 100% of Fox3 WEZ
+                    Double tap option for the following scenarios:
+                      -Tgt is threatening my protected entity/location
+                      -Tgt is within 75% of threatened range and fox3 GE 4
+                      -Tgt is within 50% of threatened range and fox3 GE 2
+   */
+         else if (iacid->SHOT_DOC == 1)
+         {
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}
+            mapMXTGTD[saent] = 1;
+            // Fox2 if within SRM range
+            if (iacid.SlantRangeTo(saent.Track()) <= iacid->SRM_SLCT && fox2_left > 0 
+                && iacid.Weapon("fox2").LaunchComputer().LookupResult(saent.Track())[0] <= RPEAK_LOC[1])
+            {
+               mapPRMISL_AC[saent] = "fox2";
+               mapMXTGTD[saent] = 2;
+            }
+         
+            if (fox3_left>=2 && iacid.Weapon("fox3").LaunchComputer().LookupResult(saent.Track())[0] <= RPEAK_LOC[2])
+            {
+               mapMXTGTD[saent] = 1;
+               mapPRMISL_AC[saent] = "fox3";
+               // tgt is threatening the location I'm protecting
+               if (iacid->MISSION_TYPE == "DCA" ) // PROTECTING should be string of lat,long locations 
+               {  foreach (string pe_geo in PROTECTING) // loop through all the protected locations
+                  {
+                     if (saent.Track().CurrentLocation().SlantRangeTo(WsfGeoPoint.Construct(pe_geo)) < iacid->DISPLN_X)
+                     {
+                        mapMXTGTD[saent] = 2;
+                        mapMXTGT_AC[saent] = 2;
+                     }
+                  }
+               }
+               // tgt is threatening my protected entity
+               else if (iacid->MISSION_TYPE == "HVAADCA" || iacid->MISSION_TYPE == "ESCORT" )
+               {
+                  foreach (string pe in PROTECTING) // loop through all the platform names i'm protecting
+                  {   
+                     for (int i = 0; i <= saPROC.PerceivedAssets().Size() - 1; i = i + 1)
+                     {  
+                        WsfSA_EntityPerception asset = saPROC.PerceivedAssets()[i]; 
+                        WsfGeoPoint aloc = WsfGeoPoint().Construct(asset.Lat(),asset.Lon(),asset.Altitude());
+                        // see if I have a perception of that asset and check perceived range between hostiles and protected entity
+                        if (asset.PerceivedName() == pe && 
+                           saent.Track().CurrentLocation().SlantRangeTo(aloc) < iacid->DISPLN_X)
+                        {  
+                           mapMXTGTD[saent] = 2;
+                           mapMXTGT_AC[saent] = 2;
+                        } 
+                     }
+                  }
+               }
+               // tgt is getting too close
+               if (iacid.SlantRangeTo(saent.Track()) < iacid->DOR*0.75 && fox3_left >=4)
+               {  
+                  mapMXTGTD[saent] = 2;
+                  mapMXTGT_AC[saent] = 2;
+               }    
+               else if (iacid.SlantRangeTo(saent.Track()) < iacid->DOR*0.5 && fox3_left >=2)
+               {  
+                  mapMXTGTD[saent] = 2;
+                  mapMXTGT_AC[saent] = 2;
+               }          
+            } 
+         }
+   /* 
+                 2: Double tap with SRM at anyting within SRM range
+                    Double tap with MRM at anything within 100% WEZ
+   */
+         else if (iacid->SHOT_DOC == 2)
+         {   
+            // Default to fox3
+            if(fox3_left >= 1){mapPRMISL_AC[saent] = "fox3";}
+            else if (fox2_left >= 1){mapPRMISL_AC[saent] = "fox2";}
+            else if (fox1_left >= 1){mapPRMISL_AC[saent] = "fox1";}
+            mapMXTGTD[saent] = 2;
+            mapMXTGT_AC[saent] = 2;
+            // Fox2 if within SRM range
+            if (iacid.SlantRangeTo(saent.Track()) <= iacid->SRM_SLCT && fox2_left > 0 
+                && iacid.Weapon("fox2").LaunchComputer().LookupResult(saent.Track())[0] <= RPEAK_LOC[1])
+            {
+               mapPRMISL_AC[saent] = "fox2";
+            } 
+         } 
+   #      if(iout_print) {iout.Write(write_str("  ",ltrk.TargetName().Pad(-12),mapPRMISL_AC[ltrk].Pad(-5)));}
+      }
+
+
+   #   foreach (WsfLocalTrack track in mapPRMISL_AC)
+   #   {   iout.Write(write_str(track.TargetName()," ",mapPRMISL_AC[track]));}
+   
+
+   #   if(iout_print) {iout.Close();}
+      return Success();      
+   end_execute
+
+end_advanced_behavior

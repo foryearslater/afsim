@@ -1,0 +1,440 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+//no other easy way in WSF to get relative NED position
+//here we calculate a rough approximation ourselves
+//All units in meters.
+
+script Vec3 RelativePositionNED(WsfGeoPoint from, WsfGeoPoint to)
+   double deg2ft = 364812.76313;
+   double deg2m = deg2ft * Math.M_PER_FT();
+   Vec3 vec = Vec3.Construct( (to.Latitude() -from.Latitude() )*deg2m,
+                              (to.Longitude()-from.Longitude())*deg2m*MATH.Cos(from.Latitude()*MATH.RAD_PER_DEG()),
+                             -(to.Altitude() -from.Altitude() ));
+   return vec;
+end_script
+
+//replicates subroutine makecs(bxin,bzin,b)
+script Array<double> makecs(Vec3 bxin, Vec3 bzin)
+   Array<double> b = Array<double>();
+   Vec3 bx;
+   Vec3 by;
+   Vec3 bz;
+   // Normalize bxin, store in bx
+   bx = bxin.Normal();
+   // Cross product of bzin and Normalized bxin, stored in by
+   by = Vec3.Cross(bzin, bx);
+   // Normalize by and evaluate the magnitude of original by
+   if (by.Normalize() == 0.0)
+   {
+      // If the magnitude of by is zero, replace by with cross of bx and unit Z vector
+      Vec3 unitZ = Vec3.Construct(0.0, 0.0, 1.0);
+      by = Vec3.Cross(unitZ, bx);
+      by.Normalize();
+   }
+   //cross product of bx and by stored in bz
+   bz = Vec3.Cross(bx, by);
+
+   b[0] = bx.Get(0);  // b(1,1) = bx(1)
+   b[3] = bx.Get(1);  // b(1,2) = bx(2)
+   b[6] = bx.Get(2);  // b(1,3) = bx(3)
+   b[1] = by.Get(0);  // b(2,1) = by(1)
+   b[4] = by.Get(1);  // b(2,2) = by(2)
+   b[7] = by.Get(2);  // b(2,3) = by(3)
+   b[2] = bz.Get(0);  // b(3,1) = bz(1)
+   b[5] = bz.Get(1);  // b(3,2) = bz(2)
+   b[8] = bz.Get(2);  // b(3,3) = bz(3)
+   return b;
+end_script
+
+//replicates subroutine makex(cxin,[return c])
+// EQUIVALENT TO MAKECS WHEN ARGUMENT BZIN = (0,0,1)
+script Array<double> makex(Vec3 cxin)
+   Array<double> c = Array<double>();
+   Vec3 unitZ = Vec3.Construct(0.0, 0.0, 1.0);
+   c = makecs(cxin, unitZ);
+   return c;
+end_script
+
+//replicates subroutine makeh([return matrix], dir)
+//returns an array (rot) that represents a 3x3 rotation matrix
+//where rot[0] = matrix(1,1) and rot[1] == matrix(1,2)
+script Array<double> makeh(Vec3 dir)
+   Array<double> rot = Array<double>();
+   double temp = MATH.Sqrt(dir[0]*dir[0] + dir[1]*dir[1]);
+   rot[0] = dir[0]/temp;   //c(1,1) = cxin(1)/sngl(temp)
+   rot[1] = dir[1]/temp;   //c(1,2) = cxin(2)/sngl(temp)
+   rot[2] = 0.0;           //c(1,3) = 0.
+   rot[3] = -rot[1];       //c(2,1) = -c(1,2)
+   rot[4] = rot[0];        //c(2,2) =  c(1,1)
+   rot[5] = 0.0;           //c(2,3) = 0.
+   rot[6] = 0.0;           //c(3,1) = 0.
+   rot[7] = 0.0;           //c(3,2) = 0.
+   rot[8] = 1.0;           //c(3,3) = 1.
+   return rot;
+end_script
+
+// replicates:  subroutine vxfrmc(b,v, [return Vec3 vt],1)
+// "b" represents a 3x3 rotation matrix
+// where b[0] = matrix(1,1) and b[1] == matrix(1,2)
+script Vec3 vxfrmc1(Array<double> b, Vec3 v)
+   //b = 3x3 rotation matrix where [0] = (1,1) and [1] == (1,2)
+   double x = v[0]*b[0]+v[1]*b[1]+v[2]*b[2];
+   double y = v[0]*b[3]+v[1]*b[4]+v[2]*b[5];
+   double z = v[0]*b[6]+v[1]*b[7]+v[2]*b[8];
+   Vec3 vt = Vec3.Construct(x,y,z);
+   return vt;
+end_script
+
+// replicates:  subroutine vxfrmc(b,[return Vec3],vt,2)
+// "b" represents a 3x3 rotation matrix
+// where b[0] = matrix(1,1) and b[1] == matrix(1,2)
+script Vec3 vxfrmc2(Array<double> b, Vec3 vt)
+   //b = 3x3 rotation matrix where [0] = (1,1) and [1] == (1,2)
+   double x = vt[0]*b[0]+vt[1]*b[3]+vt[2]*b[6];
+   double y = vt[0]*b[1]+vt[1]*b[4]+vt[2]*b[7];
+   double z = vt[0]*b[2]+vt[1]*b[5]+vt[2]*b[8];
+   Vec3 v = Vec3.Construct(x,y,z);
+   return v;
+end_script
+
+// replicates: subroutine rotx(chi,vin,[return vout])
+// FINDS VECTOR IN A FRAME ROTATED BY CHI ABOUT X-AXIS
+script Vec3 rotx(double chi, Vec3 vin)
+   double cchi = (Math.Cos(chi * Math.DEG_PER_RAD())) * Math.RAD_PER_DEG();
+   double schi = (Math.Sin(chi * Math.DEG_PER_RAD())) * Math.RAD_PER_DEG();
+   Vec3 vout = Vec3.Construct(vin[0], (cchi*vin[1]+schi*vin[2]), (-schi*vin[1]+cchi*vin[2]));
+   return vout;
+end_script
+
+// replicates: subroutine rotv(chi,vaxis,vin,[return vout])
+// ROTATE VECTOR BY ANGLE ABOUT SPECIFIED AXIS
+//CIN  CHI    REAL - DESIRED ANGLE OF ROTATION (radians)
+//CIN  VAXIS  3-VEC - AXIS OF ROTATION
+//CIN  VIN    3-VEC - UNROTATED VECTOR
+//COUT VOUT   3-VEC - RESULT OF ROTATING VIN BY CHI ABOUT VAXIS
+script Vec3 rotv(double chi, Vec3 vaxis, Vec3 vin)
+   Array<double> rot = Array<double>();
+   if (vaxis[0]*vaxis[0] + vaxis[1]*vaxis[1] == 0.0)
+   {
+      Vec3 unitX = Vec3.Construct(1,0,0);
+      rot = makecs(vaxis, unitX);
+   }
+   else
+   {
+      rot = makex(vaxis);
+   }
+   Vec3 vout = vxfrmc1(rot,vin);
+   vout = rotx(-chi,vout);
+   vout = vxfrmc2(rot,vout);
+   return vout;
+end_script
+
+// replicates: vmake(a,vin,vout)
+// a - desired vector norm
+// vector - vector to rescale
+script Vec3 vmake(double a, Vec3 vin)
+   double b = a / vin.Magnitude();
+   // TODO prevent div by zero?
+   // b = a/sqrt(1.e-35 + vin(1)*vin(1) + vin(2)*vin(2) + vin(3)*vin(3))
+   Vec3 vout = Vec3.Construct(b*vin.X(), b*vin.Y(), b*vin.Z());
+   return vout;
+end_script
+
+// replicates:  subroutine ramp(xlo,xval,xhi)
+script double ramp(double xlo, double xval, double xhi)
+   double rampVal = (xval-xlo) / (xhi-xlo);
+   if(rampVal <= 0.0)
+   {
+      rampVal = 0.0;
+   }
+   if(rampVal >= 1.0)
+   {
+      rampVal = 1.0;
+   }
+   return rampVal;
+end_script
+
+// replicates:  subroutine border(z, z0)
+script double border(double z, double z0)
+   double border = 0;
+   if (z <= 0)
+   {
+      double t = (z / z0 - 1.0);
+      border = 1.0 / (1.0 + (t * t));
+   }
+   else
+   {
+      double u = (z / z0 + 1.0) * (z / z0 + 1.0);
+      border = u / (1 + u);
+   }
+   return border;
+end_script
+
+// replicates:  subroutine cauchy(z, z0)
+script double cauchy(double z, double z0)
+   double t = (z / z0);
+   return 1.0 / (1.0 + (t * t));
+end_script
+
+
+script Vec3 vorth(Vec3 a, Vec3 b)
+   double x = (a[0]*b[0]+a[1]*b[1]+a[2]*b[2])/(b[0]*b[0]+b[1]*b[1]+b[2]*b[2]);
+   Vec3 temp = b;
+   temp.Scale(x);
+   Vec3 c = Vec3.Subtract(a,temp);
+   return c;
+end_script
+
+
+script bool HaveWeapon(WsfPlatform plat)
+   for(int i=0; i<plat.WeaponCount(); i+=1)
+   {
+      if (plat.WeaponEntry(i).QuantityRemaining() >= 1)
+      {
+         return true;
+      }
+   }
+   return false;
+end_script
+
+
+script Vec3 unitv2(Vec3 a)
+   double mag = MATH.Sqrt(a.X()*a.X() + a.Y()*a.Y());
+   Vec3 val = Vec3.Construct(a.X()/mag, a.Y()/mag, 0.0);
+   return val;
+end_script
+
+
+//replicates portion of desvvi that calculates "vuse" and "spduse"
+//function arguments:
+//   vdes   = normalized direction vector
+//   spddes = speed in m/sec
+//returns a vec in m/sec
+//script Vec3 desvvi(WsfPlatform plat, Vec3 vdes, double spddes)
+script Vec3 desvvi(WsfBrawlerProcessor plat, Vec3 vdes, double spddes)
+   spddes = spddes * Math.FT_PER_M();
+
+   bool lngtrn;
+   Vec3 vuse = Vec3();
+   double spduse;
+   double cornrv = plat.CorneringVelocity() * Math.FT_PER_M();//fps
+   double   grav = 32.17405;                   //fps
+   double gmxsut = plat.MaxSustainedGs() * Math.FT_PER_M();//ft/s^2
+   //C     --external declarations
+//   integer rspace
+//   realdot,ramp,xlimit
+//   real arccos
+   //C     --local declarations
+   //real h(2),hdes(2);
+   Vec3 h = Vec3();
+   Vec3 hdes = Vec3();
+   double d10 = 0.174533;   //radians (10 deg)
+   double s30 = 0.5;
+   double s45 = 0.707107;
+   double s15 = 0.258819;
+   double dsemax,hnorm,csenow,senow;
+   //real arcsin
+   //C*ENDDEC
+   vuse = unitv2(vdes);
+   h    = unitv2(plat.Platform().VelocityNED());
+
+   //C  CURRENT HEADING COORDINATES:
+   //C     X = [ H(1),H(2)]
+   //C     Y = [-H(2),H(1)]
+   //hdes(1) = vuse(1)*h(1)+vuse(2)*h(2)
+   hdes.SetX(vuse.X()*h.X()+vuse.Y()*h.Y());
+
+   //C        TO AVOID MESSING UP LATER ARCCOS(HDES(1)):
+   if(MATH.Fabs(hdes.X()) > 1.0)
+   {
+      if(MATH.Fabs(hdes.X()) > 1.000001)
+      {
+         //call nabort('HDES(1) NORM');
+         writeln("ABORT!!!! hdes(1) > 1.000001");
+         return Vec3();
+      }
+      hdes.SetX(1.0);
+      if (hdes.X() < 0)
+      {
+         hdes.SetX(-1.0);
+      }
+   }
+
+   hdes.SetY(-vuse.X()*h.Y()+vuse.Y()*h.X());
+   csenow = plat.Platform().Speed()*MATH.FT_PER_M()+0.01;
+   csenow = Vec3.Dot(vdes,plat.Platform().VelocityNED())/csenow;
+   senow = MATH.ACos(csenow);
+   double tproj3 = plat.ProjectedTimeDelta();
+   dsemax = tproj3*(gmxsut*grav/cornrv);
+   //C  LNGTRN REQUIRES LARGE ERRORS IN BOTH MAGNITUDE AND HEADING
+   lngtrn = MATH.ACos(hdes.X()) > dsemax && senow > 1.5*dsemax;
+   if (!lngtrn)
+   {
+      //C
+      //C  SHORTER TURN:
+      //C
+      vuse = vdes;
+      spduse = spddes;
+      //goto 9999
+   }
+   else
+   {
+      //C
+      //C  LONGER TURN:
+      //C
+      if((plat.Platform().Speed()*MATH.FT_PER_M()) > 0.9*cornrv)
+      {
+         if((plat.Platform().Speed()*MATH.FT_PER_M()) < 1.1*cornrv)
+         {
+            //C     HERE SPEED NEAR CORNER - MAINTAIN MODEST DIVE TO HELP MAINTAIN SPD
+            vuse.SetZ(s15);
+         }
+         else
+         {
+            //C     TOO FAST - PULL UP WHILE TURNING
+            //format('DESVVI... TOO FAST, CORNER = ',f8.2,' MACH ',f5.1)
+            vuse.SetZ(-s45*ramp(1.1*cornrv,plat.Platform().Speed()*MATH.FT_PER_M(),1.2*cornrv));
+         }
+      }
+      else
+      {
+         //C     TOO SLOW - SET 30 DEG DIVE
+         vuse.SetZ(s30);
+      }
+
+      hnorm = MATH.Sqrt(1.0-vuse.Z()*vuse.Z());
+      if(hdes.X() > 0.0)
+      {
+         //C  RENORMALIZE HORIZONTAL FOR LESS THAN 90 DEG HEADING CHANGES
+         vuse.SetX(vuse.X()*hnorm);
+         vuse.SetY(vuse.Y()*hnorm);
+      }
+      else
+      {
+         //C     SET UP 90 DEG HEADING CHANGE AND DO ROTATION BACK TO EARTH COORDINATES
+         //C     IMPLICIT IS HDES(1) = 0
+         hdes.SetY(hnorm);
+         if (hdes.Y() < 0)
+         {
+            hdes.SetY(-hnorm);
+         }
+         vuse.SetX(-h.Y()*hdes.Y());
+         vuse.SetY(h.X()*hdes.Y());
+      }
+      spduse = cornrv;
+      //goto 9999
+   }
+   //C
+//9999
+   vuse.Normalize();
+   vuse.Scale(spduse * Math.M_PER_FT());
+   return vuse;
+end_script
+
+script double AngleBetween(Vec3 lhs, Vec3 rhs)
+   double mag = lhs.Magnitude() * rhs.Magnitude();
+
+   if(mag == 0.0)
+   {
+      return 0;
+   }
+      
+   double cosine = Vec3.Dot(lhs,rhs) / mag;
+
+   //Bound angle from -pi to pi
+   if(cosine < -1.0)
+   {
+      cosine = -1.0;
+   }
+   else if(cosine > 1.0)
+   {
+      cosine = 1.0;
+   }
+
+   return Math.ACos(cosine);
+end_script
+
+script void dirct(double spddes, string spdmd, double rolds, string rolmd, double geedes, double value)
+
+
+end_script
+
+script void Slice(WsfPlatform PLATFORM, WsfBrawlerProcessor BRAWLER, double dsrhead, bool unload, double final_alt, bool hold_fire)
+      
+      double pitch, dhead, myalt, myroc, dspd, bank, rolds, psubs;
+      double frcmch, gdes, y_comp, z_comp, hdgnow, gnow, maxbank;
+      Vec3 aload = Vec3();
+
+      myalt = PLATFORM.Altitude();
+      myroc = PLATFORM.VelocityNED()[3];
+      pitch = PLATFORM.OrientationNED()[2];
+      hdgnow = PLATFORM.Heading();
+      aload = PLATFORM.AccelerationNED();
+      //aload = Vec3.Subtract(PLATFORM.AccelerationNED(),Vec3.Construct(0,0,9.81));
+      gnow = aload.Magnitude() / Math.GRAVITATIONAL_CONSTANT();
+      //dhead = PLATFORM->vctr_hdg;
+      dhead = dsrhead - hdgnow;
+      //may need check for heading greater than 180 or less than -180
+      bool ninety = (dhead<90);
+      if (myalt < 5000 || Math.Fabs(dhead) < 15)
+      {
+       
+      }  //ignore this scenario for now
+      else
+      {
+         dspd = 3.0;
+         if (unload)
+         {
+            maxbank = 90 + 45*ramp(-30,pitch,0);
+            if(!ninety)
+            {
+               bank = maxbank;
+               gdes = BRAWLER.MaxSustainedGs() + 3*ramp(0.85,PLATFORM.MachNumber(),1.2);
+            }
+            else
+            {
+               if(pitch<-20)
+               {
+                  bank = Math.Min(110*Math.Fabs(dhead)/90,maxbank);
+               }
+               else
+               {
+                  bank = maxbank;
+               }
+               gdes = BRAWLER.MaxSustainedGs() + 2*ramp(0.85,PLATFORM.MachNumber(),1.2);
+            }
+         }
+         else
+         {
+            psubs = 1;
+            gdes = BRAWLER.MaxSustainedGs() + ramp(-500,psubs,0)*(BRAWLER.MaxAvailableGs()-BRAWLER.MaxSustainedGs());
+            if (myroc < 0)
+            {
+               bank = 110;
+            }
+            else
+            {
+               bank = 60 + 30*ramp(-30*Math.RAD_PER_DEG(),pitch,-10*Math.RAD_PER_DEG());
+            }
+         }
+         gdes = gnow + (gdes-gnow)*.5;
+         y_comp = Math.Sin(bank)*gdes;
+         z_comp = Math.Cos(bank)*gdes-1;
+         rolds = Math.DEG_PER_RAD()*Math.ATan2(y_comp,z_comp)*Math.Sign(dhead);
+         dirct(dspd,"THROTTLE",rolds,"EARTH",gdes,10.0);
+      }
+    writeln("myalt: ",myalt," myroc: ",myroc," pitch: ", pitch);
+    writeln("hdgnow: ",hdgnow," aload: ",aload," gnow: ",gnow);
+    writeln("dhead: ",dhead," ninety: ",ninety," gdes: ",gdes);
+    writeln("ycomp: ",y_comp," z_comp: ",z_comp," rolds: ",rolds);
+      
+end_script
+
+

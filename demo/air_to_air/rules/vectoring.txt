@@ -1,0 +1,171 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE  Vectoring behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+*/
+advanced_behavior vectoring
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern double pr_gees;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+      extern WsfSA_EntityPerception ppmjid;
+      extern double t_phase;
+      extern Array<double> VECTOR_FORMATION;
+      extern Array<int> PLAYBOOK;      
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr" && PLATFORM->faz == "vectoring")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   execute 
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," vectoring");   
+      faz_desired = "vectoring"; 
+      int plan_1 = PLAYBOOK[0]; 
+      int plan_2 = PLAYBOOK[1]; // create local version of these to manipulate in this routine
+      int plan_3 = PLAYBOOK[2];
+      bool BrawlMover;
+      WsfBrawlerProcessor BRAWLER;
+      if (iacid.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         for (int i=0; i<iacid.ProcessorCount();i+=1)
+         {
+            if (iacid.ProcessorEntry(i).Type() == "WSF_BRAWLER_PROCESSOR")
+            {
+               BrawlMover = true;
+               BRAWLER = (WsfBrawlerProcessor)iacid.ProcessorEntry(i);
+               break;
+            }
+         }
+      }      
+      // set the speed based on commit speed and if I want to sprint above the mach on the first pass
+      if(first_pass)
+      {
+         pr_speed = (iacid->COMMIT_SPD + iacid->SPRINT_SPD)*atmos.SonicVelocity(iacid.Altitude());
+      }
+      else
+      {
+         pr_speed = iacid->COMMIT_SPD * atmos.SonicVelocity(iacid.Altitude());
+      }
+      pr_heading = pr_vctr_hdg(iacid, PLAYBOOK, VECTOR_FORMATION); // calculate desired heading to fly on
+      pr_altitude = iacid->COMMIT_ALT; // set desired altitude
+      
+      if (BrawlMover)
+      {
+         pr_gees = BRAWLER.MaxSustainedGs();
+      }
+      else
+      {
+         pr_gees = 3;
+      }
+      // fly on the desired vector
+      pr_vector(iacid,pr_heading,pr_speed,pr_altitude,pr_gees);
+ 
+      if (rng_cls_hst <= iacid->MERGE_RNG && time_ok)
+      {
+         if (iacid->NOTCH)
+         {  
+            faz_desired = "notch";
+            reason = "NOTCH MRM DEFENSE";
+            t_phase=TIME_NOW + 30;
+         }
+         else
+         {  
+            faz_desired = "merge";
+            reason = "ACCEPT MERGE";
+            t_phase=TIME_NOW + 10;
+         }
+      }
+      else if ( alerted || rng_cls_hst <= iacid->DOR )
+      {  
+          if ( plan_3 == 1 && pump_per && time_ok)
+          {  
+             faz_desired = "pump";
+             reason = "ALWAYS PUMP AT MAR";
+             t_phase=TIME_NOW + iacid->TDRAG;        
+          }
+          else if ( plan_3 == 2 && pump_per && time_ok && threatnd)
+          {  
+             faz_desired = "pump";
+             reason = "ALWAYS PUMP WHEN THREATENED";
+             t_phase=TIME_NOW + iacid->TDRAG;
+          }
+          else if (needil && apole_tct) // crank tactics
+          { 
+             faz_desired = "crank";
+             reason = "SUPPORTING MISSILES";
+             t_phase=TIME_NOW + 10;
+          }
+      }   
+      else if (needil && apole_tct) // crank tactics
+      {  
+         faz_desired = "crank";
+         reason = "SUPPORTING MISSILES";
+         t_phase=TIME_NOW + 10;
+      }
+      else if (rng_cls_hst > iacid->COMMIT_RNG*1.5 && rng_cls_sam > iacid->COMMIT_RNG*1.5)
+      {  
+         faz_desired = "ingress";
+         reason = "RECOMMIT...WEAPONS AND FUEL LEFT";
+         t_phase=TIME_NOW + 10;
+      }
+      else if (ppmjid.Track().IsValid() && ppmjid.Track().LandDomain())
+      {
+         faz_desired = "sam_vctr";
+         reason = "ENGAGING SAM";
+         t_phase=TIME_NOW + 10;
+      }
+      else if ((rng_cls_hst - iacid->DOR) > (rng_cls_sam - iacid->SAM_PMP_RNG))
+      {
+//    SAM is closer to SAM pump range than hostile aircraft is to threatend range => switch to sam_vctr
+         faz_desired = "sam_vctr";
+         reason = "ENGAGE SAM";
+         t_phase=TIME_NOW + 10;
+      }
+      return Success(reason);            
+   end_execute
+
+end_advanced_behavior

@@ -1,0 +1,120 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once sensors/radar/aesa_antenna.txt
+sensor long_range WSF_RADAR_SENSOR
+   ignore_domain           surface
+   ignore invisible
+   ignore_same_side
+   
+   initial_mode            SEARCH
+   selection_mode          multiple // multiple to allow the "TWS" mode operation
+    
+   slew_mode               azimuth_and_elevation
+   azimuth_slew_limits    -179.0 deg 179.0 deg 
+   elevation_slew_limits  -60.0 deg 60.0 deg 
+   
+   mode_template
+      antenna_tilt  0.0 deg     
+      
+      azimuth_field_of_view     -179.0 deg 179.0 deg
+      elevation_field_of_view   -60.0 deg 60.0 deg
+      
+      minimum_altitude    -50000.0 ft
+      maximum_altitude     100000.0 ft
+      maximum_range        300.0 nmi   
+      
+#     electronic_beam_steering                azimuth_and_elevation
+#     electronic_beam_steering_limit          60.0 deg
+#     electronic_beam_steering_loss_exponent  1.2      # Brawler default
+      
+      azimuth_error_sigma            0.3 deg  // beamwidth / 10            
+      elevation_error_sigma          0.3 deg  // beamwidth / 10              
+      range_error_sigma             100.0 ft                  
+
+      transmitter
+         antenna_pattern  AESA_ANTENNA
+         power                       30 kw       #
+         frequency                   9.5 ghz     
+         polarization                vertical
+         duty_cycle                  0.25       
+         pulse_width                 2.0 usec   
+         pulse_repetition_frequency  90 khz      
+         internal_loss               2.0 db      #
+         attenuation_model itu end_attenuation_model
+      end_transmitter
+      
+      receiver
+         antenna_pattern          AESA_ANTENNA
+         noise_figure             5.5    db      
+         instantaneous_bandwidth  30.00  hz      
+         internal_loss            2.5    db      
+      end_receiver
+      
+      detection_probability
+         signal_to_noise 6.9  absolute probability 0.00
+         signal_to_noise 7.0  absolute probability 0.01
+         signal_to_noise 8.0  absolute probability 0.05
+         signal_to_noise 9.0  absolute probability 0.10
+         signal_to_noise 10.0 absolute probability 0.50
+         signal_to_noise 11.0 absolute probability 0.80
+         signal_to_noise 12.0 absolute probability 0.90
+         signal_to_noise 13.0 absolute probability 0.95
+         signal_to_noise 14.0 absolute probability 0.99
+      end_detection_probability
+      
+      prf_factor -10 db                     
+      compute_measurement_errors  true
+      doppler_resolution          5.0 m/s
+      hits_to_establish_track     1 1         
+      hits_to_maintain_track      1 3         
+
+      signal_processor simple_doppler
+         maximum_doppler_speed       3000.0 m/s  
+      end_signal_processor 
+      
+      reports_location
+      reports_range
+      reports_range_rate
+      reports_elevation
+      reports_bearing
+      reports_velocity
+      reports_side
+      reports_signal_to_noise
+   end_mode_template
+   
+   mode SEARCH
+      maximum_request_count   0
+      frame_time              10 sec #  
+      cue_mode                azimuth_and_elevation
+      azimuth_cue_limits     -179.0 deg 179.0 deg
+      elevation_cue_limits   -60.0 deg 60.0 deg   
+      scan_mode               azimuth_and_elevation
+      azimuth_scan_limits    -60.0 deg 60.0 deg # 
+      elevation_scan_limits  -5.0 deg 5.0 deg # 
+      post_lockon_detection_threshold_adjustment -1 db
+   end_mode
+   
+   mode TWS
+      frame_time              0.1 sec # 
+      maximum_request_count   20 #
+      cue_mode                azimuth_and_elevation
+      azimuth_cue_limits     -179.0 deg 179.0 deg
+      elevation_cue_limits   -60.0 deg 60.0 deg
+      dwell_time 0.04 seconds
+      azimuth_scan_limits     -3.0 deg  3.0 deg
+      elevation_scan_limits   -3.0 deg  3.0 deg
+      integration_gain         4.0 db             
+   end_mode
+   
+   filter WSF_KALMAN_FILTER
+      process_noise_model constant_velocity
+      process_noise_sigmas_XYZ 2 2 2          # AFSIM recommended values for high agility aircraft
+   end_filter
+end_sensor

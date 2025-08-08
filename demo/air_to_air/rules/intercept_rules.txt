@@ -1,0 +1,163 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+Intercept Rules: Intercept the task track I have been given
+
+Summary: Intercept my task
+AUTHOR   Snyder
+
+Technical Description:
+Classification: UNCLASSIFIED//FOUO
+
+Look at my recieved tasks, intercept that task track
+
+Key Parameters Description:
+*/
+advanced_behavior intercept_rules
+
+   script_debug_writes disable
+
+
+   script_variables
+
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;
+   
+#      extern Array<string> pr_pos_bias;
+      extern WsfPlatform iacid;
+      extern double pr_speed;
+      extern double pr_altitude;
+      extern double pr_heading;
+      extern int rte_ind;
+      extern string faz;
+      extern string rule_type;
+      extern bool bng_fuel;
+      Vec3 desdir;
+      Vec3 dir0;
+      extern WsfGeoPoint home_base;
+      Atmosphere atm = Atmosphere.Construct("default");
+      extern bool log_print;
+         extern string log_path;
+         extern string iout_path;
+      extern bool iout_print;
+      extern WsfTaskProcessor tsk_mgr;
+      extern WsfCommandChain iflite;
+      extern WsfCommandChain ielement;
+      extern WsfCommandChain FORM_FLY_CHAIN;
+#      extern WsfBrawlerMover my_mover;
+      extern string reason;
+      extern FileIO iout;
+      extern FileIO log;
+
+   end_script_variables
+
+
+   on_init
+      faz = "ingress";
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+   end_on_init
+
+   precondition
+      //writeln_d(PLATFORM.Name(), " precondition behavior_alt3111_straight_level_max_speed, T=", TIME_NOW);
+
+      //## Evaluate conditions that would prevent behavior alternative from running
+
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "intercept")
+      {
+         return Success();
+      }
+      else
+      {
+         return Failure(reason);
+      }
+
+   end_precondition
+
+
+   execute
+#      BRAWLER.SetConsciousnessEventTime(3.0);
+// print out each A/C's phase
+#      drawCircle(PLATFORM,PROCESSOR.UpdateInterval(), "phase", rule_type, "solid", 2, "line", Vec3.Construct(0.9, 0.6, 0.0), 1000);
+#      pr_pos_bias.Clear();
+
+#    FileIO iout = FileIO();
+#    FileIO log = FileIO();
+#    if (log_print)
+#    {
+#       log.Open(log_path, "append");
+#    }
+    if (iout_print)
+    {
+#       iout.Open(iout_path, "append");
+       iout.Write(write_str("\nINTERCEPT_RULES...SIMULATION TIME HAS REACHED ",TIME_NOW, " s\n",
+                   "A/C ",iacid.Name(),"\n"));
+    }
+
+   if (bng_fuel)
+   {
+      faz = "egress";
+      pr_heading = iacid.TrueBearingTo(home_base);
+      pr_speed = iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude());
+      pr_altitude = iacid->EGRESS_ALT;
+   }
+   else
+   {
+      foreach (WsfTask tsk in tsk_mgr.ReceivedTaskList())
+      {
+         WsfTrack ltrk = iacid.MasterTrackList().FindTrack(tsk.LocalTrackId());
+         // target is dead, complete task and then cancel it
+         if (!ltrk.Target().IsValid() && iacid == iacid.Commander("IFLITE"))
+         {
+            tsk_mgr.TaskComplete(tsk.TrackId(),tsk.TaskType());
+            tsk_mgr.CancelTask(tsk.TrackId());
+            foreach (WsfPlatform sub in iacid.Subordinates("IFLITE"))
+            {
+               if (sub.IsValid() && !sub.CategoryMemberOf("missile"))
+               {
+                  tsk_mgr.CancelTask(sub,tsk.TrackId());
+               }
+            }
+         }
+         if (ltrk.IsValid() && tsk.TaskType() == "INTERCEPT")
+         {
+#            pr_intercept(iacid,ltrk,iacid->COMMIT_SPD*atm.SonicVelocity(iacid.Altitude()),BRAWLER);
+            pr_heading = iacid.TrueBearingTo(ltrk);
+            // formation fly to intercept point
+            pr_formation(iacid,pr_heading,iacid->COMMIT_SPD*atm.SonicVelocity(iacid.Altitude()),iacid->COMMIT_ALT,FORM_FLY_CHAIN);
+            iout.Write(write_str(" Intercepting ",ltrk.TargetName(),"\n"));
+            return Success(" ".Join({"Intercepting",ltrk.TargetName()}));
+         }
+      }
+   }
+//    close log.txt and iout.txt
+#      if (iout_print){iout.Close();}
+#      if (log_print){log.Close();}
+      return Success("EXECUTING INTERCEPT RULES");
+   end_execute
+
+end_advanced_behavior
+

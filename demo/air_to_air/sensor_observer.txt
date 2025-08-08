@@ -1,0 +1,421 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+   Classification: UNCLASSIFIED//FOUO
+   Author: Snyder
+   Purpose: Re-create the SENSOR output file that is created by EZJA's Brawler custom print statements
+
+Technical Description:
+   Write to the specified SENSOR output file with the format:
+   SensorName_TRACK      OBSERVER    obs_ind TRACK OF    tgt_ind AT time
+   Range to target (nmi) xxx
+      RANGE, AZ, EL      - TRUTH         xxx     xxx    xxx [FT,DEG,DEG]
+      RANGE, AZ, EL      - ERROR         xxx     xxx    xxx [FT,DEG,DEG]
+      RANGE, AZ, EL      - SIGMA         xxx     xxx    xxx [FT,DEG,DEG]
+      RANGE, AZ, EL      - COVARIANCE    xxx     xxx    xxx [FT,DEG,DEG]
+      RANGE, AZ, EL RATE - TRUTH         xxx     xxx    xxx [FT/S,DEG/S,DEG/S]
+      RANGE, AZ, EL RATE - ERROR         xxx     xxx    xxx [FT/S,DEG/S,DEG/S]
+      RANGE, AZ, EL RATE - COVARIANCE    xxx     xxx    xxx [FT/S,DEG/S,DEG/S]
+      TRUTH LOS xxx xxx xxx
+      TRACK LOS xxx xxx xxx
+
+   this is my understanding of what each of these variables means in AFSIM
+   sigma - gaussian error of the measurement, defined on the sensor
+   error - difference between reported track location and truth location
+   covariance - the uncertanty of the estimated state, requires a kalman filter, 
+                uncertanties are the diagonal values (mapped below)
+
+   if a sensor has a kalman filter, the StateCovariance() method is used to find covariance
+   if a sensor does not have a kalman filer, the MeasurementCovariance() method is used
+
+   Covariance Matrix - Diagonal Element Values
+   [0,0] - z covariance squared (m^2) - vertical range uncertainty, relative to line of sight
+   [1,1] - x covariance sqaured (m^2) - line of sight range uncertainty
+   [2,2] - y covariance squared (m^2) - cross range uncertainty, relative to line of sight
+   [3,3] - range-rate covariance squared (m^2/s^2)
+   [4,4] - vertical range-rate covariance squared (m^2/s^2)
+   [5,5] - cross range-rate covariance squared (m^2/s^2)
+
+   There are two scripts: SensorUpdate and LocalTrackUpdate
+   SensorUpdate     - will print the sensor name followed by the track data
+   LocalTrackUpdate - will print "MASTER_TRACK" if this local track is from the master track list.
+                    - This will print "LOCAL_TRACK" if it from a non master track processor.
+                    - The EZJA "BRAWLER" platform type has a non master track processor called "raw_data_mgr",
+                      if the local track is from this track list, it will print "FUSION_TRACK", indicating 
+                      that this track is the fused track of all on-board raw tracks
+                      
+   WsfDraw - There is a commented out block in SensorUpdate script, which enables the user to draw the 
+             covariance volume in results_vis via a WsfDraw.BeginEllipsoid() command. I would recomend the
+             user to have some platform and sensor checks to only draw desired covariance of a specific 
+             observer-sensor/target pair
+
+   Error calculation: 
+      The track error values that I want to print are not directly available through script methods, so
+      I had to do some vector math to get the proper variables. Since these calculations may not be all
+      that easy to follow in the actual script, I decided to write out the math going on for clarity 
+      Range error - This is the line of sight range error calculated using the dot product to find the track's
+                    range projected in the truth line of sight coordinate frame
+                    r_error = |TruthLOS| - (TruthLOS dot TrackLOS)/|TruthLOS|
+                    TruthLOS - Vec3 relative position vector (truth target position wrt observer)
+                    TrackLOS - Vec3 relative position vector (track position wrt observer)
+      Rate Errors - The Range-Rate, CR-Rate/Az-Rate, and VR-Rate/El-Rate errors were calculated by finding 
+                    the radial and transverse velocity vectors. Given two objects at position vectors
+                    Po & Pt and velocity vectors Vo & Vt, their relative velocity is Vt-Vo. To get the 
+                    radial velocity (the velocity in the direction of their connecting line) you use the 
+                    dot product to project to this direction. Once we have the relative velocity vector
+                    and the radial velocity vector, we can calculate the transverse velocity vector since
+                    Radial Velocity + Transverse Velocity = Relative Velocity
+      radial speed = (Vt-Vo) dot (Pt-Po)/|(Pt-Po)|
+      Vo - observer velocity vector
+      Vt - target velocity vector
+      Po - observer position vector
+      Pt - target position vector
+   
+      radial velocity vector
+      Vrad = [(Vt-Vo)dot(Pt-Po)]*[(Pt-Po)/|(Pt-Po)|^2]
+           = [       term1     ]*[       Prel2       ]
+      |Vrad| = radial speed
+
+      transverse velocity vector
+      Vtrans = Vrel-Vrad  where Vrel = relative velocity vector = (Vt-Vo)
+      The X component is the vertical range rate
+      The Z component is the cross range rate
+      |Vtrans| = tangential speed
+      Once we have the cross-range-rate and vertical-range-rate, we can calculate the corresponding az-rate
+      and el-rate values with simple trig functions
+
+   Follow on considerations:
+      Non-truth correlation - This observer currently assumes perfect correlation, requiring a truth target
+                              platform object to exist for each track being updated. If we assume a non-truth
+                              correlation method, we need to figure out how to associate a track object with
+                              a platform object in the simulation. We could potentially use a nearest-neighbor
+                              method. This can get tricky as you introduce things like false-targets, resolution
+                              of a track (dinstinguishing between closely spaced targets), and different kinds
+                              of EA techniques that can degrade a track (gate-pulloff, noise jamming, etc.) 
+*/
+
+script void SensorUpdate(WsfPlatform observer, WsfSensor sensor, WsfTrack track)
+
+if (sensor_print)
+{
+   WsfPlatform target;
+   double frame_time = 1;
+   WsfCovariance Covariance = WsfCovariance();
+
+   // set the covariance matrix to be used, use the state matrix if it exists, else use the measurment covariance matrix
+   if (track.StateCovarianceValid())
+   {
+      Covariance = track.StateCovariance();
+   }
+   else if (!track.StateCovarianceValid() && track.MeasurementCovarianceValid())
+   {
+      Covariance = track.MeasurementCovariance();
+   }
+   else if (!track.StateCovarianceValid() && !track.MeasurementCovarianceValid())
+   {
+      return; // no valid covariance matrix
+   }
+
+   // make sure the target is valid in the sim
+   // need to figure something out when we don't have a truth entity associated with a track, maybe use a nearest neighbor?
+   if (track.Target().IsValid() && !track.Target().IsNull())
+   {
+      target = (WsfPlatform)track.Target();
+   }
+   else
+   {
+      return;
+   }
+
+   string tgt_i = (string)target.Index(); // cast the index as a string for write statements
+   string obs_i = (string)observer.Index();
+
+   // create Vec3's of the Truth and Track line of sight vectors
+   Vec3 TruthLOS = RelativePositionNED(observer.Location(),target.Location());
+   Vec3 TrackLOS = RelativePositionNED(observer.Location(),track.CurrentLocation());
+
+   // range (line of sight)
+   double r_truth = TruthLOS.Magnitude()*MATH.FT_PER_M();
+   double r_sigma = track.RangeErrorSigma()*MATH.FT_PER_M();
+   double r_error = MATH.FT_PER_M()*(TruthLOS.Magnitude() - Vec3.Dot(TruthLOS,TrackLOS)/TruthLOS.Magnitude());
+   double r_cov   = MATH.Sqrt(Covariance.Element(1,1))*MATH.FT_PER_M();
+   double rr_cov  = MATH.Sqrt(Covariance.Element(3,3))*MATH.FT_PER_M();  
+
+   // azimuth & cross-range
+   double az_truth = observer.RelativeBearingTo(target);
+   double az_sigma = track.BearingErrorSigma()*MATH.DEG_PER_RAD();
+   double az_error = observer.TrueBearingTo(target) - observer.TrueBearingTo(track.CurrentLocation());
+   double cr_error = MATH.Sin(az_error)*TrackLOS.Magnitude()*MATH.FT_PER_M();
+   double cr_cov1  = MATH.Sqrt(Covariance.Element(2,2))*MATH.FT_PER_M();
+   double az_cov   = MATH.ASin(cr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));
+   double crr_cov1 = MATH.Sqrt(Covariance.Element(5,5)*MATH.FT_PER_M());
+   double azr_cov  = MATH.ASin(crr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));
+
+   // elevation & vertical-range
+   double el_truth = observer.RelativeElevationOf(target.Location());
+   double el_sigma = track.ElevationErrorSigma()*MATH.DEG_PER_RAD();
+   double el_error = observer.RelativeElevationOf(target.Location()) - observer.RelativeElevationOf(track.CurrentLocation());
+   double vr_error = MATH.Sin(el_error)*TrackLOS.Magnitude()*MATH.FT_PER_M();   
+   double vr_cov1  = MATH.Sqrt(Covariance.Element(0,0))*MATH.FT_PER_M(); 
+   double el_cov   = MATH.ASin(vr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));  
+   double vrr_cov1 = MATH.Sqrt(Covariance.Element(4,4))*MATH.FT_PER_M();   
+   double elr_cov  = MATH.ASin(vrr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));  
+
+   // get truth range-rate, az-rate, el-rate
+   Vec3 Po   = (Vec3)observer.LocationWCS(); // m/s
+   Vec3 Vo   = (Vec3)observer.VelocityWCS(); // m/s
+   Vec3 Pt   = (Vec3)target.LocationWCS();   // m/s
+   Vec3 Vt   = (Vec3)target.VelocityWCS();   // m/s
+   Vec3 Vrel = Vec3.Subtract(Vt,Vo);         // m/s
+   Vec3 Prel = Vec3.Subtract(Pt,Po);         // m/s
+   Vec3 Prel2= Vec3.Construct(Prel.X()/Prel.MagnitudeSquared(),Prel.Y()/Prel.MagnitudeSquared(),Prel.Z()/Prel.MagnitudeSquared());   
+   double TruthRR = Vec3.Dot(Vrel,Prel.Normal())*MATH.FT_PER_M();
+   double term1 = Vec3.Dot(Vrel,Prel);
+   Vec3 Vrad = Vec3.Construct(MATH.FT_PER_M()*term1*Prel2.X(),MATH.FT_PER_M()*term1*Prel2.Y(),MATH.FT_PER_M()*term1*Prel2.Z());
+   Vec3 Vrad2 = Vec3.Construct(term1*Prel2.X(),term1*Prel2.Y(),term1*Prel2.Z());
+   Vec3 Vtrans= Vec3.Subtract(Vrel,Vrad2);  // m/s
+   double TruthCRR = Vtrans[2]*MATH.FT_PER_M(); // ft/s
+   double TruthAZR = MATH.ATan(TruthCRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   double TruthVRR = Vtrans[0]*MATH.FT_PER_M(); // ft/s
+   double TruthELR = MATH.ATan(TruthVRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   
+   // get track range-rate, az-rate, el-rate
+   Pt   = (Vec3)track.CurrentLocation().LocationWCS();
+   Vt   = (Vec3)track.VelocityWCS();
+   Vrel = Vec3.Subtract(Vt,Vo);
+   Prel = Vec3.Subtract(Pt,Po);
+   Prel2= Vec3.Construct(Prel.X()/Prel.MagnitudeSquared(),Prel.Y()/Prel.MagnitudeSquared(),Prel.Z()/Prel.MagnitudeSquared());   
+   double TrackRR = Vec3.Dot(Vrel,Prel.Normal())*MATH.FT_PER_M();
+   term1 = Vec3.Dot(Vrel,Prel);
+   Vrad = Vec3.Construct(MATH.FT_PER_M()*term1*Prel2.X(),MATH.FT_PER_M()*term1*Prel2.Y(),MATH.FT_PER_M()*term1*Prel2.Z());
+   Vrad2 = Vec3.Construct(term1*Prel2.X(),term1*Prel2.Y(),term1*Prel2.Z());
+   Vtrans= Vec3.Subtract(Vrel,Vrad2);  
+   double TrackCRR = Vtrans[2]*MATH.FT_PER_M();
+   double TrackAZR = MATH.ATan(TrackCRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   double TrackVRR = Vtrans[0]*MATH.FT_PER_M();
+   double TrackELR = MATH.ATan(TrackVRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));   
+   
+   // set range, az, and el rate errors
+   double rr_error  = TruthRR  - TrackRR;
+   double crr_error = TruthCRR - TrackCRR;
+   double azr_error = TruthAZR - TrackAZR;
+   double vrr_error = TruthVRR - TrackVRR;
+   double elr_error = TruthELR - TrackELR;
+   
+   string sensor_track = "_".Join({sensor.Name(),"TRACK"});
+
+   sensorIO.Write(write_str(sensor_track.Pad(-15)," OBSERVER ",obs_i.Pad(4),
+   " TRACK OF ",tgt_i.Pad(4)," AT ",Format.Fixed(TIME_NOW,1),"\n"));
+   sensorIO.Write(write_str("   Range to target (nmi) ",
+   Format.Fixed(TruthLOS.Magnitude()*MATH.NM_PER_M(),1),"\n"));
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - TRUTH     ",Format.Fixed(r_truth,0).Pad(11),Format.Fixed(az_truth,4).Pad(11),Format.Fixed(el_truth,4).Pad(11)," [FT,DEG,DEG]\n"));      
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - ERROR     ",Format.Fixed(r_error,0).Pad(11),Format.Fixed(az_error,4).Pad(11),Format.Fixed(el_error,4).Pad(11)," [FT,DEG,DEG]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - SIGMA     ",Format.Fixed(r_sigma,0).Pad(11),Format.Fixed(az_sigma,4).Pad(11),Format.Fixed(el_sigma,4).Pad(11)," [FT,DEG,DEG]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - COVARIANCE",Format.Fixed(r_cov,0).Pad(11),Format.Fixed(az_cov,4).Pad(11),Format.Fixed(el_cov,4).Pad(11)," [FT,DEG,DEG]\n"));
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - TRUTH     ",Format.Fixed(TruthRR,0).Pad(11),Format.Fixed(TruthAZR,4).Pad(11),Format.Fixed(TruthELR,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n"));      
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - ERROR     ",Format.Fixed(rr_error,0).Pad(11),Format.Fixed(azr_error,4).Pad(11),Format.Fixed(elr_error,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - COVARIANCE",Format.Fixed(rr_cov,0).Pad(11),Format.Fixed(azr_cov,4).Pad(11),Format.Fixed(elr_cov,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n"));
+#      sensorIO.Write(write_str("      RANGE, CR, VR      - COVARIANCE",Format.Fixed(r_cov,0).Pad(11),Format.Fixed(cr_cov1,0).Pad(11),Format.Fixed(vr_cov1,0).Pad(11)," [FT,FT,FT]\n"));
+#      sensorIO.Write(write_str("      RANGE, CR, VR RATE - COVARIANCE",Format.Fixed(rr_cov,0).Pad(11),Format.Fixed(crr_cov1,0).Pad(11),Format.Fixed(vrr_cov1,0).Pad(11)," [FT/S,FT/S,FT/S]\n"));                        
+
+// writing this in east-north-up coordinates
+   sensorIO.Write(write_str("      TRUTH LOS ",Format.Fixed(TruthLOS.Y()*MATH.FT_PER_M(),0).Pad(11)," ",Format.Fixed(TruthLOS.X()*MATH.FT_PER_M(),0).Pad(11)
+   ," ",Format.Fixed(-TruthLOS.Z()*MATH.FT_PER_M(),0).Pad(11),"\n"));
+   sensorIO.Write(write_str("      TRACK LOS ",Format.Fixed(TrackLOS.Y()*MATH.FT_PER_M(),0).Pad(11)," ",Format.Fixed(TrackLOS.X()*MATH.FT_PER_M(),0).Pad(11)
+   ," ",Format.Fixed(-TrackLOS.Z()*MATH.FT_PER_M(),0).Pad(11),"\n"));   
+      // Draw an ellipsoid of the track
+
+#   Ellipsoid el = Covariance.EllipsoidNED();
+#   frame_time = sensor.FrameTime();
+#      WsfDraw mPlatDraw = WsfDraw();
+#          mPlatDraw.SetLayer("_".Join({observer.Name(),sensor.Name(),target.Name()}));
+#          mPlatDraw.SetColor(1, 1, 1);
+##          mPlatDraw.BeginEllipse(0.0, 100.0, 300.0);
+#         mPlatDraw.SetEllipseMode("fill");
+#         mPlatDraw.SetDuration(frame_time);
+#         
+#         mPlatDraw.BeginEllipsoid(el.OrientationHeading(),el.OrientationPitch(),el.OrientationRoll(),
+#                                  el.SemiAxisSide(),
+#                                  el.SemiAxisForward(),
+#                                  el.SemiAxisUp());
+##         mPlatDraw.BeginEllipsoid(observer.TrueBearingTo(target),el.OrientationPitch(),0,
+##                                  MATH.Sqrt(track.StateCovariance().Element(0,0)),
+##                                  MATH.Sqrt(track.StateCovariance().Element(1,1)),
+##                                  MATH.Sqrt(track.StateCovariance().Element(2,2)));
+##                                 100,4000*MATH.M_PER_FT(),100);
+#            mPlatDraw.Vertex(track.CurrentLocation());
+#          mPlatDraw.End();
+}
+end_script
+
+script void LocalTrackUpdate(WsfPlatform observer, WsfLocalTrack ltrk, WsfTrack track)
+if (sensor_print)
+{
+   WsfPlatform target;
+   WsfCovariance Covariance = WsfCovariance();
+   // set the covariance matrix to be used, use the state matrix if it exists, else use the measurment covariance matrix
+   if (ltrk.StateCovarianceValid())
+   {
+      Covariance = ltrk.StateCovariance();
+   }
+   else if (!ltrk.StateCovarianceValid() && ltrk.MeasurementCovarianceValid())
+   {
+      Covariance = ltrk.MeasurementCovariance();
+   }
+   else if (!ltrk.StateCovarianceValid() && !ltrk.MeasurementCovarianceValid())
+   {
+      return;
+   }
+
+   // make sure the target is valid in the sim
+   if (ltrk.Target().IsValid() && !ltrk.Target().IsNull())
+   {
+      target = (WsfPlatform)ltrk.Target();
+   }
+   else
+   {
+      return;
+   }
+
+   string tgt_i = (string)target.Index();
+   string obs_i = (string)observer.Index();
+
+   // create Vec3's of the Truth and Track line of sight vectors
+   Vec3 TruthLOS = RelativePositionNED(observer.Location(),target.Location());
+   Vec3 TrackLOS = RelativePositionNED(observer.Location(),ltrk.CurrentLocation());
+
+   // range (line of sight)
+   double r_truth = TruthLOS.Magnitude()*MATH.FT_PER_M();
+   double r_sigma = ltrk.RangeErrorSigma()*MATH.FT_PER_M();
+   double r_error = MATH.FT_PER_M()*(TruthLOS.Magnitude() - Vec3.Dot(TruthLOS,TrackLOS)/TruthLOS.Magnitude());
+   double r_cov   = MATH.Sqrt(Covariance.Element(1,1))*MATH.FT_PER_M();
+   double rr_cov  = MATH.Sqrt(Covariance.Element(3,3))*MATH.FT_PER_M();  
+
+   // azimuth & cross-range
+   double az_truth = observer.RelativeBearingTo(target);
+   double az_sigma = ltrk.BearingErrorSigma()*MATH.DEG_PER_RAD();
+   double az_error = observer.TrueBearingTo(target) - observer.TrueBearingTo(ltrk.CurrentLocation());
+   double cr_error = MATH.Sin(az_error)*TrackLOS.Magnitude()*MATH.FT_PER_M();
+   double cr_cov1  = MATH.Sqrt(Covariance.Element(2,2))*MATH.FT_PER_M();
+   double az_cov   = MATH.ASin(cr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));
+   double crr_cov1 = MATH.Sqrt(Covariance.Element(5,5)*MATH.FT_PER_M());
+   double azr_cov  = MATH.ASin(crr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));
+
+   // elevation & vertical-range
+   double el_truth = observer.RelativeElevationOf(target.Location());
+   double el_sigma = ltrk.ElevationErrorSigma()*MATH.DEG_PER_RAD();
+   double el_error = observer.RelativeElevationOf(target.Location()) - observer.RelativeElevationOf(ltrk.CurrentLocation());
+   double vr_error = MATH.Sin(el_error)*TrackLOS.Magnitude()*MATH.FT_PER_M();   
+   double vr_cov1  = MATH.Sqrt(Covariance.Element(0,0))*MATH.FT_PER_M(); 
+   double el_cov   = MATH.ASin(vr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));  
+   double vrr_cov1 = MATH.Sqrt(Covariance.Element(4,4))*MATH.FT_PER_M();   
+   double elr_cov  = MATH.ASin(vrr_cov1/(TrackLOS.Magnitude()*MATH.FT_PER_M()));  
+
+   // get truth range-rate, az-rate, el-rate
+   Vec3 Po   = (Vec3)observer.LocationWCS(); // m/s
+   Vec3 Vo   = (Vec3)observer.VelocityWCS(); // m/s
+   Vec3 Pt   = (Vec3)target.LocationWCS();   // m/s
+   Vec3 Vt   = (Vec3)target.VelocityWCS();   // m/s
+   Vec3 Vrel = Vec3.Subtract(Vt,Vo);         // m/s
+   Vec3 Prel = Vec3.Subtract(Pt,Po);         // m/s
+   Vec3 Prel2= Vec3.Construct(Prel.X()/Prel.MagnitudeSquared(),Prel.Y()/Prel.MagnitudeSquared(),Prel.Z()/Prel.MagnitudeSquared());   
+   double TruthRR = Vec3.Dot(Vrel,Prel.Normal())*MATH.FT_PER_M();
+   double term1 = Vec3.Dot(Vrel,Prel);
+   Vec3 Vrad = Vec3.Construct(MATH.FT_PER_M()*term1*Prel2.X(),MATH.FT_PER_M()*term1*Prel2.Y(),MATH.FT_PER_M()*term1*Prel2.Z());
+   Vec3 Vrad2 = Vec3.Construct(term1*Prel2.X(),term1*Prel2.Y(),term1*Prel2.Z());
+   Vec3 Vtrans= Vec3.Subtract(Vrel,Vrad2);  // m/s
+   double TruthCRR = Vtrans[2]*MATH.FT_PER_M(); // ft/s
+   double TruthAZR = MATH.ATan(TruthCRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   double TruthVRR = Vtrans[0]*MATH.FT_PER_M(); // ft/s
+   double TruthELR = MATH.ATan(TruthVRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   
+   // get track range-rate, az-rate, el-rate
+   Pt   = (Vec3)ltrk.CurrentLocation().LocationWCS();
+   Vt   = (Vec3)ltrk.VelocityWCS();
+   Vrel = Vec3.Subtract(Vt,Vo);
+   Prel = Vec3.Subtract(Pt,Po);
+   Prel2= Vec3.Construct(Prel.X()/Prel.MagnitudeSquared(),Prel.Y()/Prel.MagnitudeSquared(),Prel.Z()/Prel.MagnitudeSquared());   
+   double TrackRR = Vec3.Dot(Vrel,Prel.Normal())*MATH.FT_PER_M();
+   term1 = Vec3.Dot(Vrel,Prel);
+   Vrad = Vec3.Construct(MATH.FT_PER_M()*term1*Prel2.X(),MATH.FT_PER_M()*term1*Prel2.Y(),MATH.FT_PER_M()*term1*Prel2.Z());
+   Vrad2 = Vec3.Construct(term1*Prel2.X(),term1*Prel2.Y(),term1*Prel2.Z());
+   Vtrans= Vec3.Subtract(Vrel,Vrad2);  
+   double TrackCRR = Vtrans[2]*MATH.FT_PER_M();
+   double TrackAZR = MATH.ATan(TrackCRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));
+   double TrackVRR = Vtrans[0]*MATH.FT_PER_M();
+   double TrackELR = MATH.ATan(TrackVRR/(MATH.FT_PER_M()*TruthLOS.Magnitude()));   
+   
+   // set range, az, and el rate errors
+   double rr_error  = TruthRR  - TrackRR;
+   double crr_error = TruthCRR - TrackCRR;
+   double azr_error = TruthAZR - TrackAZR;
+   double vrr_error = TruthVRR - TrackVRR;
+   double elr_error = TruthELR - TrackELR;
+
+   string mgr_string = "LOCAL_TRACK";
+   if (observer.MasterTrackList().Find(ltrk.TrackId()).IsValid())
+   {
+      mgr_string = "MASTER_TRACK";
+   }
+   else if (observer.TrackList("raw_data_mgr").IsValid() && observer.TrackList("raw_data_mgr").Find(ltrk.TrackId()).IsValid())
+   {
+      mgr_string = "FUSION_TRACK";
+   }
+
+   sensorIO.Write(write_str(mgr_string.Pad(-15)," OBSERVER ",obs_i.Pad(4),
+   " TRACK OF ",tgt_i.Pad(4)," AT ",Format.Fixed(TIME_NOW,1),"\n"));
+   sensorIO.Write(write_str("   Range to target (nmi) ",
+   Format.Fixed(TruthLOS.Magnitude()*MATH.NM_PER_M(),1),"\n"));
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - TRUTH     ",Format.Fixed(r_truth,0).Pad(11),Format.Fixed(az_truth,4).Pad(11),Format.Fixed(el_truth,4).Pad(11)," [FT,DEG,DEG]\n"));      
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - ERROR     ",Format.Fixed(r_error,0).Pad(11),Format.Fixed(az_error,4).Pad(11),Format.Fixed(el_error,4).Pad(11)," [FT,DEG,DEG]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - SIGMA     ",Format.Fixed(r_sigma,0).Pad(11),Format.Fixed(az_sigma,4).Pad(11),Format.Fixed(el_sigma,4).Pad(11)," [FT,DEG,DEG]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL      - COVARIANCE",Format.Fixed(r_cov,0).Pad(11),Format.Fixed(az_cov,4).Pad(11),Format.Fixed(el_cov,4).Pad(11)," [FT,DEG,DEG]\n"));
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - TRUTH     ",Format.Fixed(TruthRR,0).Pad(11),Format.Fixed(TruthAZR,4).Pad(11),Format.Fixed(TruthELR,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n"));      
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - ERROR     ",Format.Fixed(rr_error,0).Pad(11),Format.Fixed(azr_error,4).Pad(11),Format.Fixed(elr_error,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n")); 
+   sensorIO.Write(write_str("      RANGE, AZ, EL RATE - COVARIANCE",Format.Fixed(rr_cov,0).Pad(11),Format.Fixed(azr_cov,4).Pad(11),Format.Fixed(elr_cov,4).Pad(11)," [FT/S,DEG/S,DEG/S]\n"));
+#      sensorIO.Write(write_str("      RANGE, CR, VR      - COVARIANCE",Format.Fixed(r_cov,0).Pad(11),Format.Fixed(cr_cov1,0).Pad(11),Format.Fixed(vr_cov1,0).Pad(11)," [FT,FT,FT]\n"));
+#      sensorIO.Write(write_str("      RANGE, CR, VR RATE - COVARIANCE",Format.Fixed(rr_cov,0).Pad(11),Format.Fixed(crr_cov1,0).Pad(11),Format.Fixed(vrr_cov1,0).Pad(11)," [FT/S,FT/S,FT/S]\n"));                        
+
+// writing this in east-north-up coordinates
+   sensorIO.Write(write_str("      TRUTH LOS ",Format.Fixed(TruthLOS.Y()*MATH.FT_PER_M(),0).Pad(11)," ",Format.Fixed(TruthLOS.X()*MATH.FT_PER_M(),0).Pad(11)
+   ," ",Format.Fixed(-TruthLOS.Z()*MATH.FT_PER_M(),0).Pad(11),"\n"));
+   sensorIO.Write(write_str("      TRACK LOS ",Format.Fixed(TrackLOS.Y()*MATH.FT_PER_M(),0).Pad(11)," ",Format.Fixed(TrackLOS.X()*MATH.FT_PER_M(),0).Pad(11)
+   ," ",Format.Fixed(-TrackLOS.Z()*MATH.FT_PER_M(),0).Pad(11),"\n")); 
+}                        
+end_script
+
+script void SensorDrop(WsfPlatform observer, WsfSensor sensor, WsfTrack track)
+end_script
+
+script void SimInit()
+   if (sensor_print)
+   {
+       sensorIO.Open(sensor_path, "out");
+       sensorIO.Close();
+       sensorIO.Open(sensor_path,"append");
+       sensorIO.Writeln(write_str(" Starting seed ",WsfSimulation.RandomSeed()));
+   }
+end_script
+
+script void SimComplete()
+   if (sensor_print)
+   {
+      sensorIO.Close();
+   }
+end_script
+
+observer
+   enable SIMULATION_INITIALIZING SimInit
+   enable SIMULATION_COMPLETE SimComplete
+   enable SENSOR_TRACK_INITIATED SensorUpdate
+   enable SENSOR_TRACK_UPDATED SensorUpdate
+   enable LOCAL_TRACK_UPDATED LocalTrackUpdate
+   enable LOCAL_TRACK_INITIATED LocalTrackUpdate
+end_observer 

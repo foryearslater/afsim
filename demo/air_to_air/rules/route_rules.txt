@@ -1,0 +1,310 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/* taken from route_faz.F90 and pcode.F90 (EZJA Brawler RULES)
+
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+Very basic route following behavior node. Use the a WsfRoute object.
+Use the formation flying maneuver behavior node
+
+
+Key Parameters Description:
+*/
+advanced_behavior route_rules
+
+   script_debug_writes disable
+
+
+   script_variables
+
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+
+      //**********************************************************************//
+      //** alternative parameters                                           **//
+      //**********************************************************************//
+      // Flag used to enable/disable this alternative
+      bool mAlternative3111Enabled = true;
+
+      // Alternative ID
+      int ilevel = 3;
+      int kalt   = 1;
+      int icall  = 1;
+      int lcall  = 1;
+
+      Vec3 mDir0 = Vec3();
+      double mGMX = 1.0;
+      double mSpd0 = 3.0;
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;
+   
+#      extern Array<string> pr_pos_bias;
+#      WsfPlatform iacid = PLATFORM;
+      extern WsfPlatform iacid;
+      extern double pr_speed;
+      extern double pr_altitude;
+      extern double pr_heading;
+      extern int rte_ind;
+      Vec3 desdir;
+      Vec3 dir0;
+      extern WsfGeoPoint home_base;
+      Atmosphere atm = Atmosphere.Construct("default");
+      extern bool log_print;
+         extern string log_path;
+         extern string iout_path;
+      extern bool iout_print;
+      extern WsfRoute ROUTE;
+      extern WsfCommandChain iflite;
+      extern WsfCommandChain ielement;
+        extern double t_phase; // sim time at which it is acceptable to change phase
+        extern string flight_lead;
+        extern bool dzr_change;
+        extern string dzr_phase;
+        extern bool flt_guiding;
+        extern bool flt_lead;
+        extern string faz;
+        extern WsfCommandChain FORM_FLY_CHAIN;
+        extern bool bng_fuel;
+        extern string reason;
+        extern Array<double> VECTOR_FORMATION;
+        extern FileIO iout;
+        extern FileIO log;
+
+   end_script_variables
+
+   on_init
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+      PLATFORM->faz = "ingress";
+      rte_ind = 0;
+
+// loop through my route points, see which I'm closest to
+#      double min_rng = 500.0 * MATH.M_PER_NM();
+#      for (int i = 0; i<ROUTE.Size(); i=i+1)
+#      {
+#         if (iacid.SlantRangeTo(ROUTE[i]) < min_rng)
+#         {
+#            min_rng = iacid.SlantRangeTo(ROUTE[i]);
+#            rte_ind = i; // set the new route index
+#         }
+#      }
+      rte_ind = 0;
+
+   end_on_init
+   
+   on_new_execute 
+      // loop through my route points, see which I'm closest to
+      double min_rng = 500.0 * MATH.M_PER_NM();
+      for (int i = 0; i<ROUTE.Size(); i=i+1)
+      {
+         if (iacid.SlantRangeTo(ROUTE[i]) < min_rng)
+         {
+            min_rng = iacid.SlantRangeTo(ROUTE[i]);
+            rte_ind = i; // set the new route index
+         }
+      }
+   end_on_new_execute
+   
+
+
+   precondition
+      //## Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "route" && ROUTE.Size() >= 1)
+      {
+         return Success();
+      }
+      else
+      {
+         return Failure(reason);
+      }
+
+   end_precondition
+
+
+   execute
+      writeln_d("T = ",TIME_NOW," ",iacid.Name()," RouteRules");   
+      bool BrawlMover;
+      WsfBrawlerProcessor BRAWLER;
+      if (iacid.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         for (int i=0; i<iacid.ProcessorCount();i+=1)
+         {
+            if (iacid.ProcessorEntry(i).Type() == "WSF_BRAWLER_PROCESSOR")
+            {
+               BrawlMover = true;
+               BRAWLER = (WsfBrawlerProcessor)iacid.ProcessorEntry(i);
+               break;
+            }
+         }
+      }   
+#      BRAWLER.SetConsciousnessEventTime(4.0);
+// print out each A/C's phase
+ #      drawCircle(PLATFORM,PROCESSOR.UpdateInterval(), "phase", iacid->rule_type, "solid", 2, "line", Vec3.Construct(0.9, 0.6, 0.0), 1000);
+#      pr_pos_bias.Clear();
+
+#    FileIO iout = FileIO();
+#    FileIO log = FileIO();
+#    if (log_print)
+#    {
+#       log.Open(log_path, "append");
+#    }
+    if (iout_print)
+    {
+#       iout.Open(iout_path, "append");
+       iout.Write(write_str("\nROUTE_RULES...SIMULATION TIME HAS REACHED ",TIME_NOW, " s\n",
+                   "A/C ",iacid.Name(),"\n"));
+    }
+
+//    if i'm flight lead, go to my route point
+//    if i'm not flight lead and i'm not formation flying with my flight lead, go to route point
+      // check and see if i hit my current route point, if so, go to next route point
+   if (rte_ind < (ROUTE.Size()-1) && iacid.GroundRangeTo(ROUTE[rte_ind].Location()) < 1.0*MATH.M_PER_NM()) // 1 NM is close enough
+   {
+      rte_ind = rte_ind + 1;
+   }
+   iout.Write(write_str("\n Route Point ",rte_ind," of ",ROUTE.Size(),"\n"));
+   
+   // set heading, speed, and altitude to fly on
+   pr_heading = iacid.TrueBearingTo(ROUTE[rte_ind].Location());
+   pr_speed = ROUTE.GetSpeed(rte_ind);
+   pr_altitude = ROUTE[rte_ind].Altitude();
+
+   if (bng_fuel)
+   {
+      WsfGeoPoint home_vector = WsfGeoPoint(home_base); // create new geopoint with an altitude
+      home_vector.Set(home_vector.Latitude(),home_vector.Longitude(),iacid->EGRESS_ALT);
+      desdir = RelativePositionNED(PLATFORM.Location(),home_vector); 
+      dir0 = desdir.Normal();
+      pr_altitude = iacid->EGRESS_ALT;
+      pr_heading = iacid.TrueBearingTo(home_vector);
+      faz = "egress";
+      log.Write(write_str(iacid.Name()," Route Rules...Bingo Fuel: Egress to Base","\n"));
+      if (BrawlMover)
+      {
+         PLATFORM.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude()));
+      }
+      else
+      {
+         PLATFORM.GoToLocation(home_vector);
+         PLATFORM.GoToSpeed(iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude()));
+      }
+      return Running("Bingo Fuel: Egress to Base");
+   }
+
+   // if i am escorting, formation fly with my PE
+   if (iacid->MISSION_TYPE == "ESCORT")
+   {
+      pr_escort_formation(iacid);
+#      if (iout_print){iout.Close();}
+#      if (log_print){log.Close();}
+      return Success("ESCORTING IN FORMATION FLIGHT");
+   }
+
+   // if i hit my last route point, go home (home_base at egress speed)
+   if (rte_ind == (ROUTE.Size()-1) && iacid.GroundRangeTo(ROUTE[rte_ind].Location()) < 1.0*MATH.M_PER_NM()) // 1 NM is close enough
+   {         
+      WsfGeoPoint home_vector = WsfGeoPoint(home_base); // create new geopoint with an altitude
+      home_vector.Set(home_vector.Latitude(),home_vector.Longitude(),iacid->EGRESS_ALT);
+      desdir = RelativePositionNED(PLATFORM.Location(),home_vector); 
+      dir0 = desdir.Normal();
+      pr_altitude = iacid->EGRESS_ALT;
+      pr_heading = iacid.TrueBearingTo(home_vector);
+      if (flt_lead)
+      {
+         faz = "egress";
+         for (int i = 0; i < iflite.SubordinateCount(); i += 1)
+         {
+            if (iflite.SubordinateEntry(i).IsValid()) 
+            { 
+               iflite.SubordinateEntry(i)->faz = "egress";
+            }
+         }
+      }
+      else
+      {
+         faz = "egress";
+         iflite.Commander()->faz = "egress";
+         for (int i = 0; i < iflite.PeerCount(); i += 1)
+         {
+            if (iflite.PeerEntry(i).IsValid()) 
+            { 
+               iflite.PeerEntry(i)->faz = "egress";
+            }
+         }
+         for (int i = 0; i < iflite.SubordinateCount(); i += 1)
+         {
+            if (iflite.SubordinateEntry(i).IsValid()) 
+            { 
+               iflite.SubordinateEntry(i)->faz = "egress";
+            }
+         }
+      }
+      log.Write(write_str(iacid.Name()," Finished Route: Egress to Base","\n"));
+      if (BrawlMover)
+      {
+         PLATFORM.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude()));
+      }
+      else
+      {
+         PLATFORM.GoToLocation(home_vector);
+         PLATFORM.GoToSpeed(iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude()));
+      }   }
+   else
+   {
+      if (VECTOR_FORMATION[0] != 0) // formation fly
+      {
+         pr_formation(iacid,pr_heading,pr_speed,pr_altitude,FORM_FLY_CHAIN);
+      }
+      else // else vector fly
+      {
+         if (BrawlMover)
+         {
+            pr_vector(iacid,pr_heading,pr_speed,pr_altitude,BRAWLER.MaxSustainedGs());
+         }
+         else
+         {
+            PLATFORM.TurnToHeading(pr_heading);
+            PLATFORM.GoToSpeed(pr_speed);
+            PLATFORM.GoToAltitude(pr_altitude);
+         }      
+      }
+   }
+
+      // fly to route point
+#      pr_speed = iacid->route_speed*atm.SonicVelocity(iacid.Altitude());        
+#      desdir = RelativePositionNED(PLATFORM.Location(),route[rte_ind]);
+#      dir0 = desdir.Normal();
+#      PLATFORM.FlyVectorWithSpeed(dir0,BRAWLER.MaxSustainedGs(),pr_speed);
+ 
+// close log.txt and iout.txt
+#   if (iout_print){iout.Close();}
+#   if (log_print){log.Close();}
+      return Success("EXECUTING ROUTE RULES");
+   end_execute
+
+end_advanced_behavior
+

@@ -1,0 +1,114 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE  Pump behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+*/
+advanced_behavior pump
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+      extern bool buddy_hot;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+      extern double t_phase;
+      extern Array<int> PLAYBOOK;     
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr" && PLATFORM->faz == "pump")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   execute 
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," pump");   
+      int plan_1 = PLAYBOOK[0]; 
+      int plan_2 = PLAYBOOK[1]; // create local version of these to manipulate in this routine
+      int plan_3 = PLAYBOOK[2];
+      WsfPlatform my_wing;
+      string element = "";
+      if (iacid.CommandChain("ELEMENT").IsValid())
+      {
+         WsfCommandChain el_chain = iacid.CommandChain("ELEMENT");
+         if (el_chain.CommanderName() == iacid.Name() && el_chain.SubordinateCount() > 0)
+         {
+            element = el_chain.SubordinateEntry(0).Name(); // should only be one element
+         }
+         else if (el_chain.CommanderName() != iacid.Name() && el_chain.Commander().IsValid())
+         {
+            element = el_chain.CommanderName(); // should only be one element
+         }
+      }
+      if (element != "" && WsfSimulation.FindPlatform(element).IsValid()) 
+      {  
+         my_wing = WsfSimulation.FindPlatform(element); 
+      }
+      faz_desired = "pump"; 
+
+      bool turn_hot = false;  // set to true if I desire to turn hot
+#      reason = "pump_in";
+      pr_altitude = iacid->PUMP_ALT;
+      pr_speed = iacid->PUMP_SPD*atmos.SonicVelocity(pr_altitude);
+      pr_heading = escape_hdg(iacid); // get your escape heading
+      // slice maneuver
+      pr_slice(iacid,pr_heading,pr_speed,pr_altitude); 
+   # 
+      if ( TIME_NOW >= t_phase )
+      {  
+         turn_hot = true;
+         reason = "TIME LIMIT REACHED...TURN HOT";
+      }
+      else if ( rng_cls_hst >= (iacid->PUMP_RNG) && rng_cls_sam >= (iacid->PUMP_RNG))
+      { 
+          turn_hot = true;
+         reason = "SEPARATION RNG ACHIEVED TO PUMP_IN";
+      }
+   // if turn_hot = true, go to pump_in
+      if(turn_hot)
+      {  
+         faz_desired = "pump_in";
+         t_phase=TIME_NOW + 25;
+      }
+      return Success(reason);            
+   end_execute
+
+end_advanced_behavior

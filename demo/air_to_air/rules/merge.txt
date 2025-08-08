@@ -1,0 +1,90 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE  merge behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+*/
+advanced_behavior merge
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+      extern bool solo;
+      extern bool flt_lead;
+      extern WsfSA_EntityPerception ppmjid;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr" && PLATFORM->faz == "merge")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   on_new_execute 
+      PLATFORM->solo_orig = solo; // record the original solo value
+   end_on_new_execute
+   on_new_fail 
+      solo = PLATFORM->solo_orig; // if not in merge anymore, reset solo to the original value
+   end_on_new_fail
+   execute 
+      faz_desired = "merge";
+      string flight_lead = iflite.CommanderName();
+      solo = true;
+      pr_speed = MATH.Max(ppmjid.Speed(),0.5*atmos.SonicVelocity(iacid.Altitude())); // match speed of target, don't drop below M0.5
+      pr_pursuit(iacid,ppmjid.Track(),pr_speed);
+      if(rng_cls_hst > iacid->MERGE_RNG) 
+      {  
+         reason = "OUT OF MERGE RANGE";
+         if (!flt_lead)
+         {  
+            faz_desired = WsfSimulation.FindPlatform(flight_lead)->faz; 
+         }
+         else
+         {  
+            faz_desired = "ingress";
+         }
+         solo = false;
+      } 
+      return Success(reason);            
+   end_execute
+
+end_advanced_behavior

@@ -1,0 +1,163 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+/*
+PURPOSE  Direct behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+   Calls 3 different maneuver functions based on PLAYBOOK: 
+      - Pure Pursuit
+      - Intercept
+      - Missile Intercept
+
+*/
+advanced_behavior direct
+
+   script_debug_writes off
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+      extern WsfSA_EntityPerception ppmjid;
+      extern bool time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool first_pass;
+      extern bool sam_threatnd;
+      extern bool stiff_arm_all;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern string rule_type;
+      extern string faz;
+      extern bool needil;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern double t_phase;
+      extern Array<int> PLAYBOOK;      
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (rule_type == "ftr" && faz == "direct")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   execute
+      writeln_d("T = ",TIME_NOW," ",iacid.Name()," direct");
+      int plan_1 = PLAYBOOK[0]; 
+      int plan_2 = PLAYBOOK[1]; // create local version of these to manipulate in this routine
+      int plan_3 = PLAYBOOK[2]; 
+      faz_desired = "direct"; 
+            
+      // determine desired speed to intercept       
+      if (first_pass)
+      {
+         pr_speed = (iacid->COMMIT_SPD + iacid->SPRINT_SPD)*atmos.SonicVelocity(iacid.Altitude());
+      }
+      else
+      {
+         pr_speed = iacid->COMMIT_SPD*atmos.SonicVelocity(iacid.Altitude());
+      }
+
+      // determine intercept tactic based on PRDATA PLAYBOOK & command maneuver
+      if (plan_1 == 1)
+      {
+         pr_pursuit(iacid,ppmjid.Track(),pr_speed); // pure pursuit maneuver command
+      }
+      else if (plan_1 == 2)
+      {
+         pr_aim_missile(iacid,ppmjid.Track(),pr_speed); // point at intercept point of target and my missile
+      }
+      else if (plan_1 == 3)
+      {
+         pr_intercept(iacid,ppmjid.Track(),pr_speed); // point at intercept point of target and myself
+      }
+      // start faz transition logic
+      // if i'm threatend by a sam, go into sam react phase
+      if (stiff_arm_all)
+      {  
+         faz_desired = "ingress";
+         reason = "STIFF ARM";
+      }   
+      else if (rng_cls_hst <= iacid->MERGE_RNG && time_ok)
+      {
+         if (iacid->NOTCH)
+         {  
+            faz_desired = "notch";
+            reason = "NOTCH MRM DEFENSE";
+            t_phase=TIME_NOW + 5;
+         }
+         else
+         {  
+            faz_desired = "merge";
+            reason = "ACCEPT MERGE";
+            t_phase=TIME_NOW + 5;
+         }
+      }
+      else if ( (alerted || rng_cls_hst <= iacid->DOR) && plan_3 <= 2 )
+      {  
+          if ( plan_3 == 1 && pump_per && time_ok)
+          {  
+             faz_desired = "pump";
+             reason = "ALWAYS PUMP AT MAR";
+             t_phase=TIME_NOW + iacid->TDRAG;
+          }
+          else if ( plan_3 == 2 && pump_per && time_ok && threatnd)
+          {  
+             faz_desired = "pump";
+             reason = "ALWAYS PUMP WHEN THREATENED";
+             t_phase=TIME_NOW + iacid->TDRAG;
+          }
+         else if (needil && apole_tct)
+         {  
+            faz_desired = "crank";
+            reason = "SUPPORTING MISSILES";
+            t_phase=TIME_NOW + 10;
+         }
+      }
+      else if (needil && apole_tct)
+      {  
+         faz_desired = "crank";
+         reason = "SUPPORTING MISSILES";
+         t_phase=TIME_NOW + 10;
+      }
+      else if (plan_1 > 3)
+      {  
+         t_phase=TIME_NOW + 5;
+         if (plan_1 == 4) {faz_desired = "vectoring";}
+      }
+      else if (rng_cls_hst > iacid->COMMIT_RNG*1.5 && rng_cls_sam > iacid->COMMIT_RNG*1.5)
+      {  
+         faz_desired = "ingress";
+         reason = "WEAPONS AND FUEL LEFT";
+#         writeln(iacid.Name()," ",rng_cls_hst*MATH.NM_PER_M());
+      }
+      return Success(reason);            
+   end_execute
+end_advanced_behavior

@@ -1,0 +1,230 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+Orbit Rules:
+
+Summary: Perform a simple Orbit or CAP
+AUTHOR   Snyder
+
+Technical Description:
+Classification: UNCLASSIFIED//FOUO
+
+Create a CAP by generating 4 geo points
+If a "cap_zone" exists, then the center of the 4 geo points is at the center of the cap_zone
+the orbit leg length, speed, and gees is set in PRDATA (orbit_leg_length, orbit_spd, orbit_gees)
+
+Key Parameters Description:
+*/
+advanced_behavior orbit_rules
+
+   script_debug_writes disable
+
+
+   script_variables
+
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;
+   
+#      extern Array<string> pr_pos_bias;
+      extern WsfPlatform iacid;
+      extern double pr_speed;
+      extern double pr_altitude;
+      extern double pr_heading;
+      extern int rte_ind;
+      extern string faz;
+      extern string rule_type;
+      extern bool bng_fuel;
+      Vec3 desdir;
+      Vec3 dir0;
+      extern WsfGeoPoint home_base;
+      Atmosphere atm = Atmosphere.Construct("default");
+      extern bool log_print;
+         extern string log_path;
+         extern string iout_path;
+      extern bool iout_print;
+      int cap_ind;
+      WsfGeoPoint CAP1;
+      WsfGeoPoint CAP2;
+      WsfGeoPoint CAP3;
+      WsfGeoPoint CAP4;
+      Array<WsfGeoPoint> CAP_POINTS = Array<WsfGeoPoint>();
+      double cspd2 = (iacid->orbit_spd*atm.SonicVelocity(iacid.Altitude()))^2;
+      double cgees = iacid->orbit_gees;
+      double grav = 32.17405*MATH.M_PER_FT(); // m/s**2
+#      extern WsfBrawlerMover my_mover;
+      extern string reason;
+      extern FileIO iout;
+      extern FileIO log;
+
+   end_script_variables
+
+
+   on_init
+      faz = "ingress";
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+      cap_ind = 1;
+/*  create 4 CAP points
+
+      CAP1----------->CAP2
+       ^              |
+       |              |
+      CAP4<-----------CAP3
+
+*/
+   if (PLATFORM.Zone("cap_zone").IsValid())
+   {
+      WsfZone capzone = PLATFORM.Zone("cap_zone");
+      CAP1 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+      CAP2 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+      CAP3 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+      CAP4 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+   }
+   else
+   {
+      CAP1 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude()); // my current location
+      CAP2 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+      CAP3 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+      CAP4 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+   }
+
+   CAP2.Extrapolate(iacid.Heading(),iacid->orbit_leg_length);
+
+#   writeln("latitude space = ",cspd2," ",iacid->orbit_gees," ",grav," ",(2 * cspd2 / (cgees*grav)));
+   CAP4.Extrapolate(iacid.Heading()+90.0,(2 * cspd2 / (cgees*grav)));
+
+   CAP3.Extrapolate(iacid.Heading(),iacid->orbit_leg_length);
+   CAP3.Extrapolate(iacid.Heading()+90.0,(2 * cspd2 / (cgees*grav)));
+
+
+   end_on_init
+   
+   on_new_execute 
+      cap_ind = 1;
+/*  create 4 CAP points
+
+      CAP1----------->CAP2
+       ^              |
+       |              |
+      CAP4<-----------CAP3
+
+*/
+      if (PLATFORM.Zone("cap_zone").IsValid())
+      {
+         WsfZone capzone = PLATFORM.Zone("cap_zone");
+         CAP1 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+         CAP2 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+         CAP3 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+         CAP4 = WsfGeoPoint.Construct(capzone.Location().Latitude(),capzone.Location().Longitude(),30000*MATH.M_PER_FT());
+      }
+      else
+      {
+         CAP1 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude()); // my current location
+         CAP2 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+         CAP3 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+         CAP4 = WsfGeoPoint.Construct(iacid.Latitude(),iacid.Longitude(),iacid.Altitude());
+      }
+   
+      CAP2.Extrapolate(iacid.Heading(),iacid->orbit_leg_length);
+   
+#      writeln("latitude space = ",cspd2," ",iacid->orbit_gees," ",grav," ",(2 * cspd2 / (cgees*grav)));
+      CAP4.Extrapolate(iacid.Heading()+90.0,(2 * cspd2 / (cgees*grav)));
+   
+      CAP3.Extrapolate(iacid.Heading(),iacid->orbit_leg_length);
+      CAP3.Extrapolate(iacid.Heading()+90.0,(2 * cspd2 / (cgees*grav)));
+   
+   end_on_new_execute
+
+   precondition
+      //writeln_d(PLATFORM.Name(), " precondition behavior_alt3111_straight_level_max_speed, T=", TIME_NOW);
+
+      //## Evaluate conditions that would prevent behavior alternative from running
+
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "orbit")
+      {
+         return Success();
+      }
+      else
+      {
+         return Failure(reason);
+      }
+
+   end_precondition
+
+
+   execute
+#      BRAWLER.SetConsciousnessEventTime(1.0);
+// print out each A/C's phase
+#      drawCircle(PLATFORM,PROCESSOR.UpdateInterval(), "phase", rule_type, "solid", 2, "line", Vec3.Construct(0.9, 0.6, 0.0), 1000);
+#      pr_pos_bias.Clear();
+
+#    FileIO iout = FileIO();
+#    FileIO log = FileIO();
+#    if (log_print)
+#    {
+#       log.Open(log_path, "append");
+#    }
+    if (iout_print)
+    {
+#       iout.Open(iout_path, "append");
+       iout.Write(write_str("\nORBIT_FAZ...SIMULATION TIME HAS REACHED ",TIME_NOW, " s\n",
+                   "A/C ",iacid.Name(),"\n"));
+    }
+
+#   if (iout_print) {iout.Writeln(write_str(" nbg = ",nbg));}
+   
+   if (bng_fuel)
+   {
+      faz = "egress";
+      pr_heading = iacid.TrueBearingTo(home_base);
+      pr_speed = iacid->EGRESS_SPD*atm.SonicVelocity(iacid.Altitude());
+      pr_altitude = iacid->EGRESS_ALT;
+   }
+   else
+   {
+      CAP_POINTS = {CAP1,CAP2,CAP3,CAP4};
+      desdir = RelativePositionNED(iacid.Location(),CAP_POINTS[cap_ind]);
+      dir0 = desdir.Normal();
+      pr_heading = iacid.TrueBearingTo(CAP_POINTS[cap_ind]);
+      pr_speed = iacid->orbit_spd*atm.SonicVelocity(iacid.Altitude());
+      pr_altitude = iacid.Altitude();
+      PLATFORM.FlyHeadingSpeedAltitude(pr_heading,pr_speed,pr_altitude,iacid->orbit_gees,200.0*MATH.M_PER_FT());
+  
+      // increment index if near cap point
+      if (iacid.SlantRangeTo(CAP_POINTS[cap_ind]) <= 0.25*MATH.M_PER_NM())
+      {
+         cap_ind = cap_ind + 1;
+         if (cap_ind == 4) { cap_ind = 0; } // re-set if I hit CAP4 (index 3)
+      }
+   }
+//    close log.txt and iout.txt
+#      if (iout_print){iout.Close();}
+#      if (log_print){log.Close();}
+      return Success("EXECUTING ORBIT RULES");
+   end_execute
+
+end_advanced_behavior
+

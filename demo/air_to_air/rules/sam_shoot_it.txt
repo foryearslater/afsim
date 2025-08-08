@@ -1,0 +1,226 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE:         This routine determines weapon firing decision
+AUTHOR:         Armstrong
+Classification: UNCLASSIFIED//FOUO
+
+Parameter Description
+
+Map<WsfLocalTrack,int>    mapMXTGT_AC(ltrk)  - Max number of missiles at a single target by a single player
+Map<WsfLocalTrack,int>    mapMXTGTD(ltrk)    - Max number of missiles at a single target
+Map<WsfLocalTrack,string> mapPRMISL_AC(ltrk) - fox number selected for employment against mapped track
+
+Technical Description:
+   Loop through everyone in my shoot list, starting with ppmjid, and make weapon employment decision
+
+//   This assumes perfect correlation/CID 
+
+   Hold Shot Conditions:
+      -outside of RPEAK
+      -faz is pump
+      -srm missile and outside of SRM range
+      -stiff arm logic
+      -greedy logic
+      -hobs logic
+      -PRDATA - mxshot_rng
+      -guidance time logic
+      -fratricide risk
+      -WQT
+      
+
+*/
+//include prdata/rules_utils.txt
+advanced_behavior sam_shoot_it
+
+   //script_debug_writes on
+   
+   script_variables
+#      extern WsfBrawlerProcessor BRAWLER;
+      WsfPerceptionProcessor    perception;
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;  
+      extern Array<WsfSA_EntityPerception> shoot_list;
+      extern Map<WsfSA_EntityPerception, string> mapPRMISL_AC;
+      extern Map<WsfSA_EntityPerception, int> mapMXTGTD;
+      extern Map<WsfSA_EntityPerception, int> mapMXTGT_AC;
+      extern Map<WsfSA_EntityPerception, bool> mapPICKLE;
+      extern Map<WsfSA_EntityPerception, bool> mapSTIFF_ARM;
+      extern bool pitch_up;
+      extern bool iout_print;
+      extern double t_last_pickle;
+      extern string iout_path;
+      WsfSA_Processor saPROC = (WsfSA_Processor)PROCESSOR;
+      extern Array<double> RPEAK_LOC;
+   end_script_variables
+   on_init
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+   end_on_init
+
+   precondition  
+      extern WsfPlatform iacid;
+#      FileIO iout = FileIO();
+#      if (iout_print) {iout.Open(iout_path, "append");}
+#      if (PLATFORM->rule_type != "ftr"){ return false;}
+ 
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+      else if (TIME_NOW < (t_last_pickle+0.5))
+      //Switchology delays = time it takes for pilot to select a new target (Brawler uses .5 seconds)
+      {
+         if(iout_print) {iout.Write(write_str(" SAM_SHOOT_IT SWITCHOLOGY DELAY UNTIL T=",t_last_pickle+0.5,"\n"));}
+         return Failure("Switchology Delay");
+      }
+      return Success();
+   end_precondition
+
+
+   execute
+#   WsfPlatform iacid = PLATFORM;
+   extern WsfPlatform iacid;
+   Array<int> bng_msl = iacid->WINCHESTER;
+   int agm_left = iacid.Weapon("agm").QuantityRemaining();
+
+      int agm_index;
+   #   int prfire; // 1 = shoot, 2 = don't shoot
+#   FileIO iout = FileIO();
+#   if (iout_print) {iout.Open(iout_path, "append");}
+   mapPICKLE.Clear();
+   pitch_up = false; // initialize this to false
+   if (agm_left == 0){return Failure("No AGMs left");}
+   if (iacid->react && iacid->first_pass)
+   {
+      if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT - REASON: HOLD SHOT FOR REACTION","\n"));}
+      return Running("hold shot for reaction");
+   }
+   // don't shoot in certain phases
+   if(iacid->faz == "pump" || iacid->faz == "pump_in" || iacid->faz == "egress" || iacid->faz == "reaction")
+   {
+      if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT PHASE= ",iacid->faz,"\n"));}
+      return Failure("Don't shoot...phase == pump,pump_in,reaction or egress");
+   }    
+
+   if(iout_print) {iout.Write(write_str(" SAM_SHOOT_IT:  BEANS  NUM_IN_AIR  NUM_I_SHOT  TGTD_IHOST","\n"));}
+   if(iout_print) {iout.Write(write_str("  MAX ALLOWED   ",Format.General(iacid->I_SUPPORT,2).Pad(3),Format.General(iacid->I_LAUNCHED,2).Pad(9),
+    Format.General(iacid->I_LNCHATTGT,2).Pad(12),Format.General(iacid->I_MXTGTD,2).Pad(12),"\n"));}
+   foreach (WsfSA_EntityPerception saent in shoot_list)
+   {
+
+      //If track is of an aircraft, skip and let shoot_it determine mapPICKLE
+      if(saent.Track().IsValid() && saent.Track().AirDomain()){continue;}
+
+      // initialize to true
+      mapPICKLE[saent] = true;
+
+      Array<int> shot_count = count_shot(iacid,saent,saPROC.PerceivedBandits());
+      WsfWeapon msl = iacid.Weapon(mapPRMISL_AC[saent]);
+
+      // set agm_index so we have an integer that points to the agm missile index
+      if (msl.Name() == "agm") {agm_index = 3;}
+
+      // WQT
+      if ( msl.AuxDataExists("use_wqt") && msl.AuxDataBool("use_wqt") )
+      {
+         if (!saent.Track().RangeValid() || saent.Track().RangeErrorSigma() > msl.AuxDataDouble("wqt_rng"))
+         {
+            mapPICKLE[saent] = false; 
+            if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: NO WQT, bad range ",saent.Track().RangeErrorSigma(),"\n"));}
+            continue;
+         }
+         else if (!saent.Track().BearingValid() || saent.Track().BearingErrorSigma() > msl.AuxDataDouble("wqt_az"))
+         {
+            mapPICKLE[saent] = false; 
+            if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: NO WQT, bad azimuth","\n"));}
+            continue;
+         }
+         else if (!saent.Track().ElevationValid() || saent.Track().ElevationErrorSigma() > msl.AuxDataDouble("wqt_el"))
+         {
+            mapPICKLE[saent] = false; 
+            if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: NO WQT, bad elevation","\n"));}
+            continue;
+         }
+      }
+
+      // stiff arm logic
+      if (iacid->stiff_arm_all || mapSTIFF_ARM[saent])
+      {
+         mapPICKLE[saent] = false;
+         if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: STIFF ARM LOGIC","\n"));}
+         continue;
+      }      
+      
+/*
+      // greedy logic
+         // count_shot
+            [0] number of missiles launched at specified threat by anyone (tgtd_ihost)
+            [1] number of missiles I have launched at specified threat (num_i_shot)
+            [2] total number of missiles I have in the air right now (num_in_air)
+*/
+      #GCA leaving these checks in for now...if SAM specific values are need will need to make new variables
+      if(iout_print) {iout.Write(write_str("  ",saent.Track().TargetName().Pad(-14),Format.General(iacid->beans,2).Pad(3),Format.General(shot_count[2],2).Pad(9),
+       Format.General(shot_count[1],2).Pad(12),Format.General(shot_count[2],0).Pad(12),"\n"));}
+      if ( (iacid->beans >= iacid->I_SUPPORT) || (shot_count[0] >= mapMXTGTD[saent] || 
+            shot_count[0] >= iacid->I_MXTGTD) || (shot_count[1] >= mapMXTGT_AC[saent] || 
+            shot_count[1] >= iacid->I_LNCHATTGT) || shot_count[2] >= iacid->I_LAUNCHED)
+      {
+         mapPICKLE[saent] = false;
+         if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: GREEDY","\n"));}
+         continue;
+      }
+      
+      // mxshot_rng from PRDATA
+      if (iacid->SEAD_SHT_RNG > 0 && iacid.SlantRangeTo(saent.Track()) > iacid->SEAD_SHT_RNG)  
+      {
+         mapPICKLE[saent] = false;
+         if(iout_print) {iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: OUTSIDE SEAD SHOT RANGE","\n"));}
+         continue;
+      } 
+
+      // track is outside of RPEAK
+      if(iacid.SlantRangeTo(saent.Track())/msl.LaunchComputer().LookupResult(saent.Track())[0] > RPEAK_LOC[agm_index])
+      {
+         mapPICKLE[saent] = false;
+         if(iout_print) 
+         {
+            iout.Write(write_str(" DON'T SHOOT_IT AT ",saent.Track().TargetName()," REASON: TARGET OUTSIDE OF RPEAK ",
+            iacid.SlantRangeTo(saent.Track())/msl.LaunchComputer().LookupResult(saent.Track())[0]," ",RPEAK_LOC[agm_index],"\n"));
+         }
+         continue;
+      } 
+
+   }
+
+   //  loop through everyone on my pickle list and shoot them starting with ppmjid
+   foreach (WsfSA_EntityPerception ent : bool prfire in mapPICKLE)
+   {   
+      if (prfire && ent.Track().LandDomain() && iacid.WeaponsPendingFor(ent.Track().TrackId()) == 0) 
+      {
+         iacid.Weapon(mapPRMISL_AC[ent]).Fire(ent.Track());
+         t_last_pickle = TIME_NOW;
+         if(iout_print) {iout.Write(write_str("SAM_SHOOT_IT... ",iacid.Name()," FIRE ",mapPRMISL_AC[ent]," AT ",ent.Track().TargetName()," AT TIME: ",TIME_NOW,"\n"));}
+#         if(iout_print) {iout.Write(write_str(trk.VelocityValid()));}
+         return Success("".Join({"FIRING ",mapPRMISL_AC[ent]," AT ",ent.Track().TargetName()," INDEX ",(string)ent.Track().Target().Index()}));
+      }
+   }
+   return Success();
+#   if(iout_print) {iout.Close();}
+   end_execute
+
+end_advanced_behavior

@@ -1,0 +1,87 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#   CLASSIFICATION: *** UNCLASSIFIED//FOUO ***
+#   Author: Snyder
+#   Description: dummy RWR/ESM system
+
+antenna_pattern esm_reciever
+   genap_pattern
+      peak_gain               30 db 
+      aperture_shape          circular
+      azimuth_distribution    cosine
+      azimuth_beamwidth       3.0 deg // x-band
+      azimuth_exponent        1.0
+      elevation_distribution  cosine
+      elevation_beamwidth     3.0 deg 
+      elevation_exponent      1.0
+      minimum_gain           -5.0 db
+end_antenna_pattern
+
+sensor esm WSF_ESM_SENSOR
+   on
+   slew_mode          fixed
+   initial_mode       SEARCH
+   mode_template
+      antenna_tilt       0.0 deg
+      minimum_altitude  -50000.0 ft
+      maximum_altitude   50000.0 ft
+      frame_time         10.0 sec   
+      maximum_range      200.0 nm
+   
+#     electronic_beam_steering                azimuth_and_elevation
+#     electronic_beam_steering_limit          60.0 deg
+#     electronic_beam_steering_loss_exponent  1.2       # Brawler default
+   
+      scan_mode                 azimuth_and_elevation
+      azimuth_scan_limits      -180.0 deg 180.0 deg   
+      elevation_scan_limits    -90.0 deg 90.0 deg    
+      azimuth_field_of_view    -180.0 deg 180.0 deg
+      elevation_field_of_view  -90.0 deg 90.0 deg
+   
+      receiver
+         antenna_pattern   esm_reciever
+      end_receiver
+   
+      frequency_band 8.0 ghz 12.0 ghz # x-band
+      detection_sensitivities
+         frequency 8.0 ghz   -70.0 dbw 
+         frequency 12.0 ghz  -70.0 dbw 
+      end_detection_sensitivities
+   
+      range_error_sigma         20   percent_of_true_range
+      range_rate_error_sigma    500  ft/s
+      azimuth_error_sigma       0.3  deg
+      elevation_error_sigma     0.3  deg
+   
+      hits_to_establish_track   2 2  # 
+      hits_to_maintain_track    1 3  # 
+   
+      reports_range
+      reports_range_rate
+      reports_velocity
+      reports_location
+      reports_bearing
+      reports_elevation
+      reports_frequency
+      reports_type
+      reports_side
+   end_mode_template
+
+   mode SEARCH 
+      frame_time              2 sec #  
+      cue_mode                azimuth_and_elevation
+      azimuth_cue_limits     -180.0 deg 180.0 deg
+      elevation_cue_limits   -90.0 deg 90.0 deg
+   
+      scan_mode               azimuth_and_elevation
+      azimuth_scan_limits    -180.0 deg 180.0 deg # 
+      elevation_scan_limits  -90.0 deg 90.0 deg # 
+   end_mode
+end_sensor

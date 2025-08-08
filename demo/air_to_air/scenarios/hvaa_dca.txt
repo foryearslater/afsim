@@ -1,0 +1,450 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# Classification: UNCLASSIFIED//FOUO
+
+include_once platforms/hvaa.txt
+include_once platforms/lte_fighter.txt
+
+route test_route
+   position 00:00:36.035n 01:47:21.156e altitude 30000 ft msl speed 900 ft/s
+   position 00:00:36.035n 01:57:21.156e altitude 30000 ft msl speed 900 ft/s
+end_route
+
+route red_route
+   position 00:00:36.035n 01:47:21.156w altitude 30000 ft msl speed 900 ft/s
+   position 00:00:36.035n 01:57:21.156w altitude 30000 ft msl speed 900 ft/s
+end_route
+
+platform hvaa1 HVAA
+   icon awacs
+   side blue
+#  draw_nominal_states   
+   commander SELF
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF   
+   heading 180 deg
+   position 00:02:50.00n 02:10:00.00w  altitude 30000.00 ft
+
+   script_variables
+      START_TYPE = "orbit";
+      WINCHESTER = {-1,-1,-1,-1,-1}; // don't ever hit winchester
+      COMMIT_RNG = 1; // ensures they don't ever commit on anyone
+      I_SUPPORT = 0;
+   end_script_variables
+   
+   edit weapon fox3 quantity 0 end_weapon
+   edit weapon fox2 quantity 0 end_weapon
+   edit weapon fox1 quantity 0 end_weapon
+   
+   delete processor assessment 
+   add processor CAP WSF_SA_PROCESSOR
+      on 
+      update_interval 1 sec
+      flight_id       10
+      id_flag         A
+      
+      # Data collection rates
+      report_interval                              1.00 sec
+      flight_data_update_interval                  1.00 sec
+      track_data_update_interval                   3.00 sec
+      asset_data_update_interval                   3.00 sec
+      asset_data_update_interval                   3.00 sec
+      perceived_item_data_update_interval          3.00 sec
+      prioritized_item_data_update_interval        3.00 sec      
+      perceived_item_calculation_update_interval   3.00 sec
+      prioritized_item_calculation_update_interval 3.00 sec    
+          
+      enemy_side       red
+      enemy_type       RED_STRIKER
+      friendly_type    BLUE_STRIKER
+
+      max_range_for_perceived_assets              350 nm
+      max_range_for_perceived_bogies_and_bandits  350 nm
+      max_range_for_engagement_data                 0 nm
+      assumed_range_for_angle_only_targets        350 nm      
+      
+      #filter_requires_same_side
+      #filter_requires_not_same_side          true
+      filter_requires_air_domain              true
+      #filter_requires_not_air_domain         true
+      #filter_requires_land_or_surface_domain true
+      #filter_requires_not_subsurface_domain  true
+      #filter_requires_not_space_domain       true
+      filter_requires_sa_processor            true
+
+      report_to commander    via datalink2
+      report_to peers        via datalink2
+      report_to subordinates via datalink2
+      
+      # Assets/friends settings
+      asset_perception  truth commander:peers:subordinates
+      perceive_self     false
+      reporting_self    true
+      reporting_others  true
+      max_asset_load    100
+
+      # Bogie and bandit/threat settings
+      max_threat_load   100      
+
+      script_variables 
+         rule_type = "orbit";
+      end_script_variables
+      advanced_behavior_tree 
+         behavior_node orbit_rules 
+      end_advanced_behavior_tree
+   end_processor
+   
+   edit comm datalink
+      internal_link CAP
+   end_comm
+   
+   add comm datalink2 WSF_COMM_TRANSCEIVER
+      propagation_speed 0 m/s   #instantaneous propogation (faster than speed of light)
+      network_name brawler_net
+      internal_link CAP
+   end_comm
+     
+end_platform
+
+platform blue_1 BLUE_FIGHTER 
+   side blue
+#  draw_nominal_states
+   commander hvaa1
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+   heading 90 deg
+   position 00:05:00.00n 01:10:00.00w  altitude 30000.00 ft
+
+   edit weapon fox3
+      quantity 6 
+   end_weapon
+
+   script_variables
+      START_TYPE = "orbit";
+      RISK_WPN = 0.0;
+      MISSION_TYPE = "HVAADCA";
+      PROTECTING = {"hvaa1"};
+      ENG_TGT = "";
+      RPEAK_LOC ={1.0,0.8,0.95,1.0,1.0};
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,0,0,0};
+      DOR = 40.0*MATH.M_PER_NM();
+   end_script_variables
+
+#  execute at_time 20 sec absolute 
+#     PLATFORM.DeletePlatform();
+#  end_execute
+
+   edit processor assessment
+      enemy_side    red
+      enemy_type    RED_FIGHTER
+      friendly_type BLUE_FIGHTER
+      friendly_type HVAA
+      flight_id     1
+      id_flag       1
+   end_processor 
+end_platform
+
+platform blue_2 BLUE_FIGHTER 
+   side blue
+#  draw_nominal_states
+   commander hvaa1
+   command_chain IFLITE blue_1
+   command_chain ELEMENT blue_1
+   heading 90 deg
+   position 00:00:00.00n 01:15:00.00w  altitude 30000.00 ft
+
+   edit weapon fox3
+      quantity 6 
+   end_weapon
+
+   script_variables
+      START_TYPE = "orbit";
+      RISK_WPN = 0.0;
+      MISSION_TYPE = "HVAADCA";
+      PROTECTING = {"hvaa1"};
+      RPEAK_LOC ={1.0,0.8,0.95,1.0,1.0};
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,0,10.0*MATH.M_PER_NM(),0};
+      DOR = 40.0*MATH.M_PER_NM();      
+   end_script_variables
+ 
+   execute at_time 1 s absolute 
+#  	  PLATFORM.Sensor("rdr1").TurnOff();
+#     PLATFORM.Sensor("eyes").TurnOff();
+   end_execute
+    
+   edit processor assessment
+      enemy_side    red
+      enemy_type    RED_FIGHTER
+      friendly_type BLUE_FIGHTER
+      flight_id     1
+      id_flag       2
+   end_processor     
+end_platform
+
+platform blue_3 BLUE_FIGHTER 
+   side blue
+  #draw_nominal_states
+   commander hvaa1
+   command_chain IFLITE blue_1
+   command_chain ELEMENT SELF
+   heading 270 deg
+   position 00:05:00.00s 01:10:00.00w  altitude 30000.00 ft
+
+   script_variables
+      START_TYPE = "orbit";
+      RISK_WPN = 0.0;
+      MISSION_TYPE = "HVAADCA";
+      PROTECTING = {"hvaa1"};
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,-15.0*MATH.M_PER_NM(),5.0*MATH.M_PER_NM(),0};
+      APOLE_RDR = 30;
+   end_script_variables
+   
+   execute at_time 1 s absolute 
+#     PLATFORM.Sensor("rdr1").TurnOff();
+#     PLATFORM.Sensor("eyes").TurnOff();
+   end_execute
+    
+   edit processor assessment
+      enemy_side    red
+      enemy_type    RED_FIGHTER
+      friendly_type BLUE_FIGHTER
+      flight_id     1
+      id_flag       3
+   end_processor     
+end_platform
+
+platform blue_4 BLUE_FIGHTER
+   side blue
+#  draw_nominal_states
+   commander hvaa1
+   command_chain IFLITE blue_1
+   command_chain ELEMENT blue_3
+   heading 270 deg
+   position 00:10:00.00s 01:15:00.00w  altitude 30000.00 ft
+
+   script_variables
+      START_TYPE = "orbit";
+      RISK_WPN = 0.0;
+      MISSION_TYPE = "HVAADCA";
+      PROTECTING = {"hvaa1"};
+      ENG_TGT = "";
+      ROUTE.Append("test_route");
+      FORM_FLY_CHAIN = iflite;
+      VECTOR_FORMATION = {3,-15.0*MATH.M_PER_NM(),15.0*MATH.M_PER_NM(),0};
+      APOLE_RDR = 30;
+   end_script_variables
+   
+   execute at_time 1 s absolute 
+#     PLATFORM.Sensor("rdr1").TurnOff();
+#     PLATFORM.Sensor("eyes").TurnOff();
+   end_execute
+    
+   edit processor assessment
+      enemy_side    red
+      enemy_type    RED_FIGHTER
+      friendly_type BLUE_FIGHTER
+      flight_id     1
+      id_flag       4
+   end_processor     
+end_platform
+
+platform red_1 RED_FIGHTER
+   side red
+   icon su27
+   commander SELF
+   command_chain IFLITE SELF
+   command_chain ELEMENT SELF
+
+   position 00:05:00.00n 02:10:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+
+   script_variables
+      APOLE_RDR = 0;
+      PLAYBOOK = {2,3,2};
+      ENG_TGT = "";
+      PRE_PLAN = 1.0;
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       1
+   end_processor 
+end_platform
+
+platform red_2 RED_FIGHTER
+   side red
+   icon su27
+   commander red_1
+   command_chain IFLITE red_1
+   command_chain ELEMENT red_1
+
+   position 00:10:00.00n 02:10:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+ 
+   script_variables
+      APOLE_RDR = 0;
+      PLAYBOOK = {2,3,2};
+      ENG_TGT = "";
+      PRE_PLAN = 1.0;
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       2
+   end_processor 
+end_platform
+
+platform red_3 RED_FIGHTER 
+   side red
+   icon su27
+   commander SELF
+   command_chain IFLITE red_1
+   command_chain ELEMENT SELF
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+
+   position 00:05:00.00s 02:10:00.00e altitude 30000.00 ft
+   heading 270 deg
+ 
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       3
+   end_processor 
+end_platform
+
+platform red_4 RED_FIGHTER
+   side red
+   icon su27
+   commander red_3
+   command_chain IFLITE red_1
+   command_chain ELEMENT red_3
+
+   position 00:10:00.00s 02:10:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       4
+   end_processor 
+end_platform
+
+platform red_5 RED_FIGHTER 
+   side red
+   icon su27
+   commander SELF
+   command_chain IFLITE red_1
+   command_chain ELEMENT SELF
+
+   position 00:02:00.00n 02:30:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       5
+   end_processor 
+end_platform
+
+platform red_6 RED_FIGHTER 
+   side red
+   icon su27
+   commander red_5
+   command_chain IFLITE red_1
+   command_chain ELEMENT red_5
+
+   position 00:02:00.00s 02:30:00.00e altitude 30000.00 ft
+   heading 270 deg
+
+   script_variables 
+      home_base = WsfGeoPoint.Construct("00:00:00n 01:30:00.0e");
+   end_script_variables
+
+   script_variables
+      ENG_TGT = "";
+      ROUTE.Append("red_route");
+      SHOT_DOC = 0;
+      FWD_PASS = false;
+   end_script_variables
+   
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       6
+   end_processor 
+end_platform

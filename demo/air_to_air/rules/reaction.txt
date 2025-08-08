@@ -1,0 +1,131 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/*
+PURPOSE  Reaction behavior node  
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+*/
+advanced_behavior reaction
+
+   script_variables 
+      extern string faz_desired;
+      extern bool change_desired;
+      extern WsfPlatform iacid;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern double pr_gees;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+      extern double t_faz_switch;
+#      extern WsfBrawlerProcessor BRAWLER;
+      extern Atmosphere atmos;
+      extern double t_phase;
+      extern Array<int> PLAYBOOK;      
+   end_script_variables
+
+   precondition 
+      ////// Evaluate conditions that would prevent behavior alternative from running
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not a brawler processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }
+
+      if (PLATFORM->rule_type == "ftr" && PLATFORM->faz == "reaction")
+      { return Success(); }
+      else
+      { return Failure(reason); }
+ 
+   end_precondition
+   
+   execute 
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," reaction");   
+      bool BrawlMover;
+      WsfBrawlerProcessor BRAWLER;
+      if (iacid.Mover().Type() == "WSF_BRAWLER_MOVER")
+      {
+         for (int i=0; i<iacid.ProcessorCount();i+=1)
+         {
+            if (iacid.ProcessorEntry(i).Type() == "WSF_BRAWLER_PROCESSOR")
+            {
+               BrawlMover = true;
+               BRAWLER = (WsfBrawlerProcessor)iacid.ProcessorEntry(i);
+               break;
+            }
+         }
+      }   
+      int plan_1 = PLAYBOOK[0]; 
+      int plan_2 = PLAYBOOK[1]; // create local version of these to manipulate in this routine
+      int plan_3 = PLAYBOOK[2];
+
+   faz_desired = "reaction"; 
+
+   first_pass = false;
+   bool turn_hot = false;  // set to true if I desire to turn hot
+   reason = "pump_in";
+   pr_speed = iacid->COMMIT_SPD*atmos.SonicVelocity(iacid.Altitude());
+   pr_altitude = iacid->COMMIT_ALT;
+   if(BrawlMover)
+   {
+      pr_gees = BRAWLER.MaxSustainedGs();
+   }
+   else
+   {
+      pr_gees = 3;
+   }
+   if (plan_2 < 3) // 60 or 90 degree offset
+   {
+      if (TIME_NOW - t_faz_switch < 2)
+      {
+         pr_heading = react_hdg(iacid,plan_2);
+         if (plan_2 == 2){pr_speed = iacid->PUMP_SPD*atmos.SonicVelocity(iacid.Altitude());}
+      }
+      pr_vector(iacid,pr_heading,pr_speed,pr_altitude,pr_gees);
+   }
+   else if (plan_2 == 3) // slice
+   {
+      pr_speed = iacid->PUMP_SPD*atmos.SonicVelocity(iacid.Altitude());
+      if (TIME_NOW - t_faz_switch < 2)
+      {
+         pr_heading = escape_hdg(iacid); // get your escape heading
+      }
+      pr_slice(iacid,pr_heading,pr_speed,pr_altitude);  // perform a slice maneuver
+   }  
+   if ( TIME_NOW >= t_phase )
+   {  
+      turn_hot = true;
+      reason = "TIME LIMIT REACHED...TURN HOT";
+   }
+
+// if turn_hot = true, go to pump_in
+   if(turn_hot)
+   {  
+      faz_desired = "pump_in";
+      t_phase=TIME_NOW + 20;
+   }
+      return Success(reason);         
+   end_execute
+
+end_advanced_behavior

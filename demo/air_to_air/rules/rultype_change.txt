@@ -1,0 +1,241 @@
+# ****************************************************************************
+# CUI//REL TO USA ONLY
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+/* taken from rultype_change.F90 and pcode.F90 (EZJA Brawler RULES)
+
+AUTHOR   Snyder
+Classification: UNCLASSIFIED//FOUO
+
+Technical Description:
+
+Determine whether or not to change RULE type. Rule types can be fighter, route, or orbit. "RULE types" 
+stemmed from our Brawler RULES at EZJA. Fighter rules in this behavior tree just means you go through ftr_rules, 
+route rules means you go through route_rules and orbit rules means you go through orbit_rules 
+
+This behavior node is pretty empty right now. This node is typically very different for each study. 
+What is currently in here is just a very generic set of criteria to change rule type
+
+   
+orbit/route ---> fighter
+   - If platform has track (own-ship or third party) of hostile that is within 1.5 times commit range 
+   - If mission_type == HVAADCA, DCA, or ESCORT and hostile is within DISPLN_X range * 1.5 of the protected entity
+
+fighter ---> route
+   - If no hostile tracks exist within 2 times the commit range and ROUTE size is > 0
+   
+
+Key Parameters Description:
+
+rule_type:    current rule type of this platform (fighter,route,orbit)
+start_type:   prdata variable - rule type the platform will start out in
+iflite:       WsfGroup object of this flight
+iacid:        WsfPlatform object of current platform 
+flt_lead:     true if I am the flight lead
+
+ 
+*/
+include prdata/rules_utils.txt           
+
+advanced_behavior rultype
+
+   script_debug_writes disable
+
+   enabled enable
+   script_variables
+
+#      extern WsfBrawlerProcessor BRAWLER;
+#      WsfSituationAwarenessProcessor saPROC = (WsfSituationAwarenessProcessor)PROCESSOR;
+      WsfPerceptionProcessor    perception;
+
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawSteering     = false;
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw             = WsfDraw();
+      double   mLastTime         = 0.0;
+
+#      WsfPlatform iacid = PLATFORM;
+      extern WsfPlatform iacid;
+      extern bool log_print; 
+         extern string log_path;
+         extern string iout_path;
+      extern WsfGeoPoint home_base;
+      extern string rule_type;
+      extern string reason;
+      extern WsfCommandChain iflite;
+      extern WsfCommandChain ielement;
+      extern bool pitch_up;
+      extern double pr_altitude;
+      extern double pr_speed;
+      extern double pr_heading;
+      extern bool first_pass;
+      extern double time_ok;
+      extern bool alerted;
+      extern bool apole_tct;
+      extern bool sam_threatnd;
+      extern double rng_cls_sam;
+      extern double rng_cls_hst;
+      extern bool pump_per;
+      extern bool threatnd;
+      extern bool needil;
+      WsfLocalTrack cls_host_ltrk;
+      extern string faz;
+      extern WsfRoute ROUTE;
+      extern bool flt_lead;
+      extern bool el_lead;
+        extern double t_phase; // sim time at which it is acceptable to change phase
+        extern string flight_lead;
+        extern bool dzr_change;
+        extern string dzr_phase;
+        extern bool flt_guiding;
+      extern WsfTaskProcessor tsk_mgr;
+      extern string RuleReason;
+      WsfSA_Processor saPROC = (WsfSA_Processor)PROCESSOR;
+      extern Array<string> PROTECTING;
+      extern bool no_tree;
+      extern FileIO iout;
+      extern FileIO log;
+   end_script_variables
+
+   on_init
+      perception = (WsfPerceptionProcessor)PLATFORM.Processor("perception");
+   end_on_init
+   
+
+   precondition
+//writeln("PLATFORM ",PLATFORM.Name()," start_type = ",PLATFORM->start_type);
+      if (!PROCESSOR.IsA_TypeOf("WSF_SA_PROCESSOR"))
+      {
+         writeln_d("not an SA processor!");
+         return Failure("behavior not attached to a WSF_SA_PROCESSOR");
+      }      
+      else if (PLATFORM.Mover().IsTurnedOff()) // if mover off, I'm probably on the ground, don't proceed w/ behavior tree
+      {
+         return Failure(reason);
+      }
+      if (no_tree)
+      {
+         return Failure("no_tree set to true...don't use behavior tree");
+      }      
+      return Success();
+   end_precondition
+
+   execute
+       writeln_d("T = ",TIME_NOW," ",iacid.Name()," rultype_change");
+#       FileIO log = FileIO();
+       double rng_cls_trk = MATH.Min(rng_cls_hst,rng_cls_sam);
+#       if (log_print)
+#       {
+#          log.Open(log_path, "append");
+#       }
+       cls_host_ltrk = closest_host_track(iacid,saPROC.PerceivedBandits());
+
+/* ************************************
+//    switch out of route or orbit faz
+***************************************/
+      if (rule_type == "route" || rule_type == "orbit")
+      {  
+         // switch to fighter if within 1.2*commit range
+         if (rng_cls_trk < PLATFORM->COMMIT_RNG*1.2)
+         {
+            change_rultype(iacid,iflite,rule_type,"ftr","Approaching commit range");
+            RuleReason = " ".Join({"Approaching Commit Range",(string)(rng_cls_trk*MATH.NM_PER_M())});
+         }         
+         // switch to fighter if hostile gets too close to my protected entity
+         else if ( (iacid->MISSION_TYPE == "HVAADCA" || iacid->MISSION_TYPE == "ESCORT") 
+         && cls_host_ltrk.IsValid() && cls_host_ltrk.LocationValid() )
+         {
+            foreach (string pe in PROTECTING) // loop through all the platform names i'm protecting
+            {   
+               for (int i = 0; i <= saPROC.PerceivedAssets().Size() - 1; i = i + 1)
+               {  
+                  WsfSA_EntityPerception asset = saPROC.PerceivedAssets()[i]; 
+                  WsfGeoPoint aloc = WsfGeoPoint().Construct(asset.Lat(),asset.Lon(),asset.Altitude()); 
+                  // see if I have a perception of that asset and check perceived range between hostiles and protected entity
+                  if (asset.PerceivedName() == pe && 
+                  cls_host_ltrk.CurrentLocation().SlantRangeTo(aloc) < iacid->DISPLN_X * 1.5)
+                  { 
+                     change_rultype(iacid,ielement,rule_type,"ftr","hostile threatening PE");
+                     RuleReason = "Hostile Threatening PE";
+                  }
+               }
+            }
+         }
+         // switch to intercept i if get an intercept task
+         if (tsk_mgr.TasksReceived() > 0)
+         {
+            foreach (WsfTask tsk in tsk_mgr.ReceivedTaskList())
+            {
+               if (tsk.TaskType() == "INTERCEPT")
+               {
+                  change_rultype(iacid,iflite,rule_type,"intercept","recieved intercept task");
+                  RuleReason = "Recieved Intercept Task";
+                  return Success("recieved intercept task");
+               }
+               else if (tsk.TaskType() == "SCRAMBLE")
+               {
+                  #change_rultype(iacid,iflite,rule_type,"orbit","recieved scramble task");                  
+               }
+            }
+         } 
+      }
+/* ***************************
+//    switch out of intercept faz
+******************************/
+      else if(PLATFORM->rule_type == "intercept")
+      {
+         // switch to fighter if within 1.2*commit range
+         if (rng_cls_trk < PLATFORM->COMMIT_RNG*1.2)
+         {
+            change_rultype(iacid,iflite,rule_type,"ftr","Approaching commit range");
+            RuleReason = " ".Join({"Approaching Commit Range",(string)(rng_cls_trk*MATH.NM_PER_M())});
+         }  
+         // if tasks recieved is 0
+         if (tsk_mgr.TasksReceived() == 0)
+         {
+            change_rultype(iacid,iflite,rule_type,"orbit","no valid tasks");   
+            RuleReason = "No Valid Tasks";         
+         }         
+      }
+/* ***************************
+//    switch out of fighter faz
+******************************/
+      else if (PLATFORM->rule_type == "ftr")
+      {
+         if (ROUTE.Size() > 0 && rng_cls_trk > PLATFORM->COMMIT_RNG*1.75 && faz != "egress")
+         {
+            change_rultype(iacid,iflite,rule_type,"route","no threat hostile tracks");
+            RuleReason = " ".Join({"No Threat Hostile Tracks",(string)(rng_cls_trk*MATH.NM_PER_M())});
+         }
+      }
+//**********************************************
+// CAPTURE CODE
+//**********************************************
+      if (iacid->faz == "egress")
+      {  
+         // A/C successfully egressed to home base, have them "land" and removed from the sim
+         if (iacid.GroundRangeTo(home_base) <= 5*MATH.M_PER_NM())
+         {
+            if (log_print) {log.Write(write_str(iacid.Name()," REMOVED FROM SIM...LANDING","\n") );}
+            iacid.DeletePlatform();
+#            if (log_print) {log.Close();}
+            iacid.SetAuxData("captured",true);
+            
+            return Failure(" REMOVED FROM SIM...LANDING");
+         }
+      } 
+      return Success(" ".Join({"SELECTED RULETYPE",iacid->rule_type,":",RuleReason}));
+//  close log.txt and iout.txt
+#   if (log_print){log.Close();}
+   end_execute
+end_advanced_behavior
