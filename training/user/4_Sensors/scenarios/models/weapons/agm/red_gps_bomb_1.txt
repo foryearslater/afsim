@@ -1,0 +1,98 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+###############################################################################
+#               *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *
+#               All information below is representative only,
+#               and is estimated or obtained from open sources.
+#               It is not yet substantiated or corroborated by
+#               definitive data.
+#               *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *
+###############################################################################
+
+#############################################################################
+#                    Define the aerodynamic characteristics
+#############################################################################
+
+radar_signature RED_GPS_BOMB_1_RADAR_SIGNATURE
+   constant 1 m^2
+end_radar_signature
+
+aero RED_GPS_BOMB_1_AERO WSF_AERO
+   // Note:  Values for Mk-82-like slick bomb.
+   cd_zero_subsonic     0.100
+   cd_zero_supersonic   0.40
+   mach_begin_cd_rise   0.800
+   mach_end_cd_rise     1.200
+   mach_max_supersonic  2.000
+   reference_area       0.059 m2
+   cl_max              10.400
+   aspect_ratio         4.000
+end_aero
+
+###############################################################################
+#                 Define the explicit platforms for the bombs
+###############################################################################
+
+platform_type RED_GPS_BOMB_1 WSF_PLATFORM
+   icon jdam
+   radar_signature RED_GPS_BOMB_1_RADAR_SIGNATURE
+
+   mover WSF_GUIDED_MOVER
+      aero RED_GPS_BOMB_1_AERO
+      mass 500 lbs
+      update_interval 0.5 s
+   end_mover
+
+   processor guidance_computer WSF_GUIDANCE_COMPUTER
+      proportional_navigation_gain 10.0
+      velocity_pursuit_gain        10.0
+      g_bias                        1.0
+      maximum_commanded_g          25.0 g
+      guidance_delay                0.0 sec
+   end_processor
+
+   processor fuse WSF_GROUND_TARGET_FUSE
+      maximum_time_of_flight 900 seconds
+   end_processor
+end_platform_type
+
+###############################################################################
+#                          Define the weapon lethality
+###############################################################################
+
+weapon_effects RED_GPS_BOMB_1_EFFECTS WSF_SPHERICAL_LETHALITY
+   allow_incidental_damage
+   minimum_radius   25.0 m   // largest blast radius at which damage inflicted is maximum.
+   maximum_radius   30.0 m   // blast radius beyond which the damage inflicted is Zero.
+   minimum_damage   0.1      // damage level acheived at the minimum radius.
+   maximum_damage   1.0      // maximum damage level achievable upon the target.
+   threshold_damage 0.2      // initial damage level which must be achieved
+                             // before effects begin to accumulate upon the target
+   exponent         1.0      // exponent of proportionality of damage with radius.
+                             // ( e = 1.0 ==> linear damage within blast region,
+                             //   e > 1.0 ==> more damaging within the blast region,
+                             //   0.0 < e < 1.0 ==> less damaging within blast region. )
+end_weapon_effects
+
+###############################################################################
+#                           Define the weapon types
+###############################################################################
+
+// *** NOTE:  If the ejector rack imparts initial velocity to the bomb, it should
+//            be specified in the weapons below as keyword "launch_delta_v", and
+//            the launch computers and LARs will need to be re-generated.
+
+weapon RED_GPS_BOMB_1 WSF_EXPLICIT_WEAPON
+   launched_platform_type RED_GPS_BOMB_1
+   weapon_effects RED_GPS_BOMB_1_EFFECTS
+   aux_data
+      double lar_meters = 18520
+   end_aux_data
+end_weapon

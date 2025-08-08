@@ -1,0 +1,118 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+include_once processors/quantum_agents/aiai/behavior_debug_quantum_tasker.txt
+
+processor SOC_CMDR_QUANTUM_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   #script_debug_writes true
+   #show_task_messages
+
+   script_variables
+      string MEZ_ZONE_NAME = "MEZ";
+   end_script_variables
+
+   script Array<WsfQuantumTask> SOC_Generation (Array<WsfLocalTrack> TRACKS, Array<WsfAssetPerception> ASSETS )
+      Array<WsfQuantumTask> tasks = Array<WsfQuantumTask>();
+      WsfLocalTrackList localTracks = PLATFORM.MasterTrackList();
+      foreach (WsfTrack lt in localTracks)
+      {
+         if (lt.IsValid() && (!lt.SideValid() || lt.Side() != PLATFORM.Side()))
+         {
+            WsfQuantumTask qt = WsfQuantumTask.Construct(1.0, "NONE", lt);   // include the track with the task
+            tasks.PushBack(qt);
+         }
+      }
+      return tasks;
+   end_script
+
+   script double SOC_Evaluation ( WsfQuantumTask TASK, WsfAssetPerception ASSET)
+   
+      WsfTrack track = PLATFORM.MasterTrackList().FindTrack(TASK.TrackId());
+      if (track.IsValid())
+      {
+         bool InMez = track.WithinZoneOf(PLATFORM, MEZ_ZONE_NAME);
+         if (InMez == true && ASSET.Type() == "IADS_CMDR")
+         {
+            return 1.0;
+         }
+         else if (InMez == false && ASSET.Type() == "GCI_CMDR")
+         {
+            return 1.0;
+         }
+      }
+      return 0.0;
+   end_script             
+   
+   script Map<WsfAssetPerception,WsfTask> EmptyAllocator ( Array<Array<double>> profits, Array<WsfAssetPerception> assets, Array<WsfTask> tasks)
+      Map<WsfAssetPerception,WsfTask> allocations = Map<WsfAssetPerception,WsfTask>();
+      return allocations;
+   end_script 
+
+   #show_task_messages
+   script_debug_writes    off
+   update_interval        5.0 sec
+   reallocation_strategy  dynamic
+   generator              custom          SOC_Generation
+   evaluator              custom          SOC_Evaluation
+   #allocator              optimal_profit 
+   allocator              greedy_isolated 
+   allocator_extra_tasks  greedy_isolated 
+   #allocator              custom          EmptyAllocator 
+   #allocator_extra_tasks  optimal_profit 
+  
+#   behavior_tree 
+#      behavior_node debug_quantum_tasker
+#   end_behavior_tree   
+end_processor
+
+platform_type SOC_CMDR WSF_PLATFORM
+   icon C4I
+
+   infrared_signature    VEHICLE_INFRARED_SIGNATURE
+   optical_signature     VEHICLE_OPTICAL_SIGNATURE
+   radar_signature       VEHICLE_RADAR_SIGNATURE
+
+   comm blue_comm TEAM_DATALINK
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+   end_comm
+
+   processor data_mgr WSF_TRACK_PROCESSOR
+      purge_interval       60 sec
+#      execute at_interval_of 30 sec 
+#         writeln("----------", PLATFORM.Name(), " tracks:  ----------");
+#         foreach(WsfTrack t in PLATFORM.MasterTrackList())
+#         {
+#            writeln("track: ", t.TargetName());
+#         }
+#      end_execute
+   end_processor
+
+   processor task_mgr SOC_CMDR_QUANTUM_TASKER
+   end_processor
+   
+   processor perception WSF_PERCEPTION_PROCESSOR 
+      script_debug_writes      off
+      reporting_self           false
+      reporting_others         false
+      asset_perception         truth subordinates
+      asset_update_interval     5 sec
+      max_asset_load          100
+      threat_update_interval    5 sec
+      max_threat_load         100
+   end_processor
+
+end_platform_type

@@ -1,0 +1,25 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# Chaser needs to stay within 1 km of chief to be considered in bounds.
+# This script periodically checks if chaser has remained in bounds with
+# respect to chief.
+execute at_interval_of 1 min
+   WsfPlatform chief = WsfSimulation.FindPlatform("chief");
+   WsfPlatform chaser = WsfSimulation.FindPlatform("chaser");
+   double dist = Vec3.Subtract(chief.LocationECI(), chaser.LocationECI()).Magnitude();
+   if (dist > 1000.0)
+   {
+      string msg = "Chaser has moved out of range of chief";
+      WsfDraw draw = WsfDraw();
+      draw.BeginText(msg);
+      draw.VertexScreen(0.1, 0.9);
+      draw.End();
+   }
+end_execute

@@ -1,0 +1,198 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+//this behavior will be the only one in an agents tree that bids on "zone" jobs (compiler error otherwise)
+//this behavior should be the only one in an agents tree that creates "pursue-target" jobs when it runs (unexplained behavior otherwise)
+//in other words... if other behaviors also create "pursue-target" jobs, they should all be under a selector node, so only 1 runs on any update
+
+
+behavior  interpret_zone_jobs
+
+   script_debug_writes  off
+
+
+   script_variables
+      bool   fastAndDirtyBidding   = false;
+      int maxJobWinnersForPursueTrack  = 1;
+      Map<string, string> ThreatTypeEngageZone = Map<string, string>();
+      WsfRIPRJob mCurrentJob;
+   end_script_variables
+   
+   
+   on_init
+      //nothing here yet
+   end_on_init
+
+
+
+   query_bid_type    zone
+
+       if (PLATFORM.Subordinates().Count() <= 0 || PROCESSOR.GetRIPRSubordinateProcessors().Size() <= 0)
+       {
+         writeln_d("behavior interpret_zone_jobs: not enough subordinates");
+         return -MATH.DOUBLE_MAX();
+       }
+    
+      ########################################################################
+      ##  bid on the cluster is based on subordinate bids on their members
+      ########################################################################
+      WsfRIPRJob tempJob = WsfRIPRJob.Create(PROCESSOR,"pursue-target","job description",1.0,1);
+      Array<string> targetNames = (Array<string>)JOB.GetData("ZoneThreatNameArray");
+      writeln_d("job ", JOB.GetDescription(),  " -> number of target names considering: ", targetNames.Size());
+      double maxBid = -MATH.DOUBLE_MAX();
+      
+      foreach(string targetName in targetNames)
+      {
+          bool inZone   = true;
+          WsfPlatform target = WsfSimulation.FindPlatform(targetName);
+          if (target.IsValid())
+          {
+            extern string DeterminePlatformCategory(WsfPlatform);
+            string category = DeterminePlatformCategory(target);
+            if (ThreatTypeEngageZone.Exists(category) && ThreatTypeEngageZone[category].Length()>0)
+            {
+              if ( ! target.Location().WithinZone(ThreatTypeEngageZone[category]))
+              {
+                inZone   = false;
+                writeln_d("aifl ", PLATFORM.Name(),", target ", targetName, " outside of category ", category," zone ", ThreatTypeEngageZone[category], ".  bid = -DOUBLE_MAX.");
+              }
+              else
+              {
+                writeln_d("aifl ", PLATFORM.Name(),", target ", targetName, " inside category ", category," zone ", ThreatTypeEngageZone[category], ".  bid as usual!!!");
+              }
+            }
+            foreach ( string aZone in PLATFORM.ZoneNames())
+            {
+              if ( !target.WithinZoneOf(PLATFORM, aZone) )
+              {
+                inZone   = false;
+                writeln_d("ai flight lead, target ", targetName, " outside of defined zone ", aZone, " curBid from subordinate set to -DOUBLE_MAX.");
+              }
+              else
+              {
+                writeln_d("ai flight lead, target ", targetName, " inside of defined zone ", aZone, " curBid unchanged.");
+              }
+            }
+         }
+         if (inZone == true)
+         {
+         tempJob.SetData("targetTrackName", targetName);
+         if (fastAndDirtyBidding)
+         {
+            maxBid = PROCESSOR.GetRIPRSubordinateProcessors().Get(0).QueryBid(tempJob);
+            writeln_d("ai flight lead, fast dirty bid on ", JOB.Description()," = ", maxBid);
+            break;
+         }
+         else
+         {
+            //by default this expands through job-pass-through agents to get all bids
+            double curBid = PROCESSOR.QuerySubordinatesMaxBid(tempJob);
+
+            writeln_d("ai flight lead, max bid on ", targetName," from subordinates: ", curBid);
+            if (curBid > maxBid)
+            {
+               maxBid = curBid;
+            }
+            }
+         }
+         else
+         {
+            maxBid = -MATH.DOUBLE_MAX();
+         }
+      }
+      return maxBid;
+
+   end_query_bid_type
+
+
+
+   precondition
+      writeln_d("precondition interpret_zone_jobs");
+
+      if (PROCESSOR.GetRIPRCommanderProcessor().IsValid())
+      {
+         return true;
+      }
+      else
+      {
+         return Failure("Agent does not have a commander to get jobs from!");
+      }
+   end_precondition
+
+
+
+   execute
+      writeln_d(PLATFORM.Name(), " executing interpret_zone_jobs, T=", TIME_NOW);
+
+      // now check the board to see what we've won!
+      Map<string, int> updatedTracks = Map<string, int>();
+      WsfRIPRProcessor commander = PROCESSOR.GetRIPRCommanderProcessor();
+
+      if (commander.IsJobWindowOpen())
+      {
+         //we can get a new job for ourselves here
+         mCurrentJob = commander.GetJobFor(TIME_NOW, PROCESSOR);
+      }
+      else if (commander.IsBidWindowOpen())
+      {
+         //we dont update our own job board until here
+         if( mCurrentJob.IsValid() && mCurrentJob.Name() == "zone" )
+         {
+            Array<string> targetNames = (Array<string>)mCurrentJob.GetData("ZoneThreatNameArray");
+            writeln_d(PLATFORM.Name(), " targetNames.Size() = ", targetNames.Size());
+            foreach(string targetName in targetNames)
+            {
+               WsfPlatform target = WsfSimulation.FindPlatform(targetName);
+               if (target.IsValid())
+               {
+                  updatedTracks.Set( targetName, 1 );
+                  
+                  WsfRIPRJob job = PROCESSOR.GetJobByData("targetTrackName", targetName);
+                  if (job.IsValid())
+                  {
+                     //just update it, it already exists
+                     
+                  }
+                  else
+                  {
+                     extern double cPursueTargetPriority;
+                     WsfRIPRJob temp = WsfRIPRJob.Create(PROCESSOR,
+                                                         "pursue-target",
+                                                         "pursue-target-" + targetName,
+                                                         cPursueTargetPriority,
+                                                         maxJobWinnersForPursueTrack);
+                     temp.SetData("targetTrackName", targetName);
+                     PROCESSOR.AddJob(temp);
+                     writeln_d("--- ", PLATFORM.Name(), " job change, ADD: ", targetName);
+                  }
+               }
+            }
+         }
+         else
+         {
+            writeln_d("---  currentJob not a valid zone job!!!!!  Removing all my aifl jobs.");
+         }
+
+         Array<WsfRIPRJob> jobs = PROCESSOR.GetJobs();
+         foreach (WsfRIPRJob x in jobs)
+         {
+            string name = (string)x.GetData("targetTrackName");
+            if (updatedTracks.Get(name) != 1 && x.Name() == "pursue-target")
+            {
+               writeln_d("--- ", PLATFORM.Name(), " job change, REMOVE: ", name);
+               PROCESSOR.RemoveJob(x);
+            }
+         }
+      }
+
+   end_execute
+
+end_behavior

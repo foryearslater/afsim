@@ -1,0 +1,200 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+route cap_orbit
+   label start
+      offset  20   0 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  20   5 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  0    5 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  0    0 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+   goto start
+end_route
+
+platform 10_gci_cmdr GCI_CMDR
+   side blue
+   icon runway
+   command_chain blue_chain 10_soc_cmdr 
+   position 30:15n 82:00w altitude 0 ft agl
+   heading 105 deg
+   
+   edit processor task_mgr
+      script_variables
+         mRequireTasking = true;  // requires gci 
+      end_script_variables
+   end_processor
+   
+   edit processor data_mgr 
+      report_interval      20 sec
+      fused_track_reporting on
+      raw_track_reporting   off
+      clear_external_links
+      report_to command_chain blue_chain commander via blue_comm
+      report_to command_chain blue_chain subordinates via blue_comm
+   end_processor
+   
+   edit processor task_mgr       
+      script_variables 
+         mKnownTargetTypes["RED_STRIKER"] = 1;
+      end_script_variables
+   end_processor
+end_platform
+
+platform_type BLUE_STRIKER STRIKER 
+
+   comm blue_comm TEAM_DATALINK
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+      internal_link perception
+   end_comm
+   
+   edit processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+   
+   edit processor perception
+      report_to command_chain blue_chain commander via blue_comm
+	   report_to command_chain blue_chain peers via blue_comm
+   end_processor
+end_platform_type
+
+platform_type BLUE_FLIGHT_LEAD FLIGHT_LEAD 
+
+   comm blue_comm TEAM_DATALINK
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+      internal_link perception
+   end_comm
+   
+   edit processor data_mgr 
+      report_to command_chain blue_chain commander via blue_comm
+      report_to command_chain blue_chain subordinates via blue_comm
+   end_processor
+   
+   edit processor perception 
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+   
+   edit processor task_mgr       
+      script_variables 
+         mKnownTargetTypes["RED_STRIKER"] = 1;
+      end_script_variables
+   end_processor
+end_platform_type
+
+platform flight_lead_north BLUE_FLIGHT_LEAD
+   side blue
+   icon Command_Truck
+   position 30:38:12.770n 81:42:59.042w
+   heading 100 deg
+   command_chain blue_chain 10_gci_cmdr  
+end_platform
+
+platform cap_north_1 BLUE_STRIKER
+   side blue
+   icon F-18
+   heading 180 deg
+   command_chain blue_chain flight_lead_north
+   
+   route
+      position 30:30n 81:51:20.95w
+         altitude 35000 feet
+      insert_route cap_orbit reference_heading 0.0 deg
+   end_route 
+  
+   edit processor task_mgr
+      edit behavior engage_weapon_task_target
+         script_variables
+            DefaultPercentRangeMax = 0.85; 
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+platform cap_north_2 BLUE_STRIKER
+   side blue
+   icon F-18
+   command_chain blue_chain flight_lead_north
+  
+   route
+      position 30:41n 81:54:20.27w
+         altitude 35000 feet
+      insert_route cap_orbit reference_heading 180.0 deg
+   end_route
+  
+   edit processor task_mgr
+      edit behavior engage_weapon_task_target
+         script_variables
+            DefaultPercentRangeMax = 0.85; 
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+platform flight_lead_south BLUE_FLIGHT_LEAD
+   side blue
+   icon Command_Truck
+   position 30:08:44.176n 81:38:03.054w
+   heading 100 deg
+   command_chain blue_chain 10_gci_cmdr  
+end_platform
+
+platform cap_south_1 BLUE_STRIKER
+   side blue
+   icon F-18
+   heading 000 deg
+   command_chain blue_chain flight_lead_south
+  
+   route
+      position 29:51n 81:33:28.31w
+         altitude 35000 feet
+      insert_route cap_orbit reference_heading 0.0 deg
+   end_route
+  
+   // make him hit bingo fuel at 9 minutes
+   edit fuel    
+      consumption_rate     7 lb/s
+      bingo_quantity    1000 lb
+      initial_quantity  4780 lb     // ~9 minutes, at 7 lb/s consumption rate (1000 lb bingo)
+   end_fuel
+  
+   edit processor task_mgr
+      edit behavior engage_weapon_task_target
+         script_variables
+            DefaultPercentRangeMax = 0.85; 
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+platform cap_south_2 BLUE_STRIKER
+   side blue
+   icon F-18
+   command_chain blue_chain flight_lead_south
+   
+   route
+      position 30:02n 81:35:32.42w
+         altitude 35000 feet
+      insert_route cap_orbit reference_heading  180.0 deg
+   end_route
+  
+   edit processor task_mgr
+      edit behavior engage_weapon_task_target
+         script_variables
+            DefaultPercentRangeMax = 0.85; 
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform

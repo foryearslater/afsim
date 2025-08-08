@@ -1,0 +1,59 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+behavior  create_cap-routes
+
+   script_debug_writes off
+
+   script_variables
+      Array<Map<string, Object>> mCapRoutes = Array<Map<string, Object>>();
+          #mCapRoutes[0] = Map<string, Object>();
+          #mCapRoutes[0].Set("route name", "GOALIE_CAP_CCW_ORBIT");
+          #mCapRoutes[0].Set("location", WsfGeoPoint.Construct(12.60313, 117.37702, 40000));
+          #mCapRoutes[0].Set("heading", 140.0);
+          #mCapRoutes[0].Set("priority", 1000.0);
+          #mCapRoutes[0].Set("max winners", 1);
+          #mCapRoutes[0].Set("fez_zone", "lane_2");
+   end_script_variables
+
+   on_init
+      foreach( Map<string, Object> map in mCapRoutes)
+      {
+        //create a "cap-route" job
+        string      routeName  = (string)     map["route name"];
+        WsfGeoPoint location   = (WsfGeoPoint)map["location"];
+        double      heading    = (double)     map["heading"];
+        double      priority   = (double)     map["priority"];
+        int         maxWinners = (int)        map["max winners"];
+        string      zoneName   = (string)     map["fez_zone"];
+        string unique_desc = write_str("cap-route_", routeName, "_", location.Latitude(), "_", location.Longitude());
+        writeln_d("CREATING CAP ROUTE JOB: ", unique_desc);
+        WsfRIPRJob temp = WsfRIPRJob.Create( PROCESSOR, "cap-route", unique_desc, priority, maxWinners );
+        temp.SetData( "location",   location );
+        temp.SetData( "heading",    heading );
+        temp.SetData( "route name", routeName );
+        temp.SetData( "for_air",    1 );
+        temp.SetData( "fez_zone",   zoneName);
+        PROCESSOR.AddJob(temp);
+      }
+   end_on_init
+
+   precondition
+      writeln_d("precondition create_cap-routes");
+      return false;
+   end_precondition
+
+   execute
+      writeln_d("executing create_cap-routes");
+   end_execute
+
+end_behavior
+

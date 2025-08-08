@@ -1,0 +1,120 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+behavior  create_point_job
+
+   script_debug_writes off
+
+   script_variables
+      int maxJobWinnersForPursueTrack  = 1;
+      string pointJobName = "-1";
+   end_script_variables
+   
+   
+   on_init
+      //nothing here yet
+   end_on_init
+
+
+   precondition
+      writeln_d("precondition create_point_job");
+      
+      WsfRIPRProcessor commander = PROCESSOR.GetRIPRCommanderProcessor();
+      if (!commander.IsValid())
+      {
+         return Failure("Agent does not have a commander to get jobs from!");
+      }
+      int NumSubordinates = PROCESSOR.GetRIPRSubordinateProcessors().Size();
+      if (NumSubordinates <= 0)
+      {
+         return Failure("Agent has no subordinates to send to a point!");
+      }
+      return true;
+   end_precondition
+
+
+   execute
+      writeln_d("executing create_point_job");
+
+       // now check the board to see what we've won!
+       WsfRIPRJob currentJob = PROCESSOR.GetRIPRCommanderProcessor().GetJobFor(TIME_NOW, PROCESSOR);
+
+       if( currentJob.IsValid() && currentJob.Name() == "zone" )
+       {
+           //create a pursue-point job that allows for enough winners to send the whole squadron
+           //this is useful in case some subordinates don't have a track for some of the threats
+           //or if there are less threats than there are subordinates, so the whole squadron will be sent
+           
+           string      zName = (string)currentJob.GetData("ZoneName");
+           WsfGeoPoint point = (WsfGeoPoint)currentJob.GetData("ZonePoint");
+           if (point.IsValid())
+           {
+             string newPointJobName = "pursue-point-" + zName;
+             WsfRIPRJob pointJob = PROCESSOR.GetJobByData("pointName", newPointJobName);
+             if( !pointJob.IsValid() )
+             {
+                 extern double cPursuePointPriority;
+                 //set max job winners to number of subordinates (so all can proceed into zone)
+                 int NumSubordinates = PROCESSOR.GetRIPRSubordinateProcessors().Size();
+                 pointJob = WsfRIPRJob.Create( PROCESSOR,
+                                               "pursue-point",
+                                               newPointJobName,
+                                               cPursuePointPriority,
+                                               NumSubordinates);
+                 pointJob.SetData( "targetTrackName", zName ); //hack for now, so other code here works
+                 pointJob.SetData( "targetPoint", point );
+                 pointJob.SetData( "pointName", newPointJobName );
+                 PROCESSOR.AddJob(pointJob);
+                 writeln_d("--- ", PLATFORM.Name(), " job change, ADD: pursue-point-", zName );
+             }
+             else
+             {
+               //update the job?
+               pointJob.SetData( "targetPoint" ,     point );
+               pointJob.SetData( "targetTrackName" , zName );
+             }
+             if (pointJobName != newPointJobName)
+             {
+                //remove old point job
+                WsfRIPRJob prevPointJob = PROCESSOR.GetJobByData("pointName", pointJobName);
+                if (prevPointJob.IsValid())
+                {
+                  writeln_d("--- ", PLATFORM.Name(), " job change, REMOVE: ", pointJobName);
+                  PROCESSOR.RemoveJob(prevPointJob);
+                }
+                pointJobName = newPointJobName;
+             }
+             return; //step out of the behavior at this point, otherwise remove the job
+           }
+           else
+           {
+             writeln(PLATFORM.Name(), " has no valid zone point, not creating pursue-point job!");
+           }
+       }
+       else
+       {
+          writeln_d(PLATFORM.Name(), " does not have a valid zone job for a point!");
+       
+          //remove old point job
+          WsfRIPRJob prevPointJob = PROCESSOR.GetJobByData("pointName", pointJobName);
+          writeln_d("--- ", PLATFORM.Name(), " job change, REMOVE: ", pointJobName);
+          pointJobName = "-1";
+          if (prevPointJob.IsValid())
+       {
+            writeln_d("--- ", PLATFORM.Name(), " job change, REMOVE: ", pointJobName);
+            PROCESSOR.RemoveJob(prevPointJob);
+          }
+       }
+
+   end_execute
+
+end_behavior
+

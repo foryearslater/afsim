@@ -1,0 +1,459 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+behavior evade
+
+   script_debug_writes off
+
+   script_variables
+
+      double   cDEFAULT_ALTITUDE         = 9144;   // ~30,000 feet
+      double   mEngagementAggressiveness = 0.4;    // value in range [0, 1].  1 is suicidal, 0 is very cautious.
+                                                   // used by behavior_in_danger, behavior_evade, & behavior_disengage.
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool     mDrawNearestThreat      = false;
+      bool     mDrawEvasionVector      = false;
+
+      //**********************************************************************//
+      //** control / mode of operation parameters                           **//
+      //**********************************************************************//
+      double   weightPeersForEvade     = 0.25;  // percentage to scale peers influence for evasion vector
+      bool     mWobbleLeftRight        = true;
+      bool     mWobbleUpDown           = true;
+      double   cFAST_UPDATE_INTERVAL   = 0.25;
+      double   cSLOW_UPDATE_INTERVAL   = 2.0;
+
+      //**********************************************************************//
+      //** flying parameters, for for evasive manuevering                   **//
+      //**********************************************************************//
+      double   cNORMAL_SPEED           =   200.0;  // m/s
+      double   cEVADE_SPEED            =  1000.0;  // m/s (faster than a speeding bullet...M3.0+)
+      double   mAltitudeMin            =  1000.0;  // meters
+      double   mAltitudeMax            = 20000.0;  // meters
+      double   mAltitudeToDiveEvade    =  1500.0;  // distance to dive (meters) (~5000 ft)
+      double   mBankAngleForEvading    =    45.0;  // banks left & right, back & forth, at this angle, while evading
+      double   mMaxClimbRate           =   500.0;  // meters/second
+      double   mVerticalAccel          =     1.5 * Earth.ACCEL_OF_GRAVITY();  // meters/second^2
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      double              mLastTime     = 0.0;
+      double              mClimbRate    = 0.0;
+      Array<WsfPlatform>  mIncoming     = Array<WsfPlatform>();
+      WsfDraw             mDraw         = WsfDraw();
+      bool                mDiveDownFlag = true;
+      bool                mBankLeftFlag = true;
+   end_script_variables
+
+   script WsfThreatProcessor GetThreatProcessor()
+      for (int i=0; i<PLATFORM.ProcessorCount(); i+=1)
+      {
+         WsfProcessor proc = PLATFORM.ProcessorEntry(i);
+         if (proc.IsValid() && proc.IsA_TypeOf("WSF_THREAT_PROCESSOR"))
+         {
+            return (WsfThreatProcessor)proc;
+         }
+      }
+      WsfThreatProcessor empty;
+      return empty;
+   end_script
+
+   script bool Fly(WsfPlatform flyer, double heading, double altitude, double speed)
+      WsfGeoPoint pt = flyer.Location();
+      pt.Extrapolate(heading, 1852*3);
+      pt.Set(pt.Latitude(), pt.Longitude(), MATH.Max(altitude, mAltitudeMin));
+      if (mDrawEvasionVector == true)
+      {
+         mDraw.SetLayer("behavior_evade");
+         mDraw.SetDuration(PROCESSOR.UpdateInterval());
+         mDraw.SetColor(0,1,0);
+         mDraw.SetLineSize(1);
+         mDraw.SetLineStyle("dash_dot");
+         mDraw.BeginLines();
+            mDraw.Vertex(PLATFORM.Location());
+            mDraw.Vertex(pt);
+         mDraw.End();
+      }
+      if (flyer.Mover().IsValid())
+      {
+         if (flyer.Mover().IsA_TypeOf("WSF_6DOF_MOVER"))
+         {
+            ##flyer.GoToSpeed(speed);
+            ##flyer.GoToAltitude(MATH.Max(altitude, mAltitudeMin), 200);
+            ##flyer.TurnToHeading(heading, 500);
+            #flyer.GoToSpeed(speed);
+            #flyer.GoToLocation(pt);
+            flyer.GoToSpeed(speed);
+            double altRate = flyer.Speed() * MATH.Sin(40.0);
+            flyer.GoToAltitude(pt.Altitude(), altRate);
+            flyer.TurnToHeading(flyer.TrueBearingTo(pt), 500);
+            return true;
+         }
+         else if (flyer.Mover().IsA_TypeOf("WSF_AIR_MOVER"))
+         {
+            double delta = TIME_NOW - mLastTime;
+            mLastTime = TIME_NOW;
+            if (delta > cSLOW_UPDATE_INTERVAL)
+            {
+               delta = cSLOW_UPDATE_INTERVAL;
+            }
+            double deltaV = mVerticalAccel * delta;
+            if (altitude > PLATFORM.Altitude())
+            {
+               if (mClimbRate < 0.0)
+               {
+                  // increase climb rate to a positive value (must keep pursuing a lower altitude though)
+                  altitude = mAltitudeMin;
+                  mClimbRate = mClimbRate + deltaV;
+               }
+               else if (mClimbRate < mMaxClimbRate)
+               {
+                  // increase climb rate to max value (can pursue target altitude now)
+                  mClimbRate = mClimbRate + deltaV;
+               }
+            }
+            else if (altitude < PLATFORM.Altitude())
+            {
+               if (mClimbRate > 0.0)
+               {
+                  // decrease climb rate to a negative value (must keep pursuing a higher altitude though)
+                  altitude = 9999999;
+                  mClimbRate = mClimbRate - deltaV;
+               }
+               else if (mClimbRate > -mMaxClimbRate)
+               {
+                  // decrease climb rate to max value (can pursue target altitude now)
+                  mClimbRate = mClimbRate - deltaV;
+               }
+            }
+            double climbRateUsed = MATH.Fabs(mClimbRate);
+            flyer.GoToSpeed(speed);
+            flyer.GoToAltitude(altitude, climbRateUsed);
+            flyer.TurnToHeading(heading);
+            return true;
+         }
+      }
+      writeln_d(flyer.Name(), " aiai error: unknown or invalid mover for flight");
+      return false;
+   end_script
+    
+   precondition
+      writeln_d(PLATFORM.Name(), " precondition evade, T=", TIME_NOW);
+
+      // always evade incoming weapons
+      int ownshipWeaponsIncoming = 0;
+      WsfProcessor proc = PLATFORM.Processor("incoming_threats");
+      if (proc.IsValid() && proc.ScriptExists("ThreatProcessorWeaponsIncoming"))
+      {
+         writeln_d("using incoming_threats threat processor!!!");
+         mIncoming = (Array<WsfPlatform>)(proc.Execute("ThreatProcessorWeaponsIncoming"));
+         ownshipWeaponsIncoming = mIncoming.Size();
+      }
+      else
+      {
+         writeln_d("using standard WSF_THREAT_PROCESSOR!!!");
+         mIncoming.Clear();   ownshipWeaponsIncoming = 0;
+        
+         WsfThreatProcessor threatProc = GetThreatProcessor();
+         if (!threatProc.IsNull() && threatProc.IsValid())
+         {
+            Array<WsfTrackId> threatIds = threatProc.Threats();
+            foreach(WsfTrackId id in threatIds)
+            {
+               WsfTrack track = PLATFORM.MasterTrackList().Find(id);
+               if (track.IsValid())
+               {
+                  mIncoming.PushBack(track.Target());
+               }
+            }
+            ownshipWeaponsIncoming = mIncoming.Size();
+         }
+      }
+      
+      if (ownshipWeaponsIncoming > 0)
+      {
+         // we now have weapons incoming, check to see if we are currently guiding any missiles with an uplink
+         // basically: check if we have any active weapons
+         int WeaponCount = PLATFORM.WeaponsActiveFor(WsfTrackId());
+         if (WeaponCount > 0)
+         {
+            writeln_d(PLATFORM.Name(), " weapons incoming, checking weapons active, count: ", WeaponCount);
+            double threat = 1000.0;
+            double asset  = 1000.0;
+            
+            // find most threatening incoming weapon
+            foreach(WsfPlatform p in mIncoming)
+            {
+               double range = PLATFORM.SlantRangeTo(p);  // meters
+               double speed = p.Speed();                 // meters/sec
+               double time  = range / speed;             // seconds
+               if (time < threat)
+               {
+                  threat = time;
+               }
+            }
+            
+            // find most valuable launched weapon (most threatening to enemy)
+            WsfPlatformList activeWeapons = PLATFORM.ActiveWeaponPlatformsFor(WsfTrackId());
+            for (int i=0; i< activeWeapons.Count(); i=i+1)
+            {
+               WsfPlatform w = activeWeapons.Entry(i);
+               WsfTrack    t = w.CurrentTargetTrack();
+               
+               // TODO - replace with check for weather or not the weapon has active sensors
+               // include weapons we are uplinking to.
+               double range = w.SlantRangeTo(t);  # meters
+               double speed = w.Speed();          # meters/sec
+               double time  = range / speed;      # seconds
+               if (time < asset)
+               {
+                  asset = time;
+               }
+            }
+
+            // factor in our aggressiveness, and decide whether or not we should evade yet
+            double requiredAggressiveness = asset / (threat + asset);
+            writeln_d(PLATFORM.Name(), " threat: ", threat, ", asset: ", asset, ", required aggressiveness: ", requiredAggressiveness);
+            if (mEngagementAggressiveness < requiredAggressiveness)
+            {
+               #PROCESSOR.SetUpdateInterval(cFAST_UPDATE_INTERVAL);
+               return true;
+            }
+            else
+            {
+               Failure("my active weapons are closer, hold course");
+            }
+         }
+         else
+         {
+            #PROCESSOR.SetUpdateInterval(cFAST_UPDATE_INTERVAL);
+            return true;
+         }
+      }
+      else
+      {
+         writeln_d("no weapons incoming");
+         Failure("no weapons incoming");
+      }
+
+      #PROCESSOR.SetUpdateInterval(cSLOW_UPDATE_INTERVAL);
+      return false;
+   end_precondition
+
+   execute
+      writeln_d(PLATFORM.Name(), " executing evade, T=", TIME_NOW);
+      #PLATFORM.Comment("evade");
+
+      // transition to evade incoming
+      PLATFORM.GoToSpeed(cEVADE_SPEED);
+      writeln_d("   GoToSpeed( ", cEVADE_SPEED," )");
+
+      double safeAltitudeToDiveTo = MATH.Max(mAltitudeMin, (cDEFAULT_ALTITUDE - mAltitudeToDiveEvade));
+     
+      // Calculate a heading to evade all incoming missiles, weighted by distance, and then turn to it
+      
+      double evadeHeading = 0;
+      double evadeAltitude = 0;
+      double evadeDivisor = 0;
+      double distMod = 0;
+      double bearingMod = 0;
+      int incomingCount = mIncoming.Size();
+
+      writeln_d(PLATFORM.Name(), " evade. dive/climb between altitudes:  ", cDEFAULT_ALTITUDE, " <-> ", safeAltitudeToDiveTo);
+      writeln_d("evading ", incomingCount, " threats");
+
+      double y = 0;
+      double x = 0;
+      double dist = MATH.DOUBLE_MAX();
+      WsfPlatform nearestThreat;
+      // calculate an average heading to incoming platforms weighted by distance
+      for (int i = 0; i < incomingCount; i = i + 1)
+      {
+         WsfPlatform temp = (WsfPlatform)(mIncoming[i]);
+         if (!temp.IsValid() || (temp.Index() == PLATFORM.Index()))
+         {
+            continue;
+         }
+         double range = PLATFORM.SlantRangeTo(temp);
+         if (range < dist)
+         {
+            dist = range;
+            nearestThreat = (WsfPlatform)(mIncoming[i]);
+         }
+         if (range > 0)
+         {
+            distMod = 1 / range;
+         }
+         else
+         {
+            distMod = 1000000;
+         }
+         bearingMod = MATH.NormalizeAngle0_360(PLATFORM.TrueBearingTo(temp));
+         x = x + MATH.Sin(bearingMod) * distMod;
+         y = y + MATH.Cos(bearingMod) * distMod;
+
+         writeln_d("    Incoming ", temp.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", temp.Latitude(), ", ", temp.Longitude(), ", ", temp.Altitude(), ") @ ", temp.Speed(), "m/s");
+         evadeDivisor = evadeDivisor + distMod;
+         evadeHeading = evadeHeading + bearingMod * distMod;
+      }
+
+      // get the GCI if there is one
+      WsfPlatform aiflPlat = PLATFORM.Commander();
+      WsfPlatform gciPlat;
+      if (aiflPlat.IsValid())
+      {
+         gciPlat = aiflPlat.Commander();
+      }
+
+      // if there's a gci, avoid centroids of all his subs
+      if (gciPlat.IsValid() && gciPlat.Index() != aiflPlat.Index())
+      {
+         writeln_d("found gci : ", gciPlat.Name());
+         foreach (WsfPlatform aifl in gciPlat.Subordinates())
+         {
+            if (!aifl.IsValid() || aifl == PLATFORM || aifl == aiflPlat)
+            {
+               continue;
+            }
+            WsfGeoPoint centroid = aifl.GetSubsCentroid();
+            if (centroid.X() == 0 && centroid.Y() == 0 && centroid.Z() == 0)
+            {
+               continue;
+            }
+            distMod = 1 / (PLATFORM.SlantRangeTo(centroid));
+            bearingMod = MATH.NormalizeAngle0_360(PLATFORM.TrueBearingTo(centroid));
+            x = x + MATH.Sin(bearingMod) * distMod * weightPeersForEvade;
+            y = y + MATH.Cos(bearingMod) * distMod * weightPeersForEvade;
+
+            writeln_d("    AIFL ", aifl.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", centroid.Latitude(), ", ", centroid.Longitude(), ", ", centroid.Altitude(), ")");
+
+            // but we'll avoid peers with less strength than we avoid incoming missiles
+            // so let's divide the distMod by 2
+            evadeDivisor = evadeDivisor + distMod;
+            evadeHeading = evadeHeading + bearingMod * distMod;
+         }
+      }
+      // otherwise, avoid members in your own squadron
+      else if (aiflPlat.IsValid())
+      {
+         writeln_d("also evading flight lead subordinates (peers)");
+         foreach (WsfPlatform sub in aiflPlat.Subordinates())
+         {
+            writeln_d("considering peer ", sub.Name());
+            if (!sub.IsValid() ||
+                sub == PLATFORM)
+            {
+               continue;
+            }
+            distMod = 1 / (PLATFORM.SlantRangeTo(sub));
+            bearingMod = MATH.NormalizeAngle0_360(PLATFORM.TrueBearingTo(sub));
+            x = x + MATH.Sin(bearingMod) * distMod * weightPeersForEvade;
+            y = y + MATH.Cos(bearingMod) * distMod * weightPeersForEvade;
+
+            writeln_d("    Peer ", sub.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", sub.Latitude(), ", ", sub.Longitude(), ", ", sub.Altitude(), ") @ ", sub.Speed(), "m/s");
+
+            // but we'll avoid peers with less strength than we avoid incoming missiles
+            // so let's divide the distMod by 2
+            evadeDivisor = evadeDivisor + distMod;
+            evadeHeading = evadeHeading + bearingMod * distMod;
+         }
+      }
+      else
+      {
+         writeln_d("evade : no commanders found!!!");
+      }
+
+      if (evadeDivisor == 0)
+      {
+         return;
+      }
+
+      // correct for quadrant
+      double theta = MATH.NormalizeAngle0_360(MATH.ATan(x/y));
+      if (y < 0)
+      {
+         theta = MATH.NormalizeAngle0_360(theta - 180);
+      }
+
+      writeln_d("    x: ", x, ", y: ", y, ", theta: ", theta);
+
+      evadeHeading = MATH.NormalizeAngle0_360(theta - 180);
+
+      if (mWobbleLeftRight == true)
+      {
+         // turn to angle to evade
+         if (mBankLeftFlag == true)
+         {
+            evadeHeading = MATH.NormalizeAngle0_360(theta - 180 - mBankAngleForEvading);
+            double headDiff = MATH.NormalizeAngleMinus180_180( evadeHeading - MATH.NormalizeAngle0_360(PLATFORM.Heading()) );
+            if (MATH.Fabs(headDiff) < 2.0 &&
+                nearestThreat.RelativeBearingTo(PLATFORM) > 0.0)
+            {
+               mBankLeftFlag = false;
+            }
+         }
+         else // bank right
+         {
+            evadeHeading = MATH.NormalizeAngle0_360(theta - 180 + mBankAngleForEvading);
+            double headDiff = MATH.NormalizeAngleMinus180_180(evadeHeading - MATH.NormalizeAngle0_360(PLATFORM.Heading()));
+            if (MATH.Fabs(headDiff) < 2.0 &&
+                nearestThreat.RelativeBearingTo(PLATFORM) < 0.0)
+            {
+               mBankLeftFlag = true;
+            }
+         }
+      }
+
+      evadeAltitude = MATH.Max(safeAltitudeToDiveTo, evadeAltitude);
+      if (mWobbleUpDown == true)
+      {
+         // compute the dive or climb
+         if (mDiveDownFlag == true)
+         {
+           writeln_d(PLATFORM.Name(), " diving to ", safeAltitudeToDiveTo);
+           evadeAltitude = safeAltitudeToDiveTo;
+           if (PLATFORM.Altitude() <= (cDEFAULT_ALTITUDE - 0.95*(cDEFAULT_ALTITUDE-safeAltitudeToDiveTo)))
+           {
+             mDiveDownFlag = false;
+           }
+         }
+         else
+         {
+           writeln_d(PLATFORM.Name(), " climbing to ", cDEFAULT_ALTITUDE);
+           evadeAltitude = cDEFAULT_ALTITUDE;
+           if (PLATFORM.Altitude() >= (safeAltitudeToDiveTo + 0.95*(cDEFAULT_ALTITUDE-safeAltitudeToDiveTo)))
+           {
+             mDiveDownFlag = true;
+           }
+         }
+      }
+
+      writeln_d("    Evading incoming at heading ", evadeHeading);
+      writeln_d("    Evading incoming, dive/climb to ", evadeAltitude);
+
+      Fly(PLATFORM, evadeHeading, evadeAltitude, cEVADE_SPEED);
+
+      if (mDrawNearestThreat)
+      {
+         mDraw.SetLayer("behavior_evade");
+         mDraw.SetDuration(PROCESSOR.UpdateInterval());
+         mDraw.SetColor(1,0,0);
+         mDraw.SetLineSize(5);
+         mDraw.SetLineStyle("dashed");
+         mDraw.BeginLines();
+            mDraw.Vertex(PLATFORM.Location());
+            mDraw.Vertex(nearestThreat.Location());
+         mDraw.End();
+      }
+   end_execute
+end_behavior

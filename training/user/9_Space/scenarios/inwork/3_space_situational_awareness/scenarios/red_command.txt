@@ -1,0 +1,163 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# Red Orwacan commander.
+#==============================================================================
+
+platform red_command WSF_PLATFORM
+   position 33.8126983n 117.9193474w altitude 1 m agl
+   icon c4i
+   side red
+   concealment_factor 1.0
+   commander SELF
+
+   add comm cmdr_comm WSF_COMM_TRANSCEIVER
+      internal_link track_processor 
+      internal_link task_manager
+   end_comm
+
+   add processor track_processor WSF_TRACK_PROCESSOR
+   end_processor      
+
+   track_manager
+      # Diable uncorrelated_track_drops
+      # Specify retain_track_history
+      # Configure a fusion_method of type orbit_determination
+      # Specify the debug keyword to provide diagnostic output
+      # Specity process_noise_sigmas of 0.03 0.03 0.03 
+      # YOUR INPUT HERE
+   end_track_manager
+   
+   script_variables 
+      Set<WsfTrackId> IOD_Tracks = {};
+   end_script_variables
+
+   script void OrbitDeterminationInitiated(WsfLocalTrack aTrack)
+      IOD_Tracks.Insert(aTrack.TrackId());
+   end_script
+   
+   add processor task_manager WSF_TASK_PROCESSOR 
+      internal_link cmdr_comm
+      show_state_transitions
+       
+      script bool MakeAssignment()     
+         bool assigned = false;
+         WsfPlatform assignee;
+         if (IOD_Tracks.Exists(TRACK.TrackId()))
+         {
+            double closestRange = 1.0e100;
+            foreach (WsfPlatform sub in PLATFORM.Subordinates())
+            {
+               if (sub.Type() == "TRACKING_SENSOR")
+               {
+                  double range = sub.SlantRangeTo(TRACK);
+                  if (TasksAssignedTo(sub) == 0)
+                  {
+                     if (range < closestRange)
+                     {
+                        closestRange = range;
+                        assigned = true;
+                        assignee = sub;
+                     }
+                  }
+               }
+            }
+         }
+         if (assigned)
+         {
+            AssignTask(TRACK, "ORBIT_DETERMINATION", assignee);
+            writeln("OD Task given to ", assignee.Name());
+         }
+         return assigned;
+      end_script
+      
+      evaluation_interval DETECTED 10.0 sec
+      state DETECTED
+         next_state ASSIGNED
+         if (! MakeAssignment()) return false;
+         return true;
+         end_next_state
+      end_state
+      
+      evaluation_interval ASSIGNED 1 day            
+      state ASSIGNED
+      end_state
+      
+   end_processor
+      
+end_platform
+
+script void DrawCovariance(WsfTrack aTrack)    
+   
+   WsfDraw draw = {};
+       
+   if (aTrack.StateCovarianceValid() && aTrack.LocationValid())
+   {
+      WsfCovariance stateCovariance = aTrack.StateCovariance();
+      WsfGeoPoint trackLocation = aTrack.CurrentLocation();
+      draw.SetId(aTrack.TrackId().Number());
+      draw.SetColor(1.0, 0.1, 0.1);
+      draw.SetDuration(10000.0);
+      
+      // The ellipsoid NED is used by WsfDraw.
+      Ellipsoid ellipsoid = aTrack.StateCovariance().EllipsoidNED();
+
+      // Amplify the size to make it easier to find.
+      double S = 1000;  // Scale by 1000x
+      draw.BeginEllipsoid(
+         ellipsoid.OrientationHeadingDeg(),
+         ellipsoid.OrientationPitchDeg(),
+         ellipsoid.OrientationRollDeg(),
+         ellipsoid.SemiAxisForward() * S,
+         ellipsoid.SemiAxisSide()    * S,
+         ellipsoid.SemiAxisUp()      * S);
+      draw.Vertex(trackLocation);                  
+      draw.End(); 
+
+      // Now draw a line to the ellipsoid to make it easier to find.
+      draw.BeginLines();
+      WsfGeoPoint origin = aTrack.OriginatorLocation();
+      draw.Vertex(origin);
+      draw.Vertex(trackLocation);
+      draw.End();     
+   }
+end_script
+
+script void OrbitDeterminationInitiated(WsfPlatform   aPlatform, 
+                                        WsfLocalTrack aTrack)
+   # Only execute the script if the platform (name) is red_command
+   # Call red_command s OrbitDeterminationInitiated script
+   # Use the  ->  operator 
+   # YOUR SCRIPT HERE
+end_script
+
+script void LocalTrackInitiated(WsfPlatform   aPlatform, 
+                                WsfLocalTrack aLocalTrack, 
+                                WsfTrack      aTrack)
+   if (aPlatform.Name() == "red_command")
+   {
+      DrawCovariance(aLocalTrack);
+   }         
+end_script
+
+script void LocalTrackUpdated(WsfPlatform   aPlatform, 
+                              WsfLocalTrack aLocalTrack, 
+                              WsfTrack      aTrack)
+   if (aPlatform.Name() == "red_command")
+   {
+      DrawCovariance(aLocalTrack);
+   }         
+end_script
+
+observer
+   enable LOCAL_TRACK_INITIATED LocalTrackInitiated
+   enable LOCAL_TRACK_UPDATED LocalTrackUpdated
+   enable ORBIT_DETERMINATION_INITIATED OrbitDeterminationInitiated
+end_observer

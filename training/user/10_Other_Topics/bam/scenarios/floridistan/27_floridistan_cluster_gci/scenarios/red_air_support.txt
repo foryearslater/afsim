@@ -1,0 +1,178 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#    * * ************************************** * *
+#    *   ****** Demonstration input file ******   *
+#    *   ******      UNCLASSIFIED        ******   *
+#    * * ************************************** * *
+
+platform ship_lead SHIP
+   side red
+   icon Carrier
+   command_chain red_chain SELF
+   heading 0 deg
+   
+   route 
+      position 30:30n 78:00w speed 30 knots
+      insert_route ship_patrol reference_heading 0 deg
+   end_route
+   
+   edit processor task_mgr       
+      script_variables 
+         mKnownTargetTypes["BLUE_STRIKER"] = 1;
+      end_script_variables
+   end_processor
+end_platform
+
+route soj_orbit
+   label start
+      offset  20   0 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  20   5 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  0    5 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+      offset  0    0 km speed 450 kts altitude 35000 ft msl
+         radial_acceleration 2 g
+   goto start
+end_route
+
+#    ----------------------------------------------------------------
+#                        SOJ Jammers
+#    ----------------------------------------------------------------
+
+platform soj_south SOJ
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 246.4 deg
+   
+   route
+      position 29:33:57.54n 79:08:06.19w altitude 35000 ft msl 
+         speed 450 kts
+      position 29:46:00.17n 80:36:37.58w altitude 35000 ft msl 
+      insert_route soj_orbit reference_heading 300.0 deg
+   end_route
+end_platform
+
+platform_type RED_STRIKER STRIKER 
+
+   comm red_comm TEAM_DATALINK
+      network_name red_net
+      internal_link data_mgr
+      internal_link task_mgr
+      internal_link perception
+   end_comm
+   
+   edit processor data_mgr
+      report_to command_chain red_chain commander via red_comm
+   end_processor
+   
+   edit processor perception
+      report_to command_chain red_chain commander via red_comm
+	   report_to command_chain red_chain peers via red_comm
+   end_processor
+end_platform_type
+
+platform escort_south RED_STRIKER
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 250 deg
+   
+   route
+      position 29:33:57.54n 79:08:06.19w altitude 35000 ft msl 
+         speed 450 kts
+      position 29:46:00.17n 80:36:37.58w altitude 35000 ft msl 
+   end_route
+   
+   edit processor task_mgr 
+      edit behavior escort 
+         script_variables
+            mDrawEscortData        = true;
+            mEscortNames[0]        = "soj_south";
+            mFormationPositionX    =  0;         // meters in front of of package
+            mFormationPositionY    =  -5*1852;   // meters off right wing of package
+            mEscortProtectDistance = 60 * MATH.M_PER_NM();
+            mWeaponRangeToInclude  = 0;
+            mEscortChaseDistance   = 5 * MATH.M_PER_NM();
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+platform soj_north SOJ
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 276.5 deg
+   
+   route
+      position 31:16:00.17n 79:08:06.19w altitude 35000 ft 
+         msl speed 450 kts
+      position 31:03:57.54n 80:36:37.58w altitude 35000 ft msl
+      insert_route soj_orbit reference_heading 240.0 deg
+   end_route
+end_platform
+
+platform escort_north RED_STRIKER
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 250 deg
+   
+   route
+      position 31:16:00.17n 79:08:06.19w altitude 35000 ft 
+         msl speed 450 kts
+      position 31:03:57.54n 80:36:37.58w altitude 35000 ft msl
+   end_route
+   
+   edit processor task_mgr 
+      edit behavior escort 
+         script_variables
+            mDrawEscortData        = true;
+            mEscortNames[0]        = "soj_north";
+            mFormationPositionX    =  0;         // meters in front of of package
+            mFormationPositionY    =  -5*1852;   // meters off right wing of package
+            mEscortProtectDistance = 60 * MATH.M_PER_NM();
+            mWeaponRangeToInclude  = 0;
+            mEscortChaseDistance   = 5 * MATH.M_PER_NM();
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+#    ----------------------------------------------------------------
+#                        Fighter Support
+#    ----------------------------------------------------------------
+
+platform left_flanker_1 RED_STRIKER
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 292 deg
+   
+   route
+      position 29:39n 79:49w altitude 35000 ft msl speed 450 kts
+      position 30:20n 81:32w altitude 35000 ft msl speed 450 kts
+   end_route
+end_platform
+
+platform left_flanker_2 RED_STRIKER
+   side red
+   icon weasel
+   command_chain red_chain ship_lead
+   heading 292 deg
+   
+   route
+      position 29:43n 79:48w altitude 35000.00 ft msl speed 450 kts
+      position 30:23n 81:31w altitude 35000.00 ft msl speed 450 kts
+   end_route
+end_platform
+

@@ -1,0 +1,33 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# This will send a message from one Nearidium satellite to another every minute
+# and initially tests the constellation's crosslink network.
+#==============================================================================
+
+script string PickASatellite()
+   int sat = MATH.Floor(MATH.RandomUniform() * 12);
+   int plane = MATH.Floor(MATH.RandomUniform() * 6);
+   return "nearidium_" + (string)plane + "_" + (string)sat;
+end_script
+
+execute at_interval_of 1 min
+   string source = PickASatellite();
+   string target = PickASatellite();
+   while (target == source)
+   {
+      target = PickASatellite();
+   }
+   
+   WsfPlatform sender = WsfSimulation.FindPlatform(source);
+   WsfComm comm = sender.Comm("crosslink");
+   WsfControlMessage msg = WsfControlMessage();
+   comm.SendMessage(msg, target, "crosslink");
+end_execute

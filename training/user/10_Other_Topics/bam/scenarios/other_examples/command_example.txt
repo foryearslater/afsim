@@ -1,0 +1,74 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+platform_type FIGHTER WSF_PLATFORM
+   mover WSF_AIR_MOVER
+   end_mover
+end_platform_type
+
+platform platform-1 FIGHTER
+   icon F-15
+   
+   route 
+      position 38:44:50n 90:21:41w
+         speed 480 kts
+      position 38:44:42n 89:59:48w altitude 30000 ft
+      position 38:21:14n 85:40:20w
+      position 38:13:41n 85:39:49w altitude 0.0 ft
+         speed 0 kts
+   end_route
+   heading 90 deg
+end_platform
+
+dis_interface record output/command_example.rep  
+end_dis_interface
+
+end_time 60 min 
+
+platform platform-2 FIGHTER
+
+   execute at_time 0.1 sec absolute
+      PLATFORM.SetLocation(38.75, -90.35, 0);
+      PLATFORM.SetHeading(90); 
+      
+      WsfRoute myRoute = WsfRoute(); 
+      myRoute.Append(WsfGeoPoint.Construct(38.75, -89.99, 9144), 480*MATH.MPS_PER_NMPH());
+      myRoute.Append(WsfGeoPoint.Construct(38.35, -85.67, 9144), 480*MATH.MPS_PER_NMPH());
+      myRoute.Append(WsfGeoPoint.Construct(38.22, -85.65, 0), 0.0);
+      
+      PLATFORM.FollowRoute(myRoute); 
+   end_execute
+end_platform
+
+execute at_time 0.1 sec absolute
+   WsfPlatform p = WsfSimulation.CreatePlatform("FIGHTER");
+   p.ProcessInput("icon F-15");
+   p.ProcessInput("position 38:44:50n 90:21:41w");
+   
+   WsfPlatform pa = WsfSimulation.AddPlatform(p, "platform-3");
+   if (pa.IsValid())
+   {
+      WsfGeoPoint tempPoint = WsfGeoPoint();
+      WsfRoute newRoute = WsfRoute();
+      tempPoint.Construct("38:44:50n 90:21:41w");
+      newRoute.Append(tempPoint, 246.9);
+      tempPoint.Set(WsfGeoPoint.Construct(38.75, -89.99, 9144));
+      newRoute.Append(tempPoint, 246.9);
+      tempPoint.Set(WsfGeoPoint.Construct(38.35, -85.67, 9144));
+      newRoute.Append(tempPoint, 246.9);
+      tempPoint.Set(WsfGeoPoint.Construct(38.22, -85.65, 0));
+      newRoute.Append(tempPoint, 0);
+      
+      pa.FollowRoute(newRoute);
+   }
+   else
+   {
+      writeln(" could not create platform-3"); 
+   }
+end_execute

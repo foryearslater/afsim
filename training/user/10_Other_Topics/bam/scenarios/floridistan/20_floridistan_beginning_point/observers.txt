@@ -1,0 +1,49 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM Wizard
+
+script_variables
+   Map<string, int> samHits = Map<string, int>(); 
+end_script_variables
+
+script void WeaponHit(WsfWeaponEngagement aWeaponEngagement, WsfPlatform aTargetPlatform)   
+   string name = aTargetPlatform.Name();
+   if (samHits.Exists(name)) 
+   {   
+      samHits[name] = samHits[name] + 1;
+   }
+   else 
+   {
+      samHits[name] = 1;
+   }
+end_script 
+
+script void SimulationComplete()
+   FileIO output = FileIO();
+   int runNum = WsfSimulation.RunNumber();
+   
+   if (runNum == 1)
+      output.Open("output/hits.txt", "out");
+   else
+      output.Open("output/hits.txt", "append");
+
+
+   foreach(string name : int hits in samHits)
+   {
+      output.Writeln(write_str("in run ", runNum, ", ", name, " was hit ", hits, " times"));
+   }
+   output.Close(); 
+end_script
+
+observer
+   enable WEAPON_HIT
+   enable SIMULATION_COMPLETE
+end_observer
+

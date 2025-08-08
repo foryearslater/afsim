@@ -1,0 +1,168 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+processor IADS_CMDR_DATA_MGR WSF_TRACK_PROCESSOR
+   purge_interval       60 sec
+end_processor
+
+processor IADS_CMDR_TASK_MGR WSF_TASK_PROCESSOR
+   number_of_servers            5
+
+   track_update_interval        10.0 sec
+
+   #script_debug_writes true
+   #show_state_transitions
+   #show_task_messages
+
+   script_variables
+      int MAX_SAMS_PER_TARGET     = 2;
+      int MAX_ASSIGNMENTS_PER_SAM = 4;
+      string WEAPON_NAME          = "sam";
+      bool REQUIRE_ASSIGNMENT     = false;
+   end_script_variables
+
+   // determine if TRACK is assignable
+   script bool IsAssignable()
+      if (REQUIRE_ASSIGNMENT == true &&
+          TasksReceivedFor(TRACK.TrackId()) <= 0)
+      {
+         return false;
+      }
+      if ((! TRACK.IFF_Friend()) &&
+          (TRACK.TimeSinceUpdated() < 30.0))
+      {
+         return true;
+      }
+      return false;
+   end_script
+
+   // determine if the subordinate and/or his subordinates have weapons remaining
+   script bool WeaponsAvailable(WsfPlatform aAssignee)
+      bool weaponsAvailable = false;
+
+      int quantity = 0;
+      WsfWeapon weapon = aAssignee.Weapon(WEAPON_NAME);
+      if (weapon.IsTurnedOn())
+      {
+         quantity = quantity + weapon.QuantityRemaining();
+      }
+      if (quantity > 0)
+      {
+         weaponsAvailable = true;
+      }
+      else
+      {
+         foreach (WsfPlatform sub in aAssignee.Subordinates())
+         {
+            weapon = sub.Weapon(WEAPON_NAME);
+            if (weapon.IsTurnedOn())
+            {
+               quantity = quantity + weapon.QuantityRemaining();
+            }
+         }
+
+         if (quantity > 0) weaponsAvailable = true;
+      }
+
+      return weaponsAvailable;
+   end_script
+
+   script void MakeAssignments()
+      Array<WsfPlatform> filter = Array<WsfPlatform>();
+      foreach (WsfPlatform sub in PLATFORM.Subordinates())
+      {
+         if (sub.Type() == "LARGE_SAM_BATTALION")
+         {
+            if (WeaponsAvailable(sub) &&
+                (TasksAssignedTo(sub) < MAX_ASSIGNMENTS_PER_SAM) &&
+                (TasksAssignedTo(sub, TRACK.TrackId()) < 1) &&
+                (TRACK.WithinZoneOf(sub, "battalion_sector")))
+            {
+               writeln_d("*** Adding ", sub.Name(), " to filter");
+               filter.PushBack(sub);
+            }
+         }
+      }
+
+      int i;
+      int numAssignments = (int)MATH.Min(filter.Size(), MAX_SAMS_PER_TARGET);
+      for (int i=0; i < numAssignments; i = i + 1)
+      {
+         AssignTask(TRACK, "ENGAGE", filter[i]);
+      }
+   end_script
+
+   # -------------------------------------------------------------------------
+
+   evaluation_interval DETECTED 10.0 sec
+   state DETECTED
+      next_state ASSIGNED
+         if (! IsAssignable()) return false;
+
+         MakeAssignments();
+         return true;
+      end_next_state
+   end_state
+
+   evaluation_interval ASSIGNED 10.0 sec
+   state ASSIGNED
+      next_state DETECTED
+         if (! IsAssignable())
+         {
+            CancelTask(TRACK.TrackId());
+            return true;
+         }
+         MakeAssignments();
+         return false;
+      end_next_state
+   end_state
+end_processor
+
+platform_type IADS_CMDR WSF_PLATFORM
+   icon C4I
+
+   infrared_signature    VEHICLE_INFRARED_SIGNATURE
+   optical_signature     VEHICLE_OPTICAL_SIGNATURE
+   radar_signature       VEHICLE_RADAR_SIGNATURE
+
+   processor data_mgr IADS_CMDR_DATA_MGR
+   end_processor
+
+   processor task_mgr IADS_CMDR_TASK_MGR
+      operating_level ENGAGE 1
+
+      script_variables
+         WsfDraw mDraw = WsfDraw();
+      end_script_variables
+      execute at_interval_of 10 sec
+         mDraw.SetColor(1.0, 0.0, 1.0);
+         mDraw.SetDuration(10.0);
+         foreach(WsfTask task in PROCESSOR.ReceivedTaskList())
+         {
+            WsfTrack track = PLATFORM.MasterTrackList().Find(task.LocalTrackId());
+            if (track.IsValid())
+            {
+               WsfPlatform plat = WsfSimulation.FindPlatform(track.TargetIndex());
+               if (plat.IsValid())
+               {
+                  mDraw.BeginLines();
+                     mDraw.Vertex(PLATFORM);
+                     mDraw.Vertex(plat);
+                  mDraw.End();
+               }
+            }
+         }
+      end_execute
+   end_processor
+end_platform_type

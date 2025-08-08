@@ -1,0 +1,338 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+behavior manage-pincer
+
+   script_debug_writes off
+
+   script_variables
+   
+      //for debugging
+      bool mDrawClusters = false;
+
+      //parameters used to determine if a pincer is appropriate
+      bool   mRequireActiveWeapons = false;        //if true, weapons must be in flight before pincer performed
+      double mMaxSeparationAngle   = 120.0;        //degrees (pincer done if we've flanked by this much)
+      int    mNumSubsInvolved      =   2;          //not necessary to be an even number
+      double mThresholdDistance    = 160 * 1852;   //160nm
+      //clustering is performed to make sure the group of threats we are pincering against are grouped tightly together
+      //if more than one group exist, the 2nd, 3rd, etc... groups have to be far enough away so that they aren't a
+      //concern for the pincer maneuver (i.e. we wont head into them by separating around the target group)
+      string mClusterMethod         = "HTREEMAX";  //also valid: K_MEANS, H_TREE_MIN
+      double mClusterDistanceLimit  = 20*1852;     //20nm - how close the group members have to be together
+      double mMinDistanceRatio      = 1.15;        //other groups have to be 15% farther away than target group
+
+      // parameters useful for those performing the pincer
+      bool   mCross       = false;
+      string mCapZoneName =    "";  //useful to specify the name of zone in which we ignore the threat's
+                                    //orientation, because they are capping while in the zone
+
+      // script variables, used by methods below, do not change, not for user edit
+      Array<WsfTrack>   mTrackArray       = Array<WsfTrack>();
+      Array<string>     mTargetNames      = Array<string>();
+      WsfDraw           mDraw             = WsfDraw();
+      double            mMeanBearing      = 0;
+      bool              mMeanBearingValid = false;
+      WsfClusterManager mClusterManager;
+      WsfRIPRJob        mPincerJob;
+      WsfGeoPoint       mMeanPoint;
+      WsfGeoPoint       mSubPoint;
+   end_script_variables
+
+
+   on_init
+      mClusterManager = WsfClusterManager.Create(); // creates a cluster manager owned by this script 
+      mClusterManager.SetClusterMethod(mClusterMethod); // default is: "K_MEANS" 
+      mClusterManager.SetDistanceFunction("POSITION_VELOCITY"); // default is: "POSITION_ONLY" 
+      mClusterManager.SetDistanceLimit(mClusterDistanceLimit) ;
+   end_on_init 
+
+   ## utility method used to draw lines around tracks in a cluster ## lines are drawn according to the convex hull of the cluster members 
+   script void draw_cluster_hull(WsfCluster cluster)
+      Array<WsfGeoPoint> pts = cluster.ConvexHull();
+      if (pts.Size() <= 0) 
+      { 
+         return;
+      }
+      WsfGeoPoint first = pts.Get(0);
+      mDraw.SetColor(1.0,0.5,0.0); //orange?
+      mDraw.SetLineStyle("solid");
+      mDraw.SetLineSize(2);
+      mDraw.BeginPolyline();
+      for (int j = 0; j < pts.Size(); j = j + 1 ) 
+      {
+         WsfGeoPoint pt = pts.Get(j); 
+         mDraw.Vertex(pt);
+      }
+      mDraw.Vertex(first);
+      mDraw.End();
+      if (cluster.BearingValid()) 
+      { 
+         double bearing = cluster.Bearing();
+         WsfGeoPoint pt = cluster.MeanLocation();
+         mDraw.SetColor(1.0,1.0,1.0); //white?
+         mDraw.BeginLines(); 
+            mDraw.Vertex(pt); pt.Extrapolate(cluster.Bearing(), 92600); //50 nautical miles
+            mDraw.Vertex(pt); 
+         mDraw.End(); 
+      } 
+   end_script 
+
+   script WsfGeoPoint MeanLocation(Array<WsfPlatform> plats)
+      Vec3 mean = Vec3.Construct(0, 0, 0);
+      if (plats.Size() > 0)
+      {
+         double scale = 1.0/((double)plats.Size()); 
+         foreach(WsfPlatform plat in plats) 
+         { 
+            Vec3 temp = plat.LocationWCS();
+            temp.Scale(scale);
+            mean = Vec3.Add(mean, temp);
+         } 
+      }
+      return WsfGeoPoint.ConstructWCS(mean); 
+   end_script 
+
+   script WsfGeoPoint SubordinatesMeanLocation()
+      return MeanLocation(PROCESSOR.SubordinatePlatforms()); 
+   end_script 
+
+   script void RemovePincerJob()
+      if(mPincerJob.IsValid()) 
+      { 
+         //remove job from board
+         WsfRIPRJob fake;
+         writeln_d(PLATFORM.Name(), " job change, REMOVE: ", mPincerJob.GetDescription());
+         PLATFORM.Comment(write_str("REMOVE job: ", mPincerJob.GetDescription()));
+         PROCESSOR.RemoveJob(mPincerJob);
+         mPincerJob = fake; 
+      }
+   end_script 
+
+
+
+   precondition 
+
+      #writeln_d("precondition manage-pincer"); 
+
+      if (PROCESSOR.SubordinateProcessors().Size() < mNumSubsInvolved)
+      { 
+         RemovePincerJob(); 
+         writeln_d("not enough subordinates"); 
+         return Failure("not enough subordinates"); 
+      } 
+
+      if (mRequireActiveWeapons)
+      { 
+         int weaponCount = 0; 
+         Array<WsfRIPRProcessor> subs = PROCESSOR.SubordinateProcessors(); 
+         foreach(WsfRIPRProcessor proc in subs) 
+         { 
+            weaponCount = weaponCount + proc.WeaponsActive(); 
+         } 
+         if (weaponCount <= 0) 
+         { 
+            RemovePincerJob(); 
+            writeln_d("no active weapons, no pincer yet"); 
+            return Failure("no active weapons, no pincer yet"); 
+         }
+      } 
+
+      mSubPoint = SubordinatesMeanLocation(); 
+
+      extern bool TestTrackCategory(WsfTrack, string); 
+      mTrackArray.Clear(); 
+      mTargetNames.Clear(); 
+      foreach (WsfLocalTrack track in PLATFORM.MasterTrackList()) 
+      { 
+         if (  (track.IFF_Friend()) || 
+            (track.SideValid() && track.Side() == PLATFORM.Side()) || 
+            (! track. LocationValid() ) || 
+            (track.SlantRangeTo(mSubPoint) > mThresholdDistance) || 
+            (TestTrackCategory(track, "unknown"))  )
+         { 
+            continue; 
+         }
+         track.SetBearing( track.Heading() ); #useful for the cluster processing 
+         mTrackArray.PushBack(track); 
+         mTargetNames.PushBack(track.TargetName()); 
+      }
+
+      if (mTrackArray.Size() > 0) 
+      { 
+         mClusterManager.UpdateClusters(TIME_NOW,mTrackArray); 
+         if (mDrawClusters == true) 
+         { 
+            for (int i = 0; i < mClusterManager.Count(); i = i + 1 ) 
+            { 
+               draw_cluster_hull(mClusterManager.Entry(i));
+            }
+         }
+
+         if (mClusterManager.Count() > 1)
+         { 
+            //check distances 
+            double near  = MATH.DOUBLE_MAX(); 
+            double near2 = MATH.DOUBLE_MAX(); 
+
+            for (int i = 0; i < mClusterManager.Count(); i = i + 1 )
+            { 
+               double dist = mClusterManager.Entry(i).MeanLocation().SlantRangeTo(mSubPoint); 
+               if (dist < near)
+               { 
+                  if (near < near2) 
+                  { 
+                     near2 = near; 
+                  } 
+                  near = dist; 
+               } 
+               else if (dist < near2) 
+               { 
+                  near2 = dist; 
+               } 
+            }
+
+            double ratio = near2/near; 
+            if (ratio < mMinDistanceRatio) 
+            {
+               RemovePincerJob(); 
+               writeln_d("threats too spread out!"); 
+               return Failure("threats too spread out!"); 
+            }
+         }
+         
+         WsfCluster cluster = mClusterManager.Entry(0);
+         mMeanPoint = cluster.MeanLocation();
+         mMeanBearingValid = cluster.BearingValid();
+         mMeanBearing = cluster.Bearing();
+      } 
+      else //no threats to pincer against, exit out 
+      { 
+         RemovePincerJob(); 
+         writeln_d("no threats to pincer against yet!"); 
+         return Failure("no threats to pincer against yet!"); 
+      } 
+
+      //check separation of all subordinates
+      //only relavent if not currently in phase 2 (dragging & chasing)
+      int dragging = 0;
+      if(mPincerJob.IsValid()) 
+      {
+         dragging = (int)mPincerJob.GetData("left_drag") + (int)mPincerJob.GetData("right_drag");
+      }
+      if (dragging == 0)
+      {
+         Array<WsfPlatform> subs = PROCESSOR.SubordinatePlatforms();
+         WsfGeoPoint subMean = MeanLocation(subs);
+         double standard = mMeanPoint.TrueBearingTo(subMean);
+         double min = 361;
+         double max = -361;
+         foreach(WsfPlatform p in subs)
+         {
+            double b = MATH.NormalizeAngleMinus180_180(mMeanPoint.TrueBearingTo(p.Location()) - standard);
+            min = MATH.Min(min, b);
+            max = MATH.Max(max, b);
+         }
+         double diff = max - min;
+         if (diff >= mMaxSeparationAngle)
+         {
+            RemovePincerJob();
+            writeln_d("pincer complete, targets flanked!");
+            return Failure("pincer complete, targets flanked!");
+         }
+      }
+
+      mDraw.SetDuration(PROCESSOR.UpdateInterval());
+      return true;
+   end_precondition
+
+
+
+   execute
+      writeln_d("executing manage-pincer, T=", TIME_NOW);
+      //first find the group of target(s) we are going to perform the pincer against
+      //generate a list of their names and get their mean location
+      Array<WsfRIPRProcessor> subs = PROCESSOR.SubordinateProcessors();
+      int N = subs.Size();
+      if (mPincerJob.IsValid())
+      {
+         //pincer job already created! just update it
+         mPincerJob.SetData("ZoneThreatNameArray", mTargetNames);
+         mPincerJob.SetData("ZonePoint", mMeanPoint);
+         mPincerJob.SetData("ZoneBearingValid", mMeanBearingValid);
+         mPincerJob.SetData("ZoneBearing", mMeanBearing);
+         mPincerJob.SetData("all_on_cap", 0);
+         
+         if (mCapZoneName != "" && mPincerJob.IsValid())
+         {
+            bool allOnCap = true;
+            foreach(WsfTrack t in mTrackArray)
+            {
+               if ( ! t.ReportedLocation().WithinZone(mCapZoneName))
+               {
+                  allOnCap = false;
+                  break;
+               }
+            }
+            if (allOnCap)
+            {
+               mPincerJob.SetData("all_on_cap", 1);
+            }
+         }
+      }
+      else
+      { 
+         //create a pincer job for this flight group 
+         string desc = write_str("pincer-", mNumSubsInvolved); 
+         extern double cPincerPriority; 
+         mPincerJob = WsfRIPRJob.Create(  PROCESSOR, //creator 
+                                          "pincer", //name 
+                                          desc, //description 
+                                          cPincerPriority * mNumSubsInvolved, //priority (must be enough to break even with "mNumSubsInvolved" jobs of another type
+                                          mNumSubsInvolved); //max winnners
+         mPincerJob.SetData("ZoneThreatNameArray", mTargetNames);
+         mPincerJob.SetData("ZonePoint", mMeanPoint);
+         mPincerJob.SetData("ZoneBearingValid", mMeanBearingValid);
+         mPincerJob.SetData("ZoneBearing", mMeanBearing);
+         mPincerJob.SetData("left_drag", 0);
+         mPincerJob.SetData("rightdrag", 0);
+         mPincerJob.SetData("all_on_cap", 0);
+         mPincerJob.SetWinnersMin(mNumSubsInvolved);
+         //setup the left & right flyers
+         double avgBearing = mMeanPoint.TrueBearingTo(mSubPoint);
+         foreach(WsfRIPRProcessor proc in subs)
+         {
+            //Vec3 temp = proc.Platform().LocationWCS(); 
+            double bearing = mMeanPoint.TrueBearingTo(proc.Platform().Location()); 
+            double relAngle = MATH.NormalizeAngleMinus180_180(bearing-avgBearing); 
+            if (mCross)
+            {
+               relAngle = -1 * relAngle;
+            }
+            if (relAngle < 0) 
+            {
+               mPincerJob.SetData(proc.Platform().Name(), "right"); 
+            }
+            else
+            {
+               mPincerJob.SetData(proc.Platform().Name(), "left"); 
+            }
+         }
+         PROCESSOR.AddJob(mPincerJob); 
+         writeln_d("--- ", PLATFORM.Name(), " job change, ADD: ", mPincerJob.GetDescription() ); 
+         PLATFORM.Comment(write_str("ADD job: ", mPincerJob.GetDescription())); 
+#         foreach(string tgt in mTargetNames) 
+#         { 
+#            PLATFORM.Comment(tgt); 
+#         }
+      }
+   end_execute 
+
+end_behavior 

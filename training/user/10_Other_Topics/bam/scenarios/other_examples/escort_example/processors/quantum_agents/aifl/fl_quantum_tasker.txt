@@ -1,0 +1,467 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+include_once ../common/weapon_defs.txt
+include_once processors/quantum_agents/aiai/behavior_debug_quantum_tasker.txt
+
+
+processor FL_QUANTUM_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   script_variables
+   
+      bool mSelfCreateTasks = false;   //if false, simply interpret received tasks
+
+      #########################################################################
+      ## for evaluating weapon tasks
+      #########################################################################
+      Map<string,int> mKnownTargetTypes = Map<string,int>();
+      mKnownTargetTypes["STRIKER"] = 1;
+      mKnownTargetTypes["UCAV"]    = 1;
+      mKnownTargetTypes["SOJ"]     = 1;
+      
+      //bool mFilterOnWeapons = true;
+      //double mPercentRangeMaxFire = 0.70;
+      double cWEIGHT_SLANT_RANGE_TO =        1.0;
+      double cWEIGHT_CLOSING_SPEED  =        1.0;
+     #double cMAX_SLANT_RANGE       = 20037500.0;   #halfway around the earth (half circumference)
+      double cMAX_SLANT_RANGE       = 10018750.0;   #quarter way around the earth (quarter circumference)
+      double cMIN_CLOSING_SPEED     =    -1050.0;
+      
+      #########################################################################
+      ## for creating pincer tasks
+      #########################################################################
+      bool mCreatePincerTasks = false;
+      //for debugging
+      bool mDrawClusters = true;
+      //parameters used to determine if a pincer is appropriate
+      bool   mRequireActiveWeapons = false;        //if true, weapons must be in flight before pincer performed
+      double mMaxSeparationAngle   = 120.0;        //degrees (pincer done if we've flanked by this much)
+      int    mNumSubsInvolved      =   2;          //not necessary to be an even number
+      double mThresholdDistance    = 160 * 1852;   //160nm
+      //clustering is performed to make sure the group of threats we are pincering against are grouped tightly together
+      //if more than one group exist, the 2nd, 3rd, etc... groups have to be far enough away so that they aren't a
+      //concern for the pincer maneuver (i.e. we wont head into them by separating around the target group)
+      string mClusterMethod        = "HTREEMAX";   //also valid: K_MEANS, H_TREE_MIN
+      double mClusterDistanceLimit = 20*1852;      //20nm - how close the group members have to be together
+      double mMinDistanceRatio     = 1.15;         //other groups have to be 15% farther away than target group
+      // parameters useful for those performing the pincer
+      bool   mCross                = false;
+      string mCapZoneName          = "";  //specify the name of a zone in which we ignore the threat's orientation, (when they are capping in the zone)
+      // script variables, used by methods below, do not change, not for user edit
+      Array<WsfTrack>   mTrackArray       = Array<WsfTrack>();
+      Array<string>     mTargetNames      = Array<string>();
+      WsfDraw           mDraw             = WsfDraw();
+      WsfClusterManager mClusterManager = WsfClusterManager.Create();
+      Array< Array<WsfTrack> > mClusters;
+
+      //WsfTask    mPincerTask;
+
+      WsfGeoPoint       mMeanPoint;
+      WsfGeoPoint       mSubPoint;
+   end_script_variables
+
+
+   on_initialize 
+      mClusterManager.SetClusterMethod(mClusterMethod); // default is: "K_MEANS" 
+      mClusterManager.SetDistanceFunction("POSITION_VELOCITY"); // default is: "POSITION_ONLY" 
+      mClusterManager.SetDistanceLimit(mClusterDistanceLimit) ;
+      mDraw.SetDuration(PROCESSOR.UpdateInterval());
+   end_on_initialize
+
+
+   script void DrawClusterHull(Array<WsfTrack> hull)
+      if (hull.Size() <= 0)
+      {
+         return;
+      }
+      mDraw.SetDuration(PROCESSOR.UpdateInterval());
+      mDraw.SetColor(1.0,0.0,1.0);  //purple?
+      mDraw.SetLineStyle("solid");
+      mDraw.SetLineSize(2);
+      if (hull.Size() == 1)
+      {
+         mDraw.SetEllipseMode("line");
+         mDraw.BeginCircle(0, 3*1852);
+            mDraw.Vertex(hull[0].CurrentLocation());
+         mDraw.End();
+      }
+      else if (hull.Size() == 2)
+      {
+         double heading = hull.Get(0).TrueBearingTo(hull.Get(1));
+         double range = hull.Get(0).GroundRangeTo(hull.Get(1));
+         double pad = 2*1852;
+         WsfGeoPoint center = hull.Get(0).CurrentLocation();
+         center.Extrapolate(heading, range/2);
+         mDraw.SetEllipseMode("line");
+         mDraw.BeginEllipse(heading, pad, range);
+            mDraw.Vertex(center);
+         mDraw.End();
+      }
+      else
+      {
+         mDraw.BeginPolyline();
+         for (int j = 0; j < hull.Size(); j = j + 1 )
+         {
+            mDraw.Vertex(hull[j].CurrentLocation());
+         }
+         mDraw.Vertex(hull[0].CurrentLocation());
+         mDraw.End();
+      }
+   end_script
+
+   script WsfGeoPoint MeanLocation(Array<WsfAssetPerception> assets)
+      Vec3 mean = Vec3.Construct(0, 0, 0);
+      if (assets.Size() > 0)
+      {
+         double scale = 1.0/((double)assets.Size()); 
+         foreach(WsfAssetPerception asset in assets) 
+         {
+            Vec3 temp = asset.Location().LocationWCS();
+            temp.Scale(scale);
+            mean = Vec3.Add(mean, temp);
+         } 
+      }
+      return WsfGeoPoint.ConstructWCS(mean); 
+   end_script
+
+
+   script Array<WsfQuantumTask> FlightLeadTaskGeneration (Array<WsfLocalTrack> TRACKS, Array<WsfAssetPerception> ASSETS )
+      Array<WsfQuantumTask> tasks = Array<WsfQuantumTask>();
+      //check if we are creating tasks or if we have a commander for that         
+      if (mSelfCreateTasks == true)
+      {
+         //if its us, then create weapon tasks for enemy tracks
+         for (int i=0; i<TRACKS.Size(); i=i+1)
+         {
+            WsfLocalTrack lt = TRACKS.Get(i);
+            if (lt.IsValid() && (!lt.SideValid() || lt.Side() != PLATFORM.Side()))
+            {
+               if (mKnownTargetTypes.Size() <= 0 || mKnownTargetTypes.Exists(lt.TargetType()))
+               {
+                  WsfQuantumTask task = WsfQuantumTask.Construct(1.0, "WEAPON", lt);
+                  task.SetTaskType("WEAPON");
+                  tasks.PushBack(task);
+                  writeln_d("weapon task generated for: ", lt.TargetName(), ", updated time: ", lt.UpdateTime());
+               }
+            }
+         }
+      }
+      else
+      {
+         WsfTaskList rcvdTasks = PROCESSOR.TasksReceivedOfType("CLUSTER");
+         //do something with them, interpret them
+         foreach (WsfTask t in rcvdTasks)
+         {
+            //writeln(PLATFORM.Name(), " received CLUSTER task: ", t.TaskType(), ", resource: ", t.ResourceName());
+            Array<WsfTrack> perceivedThreats = PLATFORM.PerceivedThreats();
+            Array<string> clusterMembers = (Array<string>)t.AuxDataObject("ClusterMemberNames");
+            bool foundOne = false;
+            foreach(string member in clusterMembers)
+            {
+               foreach(WsfTrack threat in perceivedThreats)
+               {
+                  if (member == threat.TargetName())
+                  {
+                     if (threat.Target().IsValid())
+                     {
+                        //create a task for this target, we have perception of it
+                        WsfQuantumTask task = WsfQuantumTask.Construct(1.0, "WEAPON", threat);
+                        task.SetTaskType("WEAPON");
+                        tasks.PushBack(task);
+                        foundOne = true;
+                     }
+                     break;
+                  }
+               }
+            }
+            if (foundOne == false)
+            {
+               //cluster task complete, all target members gone
+               PROCESSOR.SetTaskComplete(t,"SUCCESSFUL");
+            }
+         }
+      }
+
+      #########################################################################
+      ## section for creating pincer tasks
+      #########################################################################
+      if (mCreatePincerTasks == false)
+      {
+         return tasks;
+      }
+      Array<WsfAssetPerception> assets = PLATFORM.PerceivedAssets();
+      if (assets.Size() < mNumSubsInvolved)
+      { 
+         writeln_d("not enough assets for a pincer maneuver, need ", mNumSubsInvolved); 
+         return tasks;
+      }
+
+      if (mRequireActiveWeapons)
+      { 
+         int weaponCount = 0; 
+         foreach(WsfAssetPerception perc in assets)
+         {
+            WsfPlatform plat = WsfSimulation.FindPlatform(perc.Index());
+            weaponCount += plat.WeaponsActiveFor(WsfTrackId());
+         }
+         if (weaponCount <= 0) 
+         { 
+            writeln_d("no active weapons, no pincer yet"); 
+            return tasks;
+         }
+      } 
+
+      mSubPoint = MeanLocation(assets);
+
+     #extern bool TestTrackCategory(WsfTrack, string); 
+      mTrackArray.Clear(); 
+      mTargetNames.Clear(); 
+      Array<WsfTrack> threats = PLATFORM.PerceivedThreats();
+      
+      writeln_d(TIME_NOW,", perceived threat count = ", threats.Size());
+      //writeln(TIME_NOW,", master threat count = ", PLATFORM.MasterTrackList().Count());
+      
+      foreach(WsfTrack track in threats)
+      {
+         writeln_d(track.TargetName(),
+                 ", iff_friend=", track.IFF_Friend(),
+                 ", side=", track.Side(), 
+                 ", loc valid=", track. LocationValid(), 
+                 ", range=", track.SlantRangeTo(mSubPoint),
+                 ", test cat=", TestTrackCategory(track, "unknown")); 
+      
+         if ((track.IFF_Friend()) || 
+             (track.SideValid() && track.Side() == PLATFORM.Side()) || 
+             //(!track. LocationValid()) || 
+             (track.SlantRangeTo(mSubPoint) > mThresholdDistance) || 
+             (TestTrackCategory(track, "unknown"))  )
+         { 
+            continue; 
+         }
+         track.SetBearing( track.Heading() ); #useful for the cluster processing 
+         mTrackArray.PushBack(track); 
+         mTargetNames.PushBack(track.TargetName());
+      }
+
+      writeln_d("track array count = ", mTrackArray.Size());
+      if (mTrackArray.Size() > 0) 
+      { 
+         mClusters = mClusterManager.GetClusters(mTrackArray);
+         if (mDrawClusters == true) 
+         { 
+            for (int i = 0; i < mClusters.Size(); i = i + 1 ) 
+            { 
+               Array<WsfTrack> hull = mClusterManager.ConvexHull(mClusters[i]);
+               DrawClusterHull(hull);
+            }
+         }
+
+         if (mClusters.Size() > 1)
+         { 
+            //check distances 
+            double near  = MATH.DOUBLE_MAX(); 
+            double near2 = MATH.DOUBLE_MAX(); 
+
+            for (int i = 0; i < mClusters.Size(); i = i + 1 )
+            { 
+               WsfGeoPoint mean = mClusterManager.MeanLocation(mClusters[i]);
+               double dist = mean.SlantRangeTo(mSubPoint); 
+               if (dist < near)
+               { 
+                  if (near < near2) 
+                  { 
+                     near2 = near; 
+                  } 
+                  near = dist; 
+               } 
+               else if (dist < near2) 
+               { 
+                  near2 = dist; 
+               } 
+            }
+
+            double ratio = near2/near; 
+            if (ratio < mMinDistanceRatio) 
+            {
+               writeln_d("threats too spread out! no pincer tasks"); 
+               mCreatePincerTasks = false;
+               return tasks;
+            }
+         }
+
+         Array<WsfTrack> cluster = mClusters[0];
+         mMeanPoint = mClusterManager.MeanLocation(cluster);
+      }
+      else //no threats to pincer against, exit out
+      {
+         writeln_d("no threats to pincer against yet!");
+         return tasks;
+      }
+
+      //check separation of all subordinates
+      //only relavent if not currently in phase 2 (dragging & chasing)
+      int dragging = 0;
+#      if(mPincerTask.IsValid()) 
+#      {
+#         dragging = mPincerTask.AuxDataInt("left_drag") + mPincerTask.AuxDataInt("right_drag");
+#      }
+      if (dragging == 0)
+      {
+         double standard = mMeanPoint.TrueBearingTo(mSubPoint);
+         double min = 361;
+         double max = -361;
+         WsfPlatformList subs = PLATFORM.Subordinates();
+         foreach(WsfPlatform p in subs)
+         {
+            double b = MATH.NormalizeAngleMinus180_180(mMeanPoint.TrueBearingTo(p.Location()) - standard);
+            min = MATH.Min(min, b);
+            max = MATH.Max(max, b);
+         }
+         double diff = max - min;
+         if (diff >= mMaxSeparationAngle)
+         {
+            writeln_d("pincer complete, targets flanked! no more pincer task!");
+            mCreatePincerTasks = false;
+            return tasks;
+         }
+      }
+
+
+      writeln_d("creating pincers tasks! T=", TIME_NOW);
+      //first find the group of target(s) we are going to perform the pincer against
+      //generate a list of their names and get their mean location
+      int N = assets.Size();
+      WsfTrack tgt = mClusters[0][0];
+      
+      int uniqueId = mClusterManager.UniqueId(mClusters[0]);
+      
+      for(int i=0; i<mNumSubsInvolved; i+=1)
+      {
+         //create a pincer task for this flight group 
+         //extern double cPincerPriority; 
+         WsfQuantumTask mPincerTask = WsfQuantumTask.Construct(1.0 * mNumSubsInvolved, "PINCER", tgt);
+         mPincerTask.SetAuxData( "ZoneThreatNameArray" , mTargetNames);
+         mPincerTask.SetAuxData("ZonePoint", mMeanPoint);
+         mPincerTask.SetAuxData("ZoneBearingValid", false);
+         mPincerTask.SetAuxData("all_on_cap", 0);
+         mPincerTask.SetTaskType("PINCER");
+         mPincerTask.UniqueId((10000000*(i+1)) + uniqueId);
+
+         //setup the left & right flyers
+         double avgBearing = mMeanPoint.TrueBearingTo(mSubPoint);
+
+         foreach(WsfAssetPerception asset in assets)
+         {
+            //Vec3 temp = proc.Platform().LocationWCS(); 
+            double bearing = mMeanPoint.TrueBearingTo(asset.Location());
+            double relAngle = MATH.NormalizeAngleMinus180_180(bearing-avgBearing); 
+            if (mCross)
+            {
+               relAngle = -1 * relAngle;
+            }
+            if (relAngle < 0) 
+            {
+               mPincerTask.SetAuxData(asset.Name(), "right");
+            }
+            else
+            {
+               mPincerTask.SetAuxData(asset.Name(), "left");
+            }
+         }
+         tasks.PushBack(mPincerTask);
+      }
+      return tasks;
+   end_script
+   
+   
+   script double FlightLeadEvaluation ( WsfQuantumTask TASK, WsfAssetPerception ASSET)
+      #TODO - include missile capability in evaluation
+      #       for now: just base value on range & whether or not asset as domain capable weapon
+      WsfTrack track = PLATFORM.MasterTrackList().FindTrack(TASK.TrackId());
+      
+      writeln_d(PLATFORM.Name(), " evaluating task type ", TASK.TaskType());
+      
+      if (TASK.TaskType() == "WEAPON" && track.IsValid())
+      {
+         writeln_d("evaluating weapon task: ", track.TargetName(), ", updated time: ", track.UpdateTime());
+         #TODO - select one of the systems?
+         for (int i=0; i<ASSET.SystemCount(); i+=1)
+         {
+            if (ASSET.SystemKind(i) == "weapon" && ASSET.SystemQuantityRemaining(i) >= 1)
+            {
+               double value = 1.0 / track.SlantRangeTo(ASSET.Location());
+            
+               struct weaponData = GetWeaponData(ASSET.SystemType(i));
+               if (weaponData->type == ASSET.SystemType(i))
+               {
+                  if ((weaponData->domainAir  && track.AirDomain()) ||
+                      (weaponData->domainLand && track.LandDomain())  )
+                  {
+                     return value;
+                  }
+               }
+               else
+               {
+                  //check launch computers
+                  WsfPlatform shooter = WsfSimulation.FindPlatform(ASSET.Index());
+                  if (shooter.IsValid())
+                  {
+                     WsfWeapon weapon = shooter.Weapon(ASSET.SystemName(i));
+                     if (weapon.IsValid())
+                     {
+                        WsfLaunchComputer lcPtr = weapon.LaunchComputer();
+                        if (lcPtr.IsValid())
+                        {
+                           if (track.AirDomain() && lcPtr.IsA_TypeOf("WSF_AIR_TO_AIR_LAUNCH_COMPUTER"))
+                           {
+                              return value;
+                           }
+                           else if (track.LandDomain() && lcPtr.IsA_TypeOf("WSF_ATG_LAUNCH_COMPUTER"))
+                           {
+                              return value;
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         return 0;
+      }
+      else if (TASK.TaskType() == "PINCER")
+      {
+         WsfGeoPoint pt = (WsfGeoPoint)TASK.AuxDataObject("ZonePoint");
+         double dist = ASSET.Location().GroundRangeTo(pt);
+         return 1.0/dist;
+      }
+      else
+      {
+         return 0;
+      }
+   end_script             
+
+  #show_task_messages
+  #script_debug_writes    off
+   update_interval        10.0 sec
+   asset_representation   platform
+   reallocation_strategy  dynamic
+   generator              custom          FlightLeadTaskGeneration
+   evaluator              custom          FlightLeadEvaluation
+   allocator              optimal_profit   type   PINCER
+   allocator              optimal_profit   type   WEAPON
+  #allocator_extra_tasks  optimal_profit
+   allocator_extra_assets optimal_profit
+   
+#   behavior_tree 
+#      behavior_node debug_quantum_tasker
+#   end_behavior_tree
+
+end_processor
+

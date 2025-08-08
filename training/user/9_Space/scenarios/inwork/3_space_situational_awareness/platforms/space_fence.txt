@@ -1,0 +1,58 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# Space Fence Platform Type Definition
+#==============================================================================
+include_once ../sensors/space_fence.txt
+
+platform_type SPACE_FENCE WSF_PLATFORM
+   icon ground_radar
+   side blue
+   
+   # Create two Sensors Called space_fence_1 and space_fence_2
+   # Derive from SPACE_FENCE base sensor type
+   # Default them  on 
+   # Give them rectangular fields of view
+   # Both have elevation fields of view 30 to 90 degrees
+   # space_fence_1 azimuth field of view 85 to 95 degrees
+   # space_fence_2 azimuth field of view -95 to -85 degrees
+   # Make an internal_link to the processor one_shot   
+   # YOUR INPUT HERE
+      
+   # Only provide one track message to the commander so that
+   # tracks from two separate space fence components are necessary to 
+   # perform IOD
+   processor one-shot WSF_SCRIPT_PROCESSOR
+      script_variables
+         Set<WsfTrackId> mTrackedTargets = {};
+      end_script_variables
+      
+      on_message
+         # Process messages of type WSF_TRACK_MESSAGE
+         # Retrieve the track Id of the track in the message
+         # If the track id exists in the script variable mTrackedTargets, the track has already been sent to red_command
+         # Suppress sending the message again
+         # Otherwise, this is the first and only time we send the message to red_command 
+         # Insert the track id into the script variable mTrackedTargets 
+         # YOUR INPUT & SCRIPT HERE      
+      end_on_message
+      
+      internal_link relay
+   end_processor
+   
+   processor relay WSF_LINKED_PROCESSOR
+      report_to commander via cmdr_comm
+   end_processor
+   
+   comm cmdr_comm WSF_COMM_TRANSCEIVER 
+   end_comm
+   
+end_platform_type
+

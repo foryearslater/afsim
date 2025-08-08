@@ -1,0 +1,88 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+define_path_variable CASE orbit_escort
+
+file_path .
+file_path ./config
+
+include_once terrain.txt
+include_once platforms/common.txt
+include_once platforms/striker.txt
+include_once platforms/flight_lead.txt
+
+event_pipe
+file output/$(CASE).aer
+end_event_pipe
+
+random_seed 731165679
+
+end_time  45.0 min
+
+##### BLUE SIDE #####
+
+platform  blue-FL  FLIGHT_LEAD
+   side blue
+   commander SELF
+   position 0.000n 10.000w altitude 0 ft agl
+end_platform
+
+platform  Blue_2  STRIKER
+   indestructible
+   icon        F-22
+   side        blue
+   commander   blue-FL
+   route
+      position 0.3n 05:45:36.00e altitude 30000 ft msl speed 450 kts
+      position 00:18:12.66n 02:34:24.22e altitude 30000.00 ft
+   end_route
+   heading 270 deg
+
+   edit processor task_mgr
+      edit behavior escort
+         script_variables
+            mDrawEscortData         = true;
+            mFormationPositionX     = 3*1852;
+            mFormationPositionY     = -10*1852;
+            mEscortNames[0]         = "Blue_1";
+            mEscortProtectDistance  = 92600;    // 50 nm
+         end_script_variables
+      end_behavior
+   end_processor
+end_platform
+
+platform  Blue_1  STRIKER
+   indestructible
+   icon        F-22
+   side        blue
+   commander   blue-FL
+   
+   route
+      position 00:25:00.00n 05:39:24.00e altitude 30000 ft msl speed 450 kts
+      label start
+      position 00:25:02.28n 05:17:04.61e altitude 30000 ft msl speed 450 kts
+      position 00:25:38.41n 04:27:41.42e
+         altitude 30000 feet
+      position 00:20:56.99n 05:16:18.66e altitude 30000 feet
+         goto start
+   end_route
+   
+   heading 270 deg
+   
+   edit processor task_mgr
+      // overwrite the behavior tree, so this agent wont engage targets
+      // notice the absence of "pursue-target" and "engage-target" behaviors
+      behavior_tree
+         selector
+            behavior_node planned_route 
+         end_selector
+      end_behavior_tree
+   end_processor
+end_platform

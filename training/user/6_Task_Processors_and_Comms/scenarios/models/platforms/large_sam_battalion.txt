@@ -1,0 +1,108 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+include_once processors/blue_sam_battery_tactics.txt
+include_once platforms/large_sam_ttr.txt
+include_once platforms/large_sam_launcher.txt
+
+processor LARGE_SAM_BATTALION_TASK_MGR BLUE_SAM_BATTERY_TASK_MGR
+   number_of_servers            2
+
+   #script_debug_writes on
+   #show_state_transitions
+   #show_task_messages
+
+   on_initialize
+      SENSOR_NAME             = "ttr";
+      REQUIRED_TRACK_QUALITY  = 0.75;
+      SENSOR_ACQUIRE_MODE     = "ACQUIRE";
+      SENSOR_TRACK_MODE       = "TRACK";
+      WEAPON_NAME             = "sam";
+      ENVELOPE                = "full_kinematic";
+      SALVO_SIZE              = 2;
+   end_on_initialize
+
+   # -------------------------------------------------------------------------------
+
+   // on task assign / cancel, command the acquisition radar to emcon-on and
+   // emcon-off, respectively
+   script void EvaluateOperatingLevel()
+      if ((TasksReceived() > 0) ||
+          (OperatingLevelFor("ENGAGE") > 0))
+      {
+         foreach (WsfPlatform sub in PLATFORM.Subordinates())
+         {
+            string subType = sub.Type();
+            if (subType == "ACQ_RADAR")
+            {
+               if (OperatingLevelFor("ENGAGE", sub) < 1)
+               {
+                  ChangeOperatingLevel("ENGAGE", 1, sub);
+                  break;
+               }
+            }
+         }
+      }
+      else
+      {
+         foreach (WsfPlatform sub in PLATFORM.Subordinates())
+         {
+            string subType = sub.Type();
+            if (subType == "ACQ_RADAR")
+            {
+               if (OperatingLevelFor("ENGAGE", sub) > 0)
+               {
+                  ChangeOperatingLevel("ENGAGE", 0, sub);
+                  break;
+               }
+            }
+         }
+      }
+   end_script
+
+   script void on_task_assign(WsfTask aTask, WsfTrack aTrack)
+      EvaluateOperatingLevel();
+   end_script
+
+   script void on_task_cancel(WsfTask aTask)
+      EvaluateOperatingLevel();
+   end_script
+
+end_processor
+
+platform_type LARGE_SAM_BATTALION WSF_PLATFORM
+   icon TWIN_BOX
+   category ENGAGEMENT
+
+   infrared_signature    VEHICLE_INFRARED_SIGNATURE
+   optical_signature     VEHICLE_OPTICAL_SIGNATURE
+   radar_signature       VEHICLE_RADAR_SIGNATURE
+
+   track_manager
+      filter FILTER_TACTICS end_filter
+   end_track_manager
+
+   zone full_kinematic
+      circular
+         maximum_altitude 30 km
+         maximum_radius   25 nm
+   end_zone
+
+   processor data_mgr WSF_TRACK_PROCESSOR
+      purge_interval 60 seconds
+   end_processor
+
+   processor task_mgr LARGE_SAM_BATTALION_TASK_MGR
+   end_processor
+end_platform_type

@@ -1,0 +1,1148 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+# --------------------------------------------------------------
+#                         Common Script Methods
+# --------------------------------------------------------------
+
+script_interface
+
+   script_debug_writes off
+
+   script_variables
+      Array<string> mCategories = Array<string>();
+      mCategories.PushBack("primary_target");
+      mCategories.PushBack("secondary_target");
+      mCategories.PushBack("fighter");
+      mCategories.PushBack("bomber");
+      mCategories.PushBack("jammer");
+      mCategories.PushBack("uav");
+      mCategories.PushBack("awacs");
+      mCategories.PushBack("ship");
+      mCategories.PushBack("sam");
+      mCategories.PushBack("missile");
+      mCategories.PushBack("acquisition");
+      mCategories.PushBack("cruise-missile");
+      mCategories.PushBack("insurgent");
+      mCategories.PushBack("ambush_site");
+
+      Map<string, Map<string, double>> mWeaponsEnvelope = Map<string, Map<string, double>>();
+         mWeaponsEnvelope["red"]  = Map<string, double>();
+         mWeaponsEnvelope["blue"] = Map<string, double>();
+         mWeaponsEnvelope["red"].Set( "fighter", 40 * 1852);   // 40 nm (units of meters)
+         mWeaponsEnvelope["red"].Set( "bomber" , 40 * 1852);   // 40 nm (units of meters)
+         mWeaponsEnvelope["red"].Set( "ship"   , 40 * 1852);   // 40 nm (units of meters)
+         mWeaponsEnvelope["red"].Set( "sam"    , 40 * 1852);   // 40 nm (units of meters)
+         mWeaponsEnvelope["blue"].Set("fighter", 50 * 1852);   // 50 nm (units of meters)
+         mWeaponsEnvelope["blue"].Set("bomber" , 50 * 1852);   // 50 nm (units of meters)
+         mWeaponsEnvelope["blue"].Set("ship"   , 50 * 1852);   // 50 nm (units of meters)
+         mWeaponsEnvelope["blue"].Set("sam"    , 50 * 1852);   // 50 nm (units of meters)
+      double mDefaultWeaponsEnvelope = 40 * 1852;              // 40 nm (units of meters)
+
+      // flag variables for evading (both by diving/climbing and banking left/right)
+      Map<string,bool> diveDownMap = Map<string,bool>();
+      Map<string,bool> bankLeftMap = Map<string,bool>();
+
+      Array<string> mBasicColors = Array<string>();
+      mBasicColors.Set(0, "Red");
+      mBasicColors.Set(1, "Green");
+      mBasicColors.Set(2, "Blue");
+      mBasicColors.Set(3, "Yellow");
+      mBasicColors.Set(4, "Teal");
+      mBasicColors.Set(5, "Violet");
+
+      Map<string, double> mRedColorValue = Map<string, double>();
+      mRedColorValue.Set("Red",   1.0);
+      mRedColorValue.Set("Green", 0.0);
+      mRedColorValue.Set("Blue",  0.0);
+      mRedColorValue.Set("Yellow",1.0);
+      mRedColorValue.Set("Teal",  0.0);
+      mRedColorValue.Set("Violet",1.0);
+
+      Map<string, double> mGreenColorValue = Map<string, double>();
+      mGreenColorValue.Set("Red",   0.0);
+      mGreenColorValue.Set("Green", 1.0);
+      mGreenColorValue.Set("Blue",  0.0);
+      mGreenColorValue.Set("Yellow",1.0);
+      mGreenColorValue.Set("Teal",  1.0);
+      mGreenColorValue.Set("Violet",0.0);
+
+      Map<string, double> mBlueColorValue = Map<string, double>();
+      mBlueColorValue.Set("Red",   0.0);
+      mBlueColorValue.Set("Green", 0.0);
+      mBlueColorValue.Set("Blue",  1.0);
+      mBlueColorValue.Set("Yellow",0.0);
+      mBlueColorValue.Set("Teal",  1.0);
+      mBlueColorValue.Set("Violet",1.0);
+   
+      Array<string> ttrs  = {"red_target_tracking_radar_1",
+                             "red_target_tracking_radar_2",
+                             "red_target_tracking_radar_3",
+                             "etc..."};
+                         
+      Array<string> aiais = {"blue_striker_1",
+                             "blue_striker_2",
+                             "blue_striker_3",
+                             "etc..."};
+   end_script_variables
+
+
+
+/* #put this script somewhere in the simulation input if you want the aiai to be reactive to certain target tracking radars
+   #goal:  determine when a target tracking radar is active on an AIAI
+   #observer callback for new sensor tracks
+   script void MySensorTrackInitiated(WsfPlatform aPlatform, WsfSensor aSensor, WsfTrack aTrack)
+      foreach(string aiai in aiais)
+      {
+         if (aiai == aTrack.TargetName())   #an aiai is being tracked
+         {
+            foreach(string ttr in ttrs)
+            {
+               if (ttr == aPlatform.Name())  #a ttr of interest is tracking him
+               {
+                  WsfPlatform aiaiPlatform = WsfSimulation.FindPlatform(aiai);
+                  if (aiaiPlatform.IsValid())
+                  {
+                     aiaiPlatform.SetAuxData(ttr, true);
+                     writeln_d(ttr, " is tracking ", aiai);
+                  }
+               }
+            }
+         }
+      }
+   end_script
+   
+   observer
+      enable SENSOR_TRACK_INITIATED MySensorTrackInitiated
+   end_observer
+*/
+
+  script string GetNextBasicColor()
+     static int mNextColor = 0;
+     if (mNextColor >= mBasicColors.Size())
+     {
+        mNextColor = 0;
+     }
+     string color = mBasicColors.Get(mNextColor);
+     mNextColor = mNextColor + 1;
+     return color;
+  end_script
+
+  script double RedVal(string color)
+     return mRedColorValue.Get(color);
+  end_script
+  
+  script double GrnVal(string color)
+     return mGreenColorValue.Get(color);
+  end_script
+
+  script double BluVal(string color)
+     return mBlueColorValue.Get(color);
+  end_script
+
+
+   script bool FlyHold (WsfPlatform flyer, double heading, double altitude, double speed)
+      if (flyer.Mover().IsValid())
+      {
+         if (flyer.Mover().IsA_TypeOf("WSF_6DOF_MOVER"))
+         {
+         
+#            flyer.GoToSpeed(speed);
+#            WsfGeoPoint pt = WsfGeoPoint.Construct(flyer.Latitude(), flyer.Longitude(), altitude);
+#            pt.Offset(heading, 18520, 0, 0); //10 nm away
+#            flyer.GoToLocation(pt);
+#            return true;
+
+            flyer.GoToSpeed(speed);
+            flyer.GoToAltitude(altitude);
+            flyer.TurnToHeading(heading, 500);
+            return true;
+
+         }
+         else if (flyer.Mover().IsA_TypeOf("WSF_AIR_MOVER"))
+         {
+            flyer.GoToSpeed(speed);
+            flyer.GoToAltitude(altitude);
+            flyer.TurnToHeading(heading);
+            return true;
+         }
+      }
+      writeln_d(flyer.Name(), " aiai error: unknown or invalid mover for flight");
+      return false;
+   end_script
+
+
+   script bool FlyTarget (WsfPlatform flyer, WsfGeoPoint location, double speed)
+      if (flyer.Mover().IsValid())
+      {
+         if (flyer.Mover().IsA_TypeOf("WSF_6DOF_MOVER"))
+         {
+            flyer.GoToSpeed(speed);
+            flyer.GoToLocation(location);
+            return true;
+         }
+         else if (flyer.Mover().IsA_TypeOf("WSF_AIR_MOVER"))
+         {
+            flyer.GoToSpeed(speed);
+            double altRateOfChange = flyer.Speed() * MATH.Sin(35.0);
+            flyer.GoToAltitude(location.Altitude(), altRateOfChange);
+            flyer.TurnToHeading(flyer.TrueBearingTo(location));
+            return true;
+         }
+      }
+      writeln_d(flyer.Name(), " aiai error: unknown or invalid mover for flight");
+      return false;
+   end_script
+
+
+  script string DeterminePlatformCategory(WsfPlatform aPlatform)
+    if( aPlatform.IsValid() )
+    {
+      foreach( string aCategory in mCategories )
+      {
+        if( aPlatform.CategoryMemberOf( aCategory ) )
+        {
+          return aCategory;
+        }
+      }
+    }
+    return "unknown";
+  end_script
+
+   script string DetermineTrackCategory(WsfTrack aTrack)
+      if (!aTrack.IsValid())
+      {
+         writeln_d("DetermineTrackCategory() invalid track!");
+         return "unknown";
+      }
+
+      int ind = aTrack.TargetIndex();
+      WsfPlatform plat;
+      plat = WsfSimulation.FindPlatform( ind );
+
+      if (!plat.IsValid())
+      {
+         writeln_d("DetermineTrackCategory() invalid platform from track!");
+         return "unknown";
+      }
+
+      string cat = DeterminePlatformCategory( plat );
+      return cat;
+   end_script
+
+  script string DetermineSensorCategory(WsfSensor aSensor)
+    if( aSensor.IsValid() )
+    {
+      foreach( string aCategory in mCategories )
+      {
+        if( aSensor.CategoryMemberOf( aCategory ) )
+        {
+          return aCategory;
+        }
+      }
+    }
+    return "unknown";
+  end_script
+
+   script bool TestPlatformCategory(WsfPlatform aPlatform, string aCategory)
+      if (!aPlatform.IsValid())
+      {
+         writeln_d("--- TestPlatformCategory(), aPlatform is not valid!");
+         return (aCategory == "unknown");
+      }
+      else if( aPlatform.CategoryMemberOf( aCategory ) )
+      {
+         writeln_d("--- TestPlatformCategory(), aCategory, ", aCategory, ", MATCH with platform, ", aPlatform.Name(), "!");
+         return true;
+      }
+      else if (aCategory == DeterminePlatformCategory(aPlatform))
+      {
+         writeln_d("--- TestPlatformCategory(), aCategory, ", aCategory, ", MATCH with platform, ", aPlatform.Name(), "!");
+         return true;
+      }
+
+      #writeln_d("--- TestPlatformCategory(), aCategory, ", aCategory, ", NOT A MATCH with platform, ", aPlatform.Name(), "!");
+      return false;
+   end_script
+
+   script bool TestTrackCategory(WsfTrack aTrack, string aCategory)
+      if (!aTrack.IsValid())
+      {
+         writeln_d("--- TestTrackCategory(), aTrack is not valid!");
+         // "unknown" returns true when aTrack is invalid
+         return (aCategory == "unknown");
+      }
+
+      int ind = aTrack.TargetIndex();
+      //writeln_d("--- TestTrackCategory(), target index: ", ind);
+      WsfPlatform plat;
+      plat = WsfSimulation.FindPlatform(ind);
+
+      if (!plat.IsValid())
+      {
+         writeln_d("--- TestTrackCategory(), plat is not valid!");
+         // "unknown" returns true when aTrack is invalid
+         return (aCategory == "unknown");
+      }
+
+      bool match = TestPlatformCategory(plat, aCategory);
+      return match;
+   end_script
+
+   script bool TestSensorCategory(WsfSensor aSensor, string aCategory)
+      if (!aSensor.IsValid())
+      {
+         writeln_d("--- TestSensorCategory(), aSensor is not valid!");
+         return (aCategory == "unknown");
+      }
+      else if( aSensor.CategoryMemberOf( aCategory ) )
+      {
+         writeln_d("--- TestSensorCategory(), aCategory, ", aCategory, ", is a match!");
+         return true;
+      }
+      else if (aCategory == DetermineSensorCategory(aSensor))
+      {
+         writeln_d("--- TestSensorCategory(), aCategory, ", aCategory, ", is a match!");
+         return true;
+      }
+
+      writeln_d("--- TestSensorCategory(), aCategory, ", aCategory, ", is NOT a match with sensor, ", aSensor.Name(), "!");
+      return false;
+   end_script
+
+
+
+   script double GetWeaponsEnvelope(WsfPlatform aThreatPlatform)
+      if (aThreatPlatform.IsValid() && mWeaponsEnvelope.Exists(aThreatPlatform.Side()))
+      {
+         Map<string, double> categoryRangeMap = mWeaponsEnvelope.Get(aThreatPlatform.Side());
+         foreach (string aCategory : double range in categoryRangeMap)
+         {
+            if( aThreatPlatform.CategoryMemberOf( aCategory ) )
+            {
+               return range;
+            }
+         }
+      }
+      return mDefaultWeaponsEnvelope;
+   end_script
+
+
+
+   //script double GetWeaponsEnvelope(WsfTrack aThreat)
+   //   return GetWeaponsEvelope(aThreat.Target());
+   //end_script
+
+
+
+   // converts the actual groundRange into an effectiveRange that indicates "how far" aPlatform and aTrack
+   // are from each other given their closing speed and the thrust duration of the missle
+   // VERY HACKY
+   script double EffectiveRange (WsfPlatform aPlatform, WsfTrack aTarget)
+      double groundRange         = aPlatform.GroundRangeTo(aTarget);
+      double closingSpeed        = aPlatform.ClosingSpeedOf(aTarget);
+      double relativeAltitude    = aPlatform.RelativeAltitudeOf(aTarget);
+
+      #double relativeAltitudeMod = aPlatform.RelativeAltitudeOf(aTarget) * 2;
+      #// mach 3 = 1 020.87 meters / second
+      #double closingSpeedMod      = ((closingSpeed / 2 + 1520) / 1520);
+      #double effectiveRange      = (groundRange + (relativeAltitudeMod)) / closingSpeedMod;
+      #writeln_d("    ", effectiveRange, " (effectiveRange) == ", groundRange, " ((groundRange) + ", relativeAltitudeMod, " (relativeAltitudeMod)) / ", closingSpeedMod, " (speedThrustMod), closingSpeed: ", closingSpeed);
+
+      double effectiveRange      = (groundRange + relativeAltitude) + closingSpeed * 15; //look ahead 15 seconds
+      return effectiveRange;
+   end_script
+
+#######
+   script double TargetAspect (WsfPlatform aPlatform, WsfTrack aTarget)
+      WsfGeoPoint platformLoc = aPlatform.Location();
+      WsfGeoPoint targetLoc = aTarget.CurrentLocation();  #extrapolated to current time
+ 
+      # all calculataions are in WCS     
+      double dLosX = targetLoc.X() - platformLoc.X();
+      double dLosY = targetLoc.Y() - platformLoc.Y();
+      double dLosZ = targetLoc.Z() - platformLoc.Z();
+      double dLosMag = MATH.Sqrt( dLosX*dLosX + dLosY*dLosY + dLosZ*dLosZ );
+      
+      dLosX = dLosX/dLosMag;
+      dLosY = dLosY/dLosMag;
+      dLosZ = dLosZ/dLosMag;
+
+      double dTgtVx = aTarget.Vx();
+      double dTgtVy = aTarget.Vy();
+      double dTgtVz = aTarget.Vz();
+      double dTgtVmag =  MATH.Sqrt( dTgtVx*dTgtVx + dTgtVy*dTgtVy + dTgtVz*dTgtVz );
+
+      dTgtVx = dTgtVx/dTgtVmag;
+      dTgtVy = dTgtVy/dTgtVmag;
+      dTgtVz = dTgtVz/dTgtVmag;
+
+      double dotProd = dLosX*dTgtVx + dLosY*dTgtVy + dLosZ*dTgtVz;
+
+      return MATH.ACos(dotProd);       
+   end_script
+
+#######
+   script double GetMaxLaunchRange (WsfPlatform aPlatform, 
+                                    WsfTrack aTarget, 
+                                    string aWeaponName, 
+                                    Array<Map<string, Object>> aWeaponArray) #double aMaxTOF, double aMaxFlyoutRange)
+
+      double dSlantRange     = aPlatform.SlantRangeTo(aTarget);
+      double dTgtSpeed       = aTarget.Speed();
+      double dTgtAspectAngle = TargetAspect( aPlatform, aTarget);
+      double dMaxTOF         = 0;
+      double dMaxFlyoutRange = 0;
+      double dMaxLaunchRange = 0;
+
+      foreach (Map<string, Object> curWeapon in aWeaponArray)
+      {
+        if ( (string)curWeapon["name"] == aWeaponName )
+        {
+          if (curWeapon.Exists("maxFlyoutRange") && 
+              curWeapon.Exists("maxTimeOfFlight"))
+          {
+            dMaxFlyoutRange = (double)curWeapon["maxFlyoutRange"];
+            dMaxTOF         = (double)curWeapon["maxTimeOfFlight"];
+          }
+          else
+          {
+            dMaxFlyoutRange = (double)curWeapon.Get("rangeMax");
+            dMaxTOF         = 0;
+          }
+          break;
+        }
+      }
+
+      dMaxLaunchRange = dMaxFlyoutRange;
+      if ( dTgtSpeed > 5*MATH.MPS_PER_NMPH() )
+      {
+        dMaxLaunchRange = dMaxFlyoutRange - dTgtSpeed * MATH.Cos(dTgtAspectAngle) * dMaxTOF;
+      }
+
+      #writeln_d("$$$$ ", dSlantRange*(1/MATH.M_PER_NM()), ", ", dTgtAspectAngle ", ", dEffectiveRange*(1/MATH.M_PER_NM()));
+
+      #double effectiveRange      = (groundRange + (relativeAltitudeMod)) / closingSpeedMod;
+
+      #writeln_d("    ", effectiveRange, " (effectiveRange) == ", groundRange, " ((groundRange) + ", relativeAltitudeMod, " (relativeAltitudeMod)) / ", closingSpeedMod, " (speedThrustMod), closingSpeed: ", closingSpeed);
+
+      return dMaxLaunchRange;
+   end_script
+
+   /*
+    *  bool LaunchWeapon ()
+    *
+    *       Launch a missile at the tracked target.
+    */
+
+   script bool LaunchWeapon (WsfPlatform aPlatform, WsfTrack aTarget, WsfWeapon aWeapon, int salvo)
+       bool launched = false;
+
+       if (!aTarget.IsValid() || !aWeapon.IsValid())
+       {
+          writeln_d("!!! LaunchWeapon(): Invalid aWeapon or aTarget");
+          return launched;
+       }
+
+       // We can select the weapon only if it exists, has enough rounds and is not already busy launching
+       // (i.e.: it doesn't currently have a task assigned to it...)
+       if (aWeapon.IsTurnedOn() && (aWeapon.QuantityRemaining() >= 1 ))
+       {
+          writeln_d("    Attempting launch at ", aTarget.TargetName());
+          launched = aWeapon.FireSalvo(aTarget, salvo);
+       }
+
+       return launched;
+   end_script
+
+
+   script int GetWeaponNumberActiveMax( string weaponName, Array<Map<string, Object>> aWeaponArray )
+      foreach (Map<string, Object> curWeapon in aWeaponArray)
+      {
+        string curWeaponName = (string)curWeapon["name"];
+        #writeln_d("curWeapon[name] = ", curWeaponName, ". searching for: ", weaponName);
+        if( curWeaponName == weaponName )
+        {
+          #writeln_d("searched for weapon ", weaponName, ".  found ", curWeaponName);
+          if( curWeapon.Exists("numActiveMax") )
+          {
+            return (int)curWeapon["numActiveMax"];
+          }
+        }
+      }
+      return 1;
+   end_script
+
+
+   script string GetTargetDomain(WsfTrack aTarget)
+
+      if (aTarget.AirDomain())
+      {
+         return "AIR";
+      }
+      if (aTarget.LandDomain())
+      {
+         return "LAND";
+      }
+      if (aTarget.SurfaceDomain())
+      {
+         return "SURFACE";
+      }
+      if (aTarget.SubsurfaceDomain())
+      {
+         return "SUBSURFACE";
+      }
+      if (aTarget.SpaceDomain())
+      {
+         return "SPACE";
+      }
+      if ( (aTarget.LocationValid() && aTarget.Altitude() <= 500.0) || aTarget.Speed() <= 50.0 )
+      {
+         return "LAND";
+      }
+      if ((aTarget.LocationValid() && aTarget.Altitude() > 500.0) || aTarget.Speed() > 50.0 )
+      {
+         return "AIR";
+      }
+      return "UNKNOWN";
+
+   end_script
+
+
+
+   // return true or false depending on if the given weapon can be fired on the
+   //given track (which represents a target of a particular domain)
+   script bool IsWeaponDomainCapable(WsfTrack aTarget, Map<string, Object> aWeaponMap)
+      string domain = GetTargetDomain(aTarget);
+      if (domain!="UNKNOWN")
+      {
+        if (domain=="AIR")
+        {
+          //AIR is a special case that defaults to true, when it doens't exist
+          if ((!aWeaponMap.Exists(domain)) || ((int)aWeaponMap[domain] == 1))
+          {
+            return true;
+          }
+        }
+        else  // LAND, SPACE, SURFACE, SUBSURFACE
+        {
+          if (aWeaponMap.Exists(domain) && ((int)aWeaponMap[domain] == 1))
+          {
+            return true;
+          }
+        }
+      }
+      //else, no domains matched
+      return false;
+   end_script
+
+
+
+
+   // return the name of the first weapon from aWeaponArray that can hit aTarget
+   script string GetBestWeapon(WsfPlatform aPlatform,
+                               WsfTrack aTarget,
+                               Array<Map<string, Object>> aWeaponArray,
+                               double aLaunchRangeMaxFraction)
+
+      double desiredRange = EffectiveRange(aPlatform, aTarget);
+
+      #writeln_d(" effective range from ", aPlatform.Name(), " to ", aTarget.TargetName(), " = ", desiredRange);
+
+      foreach (Map<string, Object> curWeapon in aWeaponArray)
+      {
+         if (((WsfWeapon)curWeapon["weapon"]).QuantityRemaining() <= 0)
+         {
+            continue;
+         }
+         if (!IsWeaponDomainCapable(aTarget,curWeapon))
+         {
+            continue;
+         }
+         if ((double)curWeapon["rangeMin"] > desiredRange)
+         {
+            continue;
+         }
+         if ((double)curWeapon["rangeMax"] * aLaunchRangeMaxFraction < desiredRange)
+         {
+            continue;
+         }
+         #writeln_d(" returning best weapon: ", (string)curWeapon["name"]);
+         return (string)curWeapon["name"];
+      }
+      return "";
+   end_script
+
+   // return the range of the longest-ranged weapon with ammo remaining
+#   script double GetWeaponRangeMax(WsfPlatform aPlatform, Array<Map<string, Object>> aWeaponArray)
+#      double rangeMax = 0;
+#
+#      foreach (Map<string, Object> curWeapon in aWeaponArray)
+#      {
+#         if (((WsfWeapon)curWeapon["weapon"]).QuantityRemaining() <= 0)
+#         {
+#            continue;
+#         }
+#         if ((double)curWeapon["rangeMax"] > rangeMax)
+#         {
+#            rangeMax = (double)curWeapon["rangeMax"];
+#         }
+#      }
+#      return rangeMax;
+#   end_script
+
+   // return the range of the weapon with smallest min range and with ammo remaining
+   script double GetWeaponRangeMin(WsfPlatform aPlatform, Array<Map<string, Object>> aWeaponArray)
+      double rangeMin = 99999999999.0;
+
+      foreach (Map<string, Object> curWeapon in aWeaponArray)
+      {
+         if (((WsfWeapon)curWeapon["weapon"]).QuantityRemaining() <= 0)
+         {
+            continue;
+         }
+         if ((double)curWeapon["rangeMin"] < rangeMin)
+         {
+            rangeMin = (double)curWeapon["rangeMin"];
+         }
+      }
+      return rangeMin;
+   end_script
+
+   // return the amount of ammo remaining for the weapon with the most ammo
+   script double GetWeaponQuantityRemainingMax(WsfPlatform aPlatform, Array<Map<string, Object>> aWeaponArray)
+      double quant = 0.0;
+
+      foreach (Map<string, Object> curWeapon in aWeaponArray)
+      {
+         if (((WsfWeapon)curWeapon["weapon"]).QuantityRemaining() > quant)
+         {
+            quant = ((WsfWeapon)curWeapon["weapon"]).QuantityRemaining();
+         }
+      }
+      return quant;
+   end_script
+
+   script int GetBucket (double x, double aBucketBase)
+    if (x == 0)
+    {
+       return 0;
+    }
+
+    double abs_x = MATH.Fabs(x);
+
+    // convert the log base-10 to a log with the base
+    int temp = MATH.Log10(abs_x) / MATH.Log10(aBucketBase);
+
+    // return a negative bucket if our source number is negative
+    if (x > 0)
+    {
+       return temp;
+    }
+    else
+    {
+       return -temp;
+    }
+   end_script
+
+   script WsfTrack GetTrackByName(WsfPlatform aPlatform, string trackName)
+      WsfLocalTrackList trackList = aPlatform.MasterTrackList();
+      foreach (WsfTrack track in trackList)
+      {
+        if (track.TargetName() == trackName)
+        {
+            return track;
+        }
+      }
+      WsfTrack x; // since we can't return null
+      return x;
+   end_script
+
+   script WsfTrack GetTrackById(WsfPlatform aPlatform, WsfTrackId trackId)
+      WsfLocalTrackList trackList = aPlatform.MasterTrackList();
+
+      foreach (WsfTrack track in trackList)
+      {
+        if (track.TrackId() == trackId )
+        {
+            return track;
+        }
+      }
+
+      // since we can't return null
+      WsfTrack x;
+      return x;
+   end_script
+
+
+   // Calculate the relative positioning of aPlatform and aTrack
+   script string CalculatePositioning (WsfPlatform aPlatform, WsfTrack aTrack, double aAngleTolerance)
+      // Are we heading the same direction?
+      bool sameHeading = false;
+      bool oppHeading = false;
+      bool oppHeadingValid = aTrack.HeadingValid();
+      double headingDiff = MATH.Fabs(MATH.NormalizeAngleMinus180_180(aPlatform.Heading() - aTrack.Heading()));
+
+      if (oppHeadingValid && headingDiff < aAngleTolerance)
+      {
+         sameHeading = true;
+      }
+      if (oppHeadingValid && headingDiff > (180 - aAngleTolerance))
+      {
+         oppHeading = true;
+      }
+
+      // Is either one of us pointing at the other?
+      // Apparently bearing is always valid (?)
+      bool pointingMeYou = false;
+      bool pointingYouMe = false;
+
+      double pMeYou = MATH.Fabs(aPlatform.RelativeBearingTo(aTrack));
+      double pYouMe = MATH.Fabs(aTrack.RelativeBearingTo(aPlatform));
+
+      if (pMeYou < aAngleTolerance)
+      {
+         pointingMeYou = true;
+      }
+      if (pYouMe < aAngleTolerance)
+      {
+         pointingYouMe = true;
+      }
+
+      // Put them together and we've got relative positioning
+      string positioning = "";
+      if (sameHeading && pointingMeYou)
+      {
+         positioning = "head-to-tail";
+      }
+      else if (sameHeading && pointingYouMe)
+      {
+         positioning = "tail-to-head";
+      }
+      else if (oppHeading && (pointingMeYou || pointingYouMe))
+      {
+         positioning = "head-to-head";
+      }
+      else if (pointingMeYou && pointingYouMe)
+      {
+         positioning = "head-to-head";
+      }
+      else if (oppHeading)
+      {
+         positioning = "tail-to-tail";
+      }
+      else if (pointingMeYou)
+      {
+         positioning = "me-facing-target";
+      }
+      else if (pointingYouMe)
+      {
+         positioning = "target-facing-me";
+      }
+      else
+      {
+         positioning = "none";
+      }
+
+      // Debug, in case my angle math is bad
+//         writeln_d("    ", aPlatform.Name(), " to ", aTrack.TargetName(), ", headingDiff: ", headingDiff, ", pMeYou: ", pMeYou, ", pYouMe: ", pYouMe);
+//         writeln_d("    meHeading: ", aPlatform.Heading(), ", youHeading: ", aTrack.Heading());
+//         writeln_d("    sameHeading: ", sameHeading, ", oppHeading: ", oppHeading,
+//                   ", pointingMeYou: ", pointingMeYou, ", pointingYouMe: ", pointingYouMe,
+//                   ", positioning: ", positioning);
+
+      return positioning;
+   end_script
+
+#   // Calculate a heading to evade all incoming missiles, weighted by distance, and then turn aPlatform to it
+#   script bool EvadeIncoming(WsfPlatform aPlatform, WsfRIPRProcessor aProc, Array<WsfPlatform> aIncoming, double originalAltitude, double diveAltitude, double weightPeers)
+#      double evadeHeading = 0;
+#      double evadeDivisor = 0;
+#      double distMod = 0;
+#      double bearingMod = 0;
+#      int incomingCount = aIncoming.Size();
+#
+#      writeln_d(aPlatform.Name(), " evade. dive/climb between altitudes:  ", originalAltitude, " <-> ", diveAltitude);
+#      writeln_d("evading ", incomingCount, " threats");
+#
+#      double bankAngle = 40;  //degrees
+#      if (!diveDownMap.Exists(aPlatform.Name()))
+#      {
+#         diveDownMap[aPlatform.Name()] = true;
+#      }
+#      if (!bankLeftMap.Exists(aPlatform.Name()))
+#      {
+#         bankLeftMap[aPlatform.Name()] = true;
+#      }
+#
+#      #extern Map<string, Array<WsfPlatform>> mEveryonesIncomingThreatsMap;  
+#      #if ( !mEveryonesIncomingThreatsMap.Empty() )
+#      #{
+#      #   if ( mEveryonesIncomingThreatsMap.Exists(aPlatform.Name()) )
+#      #   {
+#      #      incoming = mEveryonesIncomingThreatsMap.Get(aPlatform.Name());
+#      #      if ( !incoming.Empty() )
+#      #      {
+#      #         incomingCount = incoming.Size();
+#      #      }
+#      #   }
+#      #}
+#
+#      if (incomingCount == 0)
+#      {
+#         writeln_d("    no incoming weapons");
+#         return false;
+#      }
+#
+#      double y = 0;
+#      double x = 0;
+#      // calculate an average heading to incoming platforms weighted by distance
+#      for (int i = 0; i < incomingCount; i = i + 1)
+#      {
+#         WsfPlatform temp = (WsfPlatform)(aIncoming[i]);
+#         if (!temp.IsValid() || (temp.Index() == aPlatform.Index()))
+#         {
+#            continue;
+#         }
+#writeln_d("calculating danger from: ", temp.Name());
+#         double range = aPlatform.SlantRangeTo(temp);
+#         if (range > 0)
+#         {
+#            distMod = 1 / range;
+#         }
+#         else
+#         {
+#            distMod = 1000000;
+#         }
+#         bearingMod = MATH.NormalizeAngle0_360(aPlatform.TrueBearingTo(temp));
+#         x = x + MATH.Sin(bearingMod) * distMod;
+#         y = y + MATH.Cos(bearingMod) * distMod;
+#
+#         writeln_d("    Incoming ", temp.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", temp.Latitude(), ", ", temp.Longitude(), ", ", temp.Altitude(), ") @ ", temp.Speed(), "m/s");
+#         evadeDivisor = evadeDivisor + distMod;
+#         evadeHeading = evadeHeading + bearingMod * distMod;
+#      }
+#
+#      // get the GCI if there is one
+#      WsfRIPRProcessor aiflProc = aProc.GetRIPRCommanderProcessor();
+#      WsfRIPRProcessor gciProc = null;
+#      WsfPlatform      aiflPlat;// = null;
+#      WsfPlatform      gciPlat;// = null;
+#
+#
+#      if (aiflProc.IsValid())
+#      {
+#         gciProc = aiflProc.GetRIPRCommanderProcessor();
+#         aiflPlat = aiflProc.Platform();
+#      }
+#      else
+#      {
+#//writeln_d("!!! aiflProc not valid");
+#      }
+#
+#      if (gciProc.IsValid())
+#      {
+#         gciPlat = gciProc.Platform();
+#      }
+#      else
+#      {
+#//writeln_d("!!! gciProc not valid");
+#      }
+#
+#      // if there's a gci, avoid centroids of all his subs
+#      if (gciPlat.IsValid())
+#      {
+#         foreach (WsfPlatform aifl in gciPlat.Subordinates())
+#         {
+#            if (!aifl.IsValid() || aifl == aPlatform || aifl == aiflPlat)
+#            {
+#               continue;
+#            }
+#            WsfGeoPoint centroid = aifl.GetSubsCentroid();
+#
+#            if (centroid.X() == 0 && centroid.Y() == 0 && centroid.Z() == 0)
+#            {
+#               continue;
+#            }
+#
+#//writeln_d("!!! centroid: (", centroid.X(), ", ", centroid.Y(), ", ", centroid.Z(), "), dist: ", (aPlatform.SlantRangeTo(centroid)));
+#            distMod = 1 / (aPlatform.SlantRangeTo(centroid));
+#            bearingMod = MATH.NormalizeAngle0_360(aPlatform.TrueBearingTo(centroid));
+#            x = x + MATH.Sin(bearingMod) * distMod * weightPeers;
+#            y = y + MATH.Cos(bearingMod) * distMod * weightPeers;
+#
+#            writeln_d("    AIFL ", aifl.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", centroid.Latitude(), ", ", centroid.Longitude(), ", ", centroid.Altitude(), ")");
+#
+#            // but we'll avoid peers with less strength than we avoid incoming missiles
+#            // so let's divide the distMod by 2
+#            evadeDivisor = evadeDivisor + distMod;
+#            evadeHeading = evadeHeading + bearingMod * distMod;
+#         }
+#      }
+#      // otherwise, avoid members in your own squadron
+#      else if (aiflPlat.IsValid())
+#      {
+#         foreach (WsfPlatform sub in aiflPlat.Subordinates())
+#         {
+#            if (!sub.IsValid() || sub == aPlatform)
+#            {
+#               continue;
+#            }
+#            distMod = 1 / (aPlatform.SlantRangeTo(sub));
+#            bearingMod = MATH.NormalizeAngle0_360(aPlatform.TrueBearingTo(sub));
+#            x = x + MATH.Sin(bearingMod) * distMod * weightPeers;
+#            y = y + MATH.Cos(bearingMod) * distMod * weightPeers;
+#
+#            writeln_d("    Peer ", sub.Name(), " at distance: ", 1 / distMod, ", bearing: ", bearingMod, ", x: ", MATH.Sin(bearingMod), ", y: ", MATH.Cos(bearingMod), ", (", sub.Latitude(), ", ", sub.Longitude(), ", ", sub.Altitude(), ") @ ", sub.Speed(), "m/s");
+#
+#            // but we'll avoid peers with less strength than we avoid incoming missiles
+#            // so let's divide the distMod by 2
+#            evadeDivisor = evadeDivisor + distMod;
+#            evadeHeading = evadeHeading + bearingMod * distMod;
+#         }
+#      }
+#
+#      if (evadeDivisor == 0)
+#      {
+#         return false;
+#      }
+#
+#//         writeln_d("    evadeHeading: ", evadeHeading, ", evadeDivisor: ", evadeDivisor, ", eH/eD: ", evadeHeading / evadeDivisor, ", x: ", x, ", y: ", y);
+#//         evadeHeading = evadeHeading / evadeDivisor;
+#//         evadeHeading = MATH.NormalizeAngle0_360(evadeHeading - 180);
+#
+#      // correct for quadrant
+#      double theta = MATH.NormalizeAngle0_360(MATH.ATan(x/y));
+#      if (y < 0)
+#      {
+#         theta = MATH.NormalizeAngle0_360(theta - 180);
+#      }
+#
+#      writeln_d("    x: ", x, ", y: ", y, ", theta: ", theta);
+#      
+#      //turn to angle to evade
+#      if (bankLeftMap[aPlatform.Name()] == true)
+#      {
+#         evadeHeading = MATH.NormalizeAngle0_360(theta - 180 - bankAngle);
+#         double headDiff = MATH.NormalizeAngleMinus180_180( evadeHeading - MATH.NormalizeAngle0_360(aPlatform.Heading()) );
+#         if (MATH.Fabs(headDiff) < 2.0)
+#         {
+#            bankLeftMap[aPlatform.Name()] = false;
+#         }
+#      }
+#      else
+#      {
+#         evadeHeading = MATH.NormalizeAngle0_360(theta - 180 + bankAngle);
+#         double headDiff = MATH.NormalizeAngleMinus180_180(evadeHeading - MATH.NormalizeAngle0_360(aPlatform.Heading()));
+#         if (MATH.Fabs(headDiff) < 2.0)
+#         {
+#            bankLeftMap[aPlatform.Name()] = true;
+#         }
+#      }
+#
+#      writeln_d("    Evading incoming at heading ", evadeHeading);
+#      aPlatform.TurnToHeading(evadeHeading);
+#
+#      //do the dive or climb now
+#      if (diveDownMap[aPlatform.Name()] == true)
+#      {
+#        writeln_d(aPlatform.Name(), " diving to ", diveAltitude);
+#        aPlatform.GoToAltitude(diveAltitude, 200, true);
+#        if (aPlatform.Altitude() <= (originalAltitude - 0.95*(originalAltitude-diveAltitude)))
+#        {
+#          diveDownMap[aPlatform.Name()] = false;
+#        }
+#      }
+#      else
+#      {
+#        writeln_d(aPlatform.Name(), " climbing to ", originalAltitude);
+#        aPlatform.GoToAltitude(originalAltitude, 200, true);
+#        if (aPlatform.Altitude() >= (diveAltitude + 0.95*(originalAltitude-diveAltitude)))
+#        {
+#          diveDownMap[aPlatform.Name()] = true;
+#        }
+#      }
+#
+#      return true;
+#   end_script
+
+   script bool UpdatePointInterceptLocation (WsfPlatform aPlatform, WsfGeoPoint aPoint)
+      double interceptAltitude = aPoint.Altitude();
+      double interceptHeading = aPlatform.TrueBearingTo(aPoint);
+      double interceptRange = aPlatform.SlantRangeTo(aPoint);
+
+      writeln_d("    T=", TIME_NOW, ", range: ", interceptRange, " true-bearing: ", interceptHeading);
+
+      aPlatform.TurnToHeading(interceptHeading);
+
+      if (MATH.Fabs(interceptAltitude - aPlatform.Altitude()) > 5)
+      {
+         writeln_d("GoToAltitude: ",interceptAltitude);
+         aPlatform.GoToAltitude(interceptAltitude, 200);
+      }
+      return true;
+   end_script
+
+   script bool UpdatePointInterceptLocationWithPathing(WsfPlatform aPlatform, WsfGeoPoint aPoint)
+      double interceptAltitude = aPoint.Altitude();
+      double interceptHeading = aPlatform.TrueBearingTo(aPoint);
+      double interceptRange = aPlatform.SlantRangeTo(aPoint);
+
+      writeln_d("    T=", TIME_NOW, ", range: ", interceptRange, " true-bearing: ", interceptHeading);
+
+      WsfGeoPoint startGeoPoint = aPlatform.Location();
+      aPlatform.FindAndSetPath(startGeoPoint, aPoint);
+
+      if (MATH.Fabs (interceptAltitude - aPlatform.Altitude()) > 5)
+      {
+         writeln_d("GoToAltitude: ",interceptAltitude);
+         aPlatform.GoToAltitude(interceptAltitude, 200);
+      }
+      return true;
+   end_script
+
+   // Attempt to maximize our distance from aTarget at the time of weapon detonation
+   script double MaximizeFPole(WsfPlatform aPlatform, WsfTrack aTarget, double aFPoleAngle)
+      writeln_d("    f-pole angle ", aFPoleAngle, " on: ", aTarget.TargetName());  //Try this
+      double allowedError = 5.0; // allow for this many degrees of error
+
+      // Normalize within +/-180 so absolute value calculations make sense
+      double relativeBearing = aPlatform.RelativeBearingTo(aTarget);
+      //writeln_d("--- relative bearing: ", relativeBearing);
+
+      // lean in the direction we're closest to already satisfying
+      double desiredBearing = aFPoleAngle;
+      if (relativeBearing > 0)
+      {
+         desiredBearing = desiredBearing * (double) -1.0;
+      }
+      //writeln_d("--- desired bearing: ", desiredBearing);
+
+      // calculate the difference between our desired and current bearings
+      double currentError = MATH.Fabs(MATH.NormalizeAngleMinus180_180(desiredBearing - relativeBearing));
+      //writeln_d("--- current error: ", currentError);
+
+      // if we're within the error tolerance, do nothing
+      if (currentError <= allowedError)
+      {
+         return aPlatform.Heading();
+      }
+
+      // otherwise, normalize to 0-360 and calculate the change in bearing required
+      double fPoleHeading = MATH.NormalizeAngle0_360(aPlatform.TrueBearingTo(aTarget) + desiredBearing);
+      //writeln_d("--- f-pole heading: ", fPoleHeading);
+
+      // do the turn
+      return fPoleHeading;
+//         aPlatform.TurnToHeading(fPoleHeading);
+   end_script
+       
+   // test if the platform has enough fuel to travel the given distance
+   script bool HasEnoughFuelToTravel(WsfPlatform aPlatform, 
+                                     double aDistance)
+      bool result = true;
+      WsfFuel fuelObj = aPlatform.Fuel();
+      if (fuelObj.IsValid())
+      {
+         double fuelRemaining = fuelObj.QuantityRemaining();
+         double bingoQuantity = fuelObj.BingoQuantity();
+         double distQuantity = fuelObj.QuantityRequired(aDistance);
+         
+         //writeln("HasEnoughFuelToTravel(", aPlatform.Name(), ",", aDistance," m) - fuelRemaining=", fuelRemaining, " | distQuantity=", distQuantity, " | bingoQuantity=", bingoQuantity);
+         if ((fuelRemaining - distQuantity) < bingoQuantity)
+         {
+            result = false;
+         }
+      }
+      return result;
+   end_script
+    
+   // test if the platform has enough fuel to travel the given route
+   script bool HasEnoughFuelToTravelRoute(WsfPlatform aPlatform, 
+                                          WsfRoute aRoute)
+      bool result = false;
+      
+      WsfFuel fuelObj = aPlatform.Fuel();
+      
+      double fuelRemaining = fuelObj.QuantityRemaining();
+      double bingoQuantity = fuelObj.BingoQuantity();
+      double distQuantity = fuelObj.QuantityRequired(aRoute);
+      
+      //writeln("HasEnoughFuelToTravelRoute(",aPlatform.Name(),") - fuelRemaining=", fuelRemaining, " | distQuantity=", distQuantity, " | bingoQuantity=", bingoQuantity);
+      if ((fuelRemaining - distQuantity) > bingoQuantity)
+      {
+         result = true;
+      }
+      
+      return result;
+   end_script
+   
+   
+
+   script bool ReEnterRoute(WsfPlatform aPlatform)
+      #only command the platform to do something different if its not currently flying a route
+      WsfMover aMover = aPlatform.Mover();
+      if (aMover.IsValid())
+      {
+         if (aMover.IsExtrapolating())
+         {
+            WsfGeoPoint pt = aPlatform.Location();
+           #WsfRoute ro = aPlatform.Route().Copy(); #now we have a modifiable route
+            WsfRoute ro = aMover.DefaultRoute().Copy(); #now we have a modifiable route
+            if (!ro.IsValid())
+            {
+               return false;
+            }
+            WsfGeoPoint close = ro.LocationAtDistance(ro.DistanceAlongRoute(pt));
+            if (!close.IsValid())
+            {
+               return false;
+            }
+            close.SetAltitudeAGL(pt.Altitude());
+            double d1 = ro.DistanceFromRoute(pt);
+            double d2 = pt.GroundRangeTo(close);
+            double d3 = -1;
+            Array<double> turnRad = aMover.PropertyDouble("turn_radius");
+            if (turnRad.Size() > 0)
+            {
+               d3 = 2*turnRad[0];
+            }
+            for (int i = 0; i < ro.Size(); i = i+1)
+            {
+               WsfWaypoint wpt = ro.Waypoint(i);
+               WsfGeoPoint rpt = wpt.Location();
+               
+               //first check if we are close enough (half mile)
+               if (rpt.GroundRangeTo(close) < 926)
+               {
+                  return aPlatform.FollowRoute(ro, i);
+               }
+               
+               double dist = ro.DistanceAlongRoute(rpt);
+               if (dist > d1)
+               {
+                  if (d2 > d3)
+                  {
+                     ro.Insert(i, WsfWaypoint.Create(close, wpt.Speed()));
+                  }
+                  return aPlatform.FollowRoute(ro, i);
+               }
+            }
+            return aPlatform.FollowRoute(ro, (ro.Size()-1));
+         }
+      }
+      return true;
+   end_script
+
+end_script_interface

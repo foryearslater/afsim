@@ -1,0 +1,71 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# Space Fence Platform Type Definition
+#==============================================================================
+include_once ../sensors/space_fence.txt
+
+platform_type SPACE_FENCE WSF_PLATFORM
+   icon ground_radar
+   side blue
+   sensor space_fence1 SPACE_FENCE
+      on
+      frame_time 5 seconds
+      field_of_view rectangular
+         azimuth_field_of_view 85 deg 95 deg
+         elevation_field_of_view 30 deg 90 deg
+      end_field_of_view
+      internal_link one-shot   
+   end_sensor
+   sensor space_fence2 SPACE_FENCE
+      on
+      frame_time 5 seconds
+      field_of_view rectangular
+         azimuth_field_of_view -90 deg -80 deg
+         elevation_field_of_view 30 deg 90 deg
+      end_field_of_view
+      internal_link one-shot 
+   end_sensor
+   
+   # Only provide one track message to the commander so that
+   # tracks from two separate space fence components are necessary to 
+   # perform IOD
+   processor one-shot WSF_SCRIPT_PROCESSOR
+      script_variables
+         Set<WsfTrackId> mTrackedTargets = {};
+      end_script_variables
+      
+      on_message
+         type WSF_TRACK_MESSAGE
+            script
+               WsfTrackId trackId = ((WsfTrackMessage)MESSAGE).Track().TrackId();
+               if (mTrackedTargets.Exists(trackId))
+               {
+                  SuppressMessage();
+               }
+               else
+               {
+                  mTrackedTargets.Insert(trackId);
+               }
+            end_script
+      end_on_message
+      
+      internal_link relay
+   end_processor
+   
+   processor relay WSF_LINKED_PROCESSOR
+      report_to commander via cmdr_comm
+   end_processor
+   
+   comm cmdr_comm WSF_COMM_TRANSCEIVER 
+   end_comm
+   
+end_platform_type
+

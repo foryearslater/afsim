@@ -1,0 +1,89 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# This will draw messages as they move through the network.
+#==============================================================================
+# Note: in AFSIM 2.6 the interaction lines for comm hops will be visualized.
+script_variables
+   WsfDraw draw = WsfDraw();
+   int msgTx = 0; # sent from originator xmtr platform (later set to imaging_sat) 
+   int msgRx = 0; # received by destination rcvr platform (later set to jacksonabad)
+   int msgHops = 0;
+end_script_variables
+
+script void MessageDeliveryAttempt(WsfComm aXmtr, WsfComm aRcvr, WsfMessage aMsg, WsfCommInteraction aResult)
+   
+   WsfPlatform xmtrPlatform = aXmtr.Platform();
+   WsfPlatform rcvrPlatform = aRcvr.Platform();
+
+   WsfComm destComm = WsfComm.GetComm(aMsg.Destination());
+   string destCommName = destComm.Name();
+   
+   string destName = destComm.Platform().Name(); # "to"
+   
+   writeln("\t",TIME_NOW," - ",xmtrPlatform.Name(),":",aXmtr.Name()," to ",rcvrPlatform.Name(),":",aRcvr.Name());
+   
+   msgHops = msgHops + 1;
+   
+   # Draw the comm interaction
+   if (aResult.Succeeded())
+   {
+      draw.SetColor(0.0, 168/255.0, 220/255.0, 1.0); # cyan
+   }
+   else
+   {
+      draw.SetColor(1.0, 0.0, 0.0, 1.0); # red
+   }
+   
+   draw.SetDuration(30.0);
+   draw.SetLineSize(3);
+   draw.BeginLines();
+   draw.Vertex(xmtrPlatform);
+   draw.Vertex(rcvrPlatform);
+   draw.End();
+   
+   draw.SetColor(1.0,1.0,1.0,1.0);
+   draw.SetTextSize(18);
+   draw.BeginText((string)(msgHops-1));
+   draw.VertexNED(xmtrPlatform,0.0,-20000.0,0.0);
+   draw.End();
+   
+   draw.SetColor(1.0,1.0,1.0,1.0);
+   draw.SetTextSize(18);
+   draw.BeginText((string)msgHops);
+   draw.VertexNED(rcvrPlatform,0.0,-20000.0,0.0);
+   draw.End();
+   
+   # Reset Hop Count When Message Reaches Final Destination
+   if(rcvrPlatform.Name() == destName && aRcvr.Name() == destCommName)
+   {
+      msgHops = 0;
+
+      # Code block for training
+      if(rcvrPlatform.Name() == "jacksonabad")
+      {
+         msgRx = msgRx + 1;
+         WsfEventPipe.Record(TIME_NOW-0.001,rcvrPlatform,"rx",Math.Max(0,msgRx-1));
+         WsfEventPipe.Record(TIME_NOW,rcvrPlatform,"rx",msgRx);
+      }
+   }
+   
+   # Code block for training   
+   if(xmtrPlatform.Name() == "imaging_sat")
+   {
+      msgTx = msgTx + 1;
+      WsfEventPipe.Record(TIME_NOW-0.001,xmtrPlatform,"tx",Math.Max(0,msgTx-1));
+      WsfEventPipe.Record(TIME_NOW,xmtrPlatform,"tx",msgTx);
+   }
+end_script
+
+observer
+   enable MESSAGE_DELIVERY_ATTEMPT MessageDeliveryAttempt
+end_observer

@@ -1,0 +1,118 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+include_once   weapons/aam/medium_range_missile.txt
+
+include_once processors/ripr_agents/aiai/aiai_processor.txt
+
+include_once   processors/ripr_agents/aiai/behavior_bid_on_jobs.txt
+include_once   processors/ripr_agents/aiai/behavior_default-flight.txt
+include_once   processors/ripr_agents/aiai/behavior_engage-target.txt
+include_once   processors/ripr_agents/aiai/behavior_evade.txt
+include_once   processors/ripr_agents/aiai/behavior_pursue-target_route_finder.txt
+
+
+radar_signature SIG_RADAR_ONE_M_SQUARED
+  constant 1.0 m^2
+end_radar_signature
+
+
+platform_type  STRIKER  WSF_PLATFORM
+
+  #indestructible
+  #icon     F-22 / SU-27
+  #side     blue / red
+  
+   category fighter
+   radar_signature SIG_RADAR_ONE_M_SQUARED
+
+
+   comm sub_net DATALINK
+      network_name tactical_net
+      internal_link track_manager
+   end_comm
+
+   
+   mover WSF_AIR_MOVER
+      roll_rate_limit               1 rad/sec
+      default_linear_acceleration   1.0 g
+      default_radial_acceleration   6.5 g
+      default_climb_rate            400 fps
+      maximum_climb_rate            400 fps
+      maximum_speed                 600.0 knots
+      minimum_speed                 150.0 knots
+      maximum_altitude              50000 ft
+      minimum_altitude              50 ft
+      maximum_linear_acceleration   9 g
+      at_end_of_path extrapolate
+      turn_rate_limit               4.0 deg/sec
+   end_mover
+
+   processor track_manager WSF_TRACK_PROCESSOR
+      purge_interval             60 sec
+      report_interval            1 sec
+      fused_track_reporting      off
+      raw_track_reporting        on
+      report_to commander        via   sub_net
+      circular_report_rejection  true
+   end_processor
+ 
+   weapon  mrm  MEDIUM_RANGE_MISSILE
+      quantity 4
+   end_weapon
+
+   processor  ripr  AIAI-thinker
+      script_variables
+         mWeaponArray[0] = Map<string, Object>();
+         mWeaponArray[0].Set("name", "mrm");
+         mWeaponArray[0].Set("weapon", PLATFORM.Weapon("mrm"));
+         mWeaponArray[0].Set("rangeMin", 50);
+         mWeaponArray[0].Set("rangeMax", 111120); //  ~60.0000 nautical miles
+         mWeaponArray[0].Set("numActiveMax", 2);  // how many weapons of this type can be in play simultaneously
+         mWeaponArray[0].Set("AIR",  1);          // DOMAIN CAPABLE, yes, this weapon can hit air (default true)
+         mWeaponArray[0].Set("LAND", 0);          // DOMAIN CAPABLE, no, this weapon can NOT hit land (default false)
+      end_script_variables
+      
+      behavior_tree
+         behavior_node bid_on_jobs    
+         selector
+            behavior_node evade                      
+            behavior_node pursue-target_route_finder 
+            behavior_node default-flight             
+         end_selector
+         behavior_node engage-target 
+      end_behavior_tree
+      
+   end_processor
+
+   processor incoming_threats WSF_THREAT_PROCESSOR
+      update_interval 0.2 sec
+      threat_velocity 668.7778 m/s
+      threat_angle_spread 30.0 deg
+   end_processor
+
+   sensor geo_sensor WSF_GEOMETRIC_SENSOR
+      on
+      azimuth_field_of_view   -180.0 degrees  180.0 degrees
+      elevation_field_of_view  -90.0 degrees   90.0 degrees
+      minimum_range 0 m
+      maximum_range 277800 m     //about 150 nm
+      frame_time    0.5 sec
+      reports_location
+      reports_velocity
+      reports_iff
+      track_quality 1.0
+      internal_link track_manager
+      internal_link ripr
+      ignore_same_side
+   end_sensor
+
+end_platform_type
+

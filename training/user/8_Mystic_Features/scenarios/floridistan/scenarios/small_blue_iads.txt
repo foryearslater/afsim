@@ -1,0 +1,181 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+include_once platforms/iads_cmdr.txt
+include_once platforms/blue_radar_company.txt
+include_once platforms/ew_radar.txt
+include_once platforms/large_sam_battalion.txt
+include_once platforms/acq_radar.txt
+include_once platforms/large_sam_ttr.txt
+include_once platforms/large_sam_launcher.txt
+
+zone 100_battalion_sector
+   circular
+      maximum_altitude 30 km
+      maximum_radius   30 nm
+end_zone
+
+zone 100_brigade_sector
+   circular
+   position 30:21n 81:45w
+      maximum_radius 60.00 nm
+      maximum_altitude 16.20 nm
+end_zone
+
+platform 10_iads_cmdr IADS_CMDR
+   side blue
+   position 30:22:57.720n 81:36:30.600w
+      altitude 0.00 ft agl
+  
+   command_chain blue_chain SELF
+
+   add comm blue_comm TEAM_DATALINK 
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+   end_comm
+   
+   edit processor task_mgr
+      #show_task_messages
+      script_variables
+         REQUIRE_ASSIGNMENT = false;
+      end_script_variables
+   end_processor
+   
+   edit processor data_mgr
+      report_interval      20 sec
+      fused_track_reporting on
+      raw_track_reporting   off
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+end_platform
+
+platform 100_radar_company BLUE_RADAR_COMPANY
+   side blue
+   position 30:20:20.040n 81:35:04.920w
+      altitude 0.00 ft agl
+   command_chain blue_chain 10_iads_cmdr
+   
+   edit processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+
+   add comm blue_comm TEAM_DATALINK 
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+   end_comm
+end_platform
+
+platform 200_ew_radar EW_RADAR
+   side blue
+   position 30:35n 81:30w
+      altitude 0.00 ft agl
+	  
+   edit sensor ew_radar
+      transmitter
+         frequency  150.0 mhz
+      end_transmitter
+   end_sensor
+   
+   processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+   
+   command_chain blue_chain 100_radar_company
+end_platform
+
+platform 300_ew_radar EW_RADAR
+   side blue
+   position 30:14:41.280n 81:31:04.080w
+      altitude 0.00 ft agl
+	  
+   edit sensor ew_radar
+      transmitter
+         frequency  155.0 mhz
+      end_transmitter
+   end_sensor
+   
+   processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+
+   command_chain blue_chain 100_radar_company
+end_platform
+
+platform 3500_large_sam_battalion LARGE_SAM_BATTALION
+   side blue
+   position 30:22:12.360n 81:33:23.760w
+      altitude 0.00 ft msl
+   use_zone 100_battalion_sector as battalion_sector
+   command_chain blue_chain 10_iads_cmdr
+   
+   add comm blue_comm TEAM_DATALINK 
+      network_name blue_net
+      internal_link data_mgr
+      internal_link task_mgr
+   end_comm
+end_platform
+
+platform 3510_acq_radar ACQ_RADAR
+   side blue
+   position 30:27:55.800n 81:30:05.760w
+      altitude 0.00 ft agl
+	  
+   edit sensor acq_radar
+      transmitter
+         frequency  3400.0 mhz
+      end_transmitter
+   end_sensor
+   
+   processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+   
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3520_large_sam_ttr LARGE_SAM_TTR
+   side blue
+   position 30:21:49.680n 81:29:53.520w
+      altitude 0.00 ft agl
+	  
+   processor data_mgr
+      report_to command_chain blue_chain commander via blue_comm
+   end_processor
+   
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3530_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:26:27.600n 81:35:43.800w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3540_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:17:53.160n 81:30:18.000w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3550_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:26:03.120n 81:28:22.080w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform

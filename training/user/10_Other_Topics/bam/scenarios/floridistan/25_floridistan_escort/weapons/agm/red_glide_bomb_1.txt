@@ -1,0 +1,71 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM Wizard
+
+radar_signature RED_GLIDE_BOMB_1_RADAR_SIGNATURE
+   constant 1 m^2
+end_radar_signature
+
+aero RED_GLIDE_BOMB_1_AERO WSF_AERO 
+   cd_zero_subsonic    0.150
+   cd_zero_supersonic  0.220
+   mach_begin_cd_rise  0.850
+   mach_end_cd_rise    1.150
+   mach_max_supersonic 2.000
+   reference_area      0.028 m2 // 19cm body dia
+   cl_max              7.000 // unknown
+   aspect_ratio       14.000 // unknown
+   oswalds_factor      0.950 // unknown
+end_aero
+
+platform_type RED_GLIDE_BOMB_1_PT WSF_PLATFORM
+   icon missile
+   radar_signature RED_GLIDE_BOMB_1_RADAR_SIGNATURE
+   
+   mover WSF_GUIDED_MOVER
+      aero RED_GLIDE_BOMB_1_AERO
+      mass 250.0 lbm
+      update_interval 0.5 s
+   end_mover
+   
+   processor guidance_computer WSF_GUIDANCE_COMPUTER
+      proportional_navigation_gain 10.0
+      velocity_pursuit_gain        10.0
+      g_bias                        1.0
+      maximum_commanded_g           25.0 g
+      guidance_delay                0.0 sec
+   end_processor
+   
+   processor fuse WSF_GROUND_TARGET_FUSE
+      max_time_of_flight_to_detonate 900.0 s
+#      gross_proximity_range          150.0 m
+#      hit_proximity_range             15.0 m
+   end_processor
+end_platform_type
+
+// note: this is an attribute!
+weapon_effects RED_GLIDE_BOMB_1_EFFECTS WSF_SPHERICAL_LETHALITY
+   minimum_radius   30.0 ft
+   maximum_damage    1.0
+   maximum_radius  100.0 ft
+   minimum_damage    0.05
+   threshold_damage  0.20   
+   exponent          1.00
+end_weapon_effects
+
+weapon RED_GLIDE_BOMB_1 WSF_EXPLICIT_WEAPON
+   launched_platform_type  RED_GLIDE_BOMB_1_PT
+   weapon_effects         RED_GLIDE_BOMB_1_EFFECTS
+   aux_data
+      double lar_meters = 74080 // meters = 40 nm
+   end_aux_data
+end_weapon
+
+

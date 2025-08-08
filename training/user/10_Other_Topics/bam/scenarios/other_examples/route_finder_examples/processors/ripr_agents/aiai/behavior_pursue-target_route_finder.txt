@@ -1,0 +1,141 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+behavior pursue-target_route_finder
+
+   script_debug_writes off
+
+   script_variables
+      //expected global#externs
+      #extern Array<WsfGeoPoint> gAvoidPoints;
+      #extern Array<double>      gAvoidRadii;
+      WsfRouteFinder mRouteFinder = WsfRouteFinder();
+      bool           mDebugDraw = true;
+      WsfGeoPoint    mTargetPoint;
+      double         mTargetSpeed = 300;  //300 ms (~600 knots)
+      WsfDraw        mDraw = WsfDraw();
+      
+      WsfGeoPoint    mCurrentAvoidancePt = WsfGeoPoint();
+      WsfRoute       mCurrentRoute       = WsfRoute();
+      
+   end_script_variables
+
+   on_init
+      mDraw.SetLayer("pursue-target_route_finder");
+      mDraw.SetLineSize(1);
+     #mRouteFinder.SetImpossibleRouteResponse(2);  //shift starting or ending point outside of any avoidances (dont shrink the avoidance regions)
+      extern Array<WsfGeoPoint> gAvoidPoints;
+      extern Array<double>      gAvoidRadii;
+      for (int i=0; i < gAvoidPoints.Size() && i < gAvoidRadii.Size(); i=i+1)
+      {
+         WsfGeoPoint pt = gAvoidPoints[i];
+         double radius  = gAvoidRadii[i];
+         writeln_d(PLATFORM.Name(), " avoiding: ", pt.ToString(), ", at radius: ", radius);
+         mRouteFinder.Avoid(pt, radius);
+      }
+   end_on_init
+   
+     
+
+   precondition
+     #writeln_d("precondition pursue-target_route_finder");
+      if (!PROCESSOR.IsA_TypeOf("WSF_RIPR_PROCESSOR"))
+      {
+         return Failure("behavior not attached to a RIPR processor!");
+      }   //   ((WsfRIPRProcessor)PROCESSOR)
+     
+     
+      WsfRIPRJob currentJob = null;
+      if (((WsfRIPRProcessor)PROCESSOR).GetRIPRCommanderProcessor().IsValid())
+         currentJob = ((WsfRIPRProcessor)PROCESSOR).GetRIPRCommanderProcessor().GetJobFor(TIME_NOW, ((WsfRIPRProcessor)PROCESSOR));
+      if (currentJob.IsNull() ||
+          !currentJob.IsValid() )
+      {
+         ((WsfRIPRProcessor)PROCESSOR).ClearTarget();
+         return Failure("job is not a valid pursue-target job");
+      }
+      if (currentJob.Name() != "pursue-target")
+         return Failure("job is not a pursue-target job");
+     #extern WsfTrack GetTrackByName        (WsfPlatform, string);
+      string   targetName  = (string)currentJob.GetData("targetTrackName");      
+      WsfTrack targetTrack = GetTrackByName(PLATFORM, targetName);
+      if (!targetTrack.IsValid())
+         return Failure("target track not found");
+      ((WsfRIPRProcessor)PROCESSOR).SetTarget(targetTrack);
+      mTargetPoint = targetTrack.CurrentLocation();
+      return true;
+   end_precondition
+
+   execute
+     # #writeln_d("executing pursue-target_route_finder.");
+     
+      if (PLATFORM.SlantRangeTo(mTargetPoint) > (3*mTargetSpeed))   // if we are more than 2 seconds away from our target
+      {
+        #mRouteFinder.SetImpossibleRouteResponse(3);  //dont shrink any avoidances or shift any points
+         mRouteFinder.SetImpossibleRouteResponse("SHIFT");  //shift points to exist outside of avoidances
+         WsfRoute path = mRouteFinder.Route(TIME_NOW, PLATFORM.Location(), mTargetPoint, mTargetSpeed);
+         if (!path.IsValid())
+         {
+            writeln_d("***** ERROR: INVALID PATH!!!");
+            return;
+         }
+         WsfRoute avoidances = mRouteFinder.RouteAvoidances();
+         if (!avoidances.IsValid())
+         {
+            writeln_d("***** ERROR: INVALID AVOIDANCES!!!");
+            return;
+         }
+         writeln_d("T=", TIME_NOW, ", path size: ", path.Size(), ", avoidances: ", avoidances.Size());
+         
+         if (path.Size() <= 2)
+         {
+            //on the final leg, just fly straight at the target now
+            PLATFORM.GoToLocation(mTargetPoint);
+            double linearAccel = 7.5 * Earth.ACCEL_OF_GRAVITY();
+            PLATFORM.GoToSpeed(mTargetSpeed, linearAccel, true);
+            return;
+         }
+         
+         if (path.Size() >= 2 && avoidances.Size() >= 1)
+         {
+            if (mDebugDraw == true)
+            {
+               mRouteFinder.DrawRoute(((WsfRIPRProcessor)PROCESSOR).UpdateInterval(), Vec3.Construct(0.0, 0.75, 0.0)); #green
+               mRouteFinder.DrawAvoidances(((WsfRIPRProcessor)PROCESSOR).UpdateInterval(), Vec3.Construct(0.5, 0.5, 0.5)); #gray
+            }
+         
+            //check to see if we can just keep flying the same route
+            WsfGeoPoint avoidance = avoidances[0].Location();
+            double avoidRange = avoidance.GroundRangeTo(mCurrentAvoidancePt);
+            double routeError = mCurrentRoute.DistanceFromRoute(PLATFORM.Location());
+            
+            writeln_d("platform route index: ", PLATFORM.RoutePointIndex(), ", route error: ", routeError);
+            if (avoidRange < 185.2 && (routeError < 185.2 || PLATFORM.RoutePointIndex() > 1))
+            {
+               //already flying the correct route, dont repath yet
+               writeln_d("same route, let it fly");
+               return;
+            }         
+            writeln_d("last avoid: ", mCurrentAvoidancePt.ToString(), ", current avoid: ", avoidance.ToString());
+            //else save off this avoidance
+            mCurrentAvoidancePt = avoidance;
+         
+            WsfWaypoint wpt = path[0];
+            wpt.SetRadialAcceleration(500.0);
+            path.Insert(0,wpt);
+            path.Remove(1);
+            mCurrentRoute = path;
+            PLATFORM.FollowRoute(mCurrentRoute, 1);
+         }
+      }
+      
+   end_execute
+   
+end_behavior

@@ -1,0 +1,175 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+include_once processors/quantum_agents/aifl/fl_quantum_tasker_very_simple.txt
+
+# -------------------------------------------------------------------------
+#      note: this JAMMER_LEAD_TASKER processor is only useful when on a
+#      commander platform that commands over SOJ type platforms
+#      see note in header of soj.txt for more info
+# -------------------------------------------------------------------------
+
+processor JAMMER_LEAD_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   // Script to determine the appropriate jammer type based on frequency
+   script string JammerType(double aFrequency)
+      string jammerType = "";
+      if (aFrequency < 500.e6)
+      {
+         jammerType = "SOJ_VHF_JAMMER";
+      }
+      if ((aFrequency > 2000.e6) &&
+          (aFrequency < 4000.e6))
+      {
+         jammerType = "SOJ_SBAND_JAMMER";
+      }
+      else if (aFrequency > 8000.e6)
+      {
+         jammerType = "SOJ_XBAND_JAMMER";
+      }
+      return jammerType;
+   end_script
+
+   script Array<WsfQuantumTask> JammerTaskGeneration (Array<WsfLocalTrack> TRACKS, Array<WsfAssetPerception> ASSETS )
+      Array<WsfQuantumTask> tasks = Array<WsfQuantumTask>();
+      // create jammer tasks for enemy tracks
+      for (int i=0; i<TRACKS.Size(); i=i+1)
+      {
+         WsfLocalTrack lt = TRACKS.Get(i);
+         if (lt.IsValid() && 
+             (!lt.SideValid() || lt.Side() != PLATFORM.Side()) &&
+             lt.SignalCount() > 0)
+         {
+            WsfQuantumTask task = WsfQuantumTask.Construct(1.0, "JAMMER", lt);
+            task.SetTaskType("JAMMER");
+            task.SetAuxData("freq", lt.SignalFrequency(0));
+            tasks.PushBack(task);
+            writeln_d("jammer task generated for: ", lt.TargetName(), ", updated time: ", lt.UpdateTime());
+         }
+      }
+      return tasks;
+   end_script 
+   
+   script double JammerTaskEvaluation ( WsfQuantumTask aTask, WsfAssetPerception ASSET)
+      // TODO - include missile capability in evaluation
+      //       for now: just base value on range & whether or not asset as domain capable weapon
+      WsfTrack track = PLATFORM.MasterTrackList().FindTrack(aTask.TrackId());
+
+      if (aTask.TaskType() == "JAMMER" && aTask.ResourceIsJammer() && track.IsValid())
+      {
+         // TODO - select one of the systems? or let quantum tasker do it?  expect asset rep type: resources ? yes
+         for (int i=0; i<ASSET.SystemCount(); i+=1)
+         {
+            if (ASSET.SystemKind(i) == "jammer")
+            {
+               double freq = aTask.AuxDataDouble("freq");
+               string requiredType = JammerType(freq);
+               #writeln("track ", track.TargetName(),", frequency ", freq, ", required type: ", requiredType);
+               if (requiredType == ASSET.SystemType(i))
+               {
+                  // it's possible that this jammer asset can jam this task's target
+                 if (track.LocationValid())
+                 {
+                     return (1.0 / track.SlantRangeTo(ASSET.Location()));
+                 }
+                 else if (track.Target().IsValid())
+                 {
+                     return (1.0 / track.Target().SlantRangeTo(ASSET.Location()));
+                 }
+               }
+            }
+         }
+      }
+      return 0;
+   end_script
+
+   update_interval        15.0 sec
+   asset_representation   resources   //   [platform, systems, resources]
+   reallocation_strategy  dynamic
+   generator              custom          JammerTaskGeneration
+   evaluator              custom          JammerTaskEvaluation
+   allocator              optimal_profit
+   #show_task_messages
+   #script_debug_writes    off
+end_processor
+
+radar_signature SHIP_RADAR_SIGNATURE
+   constant 100 m^2
+end_radar_signature
+
+platform_type SHIP WSF_PLATFORM
+   side red 
+   icon Carrier
+   radar_signature SHIP_RADAR_SIGNATURE
+
+   mover WSF_SURFACE_MOVER 
+   end_mover
+  
+   comm red_comm TEAM_DATALINK
+      network_name red_net
+      internal_link data_mgr
+      internal_link task_mgr
+      internal_link perception
+      internal_link jammer_tasker
+   end_comm
+   
+   processor task_mgr FL_QUANTUM_TASKER
+   end_processor
+   
+   processor jammer_tasker JAMMER_LEAD_TASKER
+   end_processor
+
+   processor perception WSF_PERCEPTION_PROCESSOR
+      on
+      script_debug_writes      off
+      reporting_self           true
+      reporting_others         true
+      report_interval          10  sec
+      report_to command_chain red_chain commander via red_comm
+      asset_perception         status_messages
+      update_interval 10 sec 
+      on_update 
+         writeln_d("T=", TIME_NOW, ", ", PLATFORM.Name(), " assets:");
+         Array<WsfAssetPerception> assets = PROCESSOR.PerceivedAssets();
+         foreach(WsfAssetPerception a in assets)
+         {
+            writeln_d("  Asset: ", a.Name(), " at T=", a.Time());
+            for(int i = 0; i < a.SystemCount(); i += 1)
+            {
+               writeln_d("    ", a.SystemKind(i), ": ", a.SystemType(i));
+               writeln_d("      ready: ", a.SystemReadyAssignment(i));
+            }
+         }
+      end_on_update
+   end_processor
+
+   processor data_mgr WSF_TRACK_PROCESSOR
+      purge_interval             60    seconds
+      report_to command_chain red_chain commander via red_comm
+      report_to command_chain red_chain subordinates via red_comm
+      report_interval            4 sec
+      fused_track_reporting      off
+      raw_track_reporting        on
+      circular_report_rejection  true
+   end_processor
+end_platform_type
+
+route ship_patrol
+   label start
+      offset  20   0 km speed 30 kts 
+         radial_acceleration 1 g
+      offset  20   5 km speed 30 kts 
+         radial_acceleration 1 g
+      offset  0    5 km speed 30 kts 
+         radial_acceleration 1 g
+      offset  0    0 km speed 30 kts 
+         radial_acceleration 1 g
+   goto start
+end_route

@@ -1,0 +1,91 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM Wizard
+
+processor SINGLE_LARGE_SAM_TACTICS WSF_TASK_PROCESSOR
+
+   script_variables 
+      double launchRange = 20.0 * MATH.M_PER_NM();
+      double re_evaluate = 60.0; 
+      string weaponName  = "sam"; 
+   end_script_variables
+   
+   script void announce(string sState)
+      writeln(""); 
+      writeln(PLATFORM.Name(), " has entered state ", sState
+            , " at time ", TIME_NOW);  
+      writeln(" the target is ", TRACK.TargetName()); 
+   end_script
+   
+#  ---------------------------------------------------------------------------   
+   evaluation_interval DETECTED 10.0 sec
+   state DETECTED
+      on_entry 
+         announce("DETECTED"); 
+      end_on_entry 
+      
+      next_state IGNORE
+         return (TRACK.TargetType() != "UCAV"); 
+      end_next_state
+      
+      next_state ENGAGE
+         return (PLATFORM.GroundRangeTo(TRACK) < launchRange); 
+      end_next_state
+   end_state
+   
+   evaluation_interval ENGAGE 10.0 sec
+   state ENGAGE
+      next_state IGNORE
+         WsfWeapon sam = PLATFORM.Weapon(weaponName); 
+         if (sam.IsValid())
+         {
+            if (sam.QuantityRemaining() > 0)
+            {
+               return false; 
+            } // quantity
+         } // is valid
+         return true; 
+      end_next_state
+      
+      next_state WAIT
+         return Fire(TRACK, "", weaponName, 2, PLATFORM); 
+      end_next_state
+   end_state
+   
+   evaluation_interval WAIT 10 s
+   state WAIT
+      on_entry
+         // set the tiem to re-evaluate the shot
+         double whenToEvaluate = TIME_NOW + re_evaluate; 
+         // attach it to the track
+         TRACK.SetAuxData("re-engage time", whenToEvaluate); 
+      end_on_entry
+      
+      next_state ENGAGE
+         if (TRACK.AuxDataDouble("re-engage time") <= TIME_NOW)
+         {
+            TRACK.SetAuxData("re-engage time", MATH.DOUBLE_MAX()); 
+            if (TRACK.Target().IsValid())
+            {
+               return true;   // target still there -> re-engage
+            } // target still valid   
+         } // re-evaluate time
+          
+         return false;        // don't re-engage yet 
+      end_next_state
+   end_state
+   
+   evaluation_interval IGNORE 24 hours
+   state IGNORE
+      on_entry announce("IGNORE"); end_on_entry
+   end_state
+   
+end_processor 
+

@@ -1,0 +1,54 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# The two communicating Floridistani platforms.
+#==============================================================================
+include_once sensors/handheld.txt # max_range 3000 km
+include_once comm/handheld.txt    # max_range 3000 km
+
+# The central command.
+platform jacksonabad WSF_PLATFORM
+   side blue
+   icon tower
+   position 30.3322n 81.6557w
+   altitude 5 m
+   
+   add comm uplink NEARIDIUM_HANDHELD 
+      network_name UL_DL_NETWORK
+   end_comm
+   
+   add sensor hh NEARIDIUM_HANDHELD 
+   end_sensor
+end_platform
+
+platform imaging_sat WSF_PLATFORM
+   icon satellite
+   side blue
+   
+   add mover WSF_SPACE_MOVER
+      include tle/launch.txt
+   end_mover 
+   
+   add comm uplink NEARIDIUM_HANDHELD 
+      network_name UL_DL_NETWORK
+   end_comm
+   
+   add sensor hh NEARIDIUM_HANDHELD 
+   end_sensor
+   
+   execute at_interval_of 5 min 
+   writeln(TIME_NOW,
+   ": send msg from imaging_sat to jacksonabad");
+   
+      WsfControlMessage msg = WsfControlMessage();
+      WsfComm comm = PLATFORM.Comm("uplink");
+      comm.SendMessage(msg, "jacksonabad", "uplink");
+   end_execute
+end_platform

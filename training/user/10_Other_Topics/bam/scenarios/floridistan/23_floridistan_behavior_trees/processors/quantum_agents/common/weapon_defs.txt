@@ -1,0 +1,256 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+script_struct WeaponData
+   script_variables
+      string type           = "";
+      double rangeMin       = 0;     // 1852;   // 1 nm (meters)
+      double rangeMax       = 0;     // 18520;  // 10 nm (meters)
+      bool   onlyUseInRange = true;
+      double averageSpeed   = 0;     // 331.46;   // ~mach 1 (meters/seconds)
+      double maxTimeFlight  = 0;     // 55.87;   // should ~equal~ rangeMax / averageSpeed
+      int    numActiveMax   = 0;     // 1;
+      bool   domainAir      = false; // true;
+      bool   domainLand     = false;
+      double maxFiringAngle = 0;
+   end_script_variables
+end_script_struct
+
+script_variables
+   Map<string, struct> gWeaponDefs =  Map<string, struct>();
+   
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"] = struct.New("WeaponData");
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->type           = "MEDIUM_RANGE_MISSILE";
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->rangeMin       = 50;       // (meters)
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->rangeMax       = 111120;   // ~60 nm (meters)
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->averageSpeed   = 1657.283; // mach 5 (m/s)
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->maxTimeFlight  = 67.05;    // for 60 nm range (seconds)
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->numActiveMax   = 2;
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->domainAir      = true;
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->domainLand     = false;
+   gWeaponDefs["MEDIUM_RANGE_MISSILE"]->maxFiringAngle = 45.0;
+   
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"] = struct.New("WeaponData");
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->type           = "MEDIUM_RANGE_RADAR_MISSILE";
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->rangeMin       = 50;         // (meters)
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->rangeMax       = 111120;     // ~60 nm (meters)
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->averageSpeed   = 1657.283;   // mach 5 (m/s)
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->maxTimeFlight  = 67.05;      // for 60 nm range (seconds)
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->numActiveMax   = 2;
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->domainAir      = true;
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->domainLand     = false;
+   gWeaponDefs["MEDIUM_RANGE_RADAR_MISSILE"]->maxFiringAngle = 45.0;
+   
+end_script_variables
+
+// returns a 'WeaponData' struct
+script struct GetWeaponData(string aType)
+   if (gWeaponDefs.Exists(aType))
+   {
+      return gWeaponDefs.Get(aType);
+   }
+   else
+   {
+      return struct.New("WeaponData");
+   }
+end_script
+
+include_once processors/quantum_agents/common/common_platform_script.txt
+
+script_debug_writes off
+
+script bool WeaponCapableAvailableAgainstThreat(WsfWeapon weapon, WsfTrack track)
+   writeln_d("        checking weapon ", weapon.Name(), " valid=", weapon.IsValid());
+   if (weapon.IsNull() || !weapon.IsValid() || track.IsNull() || !track.IsValid())
+   {
+      writeln_d("weapon or track is not valid!");
+      return false;
+   }
+   if ((weapon.QuantityRemaining()-weapon.WeaponsPendingFor(WsfTrackId())) <= 0)
+   {
+      writeln_d("no unassigned weapons left to fire!");
+      return false;
+   }
+   
+   // check manually input user data first
+   struct weaponData = GetWeaponData(weapon.Type());
+   if (weaponData->type == weapon.Type())
+   {
+      if ((track.AirDomain()  && !weaponData->domainAir) ||
+          (track.LandDomain() && !weaponData->domainLand)  )
+      {
+         writeln_d("weapon not capable against target domain!");
+         return false;
+      }
+   }
+   else
+   {
+      writeln_d("could not find weapon type ", weapon.Type() ," in weapon database; query returned type ", weaponData->type);
+      // check if it has a launch computer of the necessary type
+      WsfLaunchComputer lcPtr = weapon.LaunchComputer();
+      if (lcPtr.IsValid())
+      {
+         if (track.AirDomain() && lcPtr.IsA_TypeOf("WSF_AIR_TO_AIR_LAUNCH_COMPUTER"))
+         {
+            return true;
+         }
+         else if (track.LandDomain() && lcPtr.IsA_TypeOf("WSF_ATG_LAUNCH_COMPUTER"))
+         {
+            return true;
+         }
+      }
+      writeln_d("nor could an applicable launch computer be found!");
+      return false;   // dont have weapon data
+   }
+   return true;
+end_script
+
+
+script bool InRangeToFire(WsfPlatform shooter, WsfWeapon weapon, WsfTrack track, double percentRangeMax, double percentRangeMin)
+
+   #// do not check this again
+   #if ( ! WeaponCapableAvailableAgainstThreat(weapon, track) )
+   #{
+   #   return false;
+   #}
+
+   WsfLaunchComputer lcPtr = weapon.LaunchComputer();
+
+   if (lcPtr.IsValid() &&
+       lcPtr.IsA_TypeOf("WSF_AIR_TO_AIR_LAUNCH_COMPUTER"))
+   {
+      writeln_d("            using air-to-air launch computer");
+
+      // The returned array contains:  Rmax, RmaxTOF, Rne, RneTOF, Rmin, RminTOF
+      // in that order.  -1.0 means "not valid".
+
+      Array<double> returnedValues = lcPtr.LookupResult(track);
+
+      // Now have to consider whether we have enough information to continue with a weapon shot:
+      double theRmax    = returnedValues[0]; // "Rmax";
+      double theRmaxTOF = returnedValues[1]; // "RmaxTOF";
+      double theRne     = returnedValues[2]; // "Rne";
+      double theRneTOF  = returnedValues[3]; // "RneTOF";
+      double theRmin    = returnedValues[4]; // "Rmin";
+      double theRminTOF = returnedValues[5]; // "RminTOF";
+      double range      = track.GroundRangeTo(shooter);
+
+      // Check for track range less than Rmin * scaleFactor, if not, return.
+      // But do not check for min range constraint at all unless we are likely to be needing it.
+      if (range < 5000)
+      {
+         if (theRmin == -1.0)
+         {
+            writeln_d("    Engagement did not shoot since Rmin was not valid.");
+            return false;
+         }
+         double RminConstraint = theRmin * percentRangeMin;
+         if (range < RminConstraint)
+         {
+            writeln_d("    Engagement did not shoot since inside the k * Rmin constraint distance.");
+            writeln_d("    Range versus Rmin constraint = ", range, ", ", RminConstraint);
+            return false;
+         }
+      }
+
+      // Check for track range less than Rne, if so, FORCE a weapon fire.
+      bool forceWeaponFire = false;
+      if (range < theRne)
+      {
+         writeln_d("    Engagement is forcing a weapon fire due to inside Rne.");
+         writeln_d("    Range versus Rne constraint = ", range, ", ", theRne);
+         return true;
+      }
+
+      if (forceWeaponFire == false)
+      {
+         ######################################TRY THIS######################################
+         WsfPlatform plat = WsfSimulation.FindPlatform( track.TargetName() );
+         if (plat.IsValid() && plat.CategoryMemberOf("fighter"))
+         {
+            #theRmax = theRne;
+            theRmax = (theRmax + theRne)/2.0;  //for highly maneuverable fighter targets
+         }
+         ####################################END TRY THIS####################################
+         // Check for track range less than k * Rmax, if not, return.
+         if (theRmax == -1.0)
+         {
+            writeln_d("    Engagement did not shoot since Rmax was not valid.");
+            return false;
+         }
+         #double RmaxConstraint = theRmax * DefaultPercentRangeMax;
+         if (range > (theRmax * percentRangeMax))
+         {
+            writeln_d("    Engagement did not shoot since outside the k * Rmax constraint distance.");
+            writeln_d("    Range versus Rmax constraint = ", range, ", ", (theRmax * percentRangeMax));
+            return false;
+         }
+      }
+
+      writeln_d("    Engagement meets constraints for firing a weapon (continue).");
+   }
+   else if (lcPtr.IsValid() && 
+            lcPtr.IsA_TypeOf("WSF_ATG_LAUNCH_COMPUTER"))
+   {
+      writeln_d("            using air-to-ground launch computer");
+      if (lcPtr.CanIntercept(track))
+      {
+         // intercept works, this weapon is a candidate
+      }
+      else
+      {
+         return false;
+      }
+   }
+   else
+   {
+      struct weaponData = GetWeaponData(weapon.Type());
+
+      writeln_d("            using input WeaponData struct values");
+      // check our own ranges & angles --> hacky!!!
+      #extern double EffectiveRange (WsfPlatform, WsfTrack);
+      double effectiveRange     = EffectiveRange(shooter, track);
+      double absRelativeBearing = MATH.Fabs(shooter.RelativeBearingTo( track ));
+
+      if ((weaponData->rangeMin * percentRangeMin) > effectiveRange)
+      {
+         writeln_d("            target too close");
+         return false;
+      }
+      if (absRelativeBearing > weaponData->maxFiringAngle)
+      {
+         writeln_d("            target firing angle too large");
+         return false;
+      }
+      if (weaponData->rangeMax * percentRangeMax < effectiveRange)
+      {
+         writeln_d("            target too far away");
+         return false;
+      }
+
+      double range = shooter.SlantRangeTo(track);
+      #double closingSpeed = PLATFORM.ClosingSpeedOf(track);
+      double relBearing = track.RelativeBearingTo(shooter);
+      if (relBearing > 90.0)
+      {
+         if (track.Speed() > weaponData->averageSpeed)
+         {
+            return false;
+         }
+         double speedDiff = weaponData->averageSpeed - track.Speed();
+         if ((range/speedDiff) > weaponData->maxTimeFlight)
+         {
+            return false;
+         }
+      }
+   }
+   return true;
+end_script
+

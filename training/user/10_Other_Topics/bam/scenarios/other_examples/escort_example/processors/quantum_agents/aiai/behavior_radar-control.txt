@@ -1,0 +1,111 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+
+behavior radar-control
+
+   script_debug_writes off
+
+   script_variables
+      bool                   mTurnOnFiringRadarInRange = true;
+      string                 mFiringRadarName          = "radar";    // replace with sensor name on platform
+      double                 mFiringRadarRange         = 1852 * 55;  // 55 nautical miles (units: meters)
+      bool                   mTurnOnFiringRadarIfRWR   = true;
+   end_script_variables
+
+
+   precondition
+      writeln_d("precondition radar-control");
+      if (!PROCESSOR.IsA_TypeOf("WSF_QUANTUM_TASKER_PROCESSOR"))
+      {
+         return Failure("behavior not attached to a quantum tasker processor!");
+      }
+      
+      WsfTaskList tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksReceivedOfType("weapon");
+      if ((mTurnOnFiringRadarInRange && tasks.Count()>0) || mTurnOnFiringRadarIfRWR)
+      {
+         return true;
+      }
+      return false;
+   end_precondition
+
+
+   script bool RWR_ShowsBeingTracked()
+      for (int i=0; i < PLATFORM.SensorCount(); i=i+1)
+      {
+         WsfSensor sensor = PLATFORM.SensorEntry(i);
+         if (sensor.IsA_TypeOf("WSF_ESM_SENSOR"))
+         {
+            foreach (WsfLocalTrack t in PLATFORM.MasterTrackList())
+            {
+               if (t.ContributorOf(PLATFORM, sensor))
+               {
+                  return true;
+               }
+            }
+         }
+      }
+      return false;
+   end_script
+
+
+   execute
+      writeln_d(PLATFORM.Name(), " executing radar-control, T=", TIME_NOW);
+
+      WsfTaskList tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksReceivedOfType("weapon");
+     #WsfTrack curTarget = ((WsfRIPRProcessor)PROCESSOR).GetTarget();
+      WsfTrack curTarget;
+      
+      bool turnOnFiringRadar = false;
+      //turn on firing radar if in range
+      if (mTurnOnFiringRadarInRange && tasks.Count()>0)
+      {
+         foreach(WsfTask task in tasks)
+         {
+            curTarget = PLATFORM.MasterTrackList().Find(task.LocalTrackId());
+            if (curTarget.IsValid())
+            {
+               if (PLATFORM.SlantRangeTo(curTarget) < mFiringRadarRange)
+               {
+                  turnOnFiringRadar = true;
+                  break;
+               }
+            }
+         }
+      }
+      
+      //turn on firing radar if being tracked
+      if (mTurnOnFiringRadarIfRWR && !turnOnFiringRadar)
+      {
+         turnOnFiringRadar = RWR_ShowsBeingTracked();
+      }
+
+      if (turnOnFiringRadar)
+      {
+         //make sure radar is on
+         WsfSensor firingRadar = PLATFORM.Sensor(mFiringRadarName);
+         if (firingRadar.IsValid())
+         {
+            if (!firingRadar.IsTurnedOn())
+            {
+               firingRadar.TurnOn();
+               writeln_d(PLATFORM.Name(), " turned on active radar ", mFiringRadarName);
+            }
+            else
+            {
+               writeln_d("radar already turned on");
+            }
+         }
+      }
+   end_execute
+
+end_behavior
+

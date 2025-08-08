@@ -1,0 +1,44 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM-Wizard
+# - A router_protocol has its own representation of network knowledge, so local perceived knowledge.
+# - The default router protocol is truth mesh, which will connect everything on a network.
+router_protocol NEARIDIUM_PROTOCOL WSF_COMM_ROUTER_PROTOCOL_AD_HOC 
+   script bool OnConnectionAdded(WsfAddress aSourceComm, 
+                  WsfAddress aDestinationComm,
+                  WsfCommGraph aNetworkState,
+                  WsfCommRouter aRouter)
+                           
+      WsfComm srcComm = WsfComm.GetComm(aSourceComm);
+      string srcCommName = srcComm.Name();
+      WsfPlatform srcPlat = srcComm.Platform();
+      string srcPlatType = srcPlat.Type();
+      
+      WsfComm destComm = WsfComm.GetComm(aDestinationComm);
+      string destCommName = destComm.Name();
+      WsfPlatform destPlat = destComm.Platform();
+      string destPlatType = destPlat.Type();
+      
+      # Check 1: NEARIDIUM to NEARIDIUM via crosslink
+      if(srcCommName == "crosslink" && destCommName == "crosslink" &&
+         srcPlatType == "NEARIDIUM" && destPlatType == "NEARIDIUM")
+      {
+      	return true;
+      }
+      
+      # Check 2: NEARIUM to imaging_sat or jacksonabad via downlink
+      #    (so NEARDIUM can connect to any non-NEARIDIUM via downlink)
+      // add code here
+ 
+      return false;
+   end_script
+end_router_protocol
+
+

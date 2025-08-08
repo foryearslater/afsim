@@ -1,0 +1,125 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+include_once ../common/weapon_defs.txt
+
+processor FL_QUANTUM_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   script_variables
+      bool mSelfCreateTasks = true;   //if false, simply interpret received tasks
+      #########################################################################
+      // for evaluating weapon tasks
+      Map<string,int> mKnownTargetTypes = Map<string,int>();
+      mKnownTargetTypes["STRIKER"] = 1;
+      mKnownTargetTypes["UCAV"]    = 1;
+      mKnownTargetTypes["SOJ"]     = 1;
+      #########################################################################
+   end_script_variables
+
+   #on_initialize 
+   #end_on_initialize
+
+   script Array<WsfQuantumTask> FlightLeadTaskGeneration (Array<WsfLocalTrack> TRACKS, Array<WsfAssetPerception> ASSETS )
+      Array<WsfQuantumTask> tasks = Array<WsfQuantumTask>();
+      // check if we are creating tasks or if we have a commander for that         
+      if (mSelfCreateTasks == true)
+      {
+         // if its us, then create weapon tasks for enemy tracks
+         for (int i=0; i<TRACKS.Size(); i=i+1)
+         {
+            WsfLocalTrack lt = TRACKS.Get(i);
+            if (lt.IsValid() && (!lt.SideValid() || lt.Side() != PLATFORM.Side()))
+            {
+               if (mKnownTargetTypes.Size() <= 0 || mKnownTargetTypes.Exists(lt.TargetType()))
+               {
+                  WsfQuantumTask task = WsfQuantumTask.Construct(1.0, "WEAPON", lt);
+                  task.SetTaskType("WEAPON");
+                  tasks.PushBack(task);
+                  writeln_d("weapon task generated for: ", lt.TargetName(), ", updated time: ", lt.UpdateTime());
+               }
+            }
+         }
+      }
+      return tasks;
+   end_script
+   
+   script double FlightLeadEvaluation ( WsfQuantumTask TASK, WsfAssetPerception ASSET)
+      // TODO - include missile capability in evaluation
+      //       for now: just base value on range & whether or not asset as domain capable weapon
+      WsfTrack track = PLATFORM.MasterTrackList().FindTrack(TASK.TrackId());
+      
+      writeln_d(PLATFORM.Name(), " evaluating task type ", TASK.TaskType());
+      
+      if (TASK.TaskType() == "WEAPON" && track.IsValid())
+      {
+         writeln_d("evaluating weapon task: ", track.TargetName(), ", updated time: ", track.UpdateTime());
+         // TODO - select one of the systems?
+         for (int i=0; i<ASSET.SystemCount(); i+=1)
+         {
+            if (ASSET.SystemKind(i) == "weapon" && ASSET.SystemQuantityRemaining(i) >= 1)
+            {
+               double value = 1.0 / track.SlantRangeTo(ASSET.Location());
+            
+               struct weaponData = GetWeaponData(ASSET.SystemType(i));
+               if (weaponData->type == ASSET.SystemType(i))
+               {
+                  if ((weaponData->domainAir  && track.AirDomain()) ||
+                      (weaponData->domainLand && track.LandDomain())  )
+                  {
+                     return value;
+                  }
+               }
+               else
+               {
+                  // check launch computers
+                  WsfPlatform shooter = WsfSimulation.FindPlatform(ASSET.Index());
+                  if (shooter.IsValid())
+                  {
+                     WsfWeapon weapon = shooter.Weapon(ASSET.SystemName(i));
+                     if (weapon.IsValid())
+                     {
+                        WsfLaunchComputer lcPtr = weapon.LaunchComputer();
+                        if (lcPtr.IsValid())
+                        {
+                           if (track.AirDomain() && lcPtr.IsA_TypeOf("WSF_AIR_TO_AIR_LAUNCH_COMPUTER"))
+                           {
+                              return value;
+                           }
+                           else if (track.LandDomain() && lcPtr.IsA_TypeOf("WSF_ATG_LAUNCH_COMPUTER"))
+                           {
+                              return value;
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         return 0;
+      }
+      else
+      {
+         return 0;
+      }
+   end_script             
+
+  #show_task_messages
+  #script_debug_writes    off
+   update_interval        10.0 sec
+   asset_representation   platform
+   reallocation_strategy  dynamic
+   generator              custom          FlightLeadTaskGeneration
+   evaluator              custom          FlightLeadEvaluation
+   allocator              optimal_profit  type   WEAPON
+  #allocator_extra_tasks  optimal_profit
+  #allocator_extra_assets optimal_profit
+
+end_processor
+

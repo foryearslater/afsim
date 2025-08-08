@@ -1,0 +1,116 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+include_once weapons/aam/medium_range_radar_missile.txt
+include_once weapons/aam/simple_mrm_with_lc.txt
+
+include_once processors/quantum_agents/aiai/behavior_engage_weapon_task_target.txt
+include_once processors/quantum_agents/aiai/behavior_escort.txt
+include_once processors/quantum_agents/aiai/behavior_go_home.txt
+include_once processors/quantum_agents/aiai/behavior_planned_route.txt
+include_once processors/quantum_agents/aiai/behavior_pursue-target_route_finder.txt
+include_once processors/quantum_agents/aiai/behavior_pursue_weapon_task_target.txt
+
+radar_signature SIG_RADAR_ONE_M_SQUARED
+   constant 1.0 m^2
+end_radar_signature
+
+antenna_pattern ESM_ANTENNA
+   constant_pattern
+      peak_gain 3 db
+end_antenna_pattern
+
+platform_type  STRIKER  WSF_PLATFORM
+   // icon     F-22 / SU-27
+   // side     blue / red
+  
+   category fighter
+   radar_signature SIG_RADAR_ONE_M_SQUARED
+
+   mover WSF_AIR_MOVER
+      roll_rate_limit               1 rad/sec
+      default_linear_acceleration   1.0 g
+      default_radial_acceleration   6.5 g
+      default_climb_rate            400 fps
+      maximum_climb_rate            400 fps
+      maximum_speed                 600.0 knots
+      minimum_speed                 150.0 knots
+      maximum_altitude              50000 ft
+      minimum_altitude              50 ft
+      maximum_linear_acceleration   9 g
+      at_end_of_path extrapolate
+      turn_rate_limit               4.0 deg/sec
+   end_mover
+
+   processor data_mgr WSF_TRACK_PROCESSOR
+      purge_interval             60 sec
+      report_interval            1 sec
+      fused_track_reporting      on
+      raw_track_reporting        off
+      #report_to command_chain blue_chain commander via blue_comm
+      circular_report_rejection  true
+   end_processor
+   
+#   weapon lc_mrm SIMPLE_MRM_WEAPON_LC
+#      quantity 2
+#   end_weapon
+ 
+   weapon  mrm  MEDIUM_RANGE_RADAR_MISSILE
+      quantity 6
+   end_weapon
+
+   fuel WSF_FUEL
+      consumption_rate     7 lb/s
+      initial_quantity 14000 lb     // ~33 minutes, at this consumption rate
+      maximum_quantity 14000 lb
+      bingo_quantity    1000 lb
+   end_fuel  
+
+   processor  task_mgr  WSF_QUANTUM_TASKER_PROCESSOR
+      script_debug_writes  off
+      update_interval 5 sec
+      behavior_tree
+         selector
+            behavior_node  go_home
+            behavior_node  escort
+            #behavior_node  pursue_weapon_task_target
+            behavior_node  pursue-target_route_finder
+            behavior_node  planned_route
+         end_selector
+         behavior_node  engage_weapon_task_target
+      end_behavior_tree
+   end_processor
+
+   processor perception WSF_PERCEPTION_PROCESSOR
+      on
+      script_debug_writes  off
+      report_interval      10 sec
+      reporting_self       true
+      asset_perception     status_messages 
+   end_processor
+
+   sensor geo_sensor WSF_GEOMETRIC_SENSOR
+      on
+      azimuth_field_of_view   -180.0 degrees  180.0 degrees
+      elevation_field_of_view  -90.0 degrees   90.0 degrees
+      minimum_range 0 m
+      #maximum_range 277800 m     //about 150 nm
+      maximum_range 175940 m     //about  95 nm
+      frame_time    0.5 sec
+      reports_location
+      reports_velocity
+      reports_iff
+      track_quality 1.0
+      internal_link data_mgr
+      ignore_same_side
+   end_sensor
+
+end_platform_type
+

@@ -1,0 +1,102 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+realtime
+
+minimum_mover_timestep 0.05 sec
+
+#frame_time 0.025 sec
+ frame_time 0.0333 sec     # 30 Hz
+
+dis_interface
+   #log_created_entities
+   exercise    1
+   site        1
+   application 46
+   
+   #multicast   229.1.1.1   192 
+   #port                 3271
+
+   #multicast   224.2.25.55 192.168.10.32
+   #broadcast 192.168.10.255
+
+   broadcast 192.168.10.255
+  #multicast 229.1.1.1   192.168.10
+  #unicast   192.168.10.46
+   port      4321
+   autostart
+
+   #force blue  1
+   #force red   2
+   #force green 3
+
+#   filtered_connection
+#      unicast 192.168.10.46
+#      port    3225
+#      allow   entity_type SOJ   all
+#      allow   entity_type UCAV  all
+#      allow   entity_type F-18E all
+#      allow   force       red   all
+#   end_filtered_connection
+
+
+# protocol_version             6               # default is 1278.1
+                                               # 1 = 1.0
+                                               # 2 = IEEE 1278 (1993)
+                                               # 3 = 2.0 Third Draft
+                                               # 4 = 2.0 Fourth Draft
+                                               # 5 = IEEE 1278.1 (1995)
+                                               # 6 = IEEE 1278.1a (1998)
+
+   
+
+   #use_pdu_time
+   ignore_pdu_time
+   
+   simple_detonations on
+   simple_kill_range  100 m
+   
+  #heartbeat_timer             12.0 sec
+  #heartbeat_timer              5.0 sec
+   heartbeat_timer              2.0 sec
+   heartbeat_multiplier         5.0
+  #mover_update_timer           5.0 sec
+  #mover_update_timer           1.0 sec
+   mover_update_timer           0   sec   #real time sims should set this value to 0 to prevent the extra updates as such simulations already cause mover updates at a high rate.
+
+   entity_position_threshold     1 m             # default is 1 m
+   entity_orientation_threshold  3 deg           # default is 3 degrees
+   
+   suppress_comm_data          true
+   
+   #debug_emission_pdu 2
+   
+end_dis_interface
+
+###############################################################################
+# The remainder of the file is only for testing with frame-stepped real-time.
+# Jobs must be started using 'run -rt <file>' or 'runall-rt'.
+
+dis_interface
+#  Enable multi-threading of the DIS interface for testing. This capability
+#  is not yet ready for prime-time.
+
+#   multi_threading on
+
+#  There is a loop in termination in the multi-threading DIS interface if
+#  autostart is not enabled. Uncomment to force the infinite loop.
+
+#   no_autostart
+end_dis_interface
+
+# If the following isn't done, the weapon fuse misses PCA in frame-stepped
+# mode. This needs to be evaluated.
+
+#frame_time 0.1 sec

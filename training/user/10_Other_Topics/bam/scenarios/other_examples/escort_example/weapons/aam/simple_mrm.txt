@@ -1,0 +1,100 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+
+
+
+aero GUESSED_AERO WSF_AERO
+
+   mach_and_cd    0.0 1.35 # ref AIAA 79-0091
+   mach_and_cd    0.8 1.35 # ref AIAA 79-0091
+   mach_and_cd    1.0 1.85 # ref AIAA 79-0091
+   mach_and_cd    1.2 2.0  # ref AIAA 79-0091
+   mach_and_cd    1.5 1.8  # ref AIAA 79-0091
+   mach_and_cd    2.0 1.65 # ref AIAA 79-0091
+   mach_and_cd    3.0 1.2  # ref AIAA 79-0091
+   mach_and_cd    4.0 1.0  # ref AIAA 79-0091
+
+   reference_area 0.02488 m2 # 17.8 cm dia (Wikipedia)
+
+   cl_max 10.0         # Unknown
+   aspect_ratio   17.7 # Unknown
+
+end_aero
+
+
+
+platform_type SIMPLE_MRM WSF_PLATFORM
+
+  weapon_effects SIMPLE_EFFECT
+
+  icon SA-10_Missile
+  infrared_signature SIMPLE_INFRARED_SIGNATURE
+  optical_signature  SIMPLE_OPTICAL_SIGNATURE
+  radar_signature    SIMPLE_RADAR_SIGNATURE
+
+  mover WSF_GUIDED_MOVER
+    total_mass       161.5 kg # (Wikipedia)
+    fuel_mass         55.0 kg
+    # Isp values of 250 are typical of solid rocket motors of today
+    specific_impulse 250.0 sec
+    thrust          2500.0 lbf
+    thrust_duration    12.12 sec
+    update_interval 0.10 s
+    aero GUESSED_AERO 
+    #show_status # Turns on some mass properties diagnostic output
+  end_mover
+
+  processor autopilot WSF_GUIDANCE_COMPUTER
+    proportional_navigation_gain  30.0
+    velocity_pursuit_gain         30.0
+    g_bias                         1.2
+    maximum_commanded_g           40.0 g
+    #omit_velocity_pursuit
+    update_interval                0.1 s
+  end_processor
+
+  processor seeker WSF_PERFECT_TRACKER
+    update_interval 0.10 s
+  end_processor
+
+  processor fuse WSF_AIR_TARGET_FUSE
+    time_of_flight_to_arm  2.0 sec
+    max_time_of_flight_to_detonate 140.0 sec
+    detonate_on_mach_decreasing_to  1.0       # DRB Added 5/10/10
+    detonate_below_height_AGL       0.0 ft #  -200.0 m 
+             # DRB:  Make sure does not detonate prematurely during generation.
+             # PROBLEM:  For sea level test, cannot set negative!
+  end_processor
+
+end_platform_type
+
+
+weapon SIMPLE_MRM_WEAPON WSF_EXPLICIT_WEAPON
+
+   launched_platform_type SIMPLE_MRM
+
+   weapon_effects SIMPLE_EFFECT
+
+   quantity               4
+
+   firing_delay           0.5 sec
+   salvo_interval         5.0 sec
+
+   slew_mode              azimuth_and_elevation
+   azimuth_slew_limits    -180.0 deg 180.0 deg
+   elevation_slew_limits  10.0 deg  70.0 deg
+
+end_weapon
+

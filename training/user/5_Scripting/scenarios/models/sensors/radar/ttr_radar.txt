@@ -1,0 +1,89 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+antenna_pattern TTR_RADAR_ANTENNA
+  sine_pattern
+    peak_gain            35 dB
+    minimum_gain      -10.0 dB
+    azimuth_beamwidth    1 deg
+    elevation_beamwidth  1 deg
+  end_sine_pattern
+end_antenna_pattern
+
+sensor TTR_RADAR WSF_RADAR_SENSOR
+   selection_mode                 multiple
+
+   slew_mode                      azimuth_and_elevation
+   azimuth_slew_limits            -180 deg 180 deg
+   elevation_slew_limits          0.0 deg 80.0 deg
+
+   mode_template
+      one_m2_detect_range            35.0 nm
+      maximum_range                 100.0 nm
+
+      antenna_height                 4.0 m
+
+      transmitter
+         antenna_pattern             TTR_RADAR_ANTENNA
+         power                       1000.0 kw
+         frequency                   9500 mhz
+         internal_loss               2 db
+      end_transmitter
+
+      receiver
+         antenna_pattern             TTR_RADAR_ANTENNA
+         bandwidth                   500.0 khz
+         noise_power                 -160 dBw  # will be calibrated for 1 m^2
+         internal_loss               7 dB
+      end_receiver
+
+      probability_of_false_alarm     1.0e-6
+      required_pd                    0.5
+      swerling_case                  1
+
+      reports_range
+      reports_bearing
+      reports_elevation
+      reports_velocity
+   end_mode_template
+
+   mode ACQUIRE
+      maximum_request_count          1
+
+      scan_mode                      azimuth_and_elevation
+      azimuth_scan_limits            -5 deg 5 deg
+      elevation_scan_limits          -5 deg 5 deg
+
+      frame_time                     2.0 sec
+
+      hits_to_establish_track        3 5
+      hits_to_maintain_track         1 3
+
+      track_quality                  0.8   # near 'weapons' grade
+   end_mode
+
+   mode TRACK
+      maximum_request_count          1
+
+      scan_mode                      azimuth_and_elevation
+      azimuth_scan_limits            -1 deg 1 deg
+      elevation_scan_limits          -1 deg 1 deg
+      frame_time                     1.0 sec
+
+      hits_to_establish_track        3 5
+      hits_to_maintain_track         1 3
+
+      track_quality                  1.0   # 'weapons' grade
+   end_mode
+end_sensor

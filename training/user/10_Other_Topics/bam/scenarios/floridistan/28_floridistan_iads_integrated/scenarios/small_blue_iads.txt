@@ -1,0 +1,147 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+include_once platforms/iads_cmdr.txt
+include_once platforms/red_radar_company.txt
+include_once platforms/ew_radar.txt
+include_once platforms/large_sam_battalion.txt
+include_once platforms/acq_radar.txt
+include_once platforms/large_sam_ttr.txt
+include_once platforms/large_sam_launcher.txt
+
+zone 100_battalion_sector
+   circular
+      maximum_altitude 30 km
+      maximum_radius   30 nm
+end_zone
+
+zone 100_brigade_sector
+   circular
+      position 30:21n 81:45w
+      maximum_radius 60.00 nm
+      maximum_altitude 16.20 nm
+end_zone
+
+platform 10_soc_cmdr SOC_CMDR
+   side blue
+   use_zone 100_brigade_sector as MEZ
+   position 30:21n 82:15w  altitude 0.00 ft msl
+   command_chain blue_chain SELF
+end_platform
+
+platform 10_iads_cmdr IADS_CMDR
+   side blue
+   command_chain blue_chain 10_soc_cmdr
+   position 30:22:32n 81:58:34w
+      altitude 0.00 ft agl
+   
+   edit processor task_mgr
+      #show_task_messages 
+      script_variables
+         REQUIRE_ASSIGNMENT = true;
+      end_script_variables
+   end_processor
+   
+   edit processor data_mgr 
+      report_to command_chain blue_chain commander via blue_comm
+      report_interval      20 sec
+      fused_track_reporting on
+      raw_track_reporting   off
+   end_processor
+end_platform
+
+platform 100_radar_company RED_RADAR_COMPANY
+   side blue
+   position 30:30n 81:48w
+      altitude 0.00 ft agl
+   command_chain blue_chain 10_iads_cmdr
+end_platform
+
+platform 200_ew_radar EW_RADAR
+   side blue
+   position 30:35n 81:30w
+      altitude 0.00 ft agl
+   heading 90 deg
+   command_chain blue_chain 100_radar_company
+   
+   edit sensor ew_radar
+      transmitter
+         frequency  150.0 mhz
+      end_transmitter
+   end_sensor
+end_platform
+
+platform 300_ew_radar EW_RADAR
+   side blue
+   position 30:05n 81:30w
+      altitude 0.00 ft agl
+   heading 90 deg
+   command_chain blue_chain 100_radar_company
+   
+   edit sensor ew_radar
+      transmitter
+         frequency  155.0 mhz
+      end_transmitter
+   end_sensor
+end_platform
+
+platform 3500_large_sam_battalion LARGE_SAM_BATTALION
+   side blue
+   position 30:22n 81:45w
+      altitude 0.00 ft msl
+   use_zone 100_battalion_sector as battalion_sector
+   command_chain blue_chain 10_iads_cmdr
+end_platform
+
+platform 3510_acq_radar ACQ_RADAR
+   side blue
+   position 30:18n 81:42w
+      altitude 0.00 ft agl
+   heading 90 deg
+   command_chain blue_chain 3500_large_sam_battalion
+   
+   edit sensor acq_radar
+      transmitter
+         frequency  3400.0 mhz
+      end_transmitter
+   end_sensor 
+end_platform
+
+platform 3520_large_sam_ttr LARGE_SAM_TTR
+   side blue
+   position 30:22n 81:40w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3530_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:27n 81:45w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3540_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:20n 81:37w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform
+
+platform 3550_large_sam_launcher LARGE_SAM_LAUNCHER
+   side blue
+   position 30:12n 81:46w
+      altitude 0.00 ft agl
+   command_chain blue_chain 3500_large_sam_battalion
+end_platform

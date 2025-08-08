@@ -1,0 +1,51 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+script_variables
+   Set<string> gTags      = {};
+   WsfDraw     gDraw      = WsfDraw();
+   string      gOverlayID = "sensor-overlay";
+end_script_variables
+
+script void CheckForDetection(WsfPlatform aPlatform, WsfSensor aSensor, WsfTrack aTrack)
+   
+   if (aPlatform.Name() == "chief")
+   {
+      if (aTrack.TargetName() == "chaser")
+      {
+         gTags.Insert(aSensor.Name());
+         
+         # create the list of sensor names
+         bool hasOne = false;
+         string output = "{";
+         foreach (string name in gTags)
+         {
+            if (hasOne)
+            {
+               output = output + ", ";
+            }
+            output = output + name;
+            hasOne = true;
+         }
+         output = output +  "}";
+   
+         gDraw.Erase(gOverlayID);
+         gDraw.SetId(gOverlayID);
+         gTags.Insert(aSensor.Name());
+         string msg = "You've been spotted by: " + output;
+         gDraw.BeginText(msg);
+         gDraw.VertexScreen(0.1, 0.95);
+         gDraw.End();
+      }
+   }   
+end_script
+
+observer
+   enable SENSOR_TRACK_INITIATED CheckForDetection
+end_observer

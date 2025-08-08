@@ -1,0 +1,181 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+
+##############################################################################
+### signatures
+##############################################################################
+infrared_signature SIMPLE_INFRARED_SIGNATURE
+   constant 1 watts/steradian
+end_infrared_signature
+optical_signature  SIMPLE_OPTICAL_SIGNATURE
+   constant 1 m^2
+end_optical_signature
+radar_signature    SIMPLE_RADAR_SIGNATURE
+   constant 1 m^2
+end_radar_signature
+weapon_effects SIMPLE_EFFECT WSF_GRADUATED_LETHALITY
+   radius_and_pk  100.0 m  0.75
+end_weapon_effects
+
+
+##############################################################################
+### antenna patterns
+##############################################################################
+antenna_pattern weapon_datalink_gain
+   constant 10 dB
+end_antenna_pattern
+antenna_pattern SEEKER_ANTENNA
+  circular_pattern
+    beamwidth             6.0 deg
+    peak_gain            30.0 dB
+    minimum_gain        -10.0 dB
+  end_circular_pattern
+end_antenna_pattern
+antenna_pattern RADAR_ANTENNA
+  circular_pattern
+    beamwidth             3.0 deg
+    peak_gain            30.0 dB
+    minimum_gain        -10.0 dB
+  end_circular_pattern
+end_antenna_pattern
+
+
+##############################################################################
+###  normal radar sensor;  weapon's radar seeker
+##############################################################################
+sensor RADAR_SEEKER WSF_RADAR_SENSOR
+   off
+   ignore_domain                  land
+   ignore_domain                  subsurface
+   selection_mode                 single        #multiple
+   initial_mode                   SEARCH
+   slew_mode                      azimuth_and_elevation
+   azimuth_slew_limits            -45 deg 45 deg
+   elevation_slew_limits          -45 deg 45 deg
+   mode_template
+      scan_mode                   azimuth_and_elevation
+      azimuth_scan_limits         -90 deg 90 deg
+      elevation_scan_limits       -90 deg 90 deg      
+      frame_time                  1.0 sec
+      transmitter
+         antenna_pattern          SEEKER_ANTENNA
+         power                       1.0 kW
+         frequency                  10.0 GHz
+         pulse_repetition_interval   3.3 usec    #HPRF 300 kHz
+         pulse_width                 1.0 usec    #30% duty factor
+      end_transmitter
+      receiver
+         bandwidth                  1 MHz
+      end_receiver
+      one_m2_detect_range         50.0 km
+      hits_to_establish_track        1 2
+      hits_to_maintain_track         1 3
+      track_quality                  1.0
+      reports_velocity
+      reports_location
+   end_mode_template
+   mode SEARCH
+   end_mode
+end_sensor
+
+
+##############################################################################
+### weapon platform that requires an uplink, and will go active
+##############################################################################
+platform_type MEDIUM_RANGE_RADAR_MISSILE WSF_PLATFORM
+   weapon_effects SIMPLE_EFFECT
+   icon Scud_Missile
+   infrared_signature SIMPLE_INFRARED_SIGNATURE
+   optical_signature  SIMPLE_OPTICAL_SIGNATURE
+   radar_signature    SIMPLE_RADAR_SIGNATURE
+
+   ###########################################################################
+   ### straight line movers guide themselves, towards the platform's target
+   ###########################################################################
+   mover WSF_STRAIGHT_LINE_MOVER
+      average_speed           3221.5 kts     # mach 5
+      update_interval         0.006  sec     
+      update_time_tolerance   0.0006 sec     # this mover travels 1 meter in 0.00060339 seconds
+      maximum_lateral_acceleration  15.0 g   # average turner
+      guidance_mode           lead_pursuit   # or pure_pursuit
+      guide_to_truth          false          # guide to perception
+   end_mover
+
+   ###########################################################################
+   ### simple fuse
+   ###########################################################################
+   processor fuse WSF_AIR_TARGET_FUSE
+      max_time_of_flight_to_detonate  100.0 sec
+   end_processor
+
+   ###########################################################################
+   ### perfect trackers provide target truth data for the missile
+   ###   no uplink required for this missile
+   ###########################################################################
+   #processor seeker WSF_PERFECT_TRACKER
+   #   update_interval  0.5 s
+   #end_processor
+
+   ###########################################################################
+   ### imperfect radar provide target data for the missile
+   ###########################################################################
+   sensor seeker RADAR_SEEKER
+      off
+      internal_link track_mgr
+   end_sensor
+
+   ###########################################################################
+   ### comm to receive target uplink track reports for weapon manuevering
+   ###########################################################################
+   comm weapon_downlink WSF_RADIO_RCVR
+      network_name weapons_subnet
+      internal_link track_mgr
+      receiver
+         antenna_pattern weapon_datalink_gain
+         frequency 10 GHz 
+         bandwidth 500 MHz
+         detection_threshold 0 dB 
+      end_receiver
+   end_comm
+
+   ###########################################################################
+   ### simple track manager.  make sure comm & sensor feed it
+   ###########################################################################
+   processor track_mgr WSF_TRACK_PROCESSOR
+   end_processor
+
+   ###########################################################################
+   ### turns on the weapon radar at the right time
+   ###########################################################################
+   processor weapon_manager WSF_WEAPON_TRACK_PROCESSOR
+     #turn_on_sensor seeker  at_time   30 s before_intercept
+     #turn_on_sensor seeker at_range 3500 m before_intercept
+      coast_time      100 s
+      ignore_uplink_target_change   #the processor ignores track messages that dont pertain to the current target
+      uplink_required true          #this version is command guided missile only (no missile-active state)
+   end_processor
+end_platform_type
+
+
+##############################################################################
+### simple missile to use, requires uplink
+##############################################################################
+weapon MEDIUM_RANGE_RADAR_MISSILE WSF_EXPLICIT_WEAPON
+   launched_platform_type MEDIUM_RANGE_RADAR_MISSILE
+   weapon_effects SIMPLE_EFFECT   
+   quantity               4
+   firing_delay           0.5 sec
+   salvo_interval         5.0 sec
+   slew_mode              azimuth_and_elevation
+   azimuth_slew_limits    -180.0 deg 180.0 deg
+end_weapon
+

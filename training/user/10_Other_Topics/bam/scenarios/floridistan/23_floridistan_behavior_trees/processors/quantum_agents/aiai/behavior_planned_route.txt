@@ -1,0 +1,118 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+// TODO use default values from higher level context (processor or parent behavior that holds default)
+
+// assumes aDraw duration & layer is set
+script void DrawRoute(WsfDraw aDraw, WsfRoute aRoute)
+   if (aRoute.IsValid())
+   {
+      aDraw.SetColor(0,1,1);   // teal?
+      aDraw.SetLineSize(2);
+      aDraw.SetLineStyle("solid");
+      aDraw.BeginPolyline();
+         for (int i=0; i<aRoute.Size(); i=i+1)
+         {
+            aDraw.Vertex(aRoute.Waypoint(i).Location());
+         }
+      aDraw.End();
+      
+      aDraw.SetColor(1.0,0.3,0.3);   // pink?
+      aDraw.SetPointSize(4);
+      aDraw.BeginPoints();
+         for (int i=0; i<aRoute.Size(); i=i+1)
+         {
+            aDraw.Vertex(aRoute.Waypoint(i).Location());
+         }
+      aDraw.End();
+   }
+end_script
+
+behavior planned_route
+
+   script_debug_writes off
+
+   script_variables
+      bool     mDrawRoute              = false;
+      WsfDraw  mDraw                   = WsfDraw();
+      double   cDEFAULT_SPEED          = 450.0 * MATH.MPS_PER_NMPH();
+      double   cDEFAULT_ACCEL          =   7.5 * Earth.ACCEL_OF_GRAVITY(); // 7.5 G  (m/s^2)
+   end_script_variables
+
+   precondition
+      writeln_d("precondition planned_route");
+      return true;
+   end_precondition
+
+   execute
+      writeln_d(PLATFORM.Name(), " executing planned_route, T=", TIME_NOW);
+      // only command the platform to do something different if its not currently flying a route
+      WsfMover aMover = PLATFORM.Mover();
+      if (aMover.IsValid()) {
+         if (aMover.IsExtrapolating()) {
+            WsfGeoPoint pt = PLATFORM.Location();
+            WsfRoute ro = aMover.DefaultRoute().Copy(); // now we have a modifiable route
+            if (!ro.IsValid())
+               return;
+
+            writeln_d("flying route, name: ", ro.Name(), ", type: ", ro.Type());
+            WsfGeoPoint close = ro.LocationAtDistance(ro.DistanceAlongRoute(pt));
+            if (!close.IsValid()) {
+               return;
+            }
+            close.SetAltitudeAGL(pt.Altitude());
+            if (mDrawRoute)
+            {
+               mDraw.BeginLines();
+                  mDraw.Vertex(pt);
+                  mDraw.Vertex(close);
+               mDraw.End();
+            }
+            double d1 = ro.DistanceFromRoute(pt);
+            double d2 = pt.GroundRangeTo(close);
+            double d3 = -1;
+            Array<double> turnRad = aMover.PropertyDouble("turn_radius");
+            if (turnRad.Size() > 0) {
+               d3 = 2*turnRad[0];
+            }
+            int i = 0;
+            for (; i < ro.Size(); i = i+1)
+            {
+               WsfWaypoint wpt = ro.Waypoint(i);
+               WsfGeoPoint rpt = wpt.Location();
+               // check if we are close to an existing waypoint, if so... break & fly at that one
+               if (rpt.GroundRangeTo(close) < 926) {
+                  break;
+               }
+               double dist = ro.DistanceAlongRoute(rpt);
+               if (dist > d1) {
+                  if (d2 > d3) {
+                     ro.Insert(i, WsfWaypoint.Create(close, wpt.Speed()));
+                  }
+                  break;
+               }
+            }
+            if (i >= ro.Size()) {
+               i = ro.Size() - 1;
+            }
+            // go at default speed; this gets overwritten if route waypoint has defined a speed
+            PLATFORM.GoToSpeed(cDEFAULT_SPEED, cDEFAULT_ACCEL, true);
+            PLATFORM.FollowRoute(ro, i);
+         }
+      }
+      
+      if (mDrawRoute)
+      {
+         mDraw.SetDuration(PROCESSOR.UpdateInterval());
+         mDraw.SetLayer("behavior_planned_route");
+         DrawRoute(mDraw, PLATFORM.Route());
+      }
+   end_execute
+end_behavior

@@ -1,0 +1,206 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+#behavior assumes it is attached to a behavior tree on a WSF_QUANTUM_TASKER_PROCESSOR
+
+behavior debug_quantum_tasker
+
+   script_variables
+#      Array<WsfRIPRProcessor>  mSubs         =  Array<WsfRIPRProcessor>();
+#      Array<WsfRIPRJob>        mJobs         =  Array<WsfRIPRJob>();
+#      bool                     mHideMinBids  =  true;
+#      double                   mMinBid       =  -MATH.DOUBLE_MAX();
+   end_script_variables
+
+   
+   on_init
+   end_on_init
+
+
+   precondition
+      writeln_d("precondition debug_quantum_tasker");
+      if (!PROCESSOR.IsA_TypeOf("WSF_QUANTUM_TASKER_PROCESSOR"))
+      {
+         return Failure("behavior not used by a QUANTUM TASKER processor!");
+      }
+      
+      Array<WsfQuantumTask> tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksConsidered();
+      Array<WsfAssetPerception> assets = ((WsfQuantumTaskerProcessor)PROCESSOR).AssetsConsidered();
+      
+      if (tasks.Size() > 0 && assets.Size() > 0)
+      {
+         return true;
+      }
+      else
+      {
+         return Failure("Zero tasks or zero assets!");
+      }
+   end_precondition
+
+
+   execute
+      writeln(PLATFORM.Name(), ", T=", TIME_NOW, ", executing debug_quantum_tasker");
+      
+      Array<WsfQuantumTask> tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksConsidered();
+      Array<WsfAssetPerception> assets = ((WsfQuantumTaskerProcessor)PROCESSOR).AssetsConsidered();
+      Array<Array<double>> values = ((WsfQuantumTaskerProcessor)PROCESSOR).ValuesConsidered();
+      
+      #write top row (asset names) and 2nd row (asset system)
+      string topRow    = "                        job name,        priority, ";
+      string secondRow = "                                                   ";
+      foreach(WsfAssetPerception a in assets)
+      {
+         string assetName = a.Name();
+         while (assetName.Length() < 16)
+         {
+            assetName = " " + assetName;
+         }
+         if (assetName.Length() > 16)
+         {
+            assetName = assetName.Substring(-16);
+         }
+         topRow = topRow + assetName + ", "; #each column is 18 spaces wide
+         
+         string assetSystem;
+         if(a.SystemCount() == 1)
+         {
+            assetSystem = a.SystemName(0);
+         }
+         else
+         {
+            assetSystem = write_str("#_sys=", a.SystemCount());
+         }
+         while (assetSystem.Length() < 16)
+         {
+            assetSystem = " " + assetSystem;
+         }
+         if (assetSystem.Length() > 16)
+         {
+            assetSystem = assetSystem.Substring(-16);
+         }
+         secondRow = secondRow + assetSystem + ", "; #each column is 18 spaces wide
+      }      
+      topRow = topRow + "          winner";
+      string lines = "-";
+      while (lines.Length() < topRow.Length())
+      {
+         lines = lines + "-";
+      }
+      writeln(lines);
+      writeln(topRow);
+      writeln(secondRow);
+      
+
+      #write all columns of each row now
+      for(int i=0; i<tasks.Size(); i+=1)
+      {
+         WsfQuantumTask t = tasks.Get(i);
+         string taskDesc;
+         WsfTrack temp = PLATFORM.MasterTrackList().Find(t.TrackId());
+         if (temp.IsValid())
+         {
+            taskDesc = write_str(t.TaskType(), ":", temp.TargetName());
+         }
+         else
+         {
+            taskDesc = write_str(t.TaskType(), ":", t.TrackId().ToString());
+         }
+         while (taskDesc.Length() < 32)
+         {
+            taskDesc = " " + taskDesc;
+         }
+         if (taskDesc.Length() > 32)
+         {
+            taskDesc = taskDesc.Substring(-32);
+         }
+         string row = taskDesc + " ";   #this should be 33 spaces, at this point
+         
+         ##TODO - get task priority from WsfTask
+         string pString = (string)t.Priority();
+         while( pString.Contains(".") && pString.Substring(-1)=="0")   #take off all trailing zeros
+         {
+            pString = pString.Substring(0,-1);
+         }
+         if (pString.Length() > 16)
+         {
+            pString = pString.Substring(0,15);
+         }
+         pString = pString + ", ";
+         while (pString.Length() < 18)
+         {
+            pString = " " + pString;
+         }
+         row = row + pString;
+         
+         for(int j=0; j<assets.Size(); j+=1)
+         {
+            WsfAssetPerception p = assets.Get(j);
+            double value = values.Get(i).Get(j);
+            
+            string valStr = (string)value;
+
+            while( valStr.Contains(".") && valStr.Substring(-1)=="0")   #take off all trailing zeros
+            {
+               valStr = valStr.Substring(0,-1);
+            }
+            if (valStr.Length() > 16)
+            {
+               valStr = valStr.Substring(0,15);
+            }
+            valStr = valStr + ", ";
+            while (valStr.Length() < 18)
+            {
+               valStr = " " + valStr;
+            }
+            row = row + valStr;
+         }
+
+
+        
+        ###TODO get task "winners"
+         //Array<WsfPlatform> winners = job.Winners();
+         Array<WsfAssetPerception> assignees = ((WsfQuantumTaskerProcessor)PROCESSOR).AssetAssigneesFor(t);
+         string winner;
+         if (assignees.Empty())
+         {
+            winner = "-";
+         }
+         else if (assignees.Size() > 1)
+         {
+            winner = (string)assignees.Size() + " winners";
+         }
+         else
+         {
+            WsfAssetPerception asset = assignees[0];
+            if(asset.SystemCount() == 1)
+            {
+               winner = write_str(asset.Name(),":", asset.SystemName(0));
+            }
+            else
+            {
+               winner = write_str(asset.Name(),":#_sys=", asset.SystemCount());
+            }
+         }
+         while (winner.Length() < 16)
+         {
+            winner = " " + winner;
+         }
+#         if (winner.Length() > 16)
+#         {
+#            winner = winner.Substring(-16);
+#         }
+         row = row + winner;
+         writeln(row);
+      }
+      writeln(lines);
+      writeln("");
+   end_execute
+
+end_behavior

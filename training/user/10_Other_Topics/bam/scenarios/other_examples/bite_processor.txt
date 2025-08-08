@@ -1,0 +1,196 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+// Dummy scripts that would be filled with real code that would 
+// determine when conditions would be right for these to be true
+script bool BittenByVampire() return false; end_script
+script bool BittenByWerewolf() return false; end_script
+script bool BittenByZombie() return false; end_script
+
+// Dummy scripts that would determine death cases
+script bool NaturalDeath() 
+  double TimesUp = 60 * 30; # 30 min in seconds
+  if (TIME_NOW >= TimesUp) { return true; }
+  else { return false; } 
+end_script
+script bool StakeThroughHeart() return false; end_script
+script bool SilverBullet() return false; end_script
+script bool BrainsBlownOut() return false; end_script
+
+behavior human
+  script_variables
+    string auxVariable = "whatAmI"; // processor aux data variable
+    string auxState = "human";      // value to set on processor
+    string currentState = "";       // Current state from processor
+  end_script_variables
+
+  script void LiveLife()
+    writeln("Eat. Work. Sleep. Repeat");   // LIFE, as we know it. 
+  end_script
+
+  precondition
+    currentState = PROCESSOR.AuxDataString(auxVariable);
+    
+    if (currentState == auxState)
+    {
+      return true;
+    }  
+    return Failure("Not a human");
+  end_precondition
+  
+  execute
+    PROCESSOR.SetAuxData(auxVariable, auxState);
+    LiveLife();
+  end_execute
+end_behavior
+
+behavior vampire
+  script_variables
+    string auxVariable = "whatAmI";
+    string auxState = "vampire";
+    string currentState = "";
+  end_script_variables
+  
+  script void BiteHumans() 
+    writeln("I do not drink, wine. ");   // Braum Stoker
+  end_script
+  
+  precondition
+    currentState = PROCESSOR.AuxDataString(auxVariable);
+    
+    // Already a vampire or anything else and bitten
+    if (currentState == auxState ||
+        BittenByVampire())
+    {
+      return true;
+    }
+    return Failure("Not a vampire");
+  end_precondition
+  
+  execute
+    PROCESSOR.SetAuxData(auxVariable, auxState);
+    BiteHumans();
+  end_execute
+end_behavior
+
+behavior werewolf
+  script_variables
+    string auxVariable = "whatAmI";
+    string auxState = "werewolf";
+    string currentState = "";
+  end_script_variables
+   
+  script void TeachDefenseAgainstTheDarkArts() 
+    writeln("Expecto Patronum");   # HP - 3 
+  end_script
+   
+  precondition
+    currentState = PROCESSOR.AuxDataString(auxVariable);
+    
+    if (currentState == auxState ||
+        BittenByWerewolf())
+    {
+      return true;
+    }
+    return Failure("Not a werewolf");
+  end_precondition
+  
+  execute
+    PROCESSOR.SetAuxData(auxVariable, auxState);
+    TeachDefenseAgainstTheDarkArts();
+  end_execute
+end_behavior
+
+behavior zombie
+  script_variables
+    string auxVariable = "whatAmI";
+    string auxState = "zombie";
+    string currentState = "";
+  end_script_variables
+  
+  script void Walk() 
+     # Thriller
+    writeln("It's close to miiiiiidnight, and something evil's lurking in the dark");
+  end_script
+  
+  precondition
+    currentState = PROCESSOR.AuxDataString(auxVariable);
+    
+    if (currentState == auxState ||
+        BittenByZombie())
+    {
+      return true;
+    }
+    return Failure("Not a zombie");
+  end_precondition
+  
+  execute
+    PROCESSOR.SetAuxData(auxVariable, auxState);
+    Walk();
+  end_execute
+end_behavior
+
+behavior dead
+  script_variables
+    string auxVariable = "whatAmI";
+    string auxState = "dead";
+    string currentState = "";
+  end_script_variables
+
+  precondition
+    currentState = PROCESSOR.AuxDataString(auxVariable);
+
+    #currentState == "dead" ||
+    if (
+        (currentState == "human" &&
+        NaturalDeath()) ||
+        (currentState == "vampire" &&
+        StakeThroughHeart()) ||
+        (currentState == "werewolf" &&
+        SilverBullet()) ||
+        (currentState == "zombie" &&
+        BrainsBlownOut())
+       )
+    {
+       // Do Androids Dream of Electric Sheep
+      writeln("All those moments will be lost in time, like tears in rain. Time to die...");
+      return true;
+    }
+    return Failure("Well, I'm not dead yet");  //MP&HG
+  end_precondition
+  
+  execute
+    PROCESSOR.SetAuxData(auxVariable, auxState);
+  end_execute
+end_behavior
+
+processor BITE_PROCESSOR WSF_SCRIPT_PROCESSOR
+  
+  aux_data
+    // Used by behaviors, keeps track of what I am
+    string whatAmI = "human"; // Or vampire, zombie, werewolf, dead
+  end_aux_data
+  
+  update_interval 10 min
+  
+  behavior_tree
+    selector
+      behavior_node dead       // ordered this way so we don't
+      parallel                 // have to check 'alive' in all  
+        behavior_node human    // other behaviors
+        behavior_node vampire
+        behavior_node werewolf
+        behavior_node zombie
+      end_parallel
+    end_selector
+  end_behavior_tree
+
+end_processor
+

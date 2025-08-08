@@ -1,0 +1,54 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# Definition of a coverage computation covering the whole globe.
+#==============================================================================
+
+grid global_grid WSF_LAT_LON_GRID
+   latitude_span 60.0s 60.0n 
+   longitude_span 180.0w 180.0e
+   altitude 0 km agl
+   origin 0n 0w
+   latitude_spacing 15 deg
+   longitude_spacing 15 deg
+   asset WSF_PLATFORM none
+   grid_data_file output/global_grid_data.csv
+end_grid
+
+coverage global_coverage WSF_SENSOR_COVERAGE
+
+   # Specify grid to be used
+   grid global_grid
+   
+   # Specify platform and sensor on which coverage will be based
+   assets
+      platform_type ARGUS eye
+   end_assets
+   
+   # Specify where the data will be sent   
+   output_dir ./output
+   raw_data_file raw_intervals_global.csv
+   
+   # Define measures of effectiveness
+   moe simple_global WSF_SIMPLE_COVERAGE_MOE
+      output data end_output
+      output grid_stats end_output  
+      output lat_lon_stats end_output
+   end_moe
+
+   moe revisit_global WSF_REVISIT_TIME_MOE
+      subtype mean
+      output data end_output
+   end_moe
+   
+   # Create heatmap to visualize coverage results.
+   # Load this file using the Coverage Overlay view in Wizard, Warlock, or Mystic.
+   overlay_file overlay_global
+end_coverage

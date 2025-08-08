@@ -1,0 +1,40 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# This file is not intended to be included. Instead, it is a helper file
+# to provide the starting point for an exercise when customizing the 
+# generator for the constellation. There is no way to provide this automatically
+# in the generated generator file, so copy and paste from here.
+script void SpecializeMember(FileIO aFile, int aPlane, int aSat)
+   string name = GenerateName(aPlane, aSat);
+   aFile.Writeln("");
+   aFile.Writeln("   comm crosslink");
+   
+   # YOUR SCRIPT HERE
+   
+   if (aPlane != cmNumPlanes - 1)
+   {
+      string aheadRight = GenerateName(aPlane + 1, aSat);
+      aFile.Writeln("      link " + aheadRight + " crosslink");
+      string behindRight = GenerateName(aPlane + 1, PrevSatInPlane(aSat));
+      aFile.Writeln("      link " + behindRight + " crosslink");
+   }
+   
+   if (aPlane > 0)
+   {
+      string aheadLeft = GenerateName(aPlane - 1, NextSatInPlane(aSat));
+      aFile.Writeln("      link " + aheadLeft + " crosslink");
+      string behindLeft = GenerateName(aPlane - 1, aSat);
+      aFile.Writeln("      link " + behindLeft + " crosslink");
+   }
+   
+   aFile.Writeln("   end_comm");
+   aFile.Writeln("");
+end_script
+

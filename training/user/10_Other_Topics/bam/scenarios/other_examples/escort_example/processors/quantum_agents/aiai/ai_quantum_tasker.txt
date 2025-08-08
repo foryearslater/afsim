@@ -1,0 +1,68 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+
+include_once   behavior_planned_route.txt
+include_once   behavior_pursue_weapon_task_target.txt
+
+#only define things in this type definition that can be overwritten later
+# ie: only the behavior_tree, not the on_update or on_initialize blocks
+processor AI_QUANTUM_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   update_interval 2.0 sec
+   script_debug_writes off
+  #show_task_messages
+   
+   script_variables
+      // agent constants
+
+      // the interceptor uses these threat priority pairs to determine who is the most important threat of concern
+      Map<string, double> ThreatTypePriority = Map<string, double>();
+      ThreatTypePriority["unknown"]      =     0.0;
+      ThreatTypePriority["uav"]          =     2.0;
+      ThreatTypePriority["sam"]          =     4.0;
+      ThreatTypePriority["ship"]         =     4.0;
+      ThreatTypePriority["awacs"]        =  -500.0;
+      ThreatTypePriority["bomber"]       =     2.0;
+      ThreatTypePriority["jammer"]       =     0.0;
+      ThreatTypePriority["fighter"]      =    10.0;
+      ThreatTypePriority["missile"]      =     9.0;
+      ThreatTypePriority["missile_fast"] =     9.0;   // try new category for cmd
+
+
+      bool   mAllowCoopEngage = false;
+      string mUplinkSensorName  = "geo_sensor";  //name of sensor object
+   end_script_variables
+
+   behavior_tree
+#     selector
+#        behavior_node  evade    
+#        behavior_node  go_home  
+#        behavior_node  escort   
+#        behavior_node  cap-route 
+#        behavior_node  pincer    
+#        sequence
+            selector
+               behavior_node  pursue_weapon_task_target
+#              behavior_node  sar_job        
+#              behavior_node  pursue-point   
+               behavior_node  planned_route
+            end_selector
+#           behavior_node  guide_weapons 
+#        end_sequence
+#     end_selector
+#     behavior_node  engage_weapon_task_target
+#     behavior_node  radar-control 
+#     behavior_node  weapon-uplink 
+   end_behavior_tree
+
+end_processor
+

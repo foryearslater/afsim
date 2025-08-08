@@ -1,0 +1,67 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# New file created by AFSIM Wizard
+
+processor UCAV_WEAPON_RELEASE WSF_SCRIPT_PROCESSOR
+   
+   script_variables
+      string wpn1       = "red_glide_bomb_1"; 
+      string wpn2       = "red_gps_bomb_1";
+      string LARmeters = "lar_meters";
+      Array<bool> tgt_engaged = Array<bool>();
+   end_script_variables
+
+   include processors/draw.txt
+
+   on_initialize2
+      for (int i = 0; i < PLATFORM.MasterTrackList().Count(); i = i + 1)
+      {
+         tgt_engaged[i] = false; 
+      } // for loop
+   end_on_initialize2
+
+   script bool fireWeapon (WsfTrack tTrack, string tWpn)
+      bool shot = false;
+   
+      WsfWeapon tempWeapon = PLATFORM.Weapon(tWpn);
+      if (tempWeapon.IsValid()){
+         double tempRange = tempWeapon.AuxDataDouble("lar_meters");
+         if (PLATFORM.GroundRangeTo(tTrack) < tempRange){
+            shot = tempWeapon.FireSalvo(tTrack, 2);
+         }
+      }
+      
+      if (shot){
+         writeln (PLATFORM.Name(), " fired ", tWpn, " at ", 
+         tTrack.TargetName(), " at time ", TIME_NOW);
+      }
+      return shot;
+   end_script
+
+   update_interval 3.0 sec
+   on_update 
+      draw1.Erase(PLATFORM.Name());
+
+      for (int i = 0; i < PLATFORM.MasterTrackList().Count(); i = i +1){
+         if (!tgt_engaged[i]){
+            Draw1(); 
+            Draw2();
+            WsfTrack tempTrack = PLATFORM.MasterTrackList().TrackEntry(i);
+            if (fireWeapon(tempTrack, wpn1)){
+               tgt_engaged[i] = true;
+            }
+            if (fireWeapon(tempTrack, wpn2)){
+               tgt_engaged[i] = true;
+            }
+         }
+      }
+   end_on_update                  
+end_processor
+   

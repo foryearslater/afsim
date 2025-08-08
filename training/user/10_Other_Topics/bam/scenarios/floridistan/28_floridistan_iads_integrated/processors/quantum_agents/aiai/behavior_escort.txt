@@ -1,0 +1,305 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+behavior escort
+
+   script_debug_writes off
+
+   script_variables
+   
+      //**********************************************************************//
+      //** debugging parameters                                             **//
+      //**********************************************************************//
+      bool  mDrawEscortData    =  false;
+
+      //**********************************************************************//
+      //** control / mode of operation parameters                           **//
+      //**********************************************************************//
+      bool  mCheckOnlyTasks    =  true;
+      bool  mCheckMasterTracks =  false;
+
+      //**********************************************************************//
+      //** escort parameters (who to escort, and what ranges)               **//
+      //**********************************************************************//
+      Array<string> mEscortNames          = Array<string>();
+      double        mEscortProtectDistance = 100.0 * MATH.M_PER_NM();  // engage threats within this range of the escort package
+      double        mEscortChaseDistance   =  15.0 * MATH.M_PER_NM();  // allowed to chase a threat this far out of protect area if it entered
+      double        mWeaponRangeToInclude  =  50.0 * MATH.M_PER_NM();
+
+      //**********************************************************************//
+      //** flying parameters, for offset and tightness                      **//
+      //**********************************************************************//
+      double   mFormationPositionX =  0;     // meters in front of of package
+      double   mFormationPositionY =  0;     // meters off right wing of package
+      double   mGoodFormationRatio =  0.15;  // percentage of total offset
+      double   mFormationLookAhead = 30.0;   // seconds
+      double   mFormationAltitude  = -1.0;   // used if positive
+
+      //**********************************************************************//
+      //********* VARIABLES BELOW THIS LINE ARE NOT FOR USER EDITING *********//
+      //**********************************************************************//
+      WsfDraw  mDraw           =  WsfDraw();
+      bool     mLastInPosition =  false;  // boolean flag, utility, don't change
+
+   end_script_variables
+   
+   
+   // find escorted platform, return it
+   script WsfPlatform GetEscortPackage()
+      WsfPlatform escortPlatform;
+      foreach ( string sEscortName in mEscortNames )
+      {
+         escortPlatform = WsfSimulation.FindPlatform(sEscortName);
+         if (escortPlatform.IsValid() )
+         {
+            break;
+         }
+      }
+      return escortPlatform;
+   end_script   
+
+   script bool IsTrackAThreatToPackage(WsfTrack aTrack, WsfPlatform aPackage)
+      double slantRange        = aPackage.SlantRangeTo(aTrack);
+      double currentlyTargeted = 0;
+      WsfTaskList tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksReceivedOfType("WEAPON");
+      foreach(WsfTask task in tasks)
+      {
+         if(task.TrackId() == aTrack.TrackId())
+         {
+            currentlyTargeted = 1.0;
+            break;
+         }
+      }
+      //  determine if the target is a threat to your escort package, check if it lies within the protect radius
+      //  if already engaging the threat, allow a little chase
+      if (slantRange < (mEscortProtectDistance + mWeaponRangeToInclude + (currentlyTargeted * mEscortChaseDistance)))
+      {
+          writeln_d("Target ", aTrack.TargetName()," is a threat to escort package!  Stop formation flying, go engage!!!");
+          return true;
+      }
+      return false;
+   end_script
+   
+   script bool IsTaskAThreatToPackage(WsfTask aTask, WsfPlatform aPackage, WsfTrack aTrack)
+      aTrack = PLATFORM.MasterTrackList().FindTrack(aTask.LocalTrackId());
+      if (aTrack.IsValid())
+      {
+         //  determine if the target is a threat to your escort package, check if it lies within the protect radius
+         //  if already engaging the threat, allow a little chase
+         if (aPackage.SlantRangeTo(aTrack) < (mEscortProtectDistance + mWeaponRangeToInclude + mEscortChaseDistance))
+         {
+             #writeln_d("Target ", aTrack.TargetName()," is a threat to escort package!  Stop formation flying, go engage!!!");
+             return true;
+         }
+      }
+      return false;
+   end_script
+
+   script void DrawThreat(WsfTrack track)
+      if (!track.IsValid())
+      {
+         return;
+      }
+      if (mDrawEscortData == true)
+      {
+         mDraw.SetLayer("behavior_escort");
+         mDraw.SetDuration(PROCESSOR.UpdateInterval());
+         // draw line to desired formation position
+         mDraw.SetColor(1, 0, 0);
+         mDraw.SetLineSize(1);
+         mDraw.SetLineStyle("dashed");
+         mDraw.BeginLines();
+            mDraw.Vertex(PLATFORM.Location());
+            mDraw.Vertex(track.CurrentLocation());
+         mDraw.End();
+         mDraw.SetLineSize(1);
+         mDraw.SetLineStyle("solid");
+         mDraw.SetEllipseMode("line");
+         mDraw.SetColor(0, 1, 1);
+         mDraw.BeginEllipse(0,20,20);
+            mDraw.Vertex(track.CurrentLocation());
+         mDraw.End();
+      }
+   end_script
+
+   precondition
+      writeln_d("precondition escort");
+
+      if (!PROCESSOR.IsA_TypeOf("WSF_QUANTUM_TASKER_PROCESSOR"))
+      {
+         return Failure("behavior not attached to a quantum tasker processor!");
+      }
+
+      WsfPlatform escortPlatform = GetEscortPackage();
+      if (!escortPlatform.IsValid() )
+      {
+         return Failure("no listed escort packages found to escort");
+      }
+
+      // check jobs?
+      // check tracks?
+      
+      if (mCheckOnlyTasks)
+      {
+         bool packageInDanger = false;
+         Array<WsfTrack> threats = Array<WsfTrack>();
+         WsfTaskList tasks = ((WsfQuantumTaskerProcessor)PROCESSOR).TasksReceivedOfType("WEAPON");
+         WsfTrack tempTrack;
+         foreach(WsfTask task in tasks)
+         {
+            if (IsTaskAThreatToPackage(task, escortPlatform, tempTrack))
+            {
+               threats.PushBack(tempTrack);
+               packageInDanger = true;
+            }
+         }
+         
+         if (packageInDanger)
+         {
+            foreach (WsfTrack threat in threats)
+            {
+               DrawThreat(threat);
+            }
+            return Failure("target is threat to package");  // pre-condition not met, can't just fly in formation
+         }
+      }
+      else if (mCheckMasterTracks == true)
+      {
+         foreach (WsfLocalTrack t in PLATFORM.MasterTrackList())
+         {
+            // check if this track is a threat
+            if (t.SideValid() && t.Side() == PLATFORM.Side())
+            {
+               continue;
+            }
+
+            if (IsTrackAThreatToPackage(t, escortPlatform))
+            {
+               DrawThreat(t);
+               return Failure("track is threat to package");  // pre-condition not met, can't just fly in formation
+            }
+         }
+      }
+
+      writeln_d("--- agent ", PLATFORM.Name(), " is escorting ", escortPlatform.Name());
+      return true;
+   end_precondition
+
+   script bool AmInFormationPosition(WsfGeoPoint formationPoint, double radius)
+      // make it fly to the inner 50% of the acceptable radius on re-entry
+      if (!mLastInPosition)
+      {
+         radius = 0.5 * radius;
+      }
+      mLastInPosition = false;
+      double range = PLATFORM.GroundRangeTo(formationPoint);
+      if (range <= radius)
+      {
+         mLastInPosition = true;
+      }
+      return mLastInPosition;
+   end_script
+
+   execute
+      writeln_d(PLATFORM.Name(), " executing escort, T=", TIME_NOW);
+      #PLATFORM.Comment("escort");
+
+      // make sure escorted platform exists, find it, save it
+      WsfPlatform escortPlatform = GetEscortPackage();
+      if (!escortPlatform.IsValid() )
+      {
+         writeln_d("--- fighter ", PLATFORM.Name(), " no valid platform to escort!");
+         return;
+      }
+
+      // check if I am approximately in my formation position
+      WsfGeoPoint formationPoint = escortPlatform.Location();
+      
+      if (mFormationAltitude > 0)
+      {
+        formationPoint.Set(formationPoint.Latitude(), formationPoint.Longitude(), mFormationAltitude);
+      }
+
+      if (mFormationPositionX > 0)
+      {
+         formationPoint.Extrapolate(escortPlatform.Heading(), mFormationPositionX);
+      }
+      else
+      {
+         formationPoint.Extrapolate(escortPlatform.Heading()+180, -mFormationPositionX);
+      }
+
+      if (mFormationPositionY > 0)
+      {
+         formationPoint.Extrapolate(escortPlatform.Heading()+90.0, mFormationPositionY);
+      }
+      else
+      {
+         formationPoint.Extrapolate(escortPlatform.Heading()-90.0, -mFormationPositionY);
+      }
+
+      if (!formationPoint.IsValid())
+      {
+         writeln_d("--- fighter ", PLATFORM.Name(), " invalid formation point from ", escortPlatform.Name());
+         return;
+      }
+
+      if (mDrawEscortData == true)
+      {
+         mDraw.SetLayer("behavior_escort");
+         mDraw.SetDuration(PROCESSOR.UpdateInterval());
+
+         // draw protection bubbles (outter ring includes chase distance)
+         #mDraw.SetColor(0.5, 0.5, 0.5, 0.33);   // gray with 0.33 alpha
+         #mDraw.SetEllipseMode("fill");
+         mDraw.SetColor(0.5, 0.5, 0.5, 1.0);   // gray
+         mDraw.SetEllipseMode("line");
+         double R = mEscortProtectDistance + mWeaponRangeToInclude;
+         mDraw.BeginEllipse(0, R, R);
+            mDraw.Vertex(escortPlatform.Location());
+         mDraw.End();
+         R += mEscortChaseDistance;
+         mDraw.BeginEllipse(0, R, R);
+            mDraw.Vertex(escortPlatform.Location());
+         mDraw.End();
+         
+         // draw line to desired formation position
+         mDraw.SetColor(0, 1, 0);   // green
+         mDraw.SetLineSize(1);
+         mDraw.BeginLines();
+            mDraw.Vertex(escortPlatform.Location());
+            mDraw.Vertex(formationPoint);
+         mDraw.End();
+      }
+
+      double radius = mGoodFormationRatio * escortPlatform.SlantRangeTo(formationPoint);
+      
+      double formAlt   = escortPlatform.Altitude();
+      double formSpeed = escortPlatform.Speed();
+      double formYaw   = escortPlatform.Heading();
+      if (formAlt < PLATFORM.Altitude())
+      {
+         formAlt = PLATFORM.Altitude();
+      }
+      WsfGeoPoint tgt = WsfGeoPoint.Construct(formationPoint.Latitude(), formationPoint.Longitude(), formAlt);
+      double lookAheadDistance  = mFormationLookAhead * escortPlatform.Speed();
+      tgt.Extrapolate(formYaw, lookAheadDistance);
+
+      if (! AmInFormationPosition(formationPoint, radius))
+      {
+         // fly towards formation position, extrapolated ahead X seconds, in order to catch up to the point in X seconds
+         formSpeed = PLATFORM.GroundRangeTo(tgt) / mFormationLookAhead;
+      }
+
+      #extern bool FlyTarget (WsfPlatform, WsfGeoPoint,    double);
+      FlyTarget (PLATFORM, tgt, formSpeed);
+   end_execute
+end_behavior
+

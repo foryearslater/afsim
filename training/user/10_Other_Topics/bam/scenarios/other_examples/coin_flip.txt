@@ -1,0 +1,85 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+script bool coin_flip()
+   bool flip = false; 
+   if (RANDOM.Uniform(-0.25, 1.0) > 0.0) flip = true; 
+   writeln(" flip = ", flip); 
+   return flip; 
+end_script
+
+behavior coin_flip
+   precondition
+      bool flip = coin_flip(); 
+      if (flip) return flip;
+      else return Failure("tails"); 
+   end_precondition 
+   execute 
+      writeln(" coin flip was good"); 
+   end_execute
+end_behavior 
+
+platform q1 WSF_PLATFORM
+
+   add processor tree WSF_SCRIPT_PROCESSOR
+      update_interval 10 sec
+      on_update writeln(""); end_on_update
+      behavior_tree
+
+         sequence
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+         end_sequence
+
+/*
+         selector
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+         end_selector
+*/
+/*
+         parallel
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+            behavior_node coin_flip
+         end_parallel
+*/
+      end_behavior_tree
+   end_processor
+end_platform
+
+event_output
+   file output/coin_flip_sequence.evt
+#   file output/coin_flip_selector.evt
+#   file output/coin_flip_parallel.evt
+   time_format h:m:s.1
+   
+   enable BTREE_NODE_CHILDREN
+   enable BTREE_NODE_EXEC
+end_event_output
+
+end_time 100 sec

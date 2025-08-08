@@ -1,0 +1,83 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+// this file defines a simple task manager which implements very basic EMCON
+// rules for EW/ACQ type radar players
+
+processor RED_RADAR_TACTICS WSF_TASK_PROCESSOR
+
+   script_variables
+      bool cEVALUATE_EMCON_TURN_OFF = false;
+   end_script_variables
+
+   script void EvaluateEmcon()
+      int sensorCount = PLATFORM.SensorCount();
+      if (sensorCount > 0)
+      {
+         WsfSensor sensor = PLATFORM.SensorEntry(0);
+         if (sensor.IsTurnedOff())
+         {
+            // sensor is off.  Turn it on if we've received a task or
+            // we are put on alert
+            if ((TasksReceived() > 0) ||
+               (OperatingLevelFor("ENGAGE") > 0))
+            {
+               for (int entry = 0; entry < sensorCount; entry = entry + 1)
+               {
+                  PLATFORM.SensorEntry(entry).TurnOn();
+               }
+            }
+         }
+         else if (sensor.IsTurnedOn() &&
+                 cEVALUATE_EMCON_TURN_OFF)
+         {
+            // sensor is on.  Turn it off if we have no tasks and are
+            // not on alert
+            if ((TasksReceived() < 1) &&
+               (OperatingLevelFor("ENGAGE") < 1))
+            {
+               for (int entry = 0; entry < sensorCount; entry = entry + 1)
+               {
+                  PLATFORM.SensorEntry(entry).TurnOff();
+               }
+            }
+         }
+      }
+   end_script
+
+   // this cannot be done in 'on_initialize' because the commander may not yet exist
+   execute at_time 0.1 seconds relative
+      // if my commander is in the category ENGAGEMENT then we will execute
+      // the emcon/turn-off logic
+      WsfPlatform commander = PLATFORM.Commander();
+      if (commander.IsValid() &&
+          commander.CategoryMemberOf("ENGAGEMENT"))
+      {
+         cEVALUATE_EMCON_TURN_OFF = true;
+      }
+   end_execute
+
+   // evaluate emcon whenever we have a change in assignment or alert level
+   script void on_task_assign(WsfTask aTask, WsfTrack aTrack)
+      ExecuteScriptAtTime(TIME_NOW + RANDOM.Uniform(0.0, 4.0), "EvaluateEmcon");
+   end_script
+
+   script void on_task_cancel(WsfTask aTask)
+      ExecuteScriptAtTime(TIME_NOW + RANDOM.Uniform(0.0, 4.0), "EvaluateEmcon");
+   end_script
+
+   script void on_operating_level_change(string aName)
+      ExecuteScriptAtTime(TIME_NOW + RANDOM.Uniform(0.0, 4.0), "EvaluateEmcon");
+   end_script
+end_processor

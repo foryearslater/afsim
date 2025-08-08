@@ -1,0 +1,306 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+behavior go_home
+
+   script_debug_writes off
+
+   script_variables
+   
+      double   cDEFAULT_ALTITUDE    = 9144;        // ~30,000 feet
+   
+      bool     mDrawRoute           = false;       // draw the home route
+      WsfDraw  mDraw                = WsfDraw();
+      
+      bool     mCheckFuel           = true;        // check fuel levels 
+      bool     mCheckMyWeapons      = true;        // check the remaining quanitity of munitions on this platform
+     #bool     mCheckAllWeapons     = false;       // check the remaining quantity of munitions on all platforms in the peer group, including my own  
+     #bool     mCheckUplinks        = false;       // check if uplinks are still existent
+      bool     mWaitOnActiveWeapons = false;       // don't go home as long as active weapons are being controlled
+      
+      string   mMainWeapon          = "";          // main weapon of concern, not necessarily this platform's main weapon
+
+      bool          mCheckEscorts   = false;             // check if escort platforms are still existent and on course
+      Array<string> mEscortNames    = Array<string>();   // the names of platforms this platform is responsible for escorting
+      
+      double   cBINGO_SPEED         = 516 * MATH.MPS_PER_NMPH();  // ~M0.8 or 248 m/s @ 25 kft#removed 1.5 * that was added to help 6dof movers 14Oct11
+      WsfGeoPoint mFirstKnownPoint  = WsfGeoPoint();
+      
+      string   mRouteName           = "";
+      int      mRouteHomeIndex      = 0;           // the index of the waypoint on the default route the platform should return to
+      
+      string   mLastComment         = "<none yet>";
+   end_script_variables
+   
+   
+   script bool HasEscorts()
+      WsfPlatform escortPlatform;
+      foreach ( string sEscortName in mEscortNames )
+      {
+         escortPlatform = WsfSimulation.FindPlatform(sEscortName);
+         if (escortPlatform.IsValid() )
+         {
+            return true;
+         }
+      }
+      return false;
+   end_script
+   
+   script double NumWeaponsRemaining(WsfPlatform aPlatform)
+      double total = 0.0;
+      for (int i=0; i<aPlatform.WeaponCount(); i=i+1)
+      {
+         total = total + aPlatform.WeaponEntry(i).QuantityRemaining();
+      }
+      return total;
+   end_script
+   
+   script void DrawRoute()
+      WsfRoute currRoute = PLATFORM.Route();
+   
+      if (currRoute.IsValid())
+      {
+         //PLATFORM.Comment("draw current route : " + PLATFORM.Route().Name());
+         mDraw.SetLayer("behavior_go_home");
+         mDraw.Erase(PLATFORM.Name());
+         mDraw.SetId(PLATFORM.Name());
+         mDraw.SetColor(0,1,1);
+         mDraw.SetLineSize(2);
+         mDraw.SetLineStyle("dash_dot2");
+         mDraw.BeginPolyline();
+            for (int i=0; i<currRoute.Size(); i=i+1)
+            {
+               mDraw.Vertex(currRoute.Waypoint(i).Location());
+            }
+         mDraw.End();
+      }
+   end_script
+   
+   on_init
+      mFirstKnownPoint = PLATFORM.Location();
+   end_on_init
+   
+
+   precondition
+      writeln_d("precondition go_home");
+      
+#      if (!PROCESSOR.IsA_TypeOf("WSF_RIPR_PROCESSOR"))
+#      {
+#         return Failure("behavior not attached to a RIPR processor!");
+#      }
+      
+      string msg = "";
+      
+      bool result = false;
+      // go home if bingo on fuel
+      if (mCheckFuel == true &&
+          PLATFORM.FuelRemaining() < PLATFORM.FuelBingoQuantity())
+      {
+          msg = "GO HOME: bingo fuel";
+          result = true;
+      }
+      // go home if all my escorts are dead or gone
+      else if (mCheckEscorts == true &&
+               !HasEscorts()) 
+      {
+         msg = "GO HOME: all escorts are dead or gone";
+         result = true;
+      }
+      // DO NOT go home if I have any active weapons still under my control
+      else if (mWaitOnActiveWeapons == true && 
+               PLATFORM.WeaponsActiveFor(WsfTrackId()) <= 0)
+      {
+         msg = "GO HOME: no active weapons";
+         result = true;
+      }
+#      // go home if there are no uplinks remaining
+#      else if (mCheckUplinks == true &&
+#               ((WsfRIPRProcessor)PROCESSOR).UplinkCount() <= 0)
+#      {
+#         msg = "GO HOME: no active uplinks";
+#         result = true;
+#      }
+      // go home if all weapons, including my own, in the peer group are out of ammo
+#      else if (mCheckAllWeapons == true &&
+#               ((WsfRIPRProcessor)PROCESSOR).GetRIPRCommanderPlatform().IsValid())
+#      {
+#         msg = "GO HOME: all weapons in group are out of ammo";
+#         result = true;
+#         foreach( WsfPlatform sub in ((WsfRIPRProcessor)PROCESSOR).GetRIPRCommanderPlatform().Subordinates() )
+#         {
+#            if (mMainWeapon != "")
+#            {
+#                WsfWeapon temp = sub.Weapon(mMainWeapon);
+#                if (temp.IsValid() &&
+#                    temp.QuantityRemaining() > 0)
+#                {
+#                   msg = "";
+#                   result = false;
+#                }
+#            }
+#            else if (NumWeaponsRemaining(sub) > 0.0)
+#            {
+#               msg = "";
+#               result = false;
+#            }
+#         }
+#      }
+      // go home if my weapons are out of ammo
+      else if (mCheckMyWeapons == true)
+      {
+         if (mMainWeapon != "")
+         {
+            WsfWeapon temp = PLATFORM.Weapon(mMainWeapon);
+            if (temp.IsValid() &&
+                temp.QuantityRemaining() <= 0)
+            {
+               msg = "GO HOME: main weapon out of ammo";
+               result = true;
+            }
+         }
+         else if (NumWeaponsRemaining(PLATFORM) <= 0.0)
+         {
+               msg = "GO HOME: out of weapons";
+               result = true;
+         }
+      }
+
+      // debug - why is this platform going home?
+      if (result)
+      {
+         writeln_d("    T=", TIME_NOW, " ", PLATFORM.Name(), " ", msg);
+         if (msg != mLastComment)
+         {
+            PLATFORM.Comment(msg);
+            mLastComment = msg;
+         }
+         return true;
+      }
+      
+      return Failure("plenty of weapons & fuel.");
+   end_precondition
+   
+   execute
+      writeln_d(PLATFORM.Name(), " executing go_home, T=", TIME_NOW);
+      //PLATFORM.Comment("go_home");
+      
+      string msg = "";
+
+#      WsfRIPRProcessor commander = ((WsfRIPRProcessor)PROCESSOR).CommanderProcessor();
+#      if (commander.IsValid())
+#      {
+#         for (int i = 0; i < ((WsfRIPRProcessor)PROCESSOR).NumJobChannels(); i = i + 1)
+#         {
+#            commander.ClearBidsFor(((WsfRIPRProcessor)PROCESSOR), i);
+#         }
+#      }
+
+      
+      //TODO - reject or cancel any received tasks, we are going home
+
+      
+      
+      // make sure we are at the right speed so we don't burn the fuel we have left too fast
+      PLATFORM.GoToSpeed(cBINGO_SPEED);      
+      writeln_d("   GoToSpeed( ", cBINGO_SPEED," )");
+      
+      bool onHomeRoute = false;
+      
+      // if an egress route is defined, and that is the current route, 
+      //    find the closest waypoint and fly the route from there.
+      //    this is mainly used to correct some bugs in the 6dof mover
+      if (mRouteName != "")
+      {
+         WsfRoute myRoute = PLATFORM.Route();
+         if(myRoute.Name() == "home_route")
+         {
+            int routeIndex = PLATFORM.RoutePointIndex();
+            if (routeIndex < 0 || routeIndex >= myRoute.Size())
+            {
+              routeIndex = 0;
+            }
+            double distThreshold = 4.0*185.2;  ## 4/10th nm
+            if (myRoute.Waypoint(routeIndex).Location().GroundRangeTo(PLATFORM.Location()) < distThreshold)
+            {
+              routeIndex = routeIndex + 1;
+              if (routeIndex >= myRoute.Size())
+              {
+                routeIndex = 1;
+              }
+            }
+            onHomeRoute = PLATFORM.FollowRoute(myRoute, routeIndex);
+           #string msg = write_str("FollowRoute(home_route, ", routeIndex, ")");
+           #PLATFORM.Comment(msg);
+         }
+         
+         // if there is an egress route defined, follow it
+         if (!onHomeRoute)
+         {
+            msg = write_str("attempting to construct and fly route: ", mRouteName);
+            //PLATFORM.Comment(msg);
+            writeln_d("    T=", TIME_NOW, " ", PLATFORM.Name(), " ", msg);
+            
+            WsfRoute original = PLATFORM.Route();
+            WsfRoute homeRoute = WsfRoute.Create("home_route");
+            WsfRoute capRoute = WsfRoute.CopyGlobal(mRouteName);
+            double goHomeSpeed = cBINGO_SPEED;
+            
+            #if (capRoute.Front().IsValid() && capRoute.Front().Speed() > 0)
+            #{
+            #  goHomeSpeed = capRoute.Front().Speed();
+            #}
+            
+            WsfGeoPoint startPoint = WsfGeoPoint.Construct(mFirstKnownPoint.Latitude(), mFirstKnownPoint.Longitude(), cDEFAULT_ALTITUDE);
+            
+            homeRoute.Append(startPoint, goHomeSpeed);
+            
+            capRoute.Transform(startPoint.Latitude(), startPoint.Longitude(), 0);
+            homeRoute.Append(capRoute);
+            
+            onHomeRoute = PLATFORM.FollowRoute(homeRoute);
+            
+            #PLATFORM.Comment("go_home FollowRoute(homeRoute)");
+         }
+      }
+      
+      // if the platform is still not on an egress route, then there is not one 
+      //    defined or there was a problem with it, so one needs to be created.
+      if (!onHomeRoute)
+      {
+         //now try going back to route
+         if (PLATFORM.FollowRoute("DEFAULT_ROUTE", mRouteHomeIndex))
+         {
+            msg = write_str("should be flying default route");
+            //PLATFORM.Comment(msg);
+            writeln_d("    T=", TIME_NOW, " ", PLATFORM.Name(), " ", msg);
+            //PLATFORM.Comment("FollowRoute(DEFAULT_ROUTE, 1)");
+         }
+         else  // what if no default route is provided? (fly to first known point)
+         {            
+            WsfGeoPoint tempPt = WsfGeoPoint.Construct(mFirstKnownPoint.Latitude(), mFirstKnownPoint.Longitude(), cDEFAULT_ALTITUDE);
+            PLATFORM.TurnToHeading(PLATFORM.TrueBearingTo(tempPt), 6.0 * Earth.ACCEL_OF_GRAVITY());
+            
+            msg = write_str("should be flying to point: ", mFirstKnownPoint.ToString());
+            //PLATFORM.Comment(msg);
+            writeln_d("    T=", TIME_NOW, " ", PLATFORM.Name(), " ", msg);
+            //PLATFORM.Comment("GoToLocation(tempPt)");
+         }
+      }
+      
+      // debug
+      if (mDrawRoute)
+      {
+         DrawRoute();
+      }
+   end_execute
+
+end_behavior
+

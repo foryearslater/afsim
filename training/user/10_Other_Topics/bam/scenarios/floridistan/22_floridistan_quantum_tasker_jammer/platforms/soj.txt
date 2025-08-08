@@ -1,0 +1,110 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+include_once signatures/fighter_sigs.txt
+include_once sensors/esm_rwr/ucav_esm.txt
+include_once weapons/jammer/soj_vhf_jammer.txt
+include_once weapons/jammer/soj_sband_jammer.txt
+include_once weapons/jammer/soj_xband_jammer.txt
+
+include_once processors/soj_quantum_tasker.txt
+
+platform_type SOJ WSF_PLATFORM
+   icon weasel
+
+   infrared_signature FIGHTER_INFRARED_SIG
+   optical_signature  FIGHTER_OPTICAL_SIG
+   radar_signature    FIGHTER_RADAR_SIG     
+
+   mover WSF_AIR_MOVER
+      default_radial_acceleration 2.0 g
+      at_end_of_path remove
+   end_mover
+
+   sensor esm UCAV_ESM
+      on
+      internal_link data_mgr
+      ignore_same_side
+      ignore_domain air
+   end_sensor
+
+   weapon vhf_jammer SOJ_VHF_JAMMER
+      off
+      ignore_same_side
+   end_weapon
+
+   weapon fwd_sband_jammer SOJ_SBAND_JAMMER
+      off
+      yaw 0.0 deg
+      ignore_same_side
+   end_weapon
+
+   weapon aft_sband_jammer SOJ_SBAND_JAMMER
+      off
+      yaw 180.0 deg
+
+      // Field of view limits are slew limits + 1/2 the beamwidth
+      azimuth_field_of_view       -100.0 deg 100.0 deg
+
+      ignore_same_side
+   end_weapon
+
+   weapon fwd_xband_jammer SOJ_XBAND_JAMMER
+      off
+      yaw 0.0 deg
+      ignore_same_side
+   end_weapon
+
+   weapon aft_xband_jammer SOJ_XBAND_JAMMER
+      off
+      yaw 180.0 deg
+
+      // Field of view limits are slew limits + 1/2 the beamwidth
+      azimuth_field_of_view       -115.0 deg 115.0 deg
+
+      ignore_same_side
+   end_weapon
+
+   comm red_comm TEAM_DATALINK
+      network_name red_net
+      internal_link data_mgr
+      internal_link task_mgr
+      internal_link perception
+   end_comm
+   
+   processor task_mgr SOJ_QUANTUM_TASKER   
+   end_processor
+
+   processor perception WSF_PERCEPTION_PROCESSOR
+      on
+      script_debug_writes  off
+      report_interval      10 sec
+      reporting_self       true
+      report_to command_chain red_chain commander via red_comm
+	   report_to command_chain red_chain peers via red_comm
+      asset_perception     status_messages 
+   end_processor
+
+   processor data_mgr WSF_TRACK_PROCESSOR
+      purge_interval             60 sec
+      report_interval            10 sec
+      fused_track_reporting      on
+      raw_track_reporting        off
+      report_to command_chain red_chain commander via red_comm
+      circular_report_rejection  true     
+   end_processor
+  
+end_platform_type
+
+

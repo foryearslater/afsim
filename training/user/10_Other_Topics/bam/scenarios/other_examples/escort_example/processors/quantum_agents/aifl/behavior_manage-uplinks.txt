@@ -1,0 +1,54 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+##############################################################################
+### assumes exists:  extern WsfTrack GetTrackByName(WsfPlatform, string);
+##############################################################################
+
+behavior manage-uplinks
+
+   script_debug_writes off
+
+   script_variables
+      //agent constants
+   end_script_variables
+
+   precondition
+      writeln_d("precondition manage-uplinks");
+      return true;
+   end_precondition
+
+   #on_init
+   #end_on_init
+
+    execute
+      writeln_d("executing manage-uplinks");
+      Array<WsfRIPRJob> jobs = PROCESSOR.GetJobs();
+      foreach (WsfRIPRJob job in jobs)
+      {
+        if (job.Name() == "weapon_uplink")
+        {
+          int weaponPlatformIndex = (int)job.GetData("weaponPlatformIndex");
+          int targetPlatformIndex = (int)job.GetData("targetPlatformIndex");
+          WsfPlatform weaponPlatform = WsfSimulation.FindPlatform(weaponPlatformIndex);
+          WsfPlatform targetPlatform = WsfSimulation.FindPlatform(targetPlatformIndex);
+          if (!weaponPlatform.IsValid() || !targetPlatform.IsValid())
+          {
+            //either the weapon is gone or the target is gone, so the uplink is no longer needed, remove the job
+            string msg = write_str("weapon or target for ", job.GetDescription(), " is gone, remove job");
+            writeln_d(msg);
+            PLATFORM.Comment(msg);
+            PROCESSOR.RemoveJob(job);
+          }
+        }
+      }
+    end_execute
+
+end_behavior

@@ -1,0 +1,262 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+behavior interpret_flank_jobs
+
+   script_debug_writes off
+
+   script_variables
+      WsfDraw     draw              = WsfDraw();
+      bool        mDrawFlankLines   = false;
+      string      cPreferredFlank   = "auto";  //or "left" or "right"
+      WsfRIPRJob  mMyJob;
+      Map<int, WsfGeoPoint> mFlankJobIdToFlankPointMap = Map<int, WsfGeoPoint>();
+      double      cFlankWeighting   = 0.0;
+   end_script_variables
+   
+   on_init
+      draw.SetLineSize(2);
+      draw.SetColor(1.0, 0.0, 1.0); //purple
+   end_on_init
+
+
+
+   query_bid_type    flank
+   
+      if (PLATFORM.Subordinates().Count() <= 0)
+      {
+         writeln_d("no subordinates to carry out flank job");
+         return -MATH.DOUBLE_MAX();
+      }
+
+      WsfGeoPoint zonePoint    = (WsfGeoPoint)JOB.GetData("ZonePoint");
+      double      zoneBearing  = (double)     JOB.GetData("ZoneBearing");
+      WsfZone     flankZone    = (WsfZone)    JOB.GetData("FlankZone");
+      double      flankDist    = (double)     JOB.GetData("FlankDistance");
+      bool        bearingValid = (bool)       JOB.GetData("ZoneBearingValid");
+
+      //determine which side to flank on, based on subordinate that is closest to flank point
+      //find closest subordinate & then calculate relative geometry
+
+      WsfPlatform ClosestFlanker;
+
+      if( zonePoint.IsValid() )
+      {
+         double MinRange = MATH.DOUBLE_MAX();
+         double NumSubordinates = (double)(PLATFORM.Subordinates().Count());
+         foreach (WsfPlatform sub in PLATFORM.Subordinates())
+         {
+            double range = sub.SlantRangeTo( zonePoint );
+            if( range < MinRange )
+            {
+               MinRange = range;
+               ClosestFlanker = sub;
+            }
+         }
+         if (!ClosestFlanker.IsValid())
+         {
+            writeln_d("!!!   no valid subordinates to compare to flank point!");
+            return -MATH.DOUBLE_MAX();
+         }
+
+         double clusterBearingTrue = 0.0;
+         if (bearingValid)
+         {
+            //cluster heading is with reference to east (instead of north), so subtract 90 degrees
+            #clusterBearingTrue = MATH.NormalizeAngle0_360( zoneBearing - 90.0 ); 
+            clusterBearingTrue = MATH.NormalizeAngle0_360( zoneBearing );
+         }
+         else
+         {
+            writeln_d("cluster bearing invalid, bearing: ", zoneBearing);
+            //assume cluster is flying straight at me, flank to side I'm already oriented towards
+            clusterBearingTrue = ClosestFlanker.TrueBearingTo( zonePoint ) - 180.0;
+         }
+
+        //don't need to normalize it here, the next line catches it
+        double angle = ClosestFlanker.TrueBearingTo( zonePoint ) - 180.0;
+        double relativeFlankBearing = MATH.NormalizeAngle0_360( angle - clusterBearingTrue );
+        double flankAngle = 90.0;
+        if( relativeFlankBearing > 180.0 )
+        {
+          flankAngle = 270.0;
+        }
+
+        if (cPreferredFlank == "left")
+        {
+          flankAngle = 90.0;
+        }
+        else if(cPreferredFlank == "right")
+        {
+          flankAngle = 270.0;
+        }
+
+        double flankBearing = MATH.NormalizeAngle0_360( clusterBearingTrue + flankAngle );
+        WsfGeoPoint ePoint = WsfGeoPoint(zonePoint);
+        ePoint.Extrapolate( flankBearing, flankDist );
+
+        //save off the flank point, in case we win this job
+        mFlankJobIdToFlankPointMap.Set( JOB.GetId(), ePoint );
+
+        //find the range to the place we will fly so as to flank the target
+        MinRange = ClosestFlanker.SlantRangeTo( ePoint );
+
+        double JobBidValue = 100000 + NumSubordinates * flankDist / MinRange;
+        JobBidValue = JobBidValue + cFlankWeighting;
+        return JobBidValue;
+      }
+      else
+      {
+        writeln_d("!!!   Invalid point in flank job");
+        return -MATH.DOUBLE_MAX();
+      }
+   
+   end_query_bid_type
+
+
+
+
+   precondition
+      writeln_d("precondition interpret_flank_jobs");
+      draw.SetDuration(PROCESSOR.UpdateInterval());
+      WsfRIPRProcessor commander = PROCESSOR.GetRIPRCommanderProcessor();
+      if (commander.IsValid())
+      {
+        mMyJob = commander.GetJobFor(TIME_NOW, PROCESSOR);
+      if (mMyJob.IsValid() && mMyJob.Name() == "flank")
+      {
+         return true;
+      }
+      else
+      {
+         //remove any jobs this behavior created
+         Array<WsfRIPRJob> jobs = PROCESSOR.GetJobs();
+         foreach (WsfRIPRJob job in jobs)
+         {
+              if (job.IsValid() && job.Data().Exists("flankPointName"))
+            {
+               //its a valid flank point job created by this behavior, remove it
+               PROCESSOR.RemoveJob(job);
+            }
+         }
+         mFlankJobIdToFlankPointMap.Clear();
+         
+         return Failure("Agent does not have a flank job!");
+        }
+      }
+      else
+      {
+          return Failure("Agent does not have a commander!");
+      }
+   end_precondition
+
+
+   execute
+      writeln_d("executing interpret_flank_jobs");
+
+      WsfGeoPoint zonePoint    = (WsfGeoPoint)mMyJob.GetData("ZonePoint");
+      double      zoneBearing  = (double)     mMyJob.GetData("ZoneBearing");
+      bool        bearingValid = (bool)       mMyJob.GetData("ZoneBearingValid");
+      WsfZone     flankZone    = (WsfZone)    mMyJob.GetData("FlankZone");
+      double      flankDist    = (double)     mMyJob.GetData("FlankDistance");
+      string      zoneName     = (string)     mMyJob.GetData("ZoneName");
+      
+      WsfGeoPoint flankPoint   = mFlankJobIdToFlankPointMap.Get( mMyJob.GetId() );
+      
+      if (mDrawFlankLines)
+      {
+         //draw the outline of the flank zone
+         flankZone.DebugDrawZone(zonePoint, zoneBearing*MATH.RAD_PER_DEG());
+         
+         //draw flank point of interest (target we are flanking), white dot
+         draw.BeginPoints();
+            draw.SetColor(1.0, 1.0, 1.0);
+            draw.Vertex(zonePoint);
+         draw.End();
+      
+         if (bearingValid)
+         {
+            //cluster heading is with reference to east (instead of north), so subtract 90 degrees
+           #doulbe clusterBearingTrue = MATH.NormalizeAngle0_360( zoneBearing - 90.0 ); 
+            double clusterBearingTrue = MATH.NormalizeAngle0_360( zoneBearing ); 
+      
+            WsfGeoPoint bPoint = WsfGeoPoint(zonePoint);
+            bPoint.Extrapolate( clusterBearingTrue, flankDist );
+      
+            //draw red-orange line to represent heading of target's flight
+            draw.BeginLines();
+               draw.SetColor(1.0, 0.3, 0.1);
+               draw.Vertex(zonePoint);
+               draw.Vertex(bPoint);
+            draw.End();
+         }
+        
+         //draw green line to the flank point (the side we are flying towards)
+         draw.BeginLines();
+            draw.SetColor(0.1, 1.0, 0.4);
+            draw.Vertex(zonePoint);
+            draw.Vertex(flankPoint);
+         draw.End();
+      }
+
+      //see if any subordinates are in the flank zone, if they are... flanking is done
+      foreach( WsfPlatform sub in PLATFORM.Subordinates() )
+      {
+         if (flankZone.PointIsInside(sub.Location(), zonePoint, zoneBearing*MATH.RAD_PER_DEG(), 0.0))
+         {
+            writeln_d( "@@@ aifl subordinate ", sub.Name(), " inside flank zone!");
+            mMyJob.SetProgress( PROCESSOR, 1.0 );   #mark the job as complete
+         }
+      }
+
+      int NumSubordinates = PLATFORM.Subordinates().Count();
+      
+      //if flank job doesn't exist yet, create it
+      WsfRIPRJob job = PROCESSOR.GetJobByData("flankPointName", zoneName);
+      if( ! job.IsValid() )
+      {
+         if (NumSubordinates > 0)
+         {
+            extern double cFlankPointPriority;
+            //set max job winners to number of subordinates (so all can proceed into zone)
+            WsfRIPRJob temp = WsfRIPRJob.Create(   PROCESSOR,
+                                                   "pursue-point",
+                                                   "pursue-point-" + zoneName,
+                                                   cFlankPointPriority,
+                                                   NumSubordinates);
+            temp.SetData( "targetTrackName", zoneName ); //hack for now, so other code here works
+            temp.SetData( "targetPoint", flankPoint );
+            temp.SetData( "flankPointName", zoneName );
+            PROCESSOR.AddJob(temp);
+            writeln_d("--- ", PLATFORM.Name(), " job change, ADD: ", zoneName );
+         }
+      }
+      else
+      {
+         job.SetData( "targetPoint" , flankPoint );
+         writeln_d("   aiFL - updated flank pursue-point job ", zoneName, ", ( ", flankPoint.Latitude(), ", ", flankPoint.Longitude(), " )" );
+      }
+
+      //remove all jobs that aren't involved with flanking
+      Array<WsfRIPRJob> jobs = PROCESSOR.GetJobs();
+      foreach (WsfRIPRJob x in jobs)
+      {
+         string name = (string)x.GetData("targetTrackName");
+         if ( name != zoneName )
+         {
+            writeln_d("--- ", PLATFORM.Name(), " job change, REMOVE: ", name);
+            PROCESSOR.RemoveJob(x);
+         }
+      }
+
+   end_execute
+
+end_behavior

@@ -1,0 +1,121 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+behavior create_target_jobs_self
+
+   script_debug_writes off
+
+
+   script_variables
+      WsfRIPRJob  mMyJob;
+      int maxJobWinnersForPursueTrack  = 1;
+   end_script_variables
+
+   
+   on_init
+   
+   end_on_init
+
+
+   precondition
+      writeln_d("precondition create_target_jobs_self");
+
+      //this behavior should probably always run, because it 
+      //removes stale jobs from old tracks that have gone away
+
+      return true;
+   end_precondition
+
+
+   execute
+      writeln_d("executing create_target_jobs_self");
+
+      WsfLocalTrackList localTracks = PLATFORM.MasterTrackList();
+      Map<string, int> updatedTracks = Map<string, int>();
+
+      writeln_d("    Flight Lead, Considering Num Tracks: ", localTracks.Count() );
+
+      foreach (WsfTrack x in localTracks)
+      {
+         // if the track is not a foe or is damaged, we'll ignore it
+         if (!(x.IsValid()))
+         {
+            writeln_d("!!! Need to remove track: not valid!");
+            continue;
+         }
+         
+         WsfTrackId tid = x.TrackId();
+         writeln_d("    Considering: ", tid.Name(), ".", tid.Number(), " -> ", x.TargetName());
+         updatedTracks.Set(x.TargetName(), 0);
+
+         if (x.IFF_Friend())
+         {
+            writeln_d("!!! Need to remove track: IFF FRIEND!");
+            continue;
+         }
+         if (x.SideValid() && x.Side() == PLATFORM.Side())
+         {
+            writeln_d("!!! Need to remove track: SAME SIDE!");
+            continue;
+         }
+
+         extern string DetermineTrackCategory(WsfTrack);
+         string category = DetermineTrackCategory(x);
+
+         if (category == "unknown")
+         {
+            writeln_d("    - Unknown type: ", x.TargetName(), " - ", x.TargetType() );
+            continue;
+         }
+
+         updatedTracks.Set(x.TargetName(), 1);
+
+         WsfRIPRJob job = PROCESSOR.GetJobByData("targetTrackName", x.TargetName());
+         if (job.IsValid())
+         {
+            //update the already existing job
+            job.SetData("targetLocation", x.CurrentLocation());
+         }
+         else
+         {
+            //create a job for this track
+            extern double cPursueTargetPriority;
+            WsfRIPRJob temp = WsfRIPRJob.Create(   PROCESSOR,
+                                                   "pursue-target",
+                                                   "pursue-target-" + x.TargetName(),
+                                                   cPursueTargetPriority,
+                                                   maxJobWinnersForPursueTrack);
+            temp.SetData("targetTrack", x);
+            temp.SetData("targetTrackName", x.TargetName());
+            temp.SetData("targetLocation", x.CurrentLocation());
+            writeln_d("    - Adding job");
+            PROCESSOR.AddJob(temp);
+            writeln_d("--- ", PLATFORM.Name(), " job change, ADD: ", temp.GetDescription() );
+            PLATFORM.Comment(write_str("AIFL - new job: ", temp.GetDescription()));
+         }
+      }
+      
+      Array<WsfRIPRJob> jobs = PROCESSOR.GetJobs();
+      foreach (WsfRIPRJob x in jobs)
+      {
+         string name = (string)x.GetData("targetTrackName");
+         if (updatedTracks[name] == 0 && x.Name() == "pursue-target")
+         {
+               string temp = write_str("--- ", PLATFORM.Name(), " job change, REMOVE: ", x.GetDescription());
+               writeln_d(temp);
+               PLATFORM.Comment(temp);
+               PROCESSOR.RemoveJob(x);
+         }
+      }
+
+   end_execute
+
+end_behavior

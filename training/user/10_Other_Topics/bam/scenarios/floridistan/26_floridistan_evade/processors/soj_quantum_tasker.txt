@@ -1,0 +1,156 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# -------------------------------------------------------------------------
+#   note, this SOJ_QUANTUM_TASKER is only useful for SOJ platform type
+#   as it relies on the platform having the following jammer types
+#   that operate at the predefined frequencies:
+#      SOJ_VHF_JAMMER   = [   0 mhz,  500 mhz]
+#      SOJ_SBAND_JAMMER = [2000 mhz, 4000 mhz]
+#      SOJ_XBAND_JAMMER = [8000 mhz,  inf mhz]
+#   to make this processor work in the general case, the script needs
+#   to query jammers for frequency range & select the proper one
+# -------------------------------------------------------------------------
+#   how handy, the enemy radars in Floridistan scenario are:
+#      ACQ = 3000-3400 mhz
+#      TTR = 9500 mhz
+#       EW = 150-250 mhz
+# -------------------------------------------------------------------------
+
+processor SOJ_QUANTUM_TASKER WSF_QUANTUM_TASKER_PROCESSOR
+
+   #script_debug_writes on
+   #show_state_transitions
+   #show_task_messages
+   
+   script_variables
+      double mJammingBandwidth = 5.e6;
+      Map<WsfTrackId, string> mJamming = Map<WsfTrackId,string>();
+   end_script_variables
+   
+
+   // Script to determine the appropriate jammer type based on frequency
+   script string JammerType(double aFrequency)
+      string jammerType = "";
+      if (aFrequency < 500.e6)
+      {
+         jammerType = "SOJ_VHF_JAMMER";
+      }
+      if ((aFrequency > 2000.e6) &&
+          (aFrequency < 4000.e6))
+      {
+         jammerType = "SOJ_SBAND_JAMMER";
+      }
+      else if (aFrequency > 8000.e6)
+      {
+         jammerType = "SOJ_XBAND_JAMMER";
+      }
+      return jammerType;
+   end_script
+
+   update_interval 10 sec
+   on_update
+      // check all current jamming beams, stop jamming if not appropriate anymore
+      Array<WsfTrackId> erasePlease = Array<WsfTrackId>();
+      foreach(WsfTrackId id : string jammerName in mJamming)
+      {
+         WsfTaskList taskList = PROCESSOR.TasksReceivedOfTypeForTarget("JAMMER", id);
+         if (taskList.Count() <= 0)
+         {
+            WsfWeapon jammer = PLATFORM.Weapon(jammerName);
+            if (!jammer.IsValid() || jammer.StopJamming(id))
+            {
+               WsfTrack trak = PLATFORM.MasterTrackList().Find(id);
+               if (trak.IsValid()) {
+                  writeln_d("STOP JAMMING: no longer have the task to jam ", trak.TargetName(), ", id =", trak.TrackId().ToString());
+               } else {
+                  writeln_d("STOP JAMMING: no longer have the task to jam ", id.ToString());
+               }
+               erasePlease.PushBack(id);
+            }
+            else
+            {
+               writeln_d("could not stop jamming for some unknown reason!");
+            }
+         }
+      }
+      foreach(WsfTrackId id in erasePlease) {
+         mJamming.Erase(id);
+      }
+      // at this point there should be no entries in "mJamming" that aren't in the received task list
+      // there might be entries in the received task list that are yet to be added to "mJamming"
+      // check all assigned tasks:  verify the jammer has the target in FOV
+      WsfTaskList tasks = PROCESSOR.TasksReceivedOfType("JAMMER");
+      foreach(WsfTask task in tasks)
+      {
+         WsfLocalTrack TRACK = PLATFORM.MasterTrackList().FindTrack(task.LocalTrackId());
+         if (!TRACK.IsValid())
+         {
+            writeln_d("track not found for jamming task!");
+            continue;
+         }
+         
+         WsfWeapon jammer = PLATFORM.Weapon(task.ResourceName());
+         if (!jammer.IsValid())
+         {
+            writeln_d("valid jammer weapon not found for jamming task");
+            continue;   // try next task, weapon specified in this one not valid
+         }
+         
+         // previous jamming info
+         if( ! PLATFORM.WithinFieldOfView(TRACK, jammer.Name()) )
+         {
+            if (jammer.StopJamming(TRACK.TrackId()))
+            {
+               mJamming.Erase(TRACK.TrackId());
+               writeln_d("STOP JAMMING: no longer WithinFieldOfView to jam ", TRACK.TargetName(), ", id = ", TRACK.TrackId().ToString());
+               continue;
+            }
+            else
+            {
+               writeln_d("failed to stop jamming for some unknown reason!!!");
+            }
+         }
+         
+         // note : do not worry about frequency changing
+
+         if (mJamming.Exists(TRACK.TrackId()))
+         {
+            // already jamming, dont start another beam
+            continue;
+         }
+
+         writeln_d("using jammer specified in task: ", task.ResourceName());
+
+         double freq = task.AuxDataDouble("freq");
+         if (jammer.Type() == JammerType(freq))
+         {
+            // check to see if any maximum spots have been allocated
+            if ((jammer.QuantityRemaining() > 0) || (jammer.MaximumRequestCount() == 1))
+            {
+               if (jammer.StartJamming(freq, mJammingBandwidth, TRACK))
+               {
+                  // keep record
+                  mJamming.Set(TRACK.TrackId(), jammer.Name());
+                  writeln_d("START JAMMING: T=", TIME_NOW, " ", PLATFORM.Name(), ":", jammer.Name(), ", ", TRACK.TargetName(), ", freq=", freq, " BW=", mJammingBandwidth, ", id = ", TRACK.TrackId().ToString());
+                  break;
+               }
+               else
+               {
+                  writeln_d("failed to start jamming!");
+               }
+            }
+            else
+            {
+               writeln_d(PLATFORM.Name(), ", T=",TIME_NOW, ", cant jam ", TRACK.TargetName(), " with ", jammer.Name(), " -> quant remaining = ", jammer.QuantityRemaining(), ", max req # = ", jammer.MaximumRequestCount());
+            }
+         }
+      }
+   end_on_update
+end_processor

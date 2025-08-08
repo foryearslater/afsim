@@ -1,0 +1,96 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+#==============================================================================
+# A platform type utilizing a generic tracking sensor.
+#==============================================================================
+include_once ../sensors/tracking_sensor.txt
+
+platform_type TRACKING_SENSOR WSF_PLATFORM
+   side blue
+   icon command_truck
+
+   sensor tracking_sensor TRACKING_SENSOR
+      scan_mode azimuth_and_elevation
+      internal_link relay
+      internal_link track-proc
+      ignore_same_side
+   end_sensor
+
+   processor track-proc WSF_TRACK_PROCESSOR 
+   end_processor   
+
+   processor relay WSF_LINKED_PROCESSOR
+      report_to commander via cmdr_comm
+   end_processor
+
+   comm cmdr_comm WSF_COMM_TRANSCEIVER
+      internal_link task_processor
+   end_comm   
+
+   processor task_processor WSF_TASK_PROCESSOR
+      show_state_transitions
+
+      evaluation_interval WAITING 10 s
+      state WAITING
+         on_entry
+            WsfSensor trackingSensor = PLATFORM.Sensor("tracking_sensor");
+            trackingSensor.TurnOff();
+         end_on_entry         
+         next_state OBSERVING
+            return (PROCESSOR.TasksAssigned() == 0);
+         end_next_state
+      end_state
+      
+      evaluation_interval OBSERVING 1 s
+      state OBSERVING
+         on_entry
+            WsfSensor trackingSensor = PLATFORM.Sensor("tracking_sensor");
+            trackingSensor.TurnOn();
+            trackingSensor.CueToTrack(TRACK);
+         end_on_entry
+         next_state TRACKING
+            foreach(WsfTrack track in PLATFORM.MasterRawTrackList())
+            {
+               if (track.TrackId().Name() == PLATFORM.Name())
+               {
+                  writeln("!! found track!");
+                  return true;
+               }
+            }            
+            return false;            
+         end_next_state 
+      end_state
+      
+      evaluation_interval TRACKING 1 seconds
+      state TRACKING
+         next_state COMPLETE
+            foreach(WsfTrack track in PLATFORM.MasterRawTrackList())
+            {
+               if (track.TrackId().Name() == PLATFORM.Name())
+               {
+                  WsfSensor trackingSensor = PLATFORM.Sensor("tracking_sensor");
+                  trackingSensor.CueToTrack(TRACK.Target().MakeTrack());
+                  return false;
+               }
+            }            
+            return true;
+         end_next_state
+      end_state
+      
+      evaluation_interval  COMPLETE 1 day
+      state COMPLETE
+         on_entry
+             PLATFORM.Sensor("tracking_sensor").TurnOff();
+             PROCESSOR.TaskComplete(TRACK.TrackId(), "ORBIT_DETERMINATION");
+         end_on_entry
+      end_state         
+   end_processor   
+
+end_platform_type
