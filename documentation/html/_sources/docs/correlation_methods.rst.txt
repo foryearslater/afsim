@@ -1,0 +1,135 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _correlation_methods:
+
+Correlation Methods
+-------------------
+
+.. parsed-literal::
+
+   correlation_method :ref:`<correlation-type-name> <correlation_methods.available_correlation_methods>`
+      ... commands ...
+   end_correlation_method
+
+**<correlation-type>** can be:
+
+.. include:: correlation_types.txt
+
+Each type have their own unique input keywords.
+
+.. _correlation_methods.available_correlation_methods:
+
+Available Correlation Methods
+=============================
+
+.. _correlation_methods.perfect:
+
+perfect
+*******
+
+.. parsed-literal::
+
+   correlation_method perfect
+   end_correlation_method
+
+.. block:: correlation_method.perfect
+
+Measurements or tracks, to include false-targets, are correlated if their corresponding truth platform ids match. This is the quickest and easiest correlation algorithm.  It is unsuitable, however, for high-fidelity tracking applications; for instance, where track swaps or track drops might be expected.
+
+.. end::
+
+.. _correlation_methods.nearest_neighbor:
+
+nearest_neighbor
+****************
+
+.. parsed-literal::
+
+   correlation_method nearest_neighbor
+      tracking_sigma_ <real>
+      turning_sigma_  <real>
+      coast_time_     <time-value>
+   end_correlation_method
+
+.. block:: correlation_method.nearest_neighbor
+
+Measurements or tracks are correlated based on a closest proximity, defined by their respective covariance matrices. This computed distance implies a probability of association of the two tracks, and if this probability is below a given threshold, a new track is created.
+
+.. command:: tracking_sigma <real>
+
+   Specify the statistical significance to which the track is initially correlated.  A value of one indicates that the distance between locations of correlated tracks is equal to sum of the one sigma errors as extracted from the tracks' covariance matrices, along the direction from one track's location to the other.
+
+   .. note:: Higher values results in fewer correlations with a higher degree of confidence.
+
+   **Default** 1.0
+
+.. command:: turning_sigma <real>
+
+   Specify the statistical significance to which the track is correlated if it fails to meet the tracking_sigma_ correlation threshold.  This values should be less than or equal to the tracking_sigma_ value.  A value of one indicates that the distance between locations of correlated tracks is equal to sum of the one sigma errors as extracted from the tracks' covariance matrices, along the direction from one track's location to the other.
+
+   .. note:: Higher values results in fewer correlations with a higher degree of confidence.
+
+   **Default** 1.0
+
+.. command:: coast_time <time-value>
+
+   Specify the time after which a track is no longer correlated that a "no correlation" result is returned.  This time is independent of any sensor or track processor reporting times.
+
+   **Default** 1.0 sec
+
+.. end::
+
+.. _correlation_methods.truth:
+
+truth
+*****
+
+.. parsed-literal::
+
+   correlation_method truth
+      evaluation_interval_          <time-value>
+      maximum_correlation_distance_ <length-value>
+      ignore_same_side_             <boolean-value>
+      ignore_track_target_          <boolean-value>
+   end_correlation_method
+
+.. block:: correlation_method.truth
+
+By default, when track target information is available (i.e., if :ref:`WsfTrack.Target() <WsfTrack.Truth_Methods>` returns a valid result), tracks are correlated identically as with the perfect_ correlator. However, if no track target is available, or ignore_track_target_ is set "true", measurements and tracks are correlated based on proximity to a truth body.  If the distance from any truth body is less than a given radius the track is correlated with a track associated with that body; otherwise, a new track is created.
+
+.. command:: maximum_correlation_distance <length-value>
+
+   Specify the maximum distance of track location from truth location, for which a correlation occurs with an existing track.  If the distance is beyond this maximum, or there is no existing track associated with the truth body, a new track is created.
+
+   **Default** 1000 m
+
+.. command:: ignore_same_side <boolean-value>
+
+   When performing correlations, ignore truth bodies that are on the same side as the track's reported side (if any).
+
+   **Default** false
+
+.. command:: evaluation_interval <time-value>
+
+   Specify a time during which subsequent correlations are performed on a track that has already been correlated.
+
+   **Default** 0 sec
+
+.. command:: ignore_track_target <boolean-value>
+
+   Specify whether to ignore truth data associated with the track when making a correlation.  If this value is set true, correlations is made identically with the perfect_ correlator when possible.
+
+   **Default** false
+
+.. end::
+
+.. include:: _correlation_methods.wsf_mtt.txt

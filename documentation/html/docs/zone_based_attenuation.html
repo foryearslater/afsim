@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Zone-based attenuation &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zone_set" href="zone_set.html" />
+    <link rel="prev" title="zone" href="zone.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="zone_set.html" title="zone_set"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="zone.html" title="zone"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="zone-based-attenuation">
+<span id="id1"></span><h1>Zone-based attenuation<a class="headerlink" href="#zone-based-attenuation" title="Permalink to this headline">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Zone-based attenuation provides the ability to do line-of-sight checks against <a class="reference internal" href="zone.html#zone" title="zone"><span class="xref wsf wsf-command">zone</span></a>s.  Zones can be used to represent anything, including clouds, buildings, and vegetation.  If a line-of-sight check interacts with a <a class="reference internal" href="zone.html#zone" title="zone"><span class="xref wsf wsf-command">zone</span></a>, a penetration distance is calculated, which in turn is used to calculate the attenuation of the device doing the line-of-sight check.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Penetration calculations are approximate. Implicit projections using latitude and longitude are employed, so that the farther the attenuation distance is from one (latitude, longitude) point to another through a zone, the more inaccurate the result will be (this is not the case for altitude differences).  For that reason, one should be especially careful when implementing zone attenuation for individual zones that span degrees or more of latitude and longitude.</p>
+</div>
+</section>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>In order to use <a class="reference internal" href="#zone-based-attenuation"><span class="std std-ref">Zone-based attenuation</span></a> the following are required:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Either:</dt><dd><ul>
+<li><p>A <a class="reference internal" href="zone.html"><span class="doc">zone</span></a> with <a class="reference internal" href="zone.html#zone.modifier" title="modifier (zone)"><span class="xref wsf wsf-command">modifiers</span></a> defined that correspond with modifier_categories defined on comms and sensors (<a class="reference internal" href="comm.html#comm.modifier_category" title="modifier_category (comm)"><span class="xref wsf wsf-command">comm modifier_category</span></a> and <a class="reference internal" href="sensor.html#sensor.modifier_category" title="modifier_category (sensor)"><span class="xref wsf wsf-command">sensor modifier_category</span></a>).</p></li>
+<li><p>An ESRI Shape file (.shp) (loaded into WSF as a <a class="reference internal" href="zone_set.html#zone_set" title="zone_set"><span class="xref wsf wsf-command">zone_set</span></a>), with corresponding input of an <a class="reference internal" href="zone_set.html#zone_set.attenuation_parameters" title="attenuation_parameters (zone_set)"><span class="xref wsf wsf-command">attenuation_parameters</span></a> block.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>At least one <a class="reference internal" href="sensor.html#sensor" title="sensor"><span class="xref wsf wsf-command">sensor</span></a> or <a class="reference internal" href="comm.html#comm" title="comm"><span class="xref wsf wsf-command">comm</span></a> device.  See documentation for the device you intend to use for instruction on how to set up the attenuation modifier.  Multiple devices can be defined, each with separate attenuation modifiers (<a class="reference internal" href="comm.html#comm.modifier_category" title="modifier_category (comm)"><span class="xref wsf wsf-command">comm modifier_category</span></a> and <a class="reference internal" href="sensor.html#sensor.modifier_category" title="modifier_category (sensor)"><span class="xref wsf wsf-command">sensor modifier_category</span></a>)</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sensor</span> <span class="n">los_geo_sensor</span> <span class="n">WSF_GEOMETRIC_SENSOR</span>
+    <span class="n">azimuth_field_of_view</span> <span class="o">-</span><span class="mf">180.0</span> <span class="n">degrees</span> <span class="mf">180.0</span> <span class="n">degrees</span>
+    <span class="n">elevation_field_of_view</span> <span class="o">-</span><span class="mf">90.0</span> <span class="n">degrees</span> <span class="mf">90.0</span> <span class="n">degrees</span>
+    <span class="n">minimum_range</span> <span class="mi">0</span> <span class="n">m</span>
+    <span class="n">maximum_range</span> <span class="mi">100000</span> <span class="n">m</span>
+    <span class="n">on</span>
+    <span class="n">frame_time</span>              <span class="mf">0.5</span> <span class="n">sec</span>
+    <span class="n">reports_location</span>
+    <span class="o">...</span>
+    <span class="n">modifier_category</span> <span class="n">test_los_category</span>
+<span class="n">end_sensor</span>
+</pre></div>
+</div>
+<p><strong>modifier_category</strong> is the keyword necessary to define the attenuation category assigned to this sensor.</p>
+<p><em>test_los_category</em> is the name of the category and will be used in the <a class="reference internal" href="zone_set.html#zone_set" title="zone_set"><span class="xref wsf wsf-command">zone_set</span></a> block.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">voice_comm_base</span> <span class="n">WSF_RADIO_TRANSCEIVER</span>
+    <span class="n">modifier_category</span> <span class="n">test_comm_category</span>
+    <span class="n">network_name</span> <span class="n">patrol_voice_base</span>
+    <span class="n">transfer_rate</span> <span class="mi">100</span> <span class="n">mbits</span><span class="o">/</span><span class="n">sec</span>
+    <span class="n">transmitter</span>
+      <span class="o">...</span>
+    <span class="n">end_transmitter</span>
+    <span class="n">receiver</span>
+     <span class="o">...</span>
+    <span class="n">end_receiver</span>
+ <span class="n">end_comm</span>
+</pre></div>
+</div>
+<p><strong>modifier_category</strong> is the keyword necessary to define the attenuation category assigned to this comm.</p>
+<p><em>test_comm_category</em> is the name of the category and will be used in the <a class="reference internal" href="zone_set.html#zone_set" title="zone_set"><span class="xref wsf wsf-command">zone_set</span></a> block.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">zone_set</span> <span class="n">zoneSetName</span>
+   <span class="n">attenuation_parameters</span>
+      <span class="n">file</span> <span class="n">buildingShapeFile</span>
+      <span class="n">height_parameter</span> <span class="s2">&quot;&quot;</span>
+      <span class="n">constant_height</span> <span class="mi">50</span> <span class="n">ft</span>
+      <span class="n">comm_modifier</span>  <span class="n">test_comm_category</span> <span class="mf">0.1</span>
+      <span class="n">sensor_modifier</span> <span class="n">test_los_category</span> <span class="mf">1.0</span>
+      <span class="n">projection</span> <span class="n">geodetic</span>
+   <span class="n">end_attenuation_parameters</span>
+<span class="n">end_zone_set</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/zone_based_attenuation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="zone_set.html" title="zone_set"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="zone.html" title="zone"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

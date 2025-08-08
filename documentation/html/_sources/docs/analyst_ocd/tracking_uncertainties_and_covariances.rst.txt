@@ -1,0 +1,183 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Tracking Uncertainties and Covariances
+--------------------------------------
+
+References
+==========
+1) Multitarget-Multisensor Tracking, Bar-Shalom and Yi, 1993
+
+Tracking Uncertainties
+======================
+
+Tracking uncertainties in AFSIM typically arise from processed sensor errors.  These are the  :command:`sensor_mode.range_error_sigma` (:math:`\sigma_r`), :command:`sensor_mode.azimuth_error_sigma` (:math:`\sigma_\phi`), and :command:`sensor_mode.elevation_error_sigma` (:math:`\sigma_\theta`).  As the names imply, they represent one sigma (:math:`1\sigma`) standard deviations according to a Normal distribution.  They are defined in the sensor's natural coordinate system, the :ref:`Beam Coordinate System<Coordinate_Systems>`, BCS (which is often, but not always, aligned with the :ref:`Part Coordinate System<Coordinate_Systems>`, PCS, of the articulated part).  In this coordinate system the x-axis is oriented along the range vector, with azimuth and elevation errors defining uncertainty in the tangential coordinates.
+
+Along a given direction :math:`x`, and for a zero mean value, the variance of a measurement is defined to be 
+
+.. math::
+   :label: variance
+
+   \sigma^2_x = E[X^2]
+
+where :math:`E[f(X)]` denotes the expected value of the function :math:`f(X)`.
+
+As the notation implies, the variances of the sensor errors are given by the squares of the sigma values (they conform to a Normal distribution).  For a given range :math:`R`, the linear variances in the BCS (x,y,z) coordinate system are given by:
+
+.. math::
+   :label: BCS_variances
+
+   \sigma^2_x = \sigma^2_r
+
+   \sigma^2_y = (R \sigma_\phi)^2
+
+   \sigma^2_z = (R \sigma_\theta)^2
+   
+Covariance Matrices
+===================
+
+The covariance measures the dependence or correlation of one independent variable with another.  In 3-D Cartesian coordinates (x,y,z) there are three covariances: :math:`\sigma_{xy}`, :math:`\sigma_{yz}`, and :math:`\sigma_{xz}` (it is understood that :math:`\sigma_{xy}=\sigma_{yx}`, :math:`\sigma_{yz} = \sigma_{zy}`, and :math:`\sigma_{xz} = \sigma_{zx}`).  The covariance of a variable with itself is simply the variance (i.e., :math:`\sigma_{xx} \equiv \sigma_x^2`, etc.).
+
+For two directions :math:`x` and :math:`y`, and for zero mean values, the covariance of a measurement is defined to be
+
+.. math::
+   :label: covariance
+
+   \sigma_{xy} = E[XY]
+
+The full set of covariances in three dimensions is conveniently expressed in the form of a covariance matrix:
+
+.. math::
+   :label: covariance_matrix_pos
+
+   \bold{C} =
+   \left[ {\begin{array}{rrr}
+   \sigma_{xx}             & \sigma_{xy}    & \sigma_{xz} \\
+   \sigma_{yx}             & \sigma_{yy}    & \sigma_{yz} \\
+   \sigma_{zx}             & \sigma_{zy}    & \sigma_{zz} 
+   \end{array}} \right]
+
+The measurement covariance matrix expressing the sensor measurement errors in the BCS coordinate system only has nonzero values along the diagonal (it is a diagonal matrix):
+
+.. math::
+   :label: measurement_ovariance
+
+   \bold{M} =
+   \left[ {\begin{array}{rrr}
+    \sigma^2_r    &  0                    & 0 \\
+    0             & (R \sigma_\phi)^2     & 0 \\
+    0             &  0                    & (R \sigma_\theta)^2 
+   \end{array}} \right]
+
+Transformation of Covariance Matrices
+=====================================
+
+For simplicity in track reporting, it is good practice to express covariances with respect to a common coordinate system; for AFSIM this is the :ref:`World Coordinate System (WCS)<Coordinate_Systems>`.  For this reason the measurement covariances need to be transformed to align with WCS.
+   
+From linear algebra, a diagonal matrix can be expressed in terms of a non-diagonal matrix using the relation:
+
+.. math::
+   :label: diagonalization
+
+   T^{-1}CT = M
+
+where :math:`C` is the non-diagonal covariance and T is matrix used to transform the covariance to diagonal form.  For AFSIM, this transform, :math:`T`, is the WCS->BCS coordinate transform, and :math:`C` is the WCS-aligned covariance matrix that we want.  Solving for :math:`C`:
+
+.. math::
+   :label: reorientation
+
+   TT^{-1}CTT^{-1} = TMT^{-1}
+
+   C =  TMT^{-1}
+
+Thus the operation :math:`TMT^{-1}` is performed for each measurement :math:`M` of the form given in :eq:`measurement_ovariance` to produce the matrix :math:`C` that is stored in WsfTrack's measurement covariance field.
+
+Covariance Matrix Types in AFSIM
+================================
+
+Although there are an unlimited number of possible covariance matrix types, AFSIM only recognizes two types that are passed in WsfTracks as measurement covariances or state covariances (products of Kalman Filters).  One of these is the form expressed in  :eq:`covariance_matrix_pos`, which only includes position uncertainties.  The other form provides both position and velocity uncertainties in :math:`x, y`, and :math:`z`, and is expressed by a 6x6 matrix:
+
+.. math::
+   :label: covariance_matrix_pos_vel
+
+   \bold{C^\prime} =
+   \left[ {\begin{array}{rrrrrr}
+   \sigma_{xx}             & \sigma_{xy}        & \sigma_{xz}   & \sigma_{xv_x}   & \sigma_{xv_y}   & \sigma_{xv_z}   \\
+   \sigma_{yx}             & \sigma_{yy}        & \sigma_{yz}   & \sigma_{yv_x}   & \sigma_{yv_y}   & \sigma_{yv_z}   \\
+   \sigma_{zx}             & \sigma_{zy}        & \sigma_{zz}   & \sigma_{zv_x}   & \sigma_{zv_y}   & \sigma_{zv_z}   \\
+   \sigma_{v_xx}           & \sigma_{v_xy}      & \sigma_{v_xz} & \sigma_{v_xv_x} & \sigma_{v_xv_y} & \sigma_{v_xv_z} \\
+   \sigma_{v_yx}           & \sigma_{v_yy}      & \sigma_{v_yz} & \sigma_{v_yv_x} & \sigma_{v_yv_y} & \sigma_{v_yv_z} \\
+   \sigma_{v_zx}           & \sigma_{v_zy}      & \sigma_{v_zz} & \sigma_{v_zv_x} & \sigma_{v_zv_y} & \sigma_{v_zv_z}
+   \end{array}} \right]
+
+where :math:`v_x`, :math:`v_y`, and :math:`v_z`, represent the components of the tracked target's perceived velocity vector.
+   
+Weighted Average Fusion of Covariances
+======================================
+
+Using AFSIM's :ref:`weighted average fusion<fusion_methods.weighted_average>`, fusion of covariance matrices is performed when  covariances are obtained from two separate raw tracks.  This is done according to eq. 8.3.3-15 of ref. 1 (covariance fusion equation):
+
+.. math::
+   :label: covariance_fusion_equation
+
+   C = C^i(C^i + C^j)^{-1} C^j
+
+where :math:`C^i` and :math:`C^j` represent covariance matrices from the two distinct raw tracks, and :math:`C` is the fused covariance stored in the state covariance field of the local track.
+
+A more intuitive form of :eq:`covariance_fusion_equation` is obtained by using the inverse of the covariance matrices (called the information matrix):
+
+.. math::
+   :label: information_matrix
+
+   I   \equiv  C^{-1}
+
+   I^i \equiv (C^i)^{-1}
+
+   I^j \equiv (C^j)^{-1}
+
+In which form, the covariance fusion equation becomes:
+
+.. math::
+   :label: information_fusion_equation
+
+   I = I^i + I^j
+
+Visualization of Covariance Matrices
+====================================
+
+The three dimensional covariance of the form in :eq:`covariance_matrix_pos` can be represented as an ellipsoid centered on the track's estimated location and oriented according to the transform that diagonalizes the covariance :eq:`diagonalization`.  This representation is useful as a visualization aid and is supported in AFSIM script using the :class:`Ellipsoid` and :class:`WsfDraw` script classes.  For example, a script that provides this visualization for track measurement covariances is as follows::
+
+   script void DrawCovariance(WsfTrack aTrack)
+      WsfDraw draw = {};
+      draw.SetId(aTrack.TrackId().Number());
+      draw.Erase(aTrack.TrackId().Number());
+      draw.BeginLines();
+      draw.Vertex(aTrack.Originator());
+      draw.Vertex(aTrack.Target());
+      draw.End();
+      WsfCovariance PWCS = aTrack.MeasurementCovariance(); // The WCS-oriented covariance from the track
+      draw.SetColor(1.0, 0.0, 0.0, 0.6);
+      WsfGeoPoint trackLocation = aTrack.CurrentLocation();
+      
+      if (PWCS.IsValid() && aTrack.LocationValid())
+      {
+          double S = 100; // Scale factor to make small ellipsoids easier to see
+          Ellipsoid e = PWCS.EllipsoidNED();  // NED-referenced ellipsoid representation of the covariance
+          draw.BeginEllipsoid(e.OrientationHeadingDeg(), // See documentation.
+                              e.OrientationPitchDeg(),
+                              e.OrientationRollDeg(),
+                              e.SemiAxisForward() * S,
+                              e.SemiAxisSide() * S,
+                              e.SemiAxisUp() * S);
+          draw.Vertex(trackLocation);                  
+          draw.End();                 
+      }               
+   end_script

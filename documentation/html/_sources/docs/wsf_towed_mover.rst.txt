@@ -1,0 +1,143 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TOWED_MOVER
+---------------
+
+.. model:: mover WSF_TOWED_MOVER
+
+    .. parsed-literal::
+
+     mover :model:`WSF_TOWED_MOVER`
+
+        :ref:`Platform_Part_Commands` ...
+
+        // `Mover Commands`_
+
+        update_interval_ ...
+
+        // `Towed Mover Commands`_
+
+        tow_length_ ...
+        reel_out_speed_ ...
+        reel_in_speed_ ...
+        reel_in_at_absolute_time_ ...
+        reel_in_time_after_deployed_ ...
+        restore_quantity_ ...
+        follow_lead_trajectory_ ...
+        azimuth_relative_to_lead_ ...
+        elevation_relative_to_lead_ ...
+     end_mover
+
+Overview
+========
+
+:model:`WSF_TOWED_MOVER` implements a mover that is towed by a lead platform.  The towed platform follows the lead platform's path as long as it is deployed.  Script examples are shown for :class:`WsfTowedMover`.
+
+Special Considerations
+======================
+
+* The towed asset platform must be defined having a mover type of WSF_TOWED_ASSET.
+* The towed asset is treated as a WSF_EXPLICIT_WEAPON type and must be 'Fired' to be added to the simulation
+  environment.
+* The lead platform must contain a <weapon-system-type> for a WSF_EXPLICIT_WEAPON that contains the towed asset
+  platform type.
+* The towed asset is deployed until both, a reel in time and a reel in speed, are set.
+* The towed asset platform will be removed from the simulation if the lead platform is killed.
+* Ensure that the 'update_interval' of the lead platform is not too large. Otherwise the towed asset may have to make
+  some drastic moves to attain the prescribed spatial relationship.
+
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+   will be called only when it is necessary to determine the position of the containing platform.
+
+   Default: 0.25 seconds unless overridden by the specific mover implementation.
+
+Towed Mover Commands
+====================
+
+.. command:: tow_length <length-value>
+
+   Specifies the desired distance between the lead platform and the towed asset.
+
+   Default: 500.0 meters
+
+.. command:: reel_out_speed <time-value>
+
+   Specifies the speed or rate at which the towed asset is reeled out from the lead platform.  While being reeled out, the
+   state is set to REELING_OUT.  When the desired tow length has been reached, the state is set to DEPLOYED and the
+   distance is maintained.
+
+   Default: 5.0 meters/second
+
+.. command:: reel_in_speed <time-value>
+
+   Specifies the speed or rate at which the towed asset is to be reeled back onto the lead platform.  If not set, the
+   towed asset will be deployed and remain in the simulation until killed or until the lead platform is removed from the
+   simulation.
+
+   Default: 0.0 meters/second
+
+.. command:: reel_in_at_absolute_time <time-value>
+
+   Defines the absolute simulation time to start reeling the towed asset back onto the lead platform.  A reel in rate must
+   be set.  Use 'reel_in_speed' or a script command to set the reel in rate for the towed asset.
+
+   Default: 0.0 seconds
+   WsfTowedMover script commands to set the reel in start time: SetStartReelInTimeAbsolute, SetStartReelInTimeRelative or
+   SetReelInTimeAfterDeploymentRelative.
+
+   WsfTowedMover script commands to set the reel in rate: SetReelInRateMPS
+
+.. command:: reel_in_time_after_deployed <time-value>
+
+   Specifies the speed or rate at which the towed asset is to be reeled back onto the lead platform after the towed asset
+   has been fully deployed.
+
+   Default: 0.0 seconds
+
+.. command:: restore_quantity <boolean-value>
+
+   If set to 'true', the quantity remaining for the towed asset is reset to the initial loadout after the towed asset was
+   reeled out, deployed and then reeled back onto the lead platform.  This allows for an unlimited number of towed
+   launches.
+
+   Default: false
+
+.. command:: follow_lead_trajectory <boolean-value>
+
+   If set to 'true', the towed asset will follow the lead platform's trajectory. The towed asset's state is taken from the lead
+   platform's state history, with the time offset calculated by dividing the tether length by the lead platform's speed. If set
+   to 'false', the towed asset will follow as though it were rigidly attached, fixed in the lead
+   platform's entity coordinate system for a given deployed tether length and desired relative geometry (specified with the
+   azimuth_relative_to_lead_ and elevation_relative_to_lead_ commands.
+
+   Default: true
+
+.. command:: azimuth_relative_to_lead <angle-value>
+
+   Towed asset azimuth with respect to the lead platform, when follow_lead_trajectory_ flag is not set. Value must be in range
+   [-90 deg, 90 deg] with 0 corresponding to the -X axis in the lead platform's entity coordinate system, and positive values
+   counter-clockwise.
+
+   Default: 0.0 deg
+
+.. command:: elevation_relative_to_lead <angle-value>
+
+   Towed asset elevation with respect to the lead platform. Value must be in range
+   [-90 deg, 90 deg], with positive elevation corresponding
+   to -Z direction of the lead platform's entity coordinate system.
+
+   Default: 0.0 deg

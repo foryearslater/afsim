@@ -1,0 +1,127 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RPJ_EFFECT
+--------------
+
+.. model:: effect WSF_RPJ_EFFECT
+
+    .. parsed-literal::
+
+       effect <effect-name> WSF_RPJ_EFFECT
+          :command:`electronic_warfare_effect` Commands
+          :model:`WSF_PULSE_EFFECT` Commands
+          :model:`WSF_REPEATER_EFFECT` Commands
+          :model:`WSF_POWER_EFFECT` Commands
+          :model:`WSF_RADIUS_EFFECT` Commands
+
+          jamming_pulse_density_ *<value>*
+          samples_per_detection_ *<value>*
+          minimum_jammer_to_noise_threshold_ *<db-ratio-value>*
+          jammer_gain_table_
+             jammer_to_noise_ratio_ *<ratio>*
+                pulse_density_to_jamming_gain_ *<ratio>* *<db-ratio-value>*
+                **...**
+             **...**
+                **...**
+          end_jammer_gain_table
+       end_effect
+
+    This base effect type can be included in the :command:`electronic_attack` technique block as one
+    of the many available effects for a given technique. The commands listed below are the base-type commands that can be
+    specified in the effect block for this effect type.
+
+.. command:: coherency_ratio  <value> 
+   
+   Specifies the ratio of pulses that are coherently processed by the victim's receiver. Divides the power between the
+   coherent and noise jammer power by this ratio.
+   
+   Default: 0.0
+
+.. command:: jamming_pulse_density  <value> 
+   
+   Specifies the pulse density of the jamming signal in range [0,1] to use for this radar type.
+   
+   Default: 0.1
+
+.. command:: samples_per_detection  <value> 
+   
+   Specifies the number of pulse samples used in a single detection attempt for a target (e.g., number of Fast Fourier
+   Transform, Integration bins used by the radar). Must be greater than 1.
+   
+   Default: :command:`number_of_pulses_integrated <WSF_RADAR_SENSOR.number_of_pulses_integrated>` for :model:`WSF_RADAR_SENSOR` types, 1
+   for all other types
+
+.. command:: minimum_jammer_to_noise_threshold  <db-ratio-value> 
+   
+   Specifies the minimum jammer-to-noise ratio that this effect is able to effect this radar type's receiver.
+   
+   Default: 0.0 dB 
+
+.. command:: jammer_gain_table  ... end_jammer_gain_table
+   :block:
+   
+   This block defines the jammer gain this effect exhibits as a function of the jammer-to-noise ratio and the pulse
+   density present (i.e., achieved from the input jammer pulse density) in the victim's receiver.
+
+   .. command:: jammer_to_noise_ratio  <db-ratio-value> 
+   
+       Specifies the jammer-to-noise ratio the following set of pulse_density_to_jamming_gain_
+       is valid for. This input can be repeated for
+       multiple jammer-to-signal input values as required.
+       
+       Default: 0.0 dB
+
+   .. command:: pulse_density_to_jamming_gain  <ratio> <db-ratio-value>
+   
+       Specifies the jammer power gain factor on the receiver for the achieved pulse density at the victim receiver. This
+       input can be repeated for multiple pulse_density_to_jamming_gain input values for a given jammer_to_noise_ratio as
+       required. Pulse density input range [0.0,...1.0]. The gain lookup values are interpolated for pulse density's that fall
+       between two values in the table. A pulse_density of 0.0 is automatically mapped to a jammer_gain of -300.0 dB in the
+       tables but can be overridden by the input.
+       
+       Default: 0.1 0.0 dB
+
+
+.. end::
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data 
+    :block:
+
+    Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this
+    technique for a given system type. Default data can be set up for system types not defined using the "default" string
+    as the system type.
+
+    .. parsed-literal::
+
+     system_type_data_ <system-type-name>
+        :model:`WSF_PULSE_EFFECT` Commands
+        :model:`WSF_POWER_EFFECT` Commands
+        :model:`WSF_REPEATER_EFFECT` Commands
+        :model:`WSF_RADIUS_EFFECT` Commands
+
+        jamming_pulse_density_ *<value>*
+        samples_per_detection_ *<value>*
+        minimum_jammer_to_noise_threshold_ *<db-ratio-value>*
+        jammer_gain_table_
+           jammer_to_noise_ratio_ *<ratio>*
+              pulse_density_to_jamming_gain_ *<ratio>* *<db-ratio-value>*
+              **...**
+           **...**
+              **...**
+        end_jammer_gain_table
+     end_system_type_data
+
+    <system-type-name>
+        A string input of the system-type the following data applies to, valid values are
+        **[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will
+        be applied for the given system-type.
+   

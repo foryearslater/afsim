@@ -1,0 +1,118 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_2.1.0:
+
+WSF 2.1.0 - 4 Mar 2017
+----------------------
+
+General
+=======
+
+* **(Issue #131)** Renaming of *wsf_exec* to *mission*
+* **(Issue #170 & #181)** Renaming of *wsf_ide* to *wizard*
+* Renaming *weasel* to *engage*
+* Updated and revised the :doc:`Building AFSIM Applications <../developer/build_instructions>` page.
+* **DEPRECATED** WSF_6DOF_MOVER, please use the new WSF_P6DOF mover or one of the other movers available.
+* **DEPRECATED** Visual Studio 2010 support and gcc compiler versions less than 4.8 in support of C++11 features.
+* **Upcoming DEPRECATION** Visual Studio 2013 Support, to support full C++11 Compliance. GCC 4.x Support.
+
+Known Issues
+============
+
+* **sensor_plot** horizontal_map may in some cases crash when creating sedit files.
+* Linux 32-bit builds currently not supported due to 3rd party library issues for **Wizard** and **Warlock** (i.e. GUI based applications).
+* The shortest path is not being found correctly when using a road mover on a route network.
+
+Corrections
+===========
+
+* **(Issue 36)** Fixed several issues related to the use of :class:`WsfPlatform.SwapMover`. The new mover could be initialized twice and it was not guaranteed to have the correct initial kinematic state. This caused some unexpected discontinuities.
+* **(Issue #56)** Fixed an issue where the OTH radar was not using a section of code that was calculating the power. Unsure of whether this was intentional or not. Added back in as it seemed to make sense to do the calculation, but unable to verify due to lack of documentation reference.
+* **(Issue #64) (MANTIS #174)** Fixed multiple problems with high density track/jam field not getting set correctly caused by changes to the DisBeam class. Additionally, the maximum_track_jam_entries field in the dis_interface block was being ignored.
+* **(Issue #65) (MANTIS #146)** Fixed issue in :ref:`esa_pattern<antenna_pattern.esa_pattern>` causing segmentation fault in sensor_plot executable.
+* **(Issue #68) (MANTIS #189)** Improved correlation accuracy and fixed an issue with the :command:`nearest neighbor correlator<track_manager.correlation_method>`.
+* **(Issue #70) (MANTIS #188)** Fixed issue with invalid signature for :model:`WSF_QUANTUM_TASKER_PROCESSOR` custom allocator.
+* **(Issue #76) (MANTIS #178)** Fixed issue with platform script method WithinZoneOf method not working correctly. This error was introduced in v2.0.
+* **(Issue #77) (MANTIS #180)** Fixed issue with oblate earth perturbation calculation in the :model:`WSF_SPACE_MOVER`.  This issue only pertains to the oblate_earth option in the mover (not the standard two-body option).
+* **(Issue #78) (MANTIS #140)** Fixed issue with draw command not working with routes or route networks.
+* **(Issue #79) (MANTIS #87, #138)** Corrected issue with malformed directed energy PDUs sent over the :command:`dis_interface`.  Also corrected an issue where new engagement IDs were being issued for the same directed energy engagements.
+* **(Issue #85)** Fixed an issue with the SENSOR_DETECTION_CHANGED event not properly being executed in the case that a sensor mode changes was made and the target was not detected by the new the event would not be called properly.
+* **(Issue #88) (MANTIS #156)** Fixed an issue where the script compiler would not generate an error when a script method was called without an argument list (e.g.: 'Foo' instead of 'Foo()').
+* **(Issue #90)** Fixed an issue where some movers were not defining a default spatial domain, so the default of 'land' was being used. This prevented a platform using those movers, which are typically considered in the 'air' domain, from being seen by sensors that were configured to ignore all targets but those in the 'air' domain. :model:`WSF_KINEMATIC_MOVER`, :model:`WSF_FIRES_MOVER` and :model:`WSF_FORMATION_FLYER` were changed to use 'air' as their default domain.
+* **(Issue #96) (MANTIS #179)** Fixed issue in :command:`csv_event_output` substituting the %d, %D and %T to the output_directory for multiple runs (i.e. monte-carlo)
+* **(Issue #97) (MANTIS #177)** Fixed issue with :method:`WsfEM_Interaction.TargetLocation` in :class:`WsfEM_Interaction` when used with an interaction without a target, e.g. :model:`WSF_ESM_SENSOR` interaction.
+* **(Issue #104)** Fixed several issues uncovered during the implementation of the space launch enhancements (Issue 104 in Enhancements_). UtEntity::GetSpeed() was not returning consistent values when ECI coordinates were used. It would only return ECI as long as a WCS/NED velocity accessor did not intervene. Also, the derivation of some input values in :model:`WSF_GUIDED_MOVER` could be ambiguous for some (but not all) cases involving sea level and vacuum thrust and specific impulse inputs. Some user definitions may be affected.
+* **(Issue #113)** Fixed an issue with sensor_plot executable crashing when a detection chance was unsuccessful due to geometric issues and a jamming related variable was being output.
+* **(Issue #116)** Corrected issue with the :command:`_.receiver` command :command:`_.receiver.check_terrain_masking` not being available for the :command:`_.transmitter` also via the added method: :command:`_.transmitter.check_terrain_masking`.
+* **(Issue #129)** Fixed a segmentation fault issue that can occur when a platform is deleted and its component list is being cleaned up and accessed.
+* **(Issue #136)** Fixed an issue with the jamming perception logic for multi-beam radars, where the :ref:`WSF_RADAR_SENSOR.Jamming_Perception_Commands` were not being copied to other beams from beam 1.
+* **(Issue #137)** Fixed documentation errors in the :class:`WsfWeapon` script class, specifically the :method:`WsfWeapon.Fire` and :method:`WsfWeapon.FireSalvo` methods. Removed the `Fire(WsfTrack aTrack, int aWeaponId)` method from the documentation, as this is a special form used by developers, and renamed this script method to `FireWithWeaponId(WsfTrack aTrack, int aWeaponId)` so users would not call the Fire method with two arguments expecting a salvo.
+* **(Issue #140) (MANTIS #100)** Fixing an issue with the :class:`WsfPlatformPart.GroupMemberOf` method not working when the argument is a :class:`WsfGroup`.
+* **(Issue #142)** Fixed issue with :command:`_.transmitter.pulse_repetition_frequency` and :command:`_.transmitter.pulse_repetition_interval` not allowing the first input to be read in properly in the table.
+* **(Issue #143)** Fixed issue with *Ballistic_Missile_Shootdown_Demo* segmentation fault on Windows 10 / Linux OS.
+* **(Issue #146) (MANTIS #199)** Fixed segmentation fault when erasing unbid jobs was performed in certain ripr based scenarios.
+* **(Issue #151) (MANTIS #42)** Added to the documentation for :method:`WsfTaskManager.FireAt` method to describe the conditions when the method will return 'false'. Fixed issue with the code not returning false when the user specifies which comm device to use and it cannot be found.
+* **(Issue #152) (MANTIS #110)** Fixed multiple segmentation faults in *ENGAGE* application on Windows and Linux.
+* **(Issue #162)** Fixed issue with DIS interface :command:`dis_interface.incoming_weapon_transfer` command not filtering correctly when using the "from" option.
+* **(Issue #166) (MANTIS #207)** Fixed issue with the :model:`WSF_SURFACE_WAVE_RADAR_SENSOR` being missing from the typelists.
+* **(Issue #169)** Fixed issue with comm devices causing segmentation fault when adding or removing links.
+* **(Issue #194) (MANTIS #219)** Fixed issue with :command:`csv_event_output` for **MOVER_GUIDANCE_PHASE_CHANGED** event not being able to output to file due to code mis-spelling.
+* **(Issue #195) (MANTIS #204)** Fixed issue with :command:`water_type` not properly parsing inputs.
+* **(MANTIS #205)** Fixed issue where the sensor's :command:`reported_target_type<WSF_ESM_SENSOR.reported_target_type>` block was not properly parsing the :command:`default_time_to_declare<WSF_ESM_SENSOR.reported_target_type.default_time_to_declare>` and :command:`default_time_to_reevaluate<WSF_ESM_SENSOR.reported_target_type.default_time_to_reevaluate>`.
+* **(MANTIS #225)** Fixed issue where wsf grammar file incorrectly defines articulated_part component.
+* **(MANTIS #227)** Fixed issue with :class:`script_struct` scripts that were defined in global **script_variables .. end_script_variables** could not be accessed properly.
+* **(MANTIS #228)** Fixed segmentation fault when specifying a named command chain with the perception processor defined and removing a platform from the simulation. This issue number also relates to Issue #137 above for the other Fire at methods being mis-represented.
+* **(MANTIS 229)** Fixed multiple issues with :command:`zone` and :command:`zone_set`. The calculation of the centroid of a :command:`zone_set` with less than three zones defined would fail, often with a segmentation fault.
+* **(MANTIS #230)** Fixed an issue with :model:`WSF_QUANTUM_TASKER_PROCESSOR` when using a :command:`generator<WSF_QUANTUM_TASKER_PROCESSOR.generator>` where the task resource generation was being improperly referenced in code causing undefined values to be output to :command:`observer` calls.
+* **(MANTIS #234)** Fixed segmentation fault in core applications when creating a sensor that derives from WsfSensor class without defining a beam class.
+* **(MANTIS #243)** Fixed segmentation fault in the **mission** application when using the **wizard** debugger and viewing variables within an object that is non-existent, bad or null.
+* **(MANTIS #246)** Fixed an issue with the :command:`weapon` :command:`maximum_request_count<weapon.maximum_request_count>` not allowing the default value of 1 to be entered in the command input.
+* Changed debug message from an error to a warning in the :model:`WSF_RADIO_TRANSCEIVER` when trying to find a route through a network with devices that may have incompatible transmitters and receivers.
+
+Enhancements
+============
+
+* **(Issue #19)** Added the wsf_cyber library, an optional library adding cyber warfare modeling capabilities to the AFSIM framework. An overview with further details are found in :ref:`Cyber Overview<cyber_overview>`.
+* **(Issue #24)** Added the wsf_space library, adding :ref:`orbital maneuvers<orbital_maneuver_types>`, :doc:`rendezvous<../rendezvous>` and :doc:`intercept<../intercept>`, and :doc:`orbit determination fusion<../orbit_determination_fusion>`.  A fully scripted :class:`WsfOrbitalManeuver` maneuvering capability is also provided, as is the  draw_orbits capability to visualize orbit changes from maneuvers and orbit determination results.
+* **(Issue #35 & 70)** Added in new :model:`WSF_COHERENT_SENSOR_PROCESSOR` for allowing coherent operations of multiple sensors.
+* **(Issue #48)** Added the :ref:`Sector Scan Sensor Scheduler<scheduler_commands.sector_scan>`, providing a sensor scanning function that is more temporally correct for choosing detection targets than the default scheduler, and it provides for more accurate sensor visualizations.
+* **(Issue #60)** Added new :model:`WSF_TRIMSIM_PROCESSOR` by refactoring the geolocation_model capability in the :model:`WSF_ESM_SENSOR` into this processor. This refactoring allows the :model:`WSF_TRIMSIM_PROCESSOR` to be utilized by other passive type sensors. This processors requires that the sensor(s) have the :ref:`error_model.trimsim_error` :command:`error_model` defined also to operate and apply errors.
+* **(Issue #62)** Provide the ability to set and get multiple possible target types in :ref:`WsfTrack`.  Each possible type will have an assigned probability of the target's actually being of the that type.
+* **(Issue #69)** Added the :command:`error_model` to provide for other sensor error models to be added to sensors in lieu of the standard model. Currently only one type has been converted, the :ref:`bistatic_error<error_model.bistatic_error>`, which was a refactor of the bistatic_mode ... end_bistatic_mode block in the :ref:`sensor mode commands<sensor.Common_Mode_Commands>`.
+* **(Issue #104)** Additions for space launch operations. Updated :model:`WSF_GUIDED_MOVER` to support ECI coordinates and the construction of space launch vehicles. Added failure probabilities for engine ignition and stage separation. Added the :model:`WSF_ORBITAL_LAUNCH_COMPUTER` launch computer and the :class:`WsfOrbitalLaunchComputer` script class to support orbital launch decisions. Added a new :command:`weapon_tools` module :model:`ORBITAL_LAUNCH_COMPUTER_GENERATOR` that generates the input data for the launch computer.
+* **(Issue #106)** Fixed some bugs in :ref:`WSF_RADAR_SENSOR.Jam_Strobe_Detector` and updated to more closely match the SUPPRESSOR implementation.
+* **(Issue #109)** Added in the capability to toggle the receiver to transmitter masking checks via :command:`_.receiver.check_transmitter_masking`, which is especially useful for bistatic interactions that do not require RF line-of-sight with the transmitter for operation.
+* **(Issue #115)** Added :class:`RandomSeed()<WsfSimulation.RandomSeed>` script method to :class:`WsfSimulation`.
+* **(Issue #147) (MANTIS #136)** Added Impulse unit type.
+* Added new :model:`WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY` weapon effect that computes lethality using a launch Pk table lookup with the altitude, speed, cross range, and down range of the target.
+* **(Issue #150)** Add the option **to_target** to :model:`WSF_WEAPON_TRACK_PROCESSOR` command :command:`turn_on_sensor <WSF_WEAPON_TRACK_PROCESSOR.turn_on_sensor>` to turn on a weapon's sensor based on range or time to target's current position, not just range and time to target's **intercept_point** or **after_launch**.
+* **(MANTIS #242)** Added in IADS C2 is a plugin which enables users to quickly set up a flexible, robust command & control (C2) network for an IADS scenario without having to write complex scripted C2 behaviors from scratch.
+
+Developer Notes
+===============
+
+* **(MANTIS #145)** Fixed a logic issue in sphinx_build.cmake to exclude duplicates properly.
+* **(MANTIS #169)** Fixed issue with installation of MTT grammar file and util installation of python script and visualizers folder.
+* **(Issue #41)** Implemented some C++11 standards into code base. CMake files update to use c++0x or c++11 flags as necessary. UtThread class has been updated to use the STL thread library. 64-Bit compiler errors and warnings fixed.
+* **(Issue #41)** Changed default wsf plugin directory from bin/plugins to bin/wsf_plugins.
+* Fixed issue in checking is_64bit macro in swdev_project.cmake
+* Added a wsf_qt plugin that registers an application extension which runs a Qt event loop (e.g. for a GUI) on a thread separate from the simulation (main thread). This allows a WSF extension to create a visualization with direct access to display and manipulate scenario and simulation data.
+* Move existing plugins directory in wsf/plugins to wsf_plugins directory. Move certain projects over to plugins (note that some plugins may also build as extension if WSF_PLUGIN_BUILD is false).
+* Removed the UtFunction.hpp in favor of using C++11 std::function.
+* Removed UtCallbackP.hpp to update to new methods in C++11. e.g. variadic templates and std::function.
+* Changed naming of weasel project to engage.
+* Added in unit testing capabilities into framework utilizing `UnitTest++ <https://github.com/unittest-cpp>`_ that should be pre-installed by the end user.
+* Removed the **AAA_AUTO_TEST** build target in lieu of using the **<application-name>_AUTO_TEST** target. These targets will be under the AUTO_TEST folder in your Visual Studio projects list.
+* **(MANTIS #198)** Added in Little/Big Endian defines for ARM processor to GenIODefs.hpp. Still more stuff required though for full ARM processor compiling, e.g. cmake and other settings.
+* **(Issue #161)** Removed UtMutex class from util project in lieu of using std::mutex and std::recursive_mutex directly from the C++ STL library.
+* Fixed issue with slow default command chain use due to the GetDefaultName() function calling the UtDictionary every time to convert. Created global variable to speed up access.
+* Changed the signature of the pure virtual UtScriptAccessible::GetScriptClassName() in the UtScriptAccessible class. This change may cause issues if not updated in derived classes with casting scripts properly.

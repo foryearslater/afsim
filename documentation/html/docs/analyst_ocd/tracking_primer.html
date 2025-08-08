@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Tracking Primer &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Tracking Uncertainties and Covariances" href="tracking_uncertainties_and_covariances.html" />
+    <link rel="prev" title="Task Processor Primer" href="task_processor_primer.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="tracking_uncertainties_and_covariances.html" title="Tracking Uncertainties and Covariances"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="task_processor_primer.html" title="Task Processor Primer"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="tracking-primer">
+<h1>Tracking Primer<a class="headerlink" href="#tracking-primer" title="Permalink to this headline">¶</a></h1>
+<section id="track-flow">
+<h2>Track Flow<a class="headerlink" href="#track-flow" title="Permalink to this headline">¶</a></h2>
+<p>Unlike platforms in WSF, tracks are not instantiated entities in a simulation.  Typically, tracks are created as a
+direct result of a sensor on a platform detecting another platform.  If a platform can ‘see’ another platform by way of
+a sensor, a ‘track’ is created. The created ‘track’ has information that describes how it was created, what sensor
+created it, what the target is, where the target is located, etc.  Each track has truth as well as perceived
+information about the ‘sensed’ target platform.</p>
+<img alt="../../_images/primer_sensed_platform1.png" src="../../_images/primer_sensed_platform1.png" />
+<p>On a platform, sensors ordinarily send their tracks to a track processor.  For simplicity, the combination of track
+manager and track processor is defined to be the track processor. A track manager in the track processor stores the
+track and also makes the track information available to other platforms as well as to the platform’s task processor(s).
+The track processor sends track updates to designated onboard or offboard parties at specified intervals. The track
+processor can fuse tracks or provide raw tracks and even delete tracks if the sensor is no longer providing sensor
+track updates. In some cases, the track processor is also referred to as a “data manager”.</p>
+<img alt="../../_images/primer_sensor_to_trackproc2.png" src="../../_images/primer_sensor_to_trackproc2.png" />
+<p>The track processor retains the tracks for the task processor to read.  In WSF, a task processor is programmable in
+that a user can write unique platform scripts to make behaviors based on what tracks are in the tracklist within the
+track manager/processor. A task processor is made up of a finite state machine (a subject not covered in this paper).</p>
+<img alt="../../_images/primer_trackproc_to_taskproc3.png" src="../../_images/primer_trackproc_to_taskproc3.png" />
+<p>Important to note is that a task processor only works on one track at a time.  Many occurrences of the state machine
+within the task processor can occur on a platform if multiple tracks are being provided by the track manager/processor.</p>
+<img alt="../../_images/primer_multiple_states4.png" src="../../_images/primer_multiple_states4.png" />
+</section>
+<section id="track-manager-vs-track-processor">
+<h2>Track Manager vs Track Processor<a class="headerlink" href="#track-manager-vs-track-processor" title="Permalink to this headline">¶</a></h2>
+<p>Every platform that deals with tracks should have a track manager.  At the platform level, the
+track_managerend_track_manager block configures track maintenance and fusion for the platform’s master track list.  If
+a platform only has one track processor it should also be the master track processor else the master track list will
+not be accessible via scripting.  The distinction between the track manager and track processor becomes readily
+apparent when multiple track processors exist.  If a platform has multiple track processors, a subordinate
+track_manager end_track_manager block within a track processor defines an alternate track list that is maintained
+separately from the master track list. In this example, the second track processor provides tracks only from sensor2
+and it would maintain an alternate track list distinct from the master.</p>
+<img alt="../../_images/primer_alternate_tracklist5.png" src="../../_images/primer_alternate_tracklist5.png" />
+</section>
+<section id="linking-sensors-comms-and-processors-to-pass-tracks">
+<h2>Linking Sensors, Comms, and Processors to Pass Tracks<a class="headerlink" href="#linking-sensors-comms-and-processors-to-pass-tracks" title="Permalink to this headline">¶</a></h2>
+<p>In order for an object on a platform (sensor, comm, or processor) to provide or send tracks to another object on the
+same platform, the use of ‘internal_link’ or ‘processor &lt;processor-name&gt;’ subcommands are used.  These subcommands
+specify that messages that originate from this object are to be routed to the specified comm or processor object on the
+same platform.</p>
+<p>To pass tracks offboard (to a separate platform), the use of ‘report_to’ or ‘external_link’ is used.  In the example
+shown, the track processor named ‘data_mgr’ does not have an internal_link to the task processor.  This is because task
+processors have implicit access to track managers within WSF.  The FIGHTER definition in this example is simplified
+for illustrative purposes.</p>
+<img alt="../../_images/primer_int_ext_links6.png" src="../../_images/primer_int_ext_links6.png" />
+</section>
+<section id="types-of-track-names-and-definitions">
+<h2>Types of Track Names and Definitions<a class="headerlink" href="#types-of-track-names-and-definitions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>Local Track</strong></dt><dd><p>A local track is any track stored in a track processors local track list.  If a track processor is a master, the local
+track list is identical to the master track list.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Raw or Non-local Track</strong></dt><dd><p>A raw track is a preprocessed track that has not been stored in a processors track list</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Fused Tracks</strong></dt><dd><p>A fused track is a track that has been processed by the <a class="reference internal" href="../track_manager.html#track_manager" title="track_manager"><span class="xref wsf wsf-command">track_manager</span></a> which has been correlated and then fused by
+tracking algorithms.  The default is to use perfect correlation and then replacement track fusion.  Several track
+fusion algorithms are available to be used, but that is a discussion beyond this paper.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Filtered Tracks</strong></dt><dd><p>A sensor or track manager can <a class="reference internal" href="../filter.html#filter" title="filter"><span class="xref wsf wsf-command">filter</span></a> tracks by using a Kalman, Alpha Beta, or Alpha Beta Gamma filter.  A filter
+converts the measurement’s range, bearing and elevation data into an X-Y-Z position.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">These</span> <span class="n">basic</span> <span class="n">definitions</span> <span class="n">do</span> <span class="ow">not</span> <span class="n">define</span> <span class="n">the</span> <span class="n">relationship</span> <span class="n">to</span> <span class="n">each</span> <span class="n">other</span><span class="o">.</span>
+<span class="n">For</span> <span class="n">instance</span><span class="p">,</span> <span class="n">a</span> <span class="n">local</span> <span class="n">track</span> <span class="n">can</span> <span class="n">also</span> <span class="n">be</span> <span class="n">a</span> <span class="n">fused</span> <span class="n">track</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="using-track-information-in-a-task-processor">
+<h2>Using Track Information in a Task Processor<a class="headerlink" href="#using-track-information-in-a-task-processor" title="Permalink to this headline">¶</a></h2>
+<p>As mentioned previously, a task processor is programmable in that a user can create WSF scripts to create platform
+behaviors based on received tracks.  The behavior could be to do things such as fire a weapon, modify its route, send a
+message, or to assign a task to a subordinate based on tracks.  Within a task processor, WSF provides access to the
+local track it is currently operating on by the predefined <strong>TRACK</strong> variable ONLY IF THE SCRIPT IS CALLED WITHIN THE
+CONTEXT OF A STATE MACHINE.  Simply stated, the <strong>TRACK</strong> variable is not available to be used by other processors or
+scripts or even the Task Processor itself if the defined script is part of an on_update/on_initialize/on_message
+script.  The script must be specifically called from the state machine to use the <strong>TRACK</strong> variable.
+Example statements of using a <strong>TRACK</strong> variable in a task processor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">weapon</span><span class="o">.</span><span class="n">CueToTarget</span><span class="p">(</span><span class="n">TRACK</span><span class="p">);</span> <span class="c1"># command a weapon to cue to a TRACK</span>
+<span class="k">return</span> <span class="p">(</span><span class="n">TimeSinceWeaponLastTerminatedFor</span><span class="p">(</span><span class="n">TRACK</span><span class="o">.</span><span class="n">TrackId</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">);</span> <span class="c1"># return a boolean</span>
+<span class="k">return</span> <span class="p">(</span><span class="n">WeaponsActiveFor</span><span class="p">(</span><span class="n">TRACK</span><span class="o">.</span><span class="n">TrackId</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span> <span class="c1"># return a boolean</span>
+</pre></div>
+</div>
+</section>
+<section id="using-track-information-outside-of-a-task-processor">
+<h2>Using Track Information outside of a Task Processor<a class="headerlink" href="#using-track-information-outside-of-a-task-processor" title="Permalink to this headline">¶</a></h2>
+<p>In the cases of other processors and scripts (outside of a task processor), track information must be extracted by
+casting and assigning a variable using the complex type WsfTrack first.  These are a couple of example statements of
+casting and setting a variable named ‘track’ using the complex type WsfTrack:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">Track</span><span class="p">();</span> <span class="c1"># msg previously defined</span>
+<span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">aPlatform</span><span class="o">.</span><span class="n">CurrentTargetTrack</span><span class="p">();</span> <span class="c1"># aPlatform previously defined</span>
+</pre></div>
+</div>
+<p>Script example setting the track variable and using it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfLocalTrackList</span> <span class="n">trackList</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MasterTrackList</span><span class="p">();</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">trackList</span><span class="o">.</span><span class="n">TrackCount</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">{</span>
+   <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;T=&quot;</span><span class="p">,</span> <span class="n">TIME_NOW</span><span class="p">,</span> <span class="s2">&quot; Turning sensor on&quot;</span><span class="p">);</span>
+   <span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">trackList</span><span class="o">.</span><span class="n">TrackEntry</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+   <span class="n">sar</span><span class="o">.</span><span class="n">CueToTrack</span><span class="p">(</span><span class="n">track</span><span class="p">);</span>
+   <span class="n">sar</span><span class="o">.</span><span class="n">TurnOn</span><span class="p">();</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="track-information">
+<h2>Track Information<a class="headerlink" href="#track-information" title="Permalink to this headline">¶</a></h2>
+<p>Depending on how a track was created, information or ‘attributes’ about the track can be extracted.  The following
+illustrates how information can be extracted to set variables from track data in a task processor (see the <a class="reference internal" href="../script/wsftrack.html#WsfTrack" title="WsfTrack"><span class="xref wsf wsf-class">WsfTrack</span></a>
+for the complete list):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">string</span> <span class="n">targetname</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">TargetName</span><span class="p">();</span> <span class="c1"># Gets target name (truth data)</span>
+<span class="n">double</span> <span class="n">targetlat</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">Latitude</span><span class="p">();</span> <span class="c1"># Gets target latitude</span>
+<span class="n">double</span> <span class="n">targetlon</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">Longitude</span><span class="p">();</span> <span class="c1"># Gets target longitude</span>
+<span class="n">double</span> <span class="n">lastupdate</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">TimeSinceUpdated</span><span class="p">();</span> <span class="c1"># Gets last track updated time</span>
+<span class="n">string</span> <span class="n">targettype</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">TargetType</span><span class="p">();</span> <span class="c1"># Gets target type (truth data)</span>
+<span class="n">double</span> <span class="n">reltgtalt</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">Altitude</span><span class="p">()</span> <span class="o">-</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">Altitude</span><span class="p">();</span> <span class="c1"># Gets track alt less my alt</span>
+<span class="n">double</span> <span class="n">trackquality</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">TrackQuality</span><span class="p">();</span> <span class="c1"># Gets track quality</span>
+<span class="nb">int</span> <span class="n">signalcount</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">SignalCount</span><span class="p">();</span> <span class="c1"># Gets how many times we detected this emitter</span>
+</pre></div>
+</div>
+<p>Also note that several script types have access to track information besides WsfTrack.  For instance, <a class="reference internal" href="../script/wsfplatform.html#WsfPlatform" title="WsfPlatform"><span class="xref wsf wsf-class">WsfPlatform</span></a>
+has several methods available to extract track information such as the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">double</span> <span class="n">slantrangetotarget</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">SlantRangeTo</span><span class="p">(</span><span class="n">TRACK</span><span class="p">);</span>
+<span class="n">double</span> <span class="n">relativebearingtotarget</span> <span class="o">=</span> <span class="n">RelativeBearingTo</span><span class="p">(</span><span class="n">TRACK</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="track-truth-vs-perception">
+<h2>Track Truth vs Perception<a class="headerlink" href="#track-truth-vs-perception" title="Permalink to this headline">¶</a></h2>
+<p>Track information within the simulation can either be based on truth or perceived information.  Perceived information
+about a track contains sensor sigma (location) errors as well as track velocity errors.  If a track was created using a
+perfect geometric sensor, the track location information is also based on truth and not perception.  Other information,
+such as the target name and type will also be based on truth whether the sensor is providing perfect track location or
+not.</p>
+</section>
+<section id="tracks-from-non-sensors">
+<h2>Tracks from Non Sensors<a class="headerlink" href="#tracks-from-non-sensors" title="Permalink to this headline">¶</a></h2>
+<p>It was stated earlier that tracks typically are created from sensors.  However, tracks can be created by other means.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>Prebriefed Tracks</strong></dt><dd><p>Tracks can be created in scenario input files (<a class="reference internal" href="../track.html#track" title="track"><span class="xref wsf wsf-command">track</span></a> end_track block).  For instance, a bomber has a target located
+(such as a building or sam site) that is the assigned target (or targets) that the platform is to attack before the
+simulation starts.  Prebriefed tracks represent those targets.  Obviously, prebriefed tracks do not have all of the
+same attributes as a track generated by a sensor.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Tracks made from Platforms</strong></dt><dd><p>In WSF, tracks can be created with a method called MakeTrack() from the WsfTrack type.  For example, a commander
+flying in formation can create a track of all subordinate platforms:</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foreach</span> <span class="p">(</span><span class="n">WsfPlatform</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">Subordinates</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">))</span>
+  <span class="p">{</span>
+  <span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">MakeTrack</span><span class="p">();</span>
+  <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Platform:       &quot;</span><span class="p">,</span> <span class="n">sub</span><span class="o">.</span><span class="n">Name</span><span class="p">());</span>
+  <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Slant  Range:   &quot;</span><span class="p">,</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">SlantRangeTo</span><span class="p">(</span><span class="n">track</span><span class="p">));</span>
+  <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Ground Range:   &quot;</span><span class="p">,</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">GroundRangeTo</span><span class="p">(</span><span class="n">track</span><span class="p">));</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>Another way to create a track at the simulation level:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">WsfSimulation</span><span class="o">.</span><span class="n">FindPlatform</span><span class="p">(</span><span class="s2">&quot;target_1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">MakeTrack</span><span class="p">();</span> <span class="c1"># target_1 must exist</span>
+</pre></div>
+</div>
+<p>Or course, a track of a platform could be made:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MakeTrack</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="script-types-to-access-track-information">
+<h2>Script Types to Access Track Information<a class="headerlink" href="#script-types-to-access-track-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>WsfTrack()</strong></dt><dd><p><a class="reference internal" href="../script/wsftrack.html#WsfTrack" title="WsfTrack"><span class="xref wsf wsf-class">WsfTrack</span></a> is the base object that defines a track.  Several examples have already been shown.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>WsfTrackList()</strong></dt><dd><p>The script type <a class="reference internal" href="../script/wsftracklist.html#WsfTrackList" title="WsfTrackList"><span class="xref wsf wsf-class">WsfTrackList</span></a> holds the references to all of the WsfTrack objects.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>WsfLocalTrack()</strong></dt><dd><p><a class="reference internal" href="../script/wsflocaltrack.html#WsfLocalTrack" title="WsfLocalTrack"><span class="xref wsf wsf-class">WsfLocalTrack</span></a> represents a processor’s local perception of a track, and is the combination of one or more
+contributing WsfTrack objects. The contributing tracks are sometimes called ‘raw’ tracks and represent the products of
+a sensor or some other platform. The WsfLocalTrack contains all the information that WsfTrack does but adds additional
+contributor information. The predefined TRACK variable is a WsfLocalTrack.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>WsfLocalTrackList()</strong></dt><dd><p><a class="reference internal" href="../script/wsflocaltracklist.html#WsfLocalTrackList" title="WsfLocalTrackList"><span class="xref wsf wsf-class">WsfLocalTrackList</span></a> is a container of references to WsfLocalTrack objects.  If only one track manager is present on
+a platform and it contains the master track list, the local track list will be the same as the master track list. Here
+is an example on how to access the container:</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfLocalTrackList</span> <span class="n">trackList</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MasterTrackList</span><span class="p">();</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>WsfTrackId()</strong></dt><dd><p><a class="reference internal" href="../script/wsftrackid.html#WsfTrackId" title="WsfTrackId"><span class="xref wsf wsf-class">WsfTrackId</span></a> objects are used to identify tracks as defined by WsfTrack and WsfLocalTrack.  Each track has a track
+ID associated with it to uniquely identify tracks.  To access the track ID, the use of TrackId() is used.  Example uses
+would be:</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfTrackId</span> <span class="n">trackid</span> <span class="o">=</span> <span class="n">TRACK</span><span class="o">.</span><span class="n">TrackId</span><span class="p">();</span>
+<span class="n">WsfTrackId</span> <span class="n">currenttargetid</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">CurrentTarget</span><span class="p">();</span><span class="c1">#CurrentTarget method from WsfPlatform</span>
+</pre></div>
+</div>
+<p>For further explanation of task processors, see <a class="reference internal" href="task_processor_primer.html"><span class="doc">Task Processor Primer</span></a>.</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/tracking_primer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="tracking_uncertainties_and_covariances.html" title="Tracking Uncertainties and Covariances"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="task_processor_primer.html" title="Task Processor Primer"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

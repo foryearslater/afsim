@@ -1,0 +1,105 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+electronic_warfare_effect
+-------------------------
+
+.. command:: electronic_warfare_effect
+   :block:
+
+EW Effect Aggregation: :ref:`Electronic_Warfare_Effect_Aggregation`
+
+.. parsed-literal::
+
+ # Defining a new type:
+ electronic_warfare_effect *<name>* *<type-name>*
+    debug_
+    target_protection_type_ ...
+    allowed_target_set_ ...
+    rejected_target_set_
+ end_electronic_warfare_effect
+
+ # Adding or editing an instance inside an 'electronic_warfare_technique' or 'technique' block:
+ ...
+    effect *<name>* *[<type-name>]*
+       debug_
+       target_protection_type_ ...
+       allowed_target_set_ ...
+       rejected_target_set_
+    end_effect
+ ...
+
+* <name> : Name of the Electronic Warfare effect type or instance to be created.
+* <type-name> : Name of an existing or predefined Electronic Warfare effect type whose definition will be used as the
+  initial definition of the new type or instance.
+
+Overview
+========
+
+An electronic_warfare_effect provides the ability to define the effect(s) associated with a specific
+:command:`electronic_warfare_technique`.
+
+.. _electronic_warfare_effect.Commands:
+
+Commands
+========
+
+.. command:: debug
+   
+   Specifies to use a debug mode to output debug data to the standard output.
+   
+   **Default** false or off
+
+.. command:: target_protection_type  <target-protection-type>
+   
+   Specifies the target protection type to use for an EA effect. Sets the jamming power based on target protection type
+   specified.
+
+   **<target-protection-type>** : A string input that defines the target protection type to apply, valid values are listed
+   in the table below:
+
+      +--------------------------+--------------------------------------------------------------------------------------------------+
+      | <target-protection-type> | Description                                                                                      |
+      +==========================+==================================================================================================+
+      | **"all_targets"**        | Default value. All targets will be allowed and protected against. If this is defined             |
+      |                          | then the rejected_target_list and allowed_target_set_ if set will be checked also.               |
+      +--------------------------+--------------------------------------------------------------------------------------------------+
+      | **"self_protect"**       | Only the jamming target owning the :command:`_.transmitter` will be protected by this effect.    |
+      +--------------------------+--------------------------------------------------------------------------------------------------+
+      | **"non_self_protect"**   | Only other targets besides the jamming platform will be protected by this effect.                |
+      +--------------------------+--------------------------------------------------------------------------------------------------+
+
+   **Default** all_targets
+
+.. note::
+      Precedence order of target allow/rejection is as follows: target_protection_type_ ->
+      rejected_target_list -> allowed_target_list. The first one to fail (i.e., reject the target and not allow
+      the effect) will cause the next one to not be evaluated.
+
+.. command:: allowed_target_set  ... end_allowed_target_set
+
+Specifies the allowed target set that an EA effect will be applied to, all other targets will have their jamming power
+set to 0.0 watts.
+
+.. note::
+      Precedence order of target allow/rejection is as follows: target_protection_type_ ->
+      rejected_target_list -> allowed_target_list. The first one to fail (i.e., reject the target and not allow
+      the effect) will cause the next one to not be evaluated.
+
+.. command:: rejected_target_set  ... end_allowed_target_set
+
+Specifies the rejected target set that an EA effect will not be applied to and have their jamming power set to 0.0
+watts. All other targets will be allowed.
+
+.. note::
+      Precedence order of target allow/rejection is as follows: target_protection_type_ ->
+      rejected_target_list -> allowed_target_list. The first one to fail (i.e., reject the target and not allow
+      the effect) will cause the next one to not be evaluated.

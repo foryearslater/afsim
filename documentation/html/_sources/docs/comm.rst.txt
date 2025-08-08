@@ -1,0 +1,332 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+comm
+----
+
+See :ref:`Predefined_Comm_Types`
+
+.. contents::
+   :local:
+
+Script Class: :class:`WsfComm`
+
+.. command:: comm <name-or-type> <base-type-name> ... end_comm
+   :block:
+
+   .. parsed-literal::
+
+    comm_ <name-or-type> <base-type-name>
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :command:`protocol` Commands ...
+      ... :command:`medium` Commands ...
+
+      # `Common Device Characteristic Commands`_
+
+      transmit_mode_ [ intermittent | continuous ]
+      modifier_category_ <category-name>
+
+      # `Common Datalink Commands`_
+
+      channels_ <integer-value>
+      queue_type_ [ fifo | lifo | priority ]
+      queue_limit_ <queue-limit>
+      purge_interval_ <time-value>
+      retransmit_attempts_ <integer-value>
+      retransmit_delay_ <time-value>
+
+      # `Common Router Association Commands`_
+
+      router_name_ <router-name>
+      gateway_ <platform-name> <comm-name>
+
+      # `Common Network Addressing Commands`_
+
+      network_name_ [ <network-name>  | <local:master> | <local:slave> ]
+      network_address_ <address>
+      address_ <address>
+      link_ <platform-name> <comm-name>
+      local_link_ <comm-name>
+      link_address_ <address>
+
+      # `Common Physical Layer Commands`_
+
+      propagation_speed_ <random-speed-reference>
+      transfer_rate_ <random-data-rate-reference>
+      packet_loss_time_ <random-time-reference>
+
+      # `Frequency Selection Commands`_
+
+      frequency_select_delay_ <time-value>
+
+    end_comm
+
+Overview
+========
+
+A comm object represents a device over which messages can be sent between platforms.
+
+The following commands are available for all :command:`comm` devices, but they are not necessarily used by all :command:`comm` models, or in the case of the router specific commands, on all protocol implementations.
+
+Common Device Characteristic Commands
+=====================================
+
+.. command:: transmit_mode [ intermittent | continuous ]
+
+   Defines if the device transmits intermittently or continuously. This is currently applicable only to
+   devices that transmit over the air (e.g., :model:`WSF_RADIO_TRANSCEIVER`). **intermittent** indicates
+   the device radiates only when a message is actually being transmitted. **continuous** indicates the
+   devices radiates as long as it is 'on'. **continuous** would be used to model systems such as television
+   or radio broadcast stations.
+
+   This is used by :model:`WSF_PASSIVE_SENSOR` to determine the mechanism to be used for detecting signals from this device.
+
+   **Default** intermittent
+
+.. command:: modifier_category <category-name>
+
+   The category that maps to the attenuation value defined in the :command:`zone_set`.  Setting this value
+   tells the communications device to evaluate zones for attenuation. See :ref:`zone-based_attenuation` for
+   more information.
+
+Common Datalink Commands
+========================
+
+The following commands are typically available for usage via the datalink protocol, which in the simulation context is
+used to handle the scheduling and delivery of messages.
+
+.. command:: channels <integer-value>
+
+   Specify the number of channels available to this comm. This value is intended to represent the number of simultaneous
+   transmissions (multiplexing) the comm is able to support, per its hardware definition. This value is used by the datalink layer
+   to determine how many concurrent messages the datalink layer will forward to the physical layer for transmission.
+
+   Note that this value is not related in any way to the medium definition of channel capability. As such, if the number
+   of channels available to the comm hardware definition exceeds those available for the medium being used for transmission,
+   the extraneous messages will fail transmission and ultimately return to the datalink layer for potential retransmission
+   (if indicated to do so). If the datalink layer is not indicated to attempt retransmission of failed messages,
+   these messages will fail transmission immediately. It is highly suggested that the user provide values for
+   retransmit_attempts_ and retransmit_delay_ if not using the default number of channels.
+
+   **Default** 1 (channel)
+
+.. command:: queue_type [ fifo | lifo | priority ]
+
+   Specify the queuing methodology for the device's transmit queue.
+
+   * fifo (first in first out)
+   * lifo (last in first out)
+   * priority (highest priority is the first out)
+
+   **Default** fifo
+
+.. command:: queue_limit <queue-limit>
+
+   Specify the maximum size of the transmit queue. If the queue grows to the maximum size, subsequent
+   messages are dropped.
+
+   **Default** -1 (infinite)
+
+.. command:: purge_interval <time-value>
+
+   Indicates a period of time in which messages will be removed from the queue (dropped). Once the queue begins
+   filling with pending messages for transmission, this value will be used to determine how long the messages are
+   retained before being removed from the queue.
+
+   **Default** 0 (no purging of messages)
+
+.. command:: retransmit_attempts <integer-value>
+
+   Indicates the number of times a message will attempt transmission before being purged from the queue (dropped).
+
+   **Default** 0 (no retransmit attempts)
+
+.. command:: retransmit_delay <time-value>
+
+   Indicates the amount of time to wait between attempts to send a message from the queue after a previously failed
+   attempt. Take care when using this value with the purge_interval, as if the purge_interval is shorter than the
+   retransmit_delay, messages may be purged before attempting retransmit.
+
+   **Default** 0 (no delay between transmission attempts)
+
+Common Network Addressing Commands
+==================================
+
+These commands are used to define the address of a comm. By extension, an address also defines network
+membership of a comm object. Finally, these commands may also define the connectivity (external to
+default connectivity behavior) of comm objects to other comm objects for the purpose of message routing.
+Support for usage of explicit and static linking commands depends on the protocol implementation.
+
+.. warning::
+   It is recommended to use static addressing of communication devices by explicitly specifying the address of comms
+   sharing a network across distributed simulations.
+   See :doc:`analyst_ocd/communications_primer` for more details.
+
+.. command:: network_name [ <network-name>  | <local:master> | <local:slave> ]
+
+   Define the network name that this device belongs to. Network names are strings that map directly to a
+   value used to generate a 32-bit IPv4 address. The use of IPv4 does not infer that AFSIM is only capable of
+   IP based communications, it is simply an internally consistent method to identify all comm objects in the
+   simulation. Usage of the IPv4 address to infer anything beyond an identifier and common membership in a
+   "network" or "group" depends entirely on the comm type implementation itself. Due to support for legacy AFSIM behavior, all comm devices on the same network are assumed to have connectivity to every other object in the same network at the beginning of the simulation with default settings (mesh network topology).
+
+   Communication to other comm objects not part of the same network require explicit definition of a link between the objects. If a comm object is not provided network membership or addressing via this command, the network_address command, or the address command, then the comm object is assumed to belong to a generic network in AFSIM referred to as the "default" network, and will be provided an address based on the first available, unused address.
+
+   .. note:: The commands network_name, network_address, and address are exclusive. Only one of these should be used on any given comm.
+
+   The **<local:master>** and **<local:slave>** are special case network names used to create simple
+   networks based on the explicit commander-subordinate relationships as defined by the commander keyword
+   in platform definition. This, in effect, creates a network between a commander and its subordinates.
+   Example:
+
+   .. parsed-literal::
+
+    # Creates a network named master:CMDR
+    platform CMDR WSF_PLATFORM
+       add comm  name  :ref:`Predefined_Comm_Types`
+          network_name **<local:master>**
+       end_comm
+    end_platform
+    platform SUB-1 WSF_PLATFORM
+       commander CMDR
+       add comm  name  :ref:`Predefined_Comm_Types`
+          network_name **<local:slave>**
+       end_comm
+    end_platform
+    platform SUB-2 WSF_PLATFORM
+       commander CMDR
+       add comm  name  :ref:`Predefined_Comm_Types`
+          network_name **<local:slave>**
+       end_comm
+    end_platform
+
+   Default **default**
+
+.. command:: network_address <address>
+
+   Define the device's network address. If the address provided belongs to an existing network, this comm
+   device will join that network and be provided the lowest available address not currently assigned in
+   that network. If the address is not currently managed by a network, a network will be created based on a
+   combination of the parent platform and comm name (network-name = platform-name.comm-name) and this comm
+   added to the first available address.
+
+   .. note:: The commands network_name, network_address, and address are exclusive. Only one of these should be used on any given comm.
+
+.. command:: address <address>
+
+   The address command specifies a specific, user provided address for this comm device. If the address is
+   managed by a network, this comm device will join that network - otherwise a new network will be created
+   that is based on the name of the platform owning the comm device, and the comm device (e.g.
+   platform-name.comm-name). Note that this command may fail and halt simulation input processing if the
+   address provided is already utilized elsewhere, which can happen via use of dynamic addressing based on
+   other objects being assigned addresses.
+
+   .. note:: The commands network_name, network_address, and address are exclusive. Only one of these should be used on any given comm.
+
+.. command:: link <platform-name> <comm-name>
+
+   This command provides a communications link between this comm device and the device specified. Any
+   number of links may be defined on any given comm object. This link is established both via truth in the
+   network manager and locally as a perception-based link (for the legacy protocol only - other protocols MAY
+   use this command on a case-by-case basis, but are not required to). Be mindful that links may be removed during the
+   simulation if the comm implementation reports failed links for removal, such as when a
+   WSF_RADIO_TRANSCEIVER is out of the EM interaction limits to communicate with another comm, or if the particular
+   network object used to enforce topologies does not support the link provided via this input.
+
+.. command:: local_link <comm-name>
+
+   This command is equivalent to the link_ command for comms on the same platform. As such, only the linking comm name
+   is required to establish this link, and is convenient for platform_type definitions where the platform name is not
+   available in that context.
+
+.. command:: link_address <address>
+
+   This command performs the same actions as the link command above, except it uses a specific address to
+   create the link to. This assumes that knowledge of the comm address is known at the time of input, as
+   other addressing commands are dynamic in nature.
+
+Common Router Association Commands
+==================================
+
+These commands relate specifically to the comm interface and its relation to the router object.
+
+.. command:: router_name <router-name>
+
+   Specifies by name the router this comm is assigned to as an interface. Router must be
+   located on the same platform instance as the comm.
+
+   **Default** Use the default router available on every platform instance in AFSIM
+
+.. command:: gateway <platform-name> <comm-name>
+
+   Specifies the remote interface to be used as the gateway for this comm instance. Since AFSIM allows
+   multiple links per comm interface, the exact destination interface must be specified for gateway
+   usage. This value will only be used if this comm is designated as the gateway interface to be
+   used by the router object.
+
+   **Default** no gateway specification, no gateway usage
+
+Common Physical Layer Commands
+==============================
+
+These commands define the physical characteristics associated with the comm device, (not including the
+transmitter and receiver definitions).
+
+.. command:: propagation_speed <random-speed-reference>
+
+   Sets the speed of message propagation. This is a pass-through command that defines the propagation
+   speed for the :command:`medium` associated with this comm object, provided for legacy compatability.
+
+   This command is not available for usage in the context of the comm object if the user has explicitly
+   specified a medium type. In such cases, the propagation_speed (if available depending on the medium
+   type) must be defined via the medium definition.
+
+   **Default** c (speed of light constant)
+
+.. command:: transfer_rate <random-data-rate-reference>
+
+   Sets the amount of data that can be transmitted by this comm over a set period of time. Any message
+   being sent by this comm uses this value for its transfer rate. Any uninitialized value for transfer_rate
+   is interpreted to be instantaneous transfer for most comm implementations.
+
+   This command defines the maximum transfer rate available for the comm object based on its hardware
+   model specification. Any subsequent explicit usage of the :command:`medium` object may have its own
+   unique value associated with a transfer rate (or a completely different method of determining this
+   value). In such cases where these values differ, any subsequent transmission using this comm device
+   is always the smaller of these two values, such that the transfer rate may be limited by either
+   the comm model itself, or the medium it is using.
+
+   **Default** -1 (instantaneous transfer)
+
+.. command:: packet_loss_time <random-time-reference>
+
+   Sets a time that adds to the delay in every transmission by this comm. Although indicated as a delay due
+   to packet loss, this value can be used to introduce a delay to the normal transmission time of any comm
+   device for any reason, or an aggregate delay due to modelling multiple sources of transmission delay.
+
+   This command is not available for usage in the context of the comm object if the user has explicitly
+   specified a medium type. In such cases, the packet loss time (if available depending on the medium
+   type) must be defined via the medium definition.
+
+   **Default** 0 (no delay)
+
+Frequency Selection Commands
+============================
+
+.. command:: frequency_select_delay <time-value>
+
+   Specifies the delay when selecting between alternate frequencies as defined on the    :command:`_.transmitter`.
+
+   **Default** 0.0 seconds
+
+
+.. include:: _comm.wsf_mil.txt

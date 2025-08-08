@@ -1,0 +1,83 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.1:
+
+WSF 1.6.1 - 29 June 2009
+------------------------
+
+General
+=======
+
+* Updated the :ref:`MTT` as a result of system-level tests conducted
+  since the release of version 1.6.0
+
+* Route mover types are now updated to the new mover code (previously activated with **WSF_NEW_MOVER**).  The old
+  mover implementations are accessible by setting the environment variable **WSF_OLD_MOVER** with a non-empty value.
+
+* The build processes have been updated so 64-bit executables can optionally be generated on Linux systems.
+
+Corrections
+===========
+
+* Corrected a couple of issues with the :command:`sensor_plot's vertical_map <vertical_map>` command that caused
+  incorrect results to be generated if the sensor under test was airborne. The first dealt with the incorrect conversion
+  of negative downrange values and the second was incorrectly converting the target position from ground-range/altitude
+  to world coordinates.
+
+  .. note::
+
+      This is NOT the command used to generate the often-seen vertical coverage diagrams. That command is
+      :ref:`vertical_coverage <sensor_plot_vertical_coverage>`.
+
+* Corrected an issue where additional sensor gains for :model:`WSF_RADAR_SENSOR`'s
+  (:model:`integration_gain <WSF_RADAR_SENSOR>`, :model:`operating_loss <WSF_RADAR_SENSOR>`,
+  :model:`adjustment_factor <WSF_RADAR_SENSOR>`, and
+  :command:`_.transmitter.pulse_compression_ratio`) were not being taken into account for coherent
+  :command:`electronic_attack` jamming techniques such as :model:`WSF_FALSE_TARGET_EFFECT`. These gains are now
+  multiplied into the coherent jammer power and provided in the :command:`event_output`.
+
+* **(CR 6707)** Corrected an issue that was introduced in release version 1.5.4 where an antenna pattern's tables
+  for some :command:`antenna_pattern` types was being copied multiple times in memory for each instance causing
+  **excessive memory usage**. Updated to share the tables where applicable to improve memory usage and memory limitation
+  issues.
+
+* **(CR 6716)** Modified the :command:`ALARM <antenna_pattern>` antenna pattern file reader so it could process
+  pattern files from Windows systems when running on Linux systems.
+
+* Corrected problem where outgoing DIS entity state velocity and acceleration were set to zero whenever a platform's
+  appearance was non-zero.
+
+* Corrected an issue when using false-targets where the beam pointing was often incorrect when performing an
+  interaction on individual blips when the radar's two-way interaction failed on the blip. Corrected to allow for
+  updating of the beam positioning even upon failure so the interaction between the jammer and the radar is correct and
+  (sidelobe) antenna gain is looked up properly.
+
+Enhancements
+============
+
+* Added the :command:`terrain.validate_terrain` to the :command:`terrain` block. This will check all of the supplied DTED data
+  for reasonable values.
+
+* Modified :command:`sensor_plot` to honor the :command:`sensor.initial_mode` selection of a sensor if the 'mode_name'
+  command was not specified in the sensor_plot function block. Prior to this the first mode would be selected even if
+  :command:`sensor.initial_mode` was specified.
+
+* **(CR 6711)** Added the :command:`WSF_ESM_SENSOR.detection_probability` block to :model:`WSF_ESM_SENSOR`, which allow the
+  definition of the probability of detection as a function of the received signal strength.
+
+* Added in :method:`ActiveSpots <WsfWeapon.ActiveSpots>` and :method:`MaximumSpots <WsfWeapon.MaximumSpots>` script methods in
+  :class:`WsfWeapon` to allow for more script functionality, control and insight into :model:`WSF_RF_JAMMER` objects at the script
+  level.
+
+* Updated the :model:`WSF_RPJ_EFFECT` to default to the :model:`WSF_RADAR_SENSOR`
+  :model:`number_of_pulses_integrated <WSF_RADAR_SENSOR>` input if the :model:`WSF_RPJ_EFFECT`
+  :model:`samples_per_detection <WSF_RPJ_EFFECT>` is omitted.

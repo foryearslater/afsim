@@ -1,0 +1,87 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfInterceptManeuver
+---------------------
+
+.. class:: WsfInterceptManeuver inherits WsfOrbitalManeuver
+
+**Input type:** :doc:`intercept<../intercept>`
+
+WsfInterceptManeuver_ is used to attempt to intercept the future location of a :class:`local track<WsfLocalTrack>` using a :class:`WsfTargetManeuver`.  The maneuver is complete when the intercept is achieved.
+
+Several conditions must be met before the maneuver can succeed:
+
+.. _conditions:
+
+* The track id must reference a valid :class:`WsfLocalTrack` with both valid location and velocity.
+* The transfer orbit can only be hyperbolic if the mover executing the maneuver supports hyperbolic propagation.
+* The transfer orbit must not intersect earth.
+* When optimizing, a valid solution must exist for the provided `optimize option`_.
+* The expended energy for the transfer must be less than the available delta-v.
+
+  .. note:: The targeting algorithm is direct (less than one orbit).  Phasing orbits are not considered.
+
+Optimize Option
+***************
+
+An argument to the first :method:`Construct<WsfInterceptManeuver.Construct>` method must contain one of the following options:
+
+.. method:: int EARLIEST_TIME()
+
+Attempt to optimize the maneuver such that it will execute at the earliest possible time, up to the maximum time specified in the :method:`Construct<WsfInterceptManeuver.Construct>` method.
+
+.. method:: int LEAST_DELTA_V()
+
+Attempt to optimize the maneuver such that it will execute with the least possible delta-v, up to the maximum specified in the :method:`Construct<WsfInterceptManeuver.Construct>` method, or the :method:`current available amount<WsfSpaceMover.AvailableDeltaV>`, whichever is less.  Optimization will proceed up to the the maximum time specified in the :method:`Construct<WsfInterceptManeuver.Construct>` method.
+
+Methods
+*******
+
+.. method:: static WsfInterceptManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, int aOptimizeOption, double aMaximumDeltaTime, double aMaximumDeltaV)
+
+   Create a WsfInterceptManeuver_ with the intent of finding an optimal solution in delta-v or time, using the following:
+
+* **aCondition**:  A specific :class:`condition<WsfOrbitalEventCondition>`.
+* **aTargetPoint**: A :class:`WsfTargetPoint` specifying the target of this maneuver.
+* **aOptimizeOption**: The return value from an `optimize option`_ listed above.
+* **aMaximumDeltaTime**: The maximum time after the maneuver begins to consider in computing a solution.
+* **aMaximumDeltaV**: The maximum delta-V to consider when computing a solution.
+
+.. method:: static WsfInterceptManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, WsfOrbitalOptimizationCost aCost, double aMaximumDeltaTime, double aMaximumDeltaV)
+
+   Create a WsfInterceptManeuver_ that will find a solution that minimizes the provided cost, using the following:
+
+* **aCondition**:  A specific :class:`condition<WsfOrbitalEventCondition>`.
+* **aTargetPoint**: A :class:`WsfTargetPoint` instance specifying the target of this maneuver.
+* **aCost**: A :class:`WsfOrbitalOptimizationCost` instance specifying the cost function to minimize.
+* **aMaximumDeltaTime**: The maximum time after the maneuver begins to consider in computing a solution.
+* **aMaximumDeltaV**: The maximum delta-V to consider when computing a solution.
+
+.. method:: static WsfInterceptManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, double aDeltaTime)
+
+   Create a WsfInterceptManeuver_ without optimizing.  If all prerequisite conditions_ are met, the intercept will occur at the specified time after the current time when executed.
+
+* **aCondition**:  A specific :class:`condition<WsfOrbitalEventCondition>`
+* **aTargetPoint**: A :class:`WsfTargetPoint` specifying the target of this maneuver.
+* **aDeltaTime**: The time after the maneuver begins when the rendezvous is planned to occur.
+
+.. method:: WsfTargetPoint TargetPoint()
+
+   Get the :class:`WsfTargetPoint` used to configure this maneuver.
+
+.. method:: double Tolerance()
+
+   Get the solution tolerance to use with this maneuver. The default value is 1.0e-9.
+
+.. method:: void SetTolerance(double aTolerance)
+
+   Set the solution tolerance for this maneuver to the given value.

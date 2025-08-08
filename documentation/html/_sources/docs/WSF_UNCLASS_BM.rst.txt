@@ -1,0 +1,187 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_UNCLASS_BM
+--------------
+
+.. model:: processor WSF_UNCLASS_BM
+
+**Derives From:** :model:`WSF_BATTLE_MANAGER`
+
+**Script Classes:** :class:`WsfUnclassBM`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_UNCLASS_BM`
+      :model:`WSF_BATTLE_MANAGER` Commands ...
+
+      stale_asset_time_  <time-value>
+      shot_doctrine_     [Shoot-1|Shoot-2|Shoot-Look-Shoot]
+      max_firing_time_   <time-value>
+      
+      `print_settings <#print-settings-commands>`__
+         valid_units_           <boolean-value>
+         valid_unit_details_    <boolean-value>
+         invalid_unit_details_  <boolean-value>
+      end_print_settings
+      
+      `weapon_table <#weapon-table-commands>`__
+         speed_attributes_
+            <name> <speed-value> [ < <= ] <speed-value>
+         end_speed_attributes
+
+         altitude_attributes_
+            <name> <length-value> [ < <= ] <length-value>
+         end_altitude_attributes
+
+         weapon_rows_
+            target_pref priority  [<integer>] [<target type string> "Any"] [<target subtype string> "Any"] [speed attribute] [altitude attribute] [min pk] [<AI priority (integer)> <SAM priority (integer)> <Other priority (integer)>]
+         end_weapon_rows
+      end_weapon_table
+      
+      `scoring_factors <#scoring-factors-commands>`__
+         weapon_type      <integer>
+         weapon_subtype   <integer>
+         intercept_range  <integer>
+         intercept_time   <integer>
+         pk               <integer>
+         workload         <integer>
+      end_scoring_factors
+   end_processor
+
+Overview
+========
+
+:model:`WSF_UNCLASS_BM` is a script base class for the HELIOS-based Assign Weapons WSPT battle manager. All scripting for this battle manager follows the exact scripting that the HELIOS battle manager supports.
+
+Script Interface
+================
+
+:model:`WSF_UNCLASS_BM` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`. It also derives from the :model:`WSF_BATTLE_MANAGER` that provides common functionality to the IADS C2 battle manager classes.
+
+
+.. include:: commands/unclass_battle_manager_commands.txt
+.. include:: commands/print_setting_commands.txt
+.. include:: commands/weapon_table_commands.txt
+
+
+Weapon Table Example
+====================
+
+::
+
+   weapon_table
+      speed_attributes
+         attrib slow 0 kts  < 250 kts
+         attrib med  250 kts < 600 kts
+         attrib fast 600 kts < 2000 kts
+      end_speed_attributes
+
+      altitude_attributes
+         attrib low  0 ft     < 1000 ft
+         attrib med  1000 ft  < 30000 ft
+         attrib high 30000 ft < 100000 ft
+      end_altitude_attributes
+
+      weapon_rows
+         target_pref priority 1 "UCAV" "Any" med high  0.7    0    1   0
+      end_weapon_rows
+   end_weapon_table
+
+
+
+.. include:: commands/scoring_factor_commands.txt
+
+Scoring Factors Example
+=======================
+
+::
+
+   scoring_factors
+      weapon_type      1
+      weapon_subtype   1
+      intercept_range  1
+      intercept_time   1
+      pk               1
+      workload         1
+   end_scoring_factors
+
+Unclass Battle Manager Processing
+=================================
+
+**Assign Weapons**
+
+Unclass Battle Manager weapon assignment begins by creating weapons arrays and populating them with weapon data. It builds a different weapon array for each "Pass" such that only weapons that satisfy the pass criteria are included in the weapon array. It loops through the asset arrays to find the weapons systems. For each weapon system found, the function determines whether the user has set zone usage for the weapon system if this process is associated with a weapon system, and direct subordinates. It determines the same for indirect subordinates. For all intermediate subordinates it determines if the subordinate unit is combat ready (GREEN) and determines if the intermediate subordinate uses a zone. The function then considers the weapon system for adding to one of the weapon arrays, depending on the following six pass rules (subsequent passes are unnecessary if a valid weapon is identified in an earlier pass):
+
+ Pass 1: Direct subordinate weapons that utilize a zone (missile engagement zone, fighter engagement zone, or jammer engagement zone).
+
+ Pass 2: Direct subordinate weapons that do not utilize a zone.
+
+ Pass 3: All subordinate weapons that have a direct C2 subordinate, in the chain-of-command to the subordinate weapon, which utilizes a zone.
+
+ Pass 4: All subordinate weapons that have any C2 subordinate, other than direct, in the chain-of-command to the subordinate weapon, which utilizes a zone.
+
+ Pass 5: All subordinate weapons that have no C2 subordinate, including direct, in the chain-of-command to the subordinate weapon, which utilizes a zone, or the weapon utilizes a zone.
+
+ Pass 6: All subordinate weapons that have no zones used in the chain-of-command to the subordinate weapon (weapons kinematics check will be performed during assessment).
+
+Fore each "Pass", the unclass battle manager assigns targets to the subordinate systems. If a battle manager does not have "Commit" authority, it automatically has "Delegate" authority. This means it can receive assigments from its commander and make decisions as to the subordinate unit to assign the track to. For delegation, it begins by creating a track/weapon pairings array. It then loops through the assignment array to find valid assignments. The assignment array is populated with assignments from the command authority. Assignments are skipped if they are too old, not complete, have been rejected or cancelled, or have not been disseminated. For the remaining (valid) assignments the function finds the matching master track. For this master track, the function finds the matching weapon preference from the WSPT based on the target type and sub-type. The range from the system to the track and the time for the track to reach the system (closing time) are calculated. The calculation of closing time assumes that the track is moving directly towards the system at the track's velocity. The function then loops through the weapons array. It assesses the weapons to eliminate weapons systems from consideration that have no munitions or have "stale" weapons. It calculates the Workloads for the weapon system and projects the track forward by the launch time plus the assignment delay. It loops through the weapons managers. If the weapon manager is SAM, the assignment is rejected if the projected track is inside the minimum range, outside the maximum range, or outside of the preferred PK. If the weapon system is SAM or "Other", the assignment is rejected if the track is not in line-of-sight of the weapons system. If the user has selected to use zones in the Assign Engagements Weapons Systems Preference Table, then the projected track is rejected if it is outside the zone. The same check is conducted for an intermediate C2 unit zone. If the weapon manager is AI, the weapon manager AI process is used to assess the engagement. The final step is to update the pairing record. If matches were found, assignments were made.
+
+If the processor has "Commit" authority, it loops through the master tracks and conducts the same process as for weapon delegation, with the result being pairing records for direct assignment to a weapons system.
+
+To assign weapons, the battle manager loops through the pairing array and calculates the individual weapons scores and stores the results in a pairing matrix. It then loops through each paired weapon one track at a time to find the highest Weapons Score. If the process has "Commit" authority it finds the ready assignment, sets the assignment data, commits the number of missiles according to the shot doctrine, and updates the missile records. If the process only has "Delegate" authority, it conducts the same process as for "Commit" authority but does not commit missiles.
+
+The battle manager concludes by managing existing assignments by ensuring the following:
+
+ * Active allocations have been assigned. If not, CANTCO the assignment.
+
+ * The subordinate has fired on the target within MaxFiringTime. If not, CANCEL the assignment.
+
+**Compute Weapons Score**
+
+The weapons score computation begins by setting the Weapon Score to 11 minus the target priority. This means that the highest priority target will begin with a score of 10 and the lowest, of which there could be more than one, would begin with a score of zero.
+
+A calculation is then run for each of the scoring factors that modifies the Weapon Score in sequence. A cumulative variable which is the sum of the factor weights plus one is also calculated. In the case of Weapon Type and Weapon Sub Type, the folowing equation is used:
+
+ Weapon Score = Weapon Score + Scoring Factor * (11 - Factor Value)
+
+Where:
+
+Factor Value = The numerical value applied toe the specific factor. For example, a Weapon Type of SAM may have a Factor Value of one, while a Weapon Type of AI may have a Factor Value of two.
+
+For Intercept Range scoring factor, a coefficient in the range of 0.0 to 1.0 is calculated using the following equation:
+
+ Intercept Range Coefficient = (Weapon Max Range - Target Slant Range) / Weapon Max Range;
+
+If Target Slant Range is greater than the Weapon Max Range, causing the coefficient to be negative, the coefficient is defaulted to 0.1. For all values of the coefficient greater than zero the following equation is used to update the Weapons Score:
+
+ Weapons Score = Weapons Score + Intercept Range Scoring Factor * Intercept Range Coefficient * 10
+
+For Intercept Time scoring factor, the same equations are used as for Intercept Range scoring factor, substituting Closing Time for Weapon Max Range, Intercept Time for Target Slant Range, and Intercept Time scoring factor for Intercept Range scoring factor.
+
+For WorkLoad scoring factor, the following equation is used to compute the Weapons Score:
+
+ Weapons Score = Weapons Score + Workload Scoring Factor * Workload * 10
+
+Where Workload is determined by the following equation:
+
+ Workload = (Max Assignments - Assignments Made) / Max Assignments
+
+For PK scoring factor, the following equation is used to compute the Weapons Score:
+
+ Weapons Score = Weapons Score + PK Scoring Factor * PK * 10
+
+The final Weapons Score is computed using the following equation:
+
+ Weapons Score = Weapons Score / (1 + Sum of Scoring Factors)
+
+Therefore, the cumulative weapons score is based on weighted Weapon Type, Weapon Sub Type, Intercept Range, Time to Intercept, Workload, and Probability of Kill. You can set the scoring factors to model a specific target/weapon pairing logic. For example, if a threat system makes target/weapon pairings based only on time to intercept, such that it wishes to always pair a target with the weapons system that can engage the target first, set intercept time to one and all other scoring factors to zero.
+

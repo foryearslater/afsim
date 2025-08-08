@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SOSM_atmosphere_model &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="sosm_interface" href="sosm_interface.html" />
+    <link rel="prev" title="six_dof demos with Brawler" href="six_dof_with_brawler.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="sosm_interface.html" title="sosm_interface"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_with_brawler.html" title="six_dof demos with Brawler"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sosm-atmosphere-model">
+<h1>SOSM_atmosphere_model<a class="headerlink" href="#sosm-atmosphere-model" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="SOSM_atmosphere_model">
+atmosphere_model SOSM_atmosphere_model<a class="headerlink" href="#SOSM_atmosphere_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This page describes how to create an SOSM atmosphere definition using the table model.</p>
+<p>Creating the atmosphere definition consists of three step:</p>
+<ul class="simple">
+<li><p>Acquire raw spectral atmospheric data. This is generally accomplished by executing MODTRAN. (See <a class="reference internal" href="#executing-modtran">Executing
+MODTRAN</a>)</p></li>
+<li><p>Convert raw spectral atmospheric data from the first step to a format that can be read by the SOSM. (See
+<a class="reference internal" href="#converting-modtran-output">Converting MODTRAN Output</a>)</p></li>
+<li><p>Create a the SOSM atmophere model file that references the files created in the second step. (See <a class="reference internal" href="#creating-the-atmosphere-definition-file">Creating the
+Atmosphere Definition File</a>)</p></li>
+</ul>
+<p>A pair of Perl scripts are provided with the WSF release which facilitate the use of MODTRAN in preparing the
+atmosphere tables needed by the model. These scripts are located in <em>sosm/modtran</em> and operate as follows:</p>
+<section id="executing-modtran">
+<h2>Executing MODTRAN<a class="headerlink" href="#executing-modtran" title="Permalink to this headline">¶</a></h2>
+<p>A Perl script ‘modtran_execute.pl’ is included with the standard WSF distribution in the directory <em>sosm/modtran</em>.
+This script facilitates the creation of the raw spectral atmospheric data using MODTRAN over the desired altitude,
+elevation and range values. Execute the script as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">wsf</span><span class="o">&gt;*/</span><span class="n">sosm</span><span class="o">/</span><span class="n">modtran</span><span class="o">/</span><span class="n">modtran_execute</span><span class="o">.</span><span class="n">pl</span> <span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span>
+</pre></div>
+</div>
+<p>The file ‘<em>&lt;basename&gt;</em>.def’ which indicates the observer altitudes, the line of sight elevation angle and range values
+and the MODTRAN input cards. The preparation of a ‘.def’ file requires some knowledge of MODTRAN. Several examples of
+‘.def’ files are present in the <em>sosm/modtran</em> directory. The output from this script are the files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span><span class="n">_bgr</span><span class="o">.</span><span class="n">plt</span> <span class="o">-</span> <span class="n">Background</span> <span class="n">radiance</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span><span class="n">_bgt</span><span class="o">.</span><span class="n">plt</span> <span class="o">-</span> <span class="n">Background</span> <span class="n">transmittance</span> <span class="o">*</span><span class="p">(</span><span class="n">Not</span> <span class="n">currently</span> <span class="n">used</span><span class="p">)</span><span class="o">*</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span><span class="n">_fgr</span><span class="o">.</span><span class="n">plt</span> <span class="o">-</span> <span class="n">Foreground</span> <span class="n">radiance</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span><span class="n">_fgt</span><span class="o">.</span><span class="n">plt</span> <span class="o">-</span> <span class="n">Foreground</span> <span class="n">transmittance</span>
+</pre></div>
+</div>
+<p>Note that it can take several hours to perform this process.</p>
+<p>The following observations should be noted when creating the MODTRAN input:</p>
+<ul class="simple">
+<li><p>Card 4, FLAGS(1:1) should be blank or ‘W’ (wavenumber input)</p></li>
+<li><p>Card 4, XFLAG must be set to ‘W’ (wavenumber output).</p></li>
+<li><p>Card 4, DV should be set to 20 (cm-1) unless you are also prepared to update your sensor and target models.</p></li>
+<li><p>Card 4, V1 and V2 should be a multiple of DV.</p></li>
+<li><p>The size of the output files will be directly proportional to the number of spectral samples, i.e.: ((V2 - V1) / DV)
++ 1.</p></li>
+</ul>
+</section>
+<section id="converting-modtran-output">
+<h2>Converting MODTRAN Output<a class="headerlink" href="#converting-modtran-output" title="Permalink to this headline">¶</a></h2>
+<p>Once MODTRAN has been run to create the necessary files, the files must be converted into tho format that can be used
+by SOSM. This can be accomplished by using the Perl script <em>modtran_convert.pl</em> that is supplied with the standard
+WSF distribution in the directory <em>sosm/modtran</em>. Execute the script as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">modtran_convert</span><span class="o">.</span><span class="n">pl</span> <span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*</span>
+</pre></div>
+</div>
+<p>The script takes the files produced by the previous step and produces the tables needed by SOSM:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">bgr</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">bgt</span> <span class="o">*</span><span class="p">(</span><span class="n">Not</span> <span class="n">currently</span> <span class="n">used</span><span class="p">)</span><span class="o">*</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">fgr</span>
+<span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">fgt</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-the-atmosphere-definition-file">
+<h2>Creating the Atmosphere Definition File<a class="headerlink" href="#creating-the-atmosphere-definition-file" title="Permalink to this headline">¶</a></h2>
+<p>After running the previous steps, the file ‘<em>&lt;basename&gt;</em>.txt’ should be created which contains the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">atmosphere_model</span> <span class="n">table</span>
+   <span class="n">background_radiance</span>      <span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">bgr</span>
+   <span class="n">foreground_radiance</span>      <span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">fgr</span>
+   <span class="n">foreground_transmittance</span> <span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">fgt</span>
+<span class="n">end_atmosphere</span>
+</pre></div>
+</div>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Assume you wish to create a new atmosphere type that is based on the US Standard Day atmosphere that is provided with
+the standard WSF distribution. Copy ‘sosm/modtran/us_std_day.def’ to ‘us_std_day_mod.def’ and edit as desired. Then
+execute MODTRAN:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">wsf</span><span class="o">&gt;*/</span><span class="n">sosm</span><span class="o">/</span><span class="n">modtran</span><span class="o">/</span><span class="n">modtran_execute</span><span class="o">.</span><span class="n">pl</span> <span class="n">us_std_day_mod</span>
+</pre></div>
+</div>
+<p>Convert the files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">wsf</span><span class="o">&gt;*/</span><span class="n">sosm</span><span class="o">/</span><span class="n">modtran</span><span class="o">/</span><span class="n">modtran_convert</span><span class="o">.</span><span class="n">pl</span> <span class="n">us_std_day_mod</span>
+</pre></div>
+</div>
+<p>Create the file ‘us_std_day_mod.txt’ with the following contents:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">atmosphere_model</span> <span class="n">table</span>
+   <span class="n">background_radiance</span>      <span class="n">us_std_day_mod</span><span class="o">.</span><span class="n">bgr</span>
+   <span class="n">foreground_radiance</span>      <span class="n">us_std_day_mod</span><span class="o">.</span><span class="n">fgr</span>
+   <span class="n">foreground_transmittance</span> <span class="n">us_std_day_mod</span><span class="o">.</span><span class="n">fgt</span>
+<span class="n">end_atmosphere</span>
+</pre></div>
+</div>
+<p>To use the new model in your simulation, add the following commands to your simulation input stream after all other
+sosm_interface commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sosm_interface</span>
+   <span class="n">sosm_interface</span><span class="o">.</span><span class="n">load_atmosphere</span>     <span class="n">US_STD_DAY_MOD</span> <span class="kn">from</span> <span class="nn">us_std_day_mod.txt</span>
+   <span class="n">sosm_interface</span><span class="o">.</span><span class="n">default_atmosphere</span>  <span class="n">US_STD_DAY_MOD</span>
+<span class="n">end_sosm_interface</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/sosm_atmosphere_model.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="sosm_interface.html" title="sosm_interface"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_with_brawler.html" title="six_dof demos with Brawler"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

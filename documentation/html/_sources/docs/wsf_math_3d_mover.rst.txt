@@ -1,0 +1,149 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_MATH_3D_MOVER
+-----------------
+
+.. model:: mover WSF_MATH_3D_MOVER
+
+**Script Class: N/A**
+
+.. parsed-literal::
+
+   mover :model:`WSF_MATH_3D_MOVER`
+
+      :ref:`Platform_Part_Commands` ...
+
+      ... WSF_MATH_3D_MOVER Commands_ ...
+
+      // Route Mover Commands_
+
+      use_route_ ...
+
+   end_mover
+
+Overview
+========
+
+Implements a low-fidelity air mover, much like :model:`WSF_AIR_MOVER`.  But the :model:`WSF_AIR_MOVER` was found to have
+non-smooth motion when lateral and vertical maneuvers were combined, necessitating this alternative.  The underlying
+dynamics model is essentially a quaternion orientation that is permitted to rotate only at constrained angular rates in
+inertial space, and the velocity vector is directed in the "forward" direction from this quaternion.  No aerodynamics
+or propulsion is modeled.  This permits smooth turns to be made in lateral and vertical directions.  The magnitude of
+the accelerations are determined by internal pursuit and proportional navigation gains, and the target point in three
+dimensions is determined by the :ref:`Route_Mover` waypoint-switching logic.
+
+This initial draft is not complete, and does not implement all guidance possible while switching waypoints within a
+:command:`route`.  It does respond to (Latitude, Longitude, Altitude (MSL-only)) waypoints, and honors speed commands.  It
+ignores heading, distance, time, climb rates, flight path angles, and acceleration commands.
+
+Velocity vector turn rates are constrained to the most restrictive of maximum_lateral_acceleration_,
+maximum_axial_body_roll_rate_, and maximum_axial_body_turn_rate_, and ever increasing current platform
+speed will force the platform motion to approach a straight line if maximum_lateral_acceleration_ is held
+constant.
+
+Some comments on setting appropriate velocity_pursuit_gain_ (VP) and proportional_navigation_gain_ (PN)
+values is in order.  These two gains will conflict with each other, and achieving proper values may be a trial and
+error process.  "Saturation" my occur if the velocity vector constraints (see paragraph above) are so severe that the
+requested VP or PN requested accelerations are not achievable.  Setting VP and PN to zero would be pointless, as
+platform motion would not turn to intercept the target.  Begin by setting PN to zero, and VP small, and increase VP
+until turn aggressiveness toward the target point is sufficient to intercept.  If the target point is stationary (such
+as for a fixed waypoint), calibration is complete.  For moving or accelerating target motion, pure VP will result in a
+sweeping turn to approach the target from behind.  At this time, begin increasing PN until the platform "anticipates"
+the impact point, and flies to intercept in a straight line (provided the target is also moving in a straight line). 
+In this respect, PN is "better" than VP.  The temptation is to fly only PN, with no VP, but if the target point begins
+behind the velocity vector (azimuth or elevation greater than 90 degrees), PN will settle into flying 180 degrees
+_away_ from the target.  Generally, a brief period of VP is flown to get the platform moving toward the target, and
+then VP is ramped out, while PN is ramped in, so terminal intercept is pure PN.
+
+(Only of interest to software developers, the :model:`WSF_MATH_3D_MOVER` class is a facade, and the underlying motion
+dynamics are implemented by the UtMath3D_Motion utility, which processes the input stream commands below.)
+
+.. block:: WSF_MATH_3D_MOVER
+
+Commands
+========
+
+.. command:: detailed_debug <boolean-value>
+   
+   Enables debug output to the standard output.
+
+.. command:: prefer_canopy_up <boolean-value>
+   
+   Causes the platform to roll to the local vertical at all times.  Mutually exclusive to bank_to_turn_.
+
+.. command:: bank_to_turn <boolean-value>
+   
+   Causes the platform to roll into the acceleration vector, but still prefers the vertical when not accelerating in a
+   turn.  Mutually exclusive to prefer_canopy_up_.
+
+.. command:: broach_at_sea_level <boolean-value>
+   
+   Betraying the development of this class to model torpedo motion, this flag assures that the motion must remain below
+   local sea level, once subsurface.
+
+.. command:: target_speed <speed-value>
+   
+   Once supplied, the platform will accelerate or decelerate match the target speed, subject to
+   maximum_linear_acceleration_ constraint.
+
+.. command:: initial_speed <speed-value>
+   
+   Initial linear speed.  After initialization, speed is varied to maintain target_speed_.
+
+.. command:: initial_flight_path_angle <angle-value>
+   
+   Initial flight path angle.  After initialization, flight path angle will vary to guide to desired waypoint.
+
+.. command:: maximum_linear_acceleration <acceleration-value>
+   
+   Defines the linear (velocity direction) acceleration limit constraint.
+   
+   Default: 0.25 G
+
+.. command:: maximum_lateral_acceleration <acceleration-value>
+   
+   Defines the lateral (normal to velocity direction) acceleration limit constraint.  This constraint is imposed
+   simultaneously with maximum_axial_body_turn_rate_, the most restrictive is used.
+   
+   Default: 8.0 G
+
+.. command:: maximum_axial_body_roll_rate <angular-rate-value>
+   
+   Defines the maximum rate at which the platform will try to capture desired target bank angle.
+   
+   Default: 180 deg/sec
+
+.. command:: maximum_axial_body_turn_rate <angular-rate-value>
+   
+   Defines the maximum rate at which the velocity vector will rotate in three-dimensional space.  This constraint is
+   imposed simultaneously with maximum_lateral_acceleration_, the most restrictive is used.
+   
+   Default: 45 deg/sec
+
+.. command:: velocity_pursuit_gain <non-negative-value>
+   
+   Defines the factor of proportion between target azimuth and elevation (in radians), and the applied lateral or vertical
+   acceleration (in m/sec^2) to null the velocity vector to point at the target.  See comments in header above.
+   
+   Default: 4.0
+
+.. command:: proportional_navigation_gain <non-negative-value>
+   
+   Defines the factor of proportion between the target line-of-sight-rate (in rad/sec), and the applied lateral or
+   vertical acceleration (in m/sec^2) to null the velocity vector to intercept the target's future position at time of
+   intercept.  See comments in header above.
+   
+   Default: 40.0
+
+.. command:: use_route <route-name>
+   
+   Supplies the name of the route to follow. The route is assumed to be a predefined absolute route.

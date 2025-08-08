@@ -1,0 +1,85 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.2:
+
+WSF 1.6.2 - 13 Aug 2009
+-----------------------
+
+General
+=======
+
+* The source has been updated to compile with the GNU GCC 4.4.0 compilers.
+
+* This release incorporates the initial implementation of the :command:`Spectral Optical Sensing Model (SOSM) <sosm_interface>`.
+  This is a spectral infrared detection model that is intended to eventually replace the
+  10-table IR model in **WSF_IR10T_SENSOR**.
+
+Corrections
+===========
+
+* **(CR 6785)** Corrected an issue with :command:`false_target` blips being displayed when they shouldn't be due to poor SNR. Also corrected an issue where a noise jammer that was also impinging upon a radar that was receiving :model:`WSF_FALSE_TARGET_EFFECT` (i.e. :command:`false_target` blips) was not factoring in the noise jamming signal properly to the SNR calculation for each blip.
+
+* **(CR 6789)** Modified the weapon engagement model to allow the weapon model to explicitly provide a miss distance
+  to be used in determining the probability-of-kill (Pk). Formerly the model would use the target and weapon platform
+  locations to determine the miss distance, which could be significantly different if the weapon model was running with a
+  fixed time step and the intercept was declared to occur in the middle of a timestep. This affected
+  *jaam_interface* in particular because that model only provided the miss distance at intercept and not the
+  locations at intercept. Therefore, the locations one timestep past intercept were being used for determining miss
+  distance and Pk, which could be sufficiently different so a to cause a miss to be declared when the weapon model
+  declared a hit.  A new command (jaam_interface *use_jaam_miss_distance*) toggles this behavior.
+
+* **(CR 6792)** Fixed an issue where subsequent jamming interactions would fail after the first one was processed
+  for a target detection attempt.
+
+* **(CR 6542)** Corrected the sensor track updating process so the track validity flags now reflect the
+  :ref:`sensor_track_information_reporting_commands` for the mode that most recently updated the track.
+  Formerly the validity flags would only represent the reporting flags for the mode that caused the track to be created.
+
+* **(CR 6805)** Corrected problems with the new movers related to:
+
+  * Routes with 1 point for movers other than WSF_AIR_MOVER.
+
+  * Skipped points in routes with very low radial accelerations.
+
+  * Usage of GoToAltitude() / GoToSpeed() while staying on route.
+
+* **(CR 6817)** The current pointing angles for :model:`WSF_EOIR_SENSOR` were not getting published to DIS, so the beam
+  was not being displayed correctly by VESPA if emitter edges or faces was turned on.
+
+Enhancements
+============
+
+* **(CR 5847)** Modified :model:`WSF_ESM_SENSOR` so it will detect intermittent signals properly. Formerly a radio
+  frequency :command:`comm` device that was on would always be reported as being detected even though it was not transmitting a
+  message. The sensor will now only report a signal as being present for a comm device only when a message was
+  transmitted during for the sample interval.
+
+  The :command:`comm.transmit_mode` command was added to :command:`comm` to declare if the device transmits
+  intermittently or continuously. The default is intermittent.
+
+* Modified :model:`WSF_ESM_SENSOR` so it will report all detected frequency bands from complex targets such as a multi-beam radar.
+
+* Added new route mover commands: :model:`on_turn_failure <WSF_AIR_MOVER>` and :model:`turn_failure_threshold <WSF_AIR_MOVER>`.
+
+* Added several new features to **WSF_NEW_GUIDANCE_COMPUTER** to support dynamic control of guidance parameters:
+
+   * Added the ability to test script variables in next_phase commands.
+
+   * Added script methods to allow changing of commanded altitude and speed.
+
+* Added a script interface to phase 2 initialization of objects. on_initialize is called when first initializing a platform component and on_initialize2 is called after every component has completed phase 1 initialization.
+
+* Added methods to access the :class:`mover's <WsfMover>` route and default route in script.
+
+* Added :model:`WSF_IMAGE_PROCESSOR` that provides the capability to classify and/or identify all platforms in the image or video based on the number of pixels the platform takes up and Johnson Criteria equations.
+
+* Added the **event_csvoutput** command that provides the ability to create pre-defined comma delimited log files that can be read directly into spreadsheet programs without having to pre-process standard event log files or writing user defined scripts with the :command:`observer` command.

@@ -1,0 +1,236 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RF_JAMMER
+=============
+
+.. model:: weapon WSF_RF_JAMMER
+
+    .. parsed-literal::
+
+     #Single mode jammer definition
+
+     weapon <name> :model:`WSF_RF_JAMMER`
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+        ... :ref:`Weapon Commands <docs/weapon:Commands>` ...
+        ... :ref:`Antenna_Commands` ...
+        ... :command:`_.transmitter` Commands ...
+        ... Commands_ ...
+        ... `Mode Commands`_ ...
+        ... `Group Commands`_ ...
+        ... `Spot Commands`_ ...
+     end_weapon
+
+     # Multiple mode jammer definition
+
+     weapon <name> :model:`WSF_RF_JAMMER`
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+        ... :ref:`Weapon Commands <docs/weapon:Commands>` ...
+
+        mode_template
+           ... :ref:`Antenna_Commands` ...
+           :command:`_.transmitter` Commands ...
+           ... Commands_ ...
+           ... `Mode Commands`_ ...
+           ... `Group Commands`_ ...
+           ... `Spot Commands`_ ...
+        end_mode_template
+
+        mode *<mode-name-1>*
+           ... :ref:`Antenna_Commands` ...
+           :command:`_.transmitter` Commands ...
+           ... Commands_ ...
+           ... `Mode Commands`_ ...
+           ... `Group Commands`_ ...
+           ... `Spot Commands`_ ...
+        end_mode
+
+        ... additional mode definitions ...
+
+     end_weapon
+
+.. warning::
+
+   The following :ref:`weapon commands<docs/weapon:Commands>` are not compatible with :model:`WSF_RF_JAMMER`.
+   Attempting to use these commands will result in a warning or error.
+   Avoid using :class:`WsfWeapon` script methods which access the parameters of these commands.
+
+   .. hlist::
+      :columns: 2
+
+      * :command:`quantity<weapon.quantity>`
+      * :command:`maximum_quantity<weapon.maximum_quantity>`
+      * :command:`reload_increment<weapon.reload_increment>`
+      * :command:`reload_inventory<weapon.reload_inventory>`
+      * :command:`reload_threshold<weapon.reload_threshold>`
+      * :command:`reload_time<weapon.reload_time>`
+      * :command:`inhibit_while_reloading<weapon.inhibit_while_reloading>`
+
+Overview
+--------
+
+WSF_RF_JAMMER is a radio frequency jammer that can be used to disrupt radar, ESM and radio communication systems. Jammers can consist of multiple beams with multiple spots, which are the spatial and frequency elements of the jammer, respectively. Multiple jammers may also be grouped together to form a "power" group.
+
+Multiple Mode Considerations
+----------------------------
+
+Jammers support the concept of 'modes', similar to :command:`sensors <sensor>`. A mode is a named set of operating characteristics of a jammer. Multiple modes do not have to be used. If a jammer implementation supports modes and an explicit mode is not defined, then any mode-related commands are assumed to belong to the implicitly defined mode named 'default'.
+
+If multiple modes will be used, a 'mode_template' can be defined that specifies the characteristics that are common between all modes. A 'mode_template' does not have to be defined, but if it is it must be defined prior to the first 'mode' command. If a 'mode_template' is used, the initial configuration for each mode is copied from the 'mode_template' and then any additions or modifications to the mode should appear between the applicable 'mode' and 'end_mode' commands.
+
+.. block:: WSF_RF_JAMMER
+
+Commands
+--------
+
+The following commands prevent the jammer transmitters from interacting with the specified criteria in the simulation. These commands are applicable to :model:`WSF_RF_JAMMER` transmitters and can reside at the top level or within the :command:`_.transmitter` ... end_transmitter input block and/or `Mode Commands`_ block.
+
+.. command:: ignore <category-name>
+
+   Indicates the jammer should deny interaction with the objects that are a member of the specified category. This command  may be specified multiple times to deny interaction with multiple categories.
+
+   .. command:: ignore_domain [ land | air | surface | subsurface | space ]
+
+   Indicates the jammer should deny interaction with platforms or objects contained on platforms that are of the specified spatial domain. This command may be specified multiple times to deny interaction with multiple domain.
+
+.. command:: ignore_side <side>
+
+   Indicates the jammer should deny interaction with platforms or objects contained on platforms that are of the specified side. This command may be specified multiple times to deny interactions with multiple sides.
+
+.. command:: ignore_same_side
+
+   Indicates the jammer should deny interaction with platforms or objects contained on platforms that are on the same side of the platform to which the jammer is attached.
+
+Group Commands
+--------------
+
+.. command:: jammer_group <string>
+
+   The jammer group name, which this jammer is to be a member of. This input also adds this group name as a :command:`_.platform_part.category`, which enables script category checking as defined in :class:`WsfPlatformPart`. However, the inverse of this is not true.  A :command:`_.platform_part.category` does not add a jammer group name to the jammer.
+
+.. command:: group_power_distribution [ average | constant ]
+
+   The group power distribution across the jammer group. If **average** is selected, the total power is averaged across the active group members.
+
+   Default: constant
+
+Mode Commands
+-------------
+
+.. begin:: mode
+
+.. command:: frequency_band <lower-frequency> <upper-frequency>
+
+   Specifies the frequency band.  This input can be used in lieu of the :command:`_.transmitter`
+   :command:`_.transmitter.frequency` and :command:`_.transmitter.bandwidth` inputs with the last input definition being
+   used.
+
+.. command:: repeater ... end_repeater
+   :block:
+
+   Defines the logic necessary to use an ESM system to start, stop and maintain jamming assignments (i.e., closed loop [automated]) jamming assignments. Furthermore, the repeater logic is currently implemented to block jamming power if the current geometry from the transmitter (e.g., radar/comm) to the ESM for the repeater does not allow for a detection. This blocking logic is crude and may be overachieving the desired results. The repeater will require an :model:`ESM sensor(s) <WSF_ESM_SENSOR>` to have :command:`_.platform_part.internal_link` to it to operate in any mode other than manual.
+
+   To define the repeater logic
+
+   .. parsed-literal::
+
+        repeater
+           debug_ <boolean-value>
+           operating_mode_ *<operating-mode-string>*
+           signal_following_ <boolean-value>
+        end_repeater
+
+   .. command:: debug
+
+       Sets debug mode for the repeater, if specified within the **repeater ... end_repeater** input block.
+
+   .. command:: operating_mode <operating-mode-string>
+
+      Specifies the operating mode of the repeater as defined below:
+
+      *<operating-mode-string>* Descriptions:
+
+      **manual**
+         Jamming assignments are started and stopped by user input (i.e., script) methods or other manual type methods.
+
+      **semi-auto**
+         Jamming assignments are started manually by user input methods and stopped automatically based on track drops from
+         the internally link ESM sensor(s) tracks.
+
+      **auto**
+         Jamming assignments are started and stopped based on the internally link ESM sensor tracks.
+
+         .. note::
+
+            ESM Sensor MUST report frequency.
+
+      Default: manual
+
+   .. command:: signal_following <boolean-value>
+
+      Specifies that the repeater (i.e., ESMs) will follow signal changes of a track as they are updated, allows the repeater
+      to watch for ESM sensor track updates for signal changes.
+
+      .. note::
+
+         ESM Sensor MUST report frequency.
+
+      Default: false
+
+.. command:: debug_repeater
+
+    Sets debug mode to 'true' for the repeater on this mode only.
+
+    Default: false
+
+.. end::
+
+Beam Commands
+-------------
+
+.. begin:: beam
+
+.. command:: maximum_number_of_beams <integer>
+
+    The maximum number of beams on the jammer.
+
+    Default: 1
+
+.. command:: beam_power_distribution [ average | constant ]
+
+    The beam power distribution across the jammer beams. If **average** is selected, the total power is averaged across the active beams.
+
+    Default: average
+
+.. end::
+
+Spot Commands
+-------------
+
+.. command:: maximum_spots_per_beam <integer>
+
+    The maximum number of spots on each beam of the jammer.
+
+    Default: 1
+
+.. command:: maximum_number_of_spots <integer>
+
+    The maximum number of spots when simulating a jammer. If **maximum_number_of_beams** and/or **maximum_spots_per_beam** is input after this input, then this input equals the product of these two inputs. If this input is input after **maximum_number_of_beams** and/or **maximum_spots_per_beam** then this will limit the total number of active spots available for this jammer.
+
+    Default: 1 or **maximum_number_of_beams** ***maximum_spots_per_beam** if either is supplied in the input
+
+.. command:: spot_power_distribution [ average | constant ]
+
+    The spot power distribution across the jammer spots on all beams. If **average** is selected, the total power is averaged across the active spots on each beam.
+
+    Default: average

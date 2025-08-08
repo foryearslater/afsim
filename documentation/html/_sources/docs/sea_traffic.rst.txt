@@ -1,0 +1,261 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+sea_traffic
+-----------
+
+.. command:: sea_traffic ... end_sea_traffic
+   :block:
+
+.. parsed-literal::
+
+   sea_traffic_
+      port_ <name>
+         position_ <latitude-value> <longitude-value> <length-value>
+         port_route_
+            position_ <latitude-value> <longitude-value> <length-value>
+         end_port_route
+
+         local_traffic_region_ <latitude-value> <longitude-value> <length-value> <fractional>
+         departure_interval_ <time-value>
+         use_all_lanes_
+         lane_ <name> <weighting-factor>
+      end_port
+
+      lane_ <name>
+         port_ <port-name> [ignore_port_route]
+         lane_route_ ... end_lane_route
+         position_ <latitude-value> <longitude-value> <length-value>
+      end_lane
+
+      departure_traffic_ <fraction>
+         ship_ <platform-type> ... end_ship
+         fraction_ <fraction>
+         mean_speed_ <speed>
+         sigma_speed_ <speed>
+      end_ship
+
+      local_traffic_ <fraction>
+         ship_ <platform-type> ... end_ship
+         fraction_ <fraction>
+         mean_loiter_time_ <time>
+         sigma_loiter_time_ <time>
+         loiter_route_ <name>
+         mean_speed_ <speed>
+         sigma_speed_ <speed>
+      end_local_traffic
+   end_sea_traffic
+
+Overview
+========
+
+The sea_traffic_ command generates background ship traffic during the simulation. The generator creates ships traveling to and from ports as well as the local ship traffic surrounding a port.
+
+Commands
+========
+
+.. command:: port <name> ... end_port
+   :block:
+
+   Defines a port that ship traffic originates and terminates at.
+
+   .. command:: position <latitude-value> <longitude-value> <length-value>
+
+      Defines the location and size of the port. The third argument is used as a diameter so ships entering the port will end up inside of a circle with the given diameter, centered about the specified latitude and longitude.
+
+   .. command:: port_route ... end_port_route
+      :block:
+
+      Defines the route ship traffic uses for entering and exiting the port. This gives the ability to navigate ships around obstacles after leaving the main shipping lane. Specify multiple positions to build up a path entering the port. When ships leave a port they use the reverse of the defined port route.
+
+      .. command:: position <latitude-value> <longitude-value> <length-value>
+
+         Defines a waypoint along the route into the port. The third argument is used as a diameter so ships traveling along the port route will have a random path inside of the circle with the given diameter, centered about the specified latitude and longitude.
+
+         .. note::
+            Specify multiple position commands to place as many waypoints as needed.
+
+   .. block: sea_traffic.port
+
+   .. command:: local_traffic_region <latitude-value> <longitude-value> <length-value> <fractional>
+
+      The region where local traffic from this port will travel to.  The **fraction** specifies the fraction of traffic from this port that goes to this region.
+
+   .. command:: departure_interval <time-value>
+
+      Specifies the ship departure interval from the port.
+
+   .. command:: use_all_lanes
+
+      Ship traffic departing and terminating at the port will use all available ship lane_s.
+
+   .. command:: lane <name> <weighting-factor>
+
+      Specifies a lane ship traffic can use.  The weighting factor is used to spread traffic amongst the various lanes.
+
+   Example::
+
+     port seattle
+       position 48:15n 123:00w 1 km
+       port_route
+          position 48:30n 125:00w 10 km
+          position 48:15n 124:00w  1 km
+       end_port_route
+       local_traffic_region 48:15n 123:00w 10 km 0.3
+       local_traffic_region 48:10n 122:50w 10 km 0.2
+       local_traffic_region 48:20n 122:52w 15 km 0.25
+       local_traffic_region 48:25n 123:10w 15 km 0.25
+       departure_interval 5 min
+       lane lane-seattle-to-british-columbia 0.7
+       lane lane-seattle-to-baja-mexico      0.3
+     end_port
+
+
+.. block:: sea_traffic
+
+.. command:: lane <name> ... end_lane
+   :block:
+
+Defines a sea-lane that ship traffic uses to travel from port to port.
+
+   .. command:: port <port-name> [ignore_port_route]
+
+   Specifies either the beginning or ending port.  **ignore_port_route** is optional and specifies that ships traveling this lane will ignore a port's defined port_route_.
+
+   .. command:: lane_route ... end_lane_route
+      :block:
+
+   Specifies the route ships will travel when using this lane.
+
+   .. note:: Do not specify the starting or ending port's location.
+
+   .. command:: position <latitude-value> <longitude-value> <length-value>
+
+      Specifies a point of the lane. The third argument is used as a diameter so ships traveling along the shipping lane will have a random path inside of the circle with the given diameter, centered about the specified latitude and longitude.
+
+   Example::
+
+     lane lane-seattle-to-british-columbia
+       port seattle
+       port british-columbia
+       lane_route
+          position 50:00n 129:00w 50 km
+       end_lane_route
+     end_lane
+
+
+.. block:: sea_traffic
+
+.. command:: departure_traffic <fraction> ... end_departure_traffic
+   :block:
+
+Defines the shipping traffic that will leave a port and head to a local_traffic_region. The fractional-quantity is the percentage of ships that leave a port, which are going to a local region. This fraction and the departure_traffic fraction must sum to 1.0.
+
+   .. command:: ship <platform-type> ... end_ship
+      :block:
+
+      Defines the attributes of a specific ship type.
+
+      .. note::
+         To use multiple ship types for departure traffic, create multiple ship blocks.
+
+   .. command:: fraction <fraction>
+
+      Controls how much ship traffic will use this ship type.
+
+      .. note::
+         The sum of all the ship fractions must be 1
+
+   .. command:: mean_speed <speed>
+
+      The mean speed the ship traffic will travel at.
+
+   .. command:: sigma_speed <speed>
+
+      The standard deviation for the ship's speed.
+
+   Example::
+
+      departure_traffic 0.5
+         ship TANKER_SHIP
+            fraction     0.5
+            mean_speed   20.0 kts
+            sigma_speed  5.0 kts
+         end_ship
+         ship CONTAINER_SHIP
+            fraction     0.5
+            mean_speed   20.0 kts
+            sigma_speed  5.0 kts
+         end_ship
+      end_departure_traffic
+
+.. block:: sea_traffic
+
+.. command:: local_traffic <fraction> ... end_local_traffic
+   :block:
+
+   Defines the shipping traffic that will leave a port and head to a local_traffic_region. The fractional-quantity is the percentage of ships that leave a port, which are going to a local region. This fraction and the departure_traffic fraction must sum to 1.0.
+
+   .. command:: ship <platform-type> ... end_ship
+      :block:
+
+      Defines the attributes of a specific ship type.
+
+      .. note::
+         To use multiple ship types in a local traffic region, create multiple ship blocks.
+
+   .. command:: fraction <fraction>
+
+      Controls how much ship traffic will use this ship type.
+
+      .. note::
+         The sum of all the ship fractions must be 1
+
+   .. command:: mean_loiter_time <time>
+
+      Specifies how long the ship type will loiter in a local_traffic_region_.
+
+   .. command:: sigma_loiter_time <time>
+
+      The standard deviation of the ship's loiter time.
+
+   .. command:: loiter_route <name>
+
+      The ship type will use the specified :command:`route` for its loiter.  More than 1 loiter_route_ can be entered.
+
+   .. command:: mean_speed <speed>
+
+      The mean speed the ship traffic will travel at.
+
+   .. command:: sigma_speed <speed>
+
+      The standard deviation for the ship's speed.
+
+   Example::
+
+      local_traffic 0.5
+         ship SMALL_FISHING_SHIP
+            fraction          0.75
+            mean_loiter_time  30.0 min
+            sigma_loiter_time 10.0 min
+            mean_speed        40.0 kts
+            sigma_speed       15.0 kts
+         end_ship
+         ship JETSKI
+            fraction          0.25
+            mean_loiter_time  30.0 min
+            sigma_loiter_time 10.0 min
+            mean_speed        20.0 kts
+            sigma_speed       5.0 kts
+            loiter_route ship-loiter-route-1
+            loiter_route ship-loiter-route-2
+         end_ship
+      end_local_traffic

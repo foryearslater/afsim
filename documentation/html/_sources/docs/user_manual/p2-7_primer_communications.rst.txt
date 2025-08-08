@@ -1,0 +1,342 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Communications
+==============
+
+**Communication** devices lay the groundwork to enable many AFSIM features, including remote task assignment, chains of command, and many other simulation and modeling options.
+
+They are platform parts which facilitate remote communications between and among platforms.  These devices transmit and receive messages between platforms and can be wired or wireless.
+Communication devices must use the same *network* to communicate with each other.
+
+AFSIM provides a number of predefined communication devices, the most common of which include:
+
+.. hlist::
+   :columns: 3
+
+   * WSF_COMM_RCVR
+   * WSF_COMM_XMTR
+   * WSF_COMM_TRANSCEIVER
+   * WSF_RADIO_RCVR
+   * WSF_RADIO_XMTR
+   * WSF_RADIO_TRANSCEIVER
+
+Quick Start
+-----------
+
+To get started with communications devices, the following `comm` command block can be added to an existing platform or platform type:
+
+   .. code-block::
+
+      comm perfect_transceiver WSF_COMM_TRANSCEIVER
+      end_comm
+
+Any platforms which have a `perfect_transceiver` will be able to communicate with each other by default, allowing platforms to pass messages to others on the network. Higher fidelity communication
+networks may be modeled by introducing transmitter and receiver specifications, antenna commands, articulated part commands, bandwidth limitations, error rates, and signal-to-noise ratios.
+
+Internal links may be added to processors to enable the communication of tracks from one platform to others.
+
+Closer Look
+-----------
+
+.. note:: The following steps assume that the "simple_flight" scenario is present as discussed in :doc:`p2-6_primer_behavior_btree`.
+
+Adding Communications
+"""""""""""""""""""""
+
+To implement communications between the two aircraft in *simple_flight*, complete the following steps:
+
+1. Create a new file called *communications.txt*.
+2. Add the following code line to *cargo_aircraft.txt*:
+
+   .. code-block::
+
+      include_once communications.txt
+	  
+3. Open *communications.txt* in a Wizard text editor.
+4. Add the following code to *communications.txt*:
+
+   .. code-block::
+
+      # communications.txt
+      # A component of the simple_flight demo
+
+      comm AIR_RADIO_TRANSCEIVER WSF_RADIO_TRANSCEIVER
+         transmitter
+            frequency 120 mhz
+         end_transmitter
+
+         receiver
+            frequency 120 mhz
+         end_receiver
+      end_comm
+
+5. Add the following code to the platform type definition of `CARGO_AIRCRAFT`:
+
+   .. code-block::
+   
+      add comm atc AIR_RADIO_TRANSCEIVER
+      end_comm
+
+At this point, the two aircraft have an open communication channel on which to pass messages. However, they currently have no messages to send to one another.
+
+Add Behaviors and Processors to Send a Message over Comms
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Currently, the automated behavior in *behaviors.txt* will cause each aircraft to move out of the others way. This isn't necessary,
+as it would be sufficient to have just one of the aircraft change altitude to avoid a collision.
+
+1. Update *behavior.txt* to reflect the following:
+
+   .. code-block::
+
+      # behaviors.txt
+      # A component of the simple_flight demo
+
+      behavior next_selector
+         precondition
+            return true;
+         end_precondition
+      end_behavior
+
+   .. code-block::
+
+      behavior all_clear
+         precondition
+            WsfLocalTrackList trackList = PLATFORM.TrackList("track_proc");
+            return (trackList.Empty() && !PLATFORM.AuxDataBool("collisionExpected"));
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            writeln(plat.Name(), " Report: All Clear");
+         end_execute
+      end_behavior
+
+   .. code-block::
+
+      behavior entity_detected
+         precondition
+            WsfLocalTrackList trackList = PLATFORM.TrackList("track_proc");
+            return !trackList.Empty();
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            WsfTrack firstTrack = plat.TrackList("track_proc")[0];
+            writeln(plat.Name(), " Report: Entity Detected");
+
+            if (!plat.AuxDataBool("collisionWarningRcvd"))
+            {
+               plat.SetAuxData("collisionExpected", false);
+            }
+
+            if (plat.AuxDataBool("collisionWarningCooldown"))
+            {
+               plat.SetAuxData("collisionWarningCooldown", false);
+            }
+            else
+            {
+               WsfLocalTrackList trackList = plat.TrackList("track_proc");
+               int index = 0;
+               foreach (WsfTrack t in trackList)
+               {
+                  if (t.Target().IsValid())
+                  {
+                        writeln("\t - Entity: ", t.Target().Name());
+                     double lastDist = plat.AuxDataDouble("lastKnownDistance");
+                     double currDist = plat.GroundRangeTo(t.CurrentLocation());
+
+
+                    if (Math.Ceil(plat.Altitude()/100) == Math.Ceil(t.Altitude()/100) &&
+                        (lastDist == -1 || lastDist > currDist))
+                     {
+                        plat.SetAuxData("lastKnownDistance", currDist);
+                        writeln("\t    - WARNING: Collision Expected!\n");
+                        plat.SetAuxData("collisionExpected", true);
+                        plat.SetAuxData("collisionTrackIdx", index);
+                     }
+                     else
+                     {
+                        plat.SetAuxData("collisionExpected", false);
+                     }
+                  }
+                  index = index + 1;
+               }
+            }
+         end_execute
+      end_behavior
+
+   .. code-block::
+
+      behavior reroute
+         precondition
+            bool collisionExpected = PLATFORM.AuxDataBool("collisionExpected");
+            bool collisionWarningRcvd = PLATFORM.AuxDataBool("collisionWarningRcvd");
+            return (collisionExpected || collisionWarningRcvd);
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            double altDelta = 100 * Math.Ceil(RANDOM.Uniform(0, 30) - 20);
+            plat.GoToAltitude(plat.Altitude() + altDelta);
+            writeln(plat.Name(), " Report: Rerouting");
+            writeln("\t - New Target Altitude = ", plat.Altitude() + altDelta, "m\n");
+            plat.SetAuxData("collisionWarningRcvd", false);
+            plat.SetAuxData("collisionExpected", false);
+            plat.SetAuxData("offRoute", true);
+         end_execute
+      end_behavior
+
+   .. code-block::
+
+      behavior send_warning_message
+         precondition
+            bool collisionExpected = PLATFORM.AuxDataBool("collisionExpected");
+            bool collisionWarningRcvd = PLATFORM.AuxDataBool("collisionWarningRcvd");
+            bool trackListEmpty = PLATFORM.TrackList("track_proc").Empty();
+            return (collisionExpected && !collisionWarningRcvd && !trackListEmpty);
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            if (plat.AuxDataBool("collisionWarningCooldown"))
+            {
+               plat.SetAuxData("collisionWarningCooldown", false);
+            }
+            else
+            {
+               writeln(plat.Name(), " Report: Sending Warning");
+               WsfLocalTrackList trackList = plat.TrackList("track_proc");
+               int collisionTrackIdx = plat.AuxDataInt("collisionTrackIdx");
+               WsfPlatform trackPlat = trackList[collisionTrackIdx].Target();
+               WsfComm platComm = plat.CommEntry(0);
+               writeln("\t - Comm: ", platComm.Name());
+               writeln("\t - Destination: ", trackPlat.Name());
+               if (trackPlat.CommCount() > 0)
+               {
+                  WsfComm trackComm = trackPlat.CommEntry(0);
+                  WsfMessage warningMessage = WsfMessage();
+                  warningMessage.SetType("WARNING");
+                  warningMessage.SetSubType("collision-expected");
+                  platComm.SendMessage(warningMessage, trackComm);
+                  writeln("\t - Warning Sent(", warningMessage.Type(), ")");
+                  plat.SetAuxData("collisionWarningCooldown", true);
+               }
+               else
+               {
+                  writeln("\t - Warning Failed: Target has no comms!");
+               }
+            }
+         end_execute
+      end_behavior
+
+2. Update the `CARGO_TASK_MANAGER` as follows:
+
+   .. code-block::
+
+      processor CARGO_TASK_MANAGER WSF_TASK_PROCESSOR
+         update_interval 10 sec
+         behavior_tree
+            sequence
+               selector
+                  behavior_node all_clear
+                  behavior_node entity_detected
+                  behavior_node next_selector
+               end_selector
+               selector
+                  behavior_node send_warning_message
+                  behavior_node reroute
+               end_selector
+            end_sequence
+
+         end_behavior_tree
+      end_processor
+
+3. Create a `WARNING PROCESSOR` as follows:
+   
+   .. code-block::
+
+      processor WARNING_PROCESSOR WSF_SCRIPT_PROCESSOR
+         on_message
+            type WARNING
+               script
+                  writeln(PLATFORM.Name(), " Report: Message Received");
+                  WsfMessage warningMessage = (WsfMessage)MESSAGE;
+                  writeln("\t - Type: ", warningMessage.Type());
+                  writeln("\t - Subtype: ", warningMessage.SubType());
+                  writeln("\t - Origin: ", warningMessage.Originator());
+                  PLATFORM.SetAuxData("collisionWarningRcvd", true);
+                  PLATFORM.SetAuxData("collisionExpected", true);
+               end_script
+            type default
+               script
+                  writeln(PLATFORM.Name(), "Report: Message Received");
+               end_script
+         end_on_message
+      end_processor
+
+4. Add a `WARNING_PROCESSOR` to the platform type definition of `CARGO_AIRCRAFT` as follows:
+
+   .. code-block::
+
+      add processor warning_proc WARNING_PROCESSOR
+      end_processor
+
+
+5. Update the `AIR_RADIO_TRANSCEIVER` command block in the `CARGO_AIRCRAFT` platform type definition as follows:
+
+   .. code-block::
+
+      add comm atc AIR_RADIO_TRANSCEIVER
+         internal_link warning_proc
+      end_comm
+
+6. Update the aux_data command block in the `CARGO_AIRCRAFT` platform type definition as follows:
+
+   .. code-block::
+
+      aux_data
+         struct CARGO_AUX_DATA
+            bool   collisionExpected = false
+            bool   collisionWarningCooldown = false
+            bool   collisionWarningRcvd = false
+            int    collisionTrackIdx = 0
+            double lastKnownDistance = -1
+         end_struct
+      end_aux_data
+
+7. Finally, in *platform_laydown.txt*, increase the range of the `cargo_radar` for cargo-1 by adding the following code to the `cargo-1` platform definition:
+
+   .. code-block::
+
+      edit sensor cargo_radar
+         maximum_range 40 nm
+      end_sensor
+
+These additions will provide cargo-1 with a longer range radar. When it detects cargo-2, and calculates that the two aircraft are on a collision course, it will create a warning message,
+and send it to cargo-2. Upon receiving the message, cargo-2 will reroute by changing its altitude, thus avoiding the collision without requiring cargo-1 to alter its route.
+
+Summary
+-------
+
+Communications devices are a means of connecting platforms to share information and tracks. Tracks are shared between platforms intuitively as detailed in `Quick Start`_,
+but tracks are not the only information that can be shared. Though it may require scripting, behaviors, processors, or sensors, nearly any information may be
+communicated between or among platforms.
+
+Related Topics
+--------------
+
+:doc:`p2-3_primer_sensors_signatures`
+
+:doc:`p2-5_primer_processors`
+
+:doc:`p2-6_primer_behavior_btree`

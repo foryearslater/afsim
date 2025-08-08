@@ -1,0 +1,153 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_LASER_WEAPON
+----------------
+
+.. model:: weapon WSF_LASER_WEAPON
+
+**Script Class**: :class:`WsfLaserWeapon`
+
+.. parsed-literal::
+
+   weapon <name> :model:`WSF_LASER_WEAPON`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :ref:`Weapon Commands <docs/weapon:Commands>` ...
+      thermal_system
+          ... :ref:`Thermal System Commands <thermal_system.commands>` ...
+      end_thermal_system
+      :command:`fluence_model` <type>
+          ... :ref:`Fluence Model Commands <fluence_model.commands>` ...
+      end_fluence_model
+      firing_time_ ...
+      firing_update_interval_ ...
+      Non-Thermal System Related Commands_
+         number_of_shots_ ...
+         cooling_time ...
+      Thermal System Related Commands_
+         cooling_update_interval_ ...
+         efficiency_...
+         high_temperature_limit_ ...
+         low_temperature_limit_ ...
+         minimum_total_firing_time_ ...
+   end_weapon
+
+.. warning::
+
+   The following :ref:`weapon commands<docs/weapon:Commands>` are not compatible with :model:`WSF_LASER_WEAPON`.
+   Attempting to use these commands will result in a warning or error.
+   Avoid using :class:`WsfWeapon` script methods which access the parameters of these commands.
+
+   .. hlist::
+      :columns: 2
+
+      * :command:`quantity<weapon.quantity>`
+      * :command:`maximum_quantity<weapon.maximum_quantity>`
+      * :command:`reload_increment<weapon.reload_increment>`
+      * :command:`reload_inventory<weapon.reload_inventory>`
+      * :command:`reload_threshold<weapon.reload_threshold>`
+      * :command:`reload_time<weapon.reload_time>`
+      * :command:`inhibit_while_reloading<weapon.inhibit_while_reloading>`
+
+Overview
+========
+
+:model:`WSF_LASER_WEAPON` represents a High-Energy Laser (HEL) :command:`weapon`.  Most of the inputs for this weapon are for the
+:command:`fluence_model`, which determines the propagation of laser energy and deposition on target, and thermal-related
+inputs, which limit the time that the laser can fire before having to dissipate excess thermal energy.
+
+.. block:: WSF_LASER_WEAPON
+
+Commands
+========
+
+.. command:: firing_time <time-value>
+
+   Specify the firing time per shot.
+
+   .. note::
+
+      If no firing_time is set by the user, the laser will continue to fire until either the user terminates
+      the engagement with a call to :method:`CeaseFire <WsfWeapon.CeaseFire>`, or the :command:`thermal system <thermal_system>` prevents
+      lasing.
+
+.. command:: firing_update_interval <time-value>
+
+   Specify the interval at which the engagement will be updated and fluence on target integrated.
+
+   Default: Either 0.1 * firing_time_, if firing_time_ is set, or 0.1 second, if not.
+
+Non-Thermal System Related Commands
+===================================
+
+*These commands are valid if no :command:`thermal_system` is specified.*
+
+.. command:: number_of_shots <integer-value>
+
+   Specify the number of shots the laser can fire before it must cool down for a specified interval (see
+   :command:`cooling_time <WSF_LASER_WEAPON.cooling_time>`).  Either these inputs are used, or they are determined automatically
+   with a :command:`thermal_system`.
+
+   Default:  1000000 (unlimited)
+
+.. command:: cooling_time <time-value>
+
+   Specify a cooldown time, starting after the specified :command:`number_of_shots <WSF_LASER_WEAPON.number_of_shots>` has been
+   exhausted.  Once this time interval has elapsed, the original shot number will be restored.
+
+   .. note::
+
+      cooling_time and number_of_shots are used as a low fidelity alternative to a :command:`thermal_system`.  One
+      can use one or the other with this weapon.
+
+   Default:  30 seconds
+
+Thermal System Related Commands
+===============================
+
+*These commands are valid if a :command:`thermal_system` is specified.*
+
+.. command:: cooling_update_interval <time-value>
+
+   Specify an interval to check whether the cooling cycle is complete.
+
+   Default: 10.0 seconds
+
+.. command:: efficiency <real-value>
+
+   Specifies the efficiency of the HEL system for converting input power into output laser power.
+
+   .. note::
+
+      For diode-based systems this value is approximately 0.15 - 0.20).
+
+   Default: 0.3
+
+.. command:: high_temperature_limit <temperature-value>
+
+   This is the temperature at which firing ceases and cooldown begins (the thermal system does not accept heat above this
+   temperature).
+
+   Default:  100 celsius
+
+.. command:: low_temperature_limit <temperature-value>
+
+   This is the temperature at which maximum firing time is available (the thermal system does not cool below this
+   temperature).
+
+   Default:  -20 celsius
+
+.. command:: minimum_total_firing_time <time-value>
+
+   When in a cooldown cycle, the weapon will not be available until this much firing time has been restored to the system.
+
+   Default:  5 seconds

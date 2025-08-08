@@ -1,0 +1,149 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_IRST_SENSOR
+---------------
+
+.. model:: sensor WSF_IRST_SENSOR
+
+.. parsed-literal::
+
+   sensor <name> :model:`WSF_IRST_SENSOR`
+      :ref:`Platform_Part_Commands` ...
+      ... :command:`sensor` Commands ...
+      mode <name>
+        ... WSF_IRST_SENSOR `Mode Commands`_ ...
+      end_mode
+   end_sensor
+
+Overview
+========
+
+:model:`WSF_IRST_SENSOR` implements a basic infrared search and track (IRST) sensor for target detection.
+
+.. block:: WSF_IRST_SENSOR
+
+Mode Commands
+=============
+
+.. command:: atmospheric_attenuation <value> per <length-units>
+
+   The fraction of the signal (in the closed range 0 to 1) that is attenuated per unit of distance traveled at sea level.  The attenuation is adjusted to account for the density of air with the change in a altitude.
+
+   This value is used to compute the transmittance. The atmosphere is modeled as a set of layers 1 kilometer thick with the path through each layer processed separately. The total transmittance along a path is computed using:
+
+    :math:`\tau = \prod_i \tau_i \qquad \mbox{where} \qquad \tau_i = e^{-c f_i R_i}\,`
+
+   **c** is value of **atmospheric_attenuation**, **f**\ :sub:`i` is the ratio of the average air density in the layer to the density of air at sea level and **R**\ :sub:`i` is the path length through the layer.
+
+   **Default:** 0.0 per meter (no attenuation)
+
+.. command:: background_radiance <value> <power-units>/<angle-units>/<area-units>
+             background_radiance dynamic
+
+   Specifies the radiance of the background. If 'dynamic' is specified then the experimental dynamic background model will be used. The dynamic
+   model is currently valid only for targets at a positive elevation angle from from the sensor (i.e.: looking up at something like a satellite).
+
+   **Default:** 0.0
+
+.. command:: background_radiance_above_horizon <value> <power-units>/<angle-units>/<area-units>
+
+.. command:: background_radiance_below_horizon <value> <power-units>/<angle-units>/<area-units>
+
+   These two commands provide an alternative to the fixed background radiance provided by background_radiance_. This is useful for airborne sensors where the sensor may be looking up and the sky is the background, or looking down where the ground is the background.
+
+   By default the transition occurs instantaneously at the horizon. The background_transition_angle_ command may be used to provide a more gradual transition.
+
+.. command:: background_transition_angle <lower-angle> <upper-angle>
+
+   This command is used along with background_radiance_above_horizon_ and background_radiance_below_horizon_ to specify a region where the transition is made from using the below horizon and above horizon background radiance values. The specified angles are relative to the local angle to the horizon with positive values being above the horizon and negative values being below the horizon. If the target is within the transition region defined by these angles, the resulting background radiance will be linearly interpolated between the above horizon and below horizon values.
+
+   **Default:** 0.0 deg 0.0 deg (i.e., No transition region)
+
+.. command:: band  [ short | medium | long | very_long ]
+
+   Define the band of radiation that the sensor will detect.  The wavelengths of the bands are defined as follows:
+
+   .. parsed-literal::
+
+      short        1-3 :math:`\mu`
+      medium       3-5  :math:`\mu`
+      long         8-12  :math:`\mu`
+      very_long    15-30  :math:`\mu`
+
+   **Default:** none (must be specified)
+
+.. command:: detect_negative_contrast <bool>
+
+   Declares if the sensor will detect targets who contrast versus the background is negative (i.e. the radiant intensity of the target is less
+   than the radiant intensity of the background). If this is true then a negative contrast will be treated as positive, and thus potentially be
+   detected. If this is false, then a negative contrast will be clamped to zero and detection will not occur.
+   
+   **Default:** true
+
+   .. note::
+   
+      The default value of this is 'true' in order to maintain compatibility with input files that were created prior to the implementation
+      of this command in version 2.2.1.
+   
+.. command:: detection_threshold <value>
+
+   Defines the ratio of signal to noise required to declare a successful detection.
+
+   **Default:** none (must be specified).
+
+.. command:: noise_equivalent_irradiance <value> <power-units>/<area-units>
+
+   The "noise equivalent irradiance' (NEI) of the receiver.
+
+   **Default:** none (must be specified)
+
+.. command:: antenna_pattern <pattern-name>
+
+   Defines the name of a pseudo-antenna pattern (defined with the :command:`antenna_pattern` command, which can be used to account for aspect-dependent effects caused by the aperture through which the sensor is looking.
+
+   Note that if the antenna pattern reflects the losses through a fixed aperture (i.e., the sensor is mounted behind a window of some sort), the :command:`_.articulated_part.slew_mode` of the associated :command:`articulated part <_.articulated_part>` should be **slew_mode fixed** (the default value). Otherwise the antenna pattern will move with sensor cues.
+
+   **Default:** If no antenna pattern is specified, the effect will be 0 dB (i.e., no adjustment)
+
+.. command:: internal_loss <db-ratio>
+
+   Defines an additional constant loss that can be applied to the computation.
+
+   **Default:** 0 dB (i.e., No additional losses)
+
+   .. note::
+
+      This should be a positive dB value as it appears in the denominator.
+
+Sensor Equations
+================
+
+Determine the infrared radiant intensity of the target (source)
+   I\ :sub:`s` = :command:`infrared_signature`\ (az,el)
+
+Determine the background radiance intensity
+   I\ :sub:`b` = background_radiance_ * :command:`optical_signature`\ (az,el)
+
+Determine the contrast radiant intensity
+   I\ :sub:`c` = I\ :sub:`s` - I\ :sub:`b`
+
+Determine the atmospheric transmittance
+   :math:`\tau` = f(atmospheric_attenuation_)
+
+Determine the effective target irradiance
+   E\ :sub:`eff` = (:math:`\tau` * I\ :sub:`c`) / R\ :sup:`2`
+
+Determine the adjusted target irradiance
+   E\ :sub:`eff` = E\ :sub:`eff` * antenna_pattern_\ (az,el) / internal_loss_
+
+Determine the signal to noise
+   S/N = E\ :sub:`eff` / :command:`NEI <WSF_IRST_SENSOR.noise_equivalent_irradiance>`

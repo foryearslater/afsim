@@ -1,0 +1,135 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Scripted
+--------
+
+**Script Type:** :class:`WsfOrbitalScriptEvent`
+
+.. parsed-literal::
+
+   :doc:`event<orbital_event>` scripted
+      :ref:`<Common Mission Event Commands><orbital_event.common_commands>`
+      on_initialize_ ... end_on_initialize
+      on_update_     ... end_on_update
+      on_complete_   ... end_on_complete
+      is_complete_   ... end_is_complete
+   end_event
+
+Perform a set of scripted operations.  Scripts may be defined completely within each block, or they may reference scripts defined elsewhere (such as on the :model:`WSF_SPACE_MOVER`, the parent platform, or at global scope).
+
+.. note:: Scripts that invoke other mission events can only be called from the on_complete_ script, as doing so would invalidate the current event from which the script is being called.
+
+.. command:: on_initialize ...script_body... end_on_initialize
+
+   Define a script that is executed when the event is initialized.  This initialization occurs when the mission event is scheduled, which is either when the mission sequence is scheduled for the first event of a mission sequence, or immediately upon completion of the previous event of a mission sequence.
+
+   .. parsed-literal::
+
+    on_initialize
+       :ref:`Script Body <script>`
+    end_on_initialize
+
+.. command:: on_update ...script_body... end_on_update
+
+   Define a script that executes with the :ref:`update_interval<orbital_event.common_commands>` and :ref:`duration<orbital_event.common_commands>` of the event, starting from the time at which the event's constraint is first met.  If *duration* is not defined the script is always executed once.  If the is_complete_ script is defined and the event is :ref:`finite<orbital_event.common_commands>`, it is also updated at subsequent constraint times, until the is_complete_ script returns *true*.  Alternately, if :ref:`duration<orbital_event.common_commands>` is defined, the event will execute at the specified :ref:`update_rate<orbital_event.common_commands>` for the given duration (see examples, below).
+
+   .. parsed-literal::
+
+    on_update
+       :ref:`Script Body <script>`
+    end_on_update
+
+.. command:: on_complete ...script_body... end_on_complete
+
+   Define a script that executes on completion of a mission event.
+
+   .. parsed-literal::
+
+    on_complete
+       :ref:`Script Body <script>`
+    end_on_complete
+
+.. command:: is_complete ...script_body... end_is_complete
+
+   Define a script that determines whether the script event is complete.  If *false*, the event continues to execute; if *true*, the event is considered complete, and the on_complete_ script is called. If defined, this script is called immediately after each event update, and it overrides any :ref:`duration<orbital_event.common_commands>` command.
+
+   .. note:: This script must return a bool.
+
+   .. parsed-literal::
+
+    is_complete
+       :ref:`Script Body <script>`
+    end_is_complete
+
+Examples
+********
+
+.. parsed-literal::
+
+      // Example input for a scripted event within a WSF_SPACE_MOVER definition
+      script_variables
+         int gUpdateNum = 0;
+      end_script_variables
+
+      script void DoSomething()
+         // Insert code here
+      end_script
+
+      mission_sequence
+         event scripted
+            execute_at eclipse_entry
+            update_interval 10 s
+            finite  // needed to execute multiple times
+            on_initialize
+               writeln("Initialized");
+            end_on_initialize
+            on_update
+               gUpdateNum += 1;
+               DoSomething();
+               writeln("Update ", gUpdateNum);
+            end_on_update
+            is_complete
+               return (gUpdateNum == 100); // Execute 100 times
+            end_is_complete
+            on_complete
+               writeln("Complete");
+            end_on_complete
+         end_event
+      end_mission_sequence
+
+.. parsed-literal::
+
+      // Example input for a scripted event within a WSF_SPACE_MOVER definition
+      // (same as above, using duration instead of is_complete script)
+      script void DoSomething()
+         // Insert code here
+      end_script
+
+      mission_sequence
+         event scripted
+            execute_at eclipse_entry
+            update_interval 10 s
+            duration 990 s // Execute 100 times
+            on_initialize
+               writeln("Initialized");
+            end_on_initialize
+            on_update
+               static int sUpdateNum = 0;
+               sUpdateNum += 1;
+               DoSomething();
+               writeln("Update ", sUpdateNum);
+            end_on_update
+            on_complete
+               writeln("Complete");
+            end_on_complete
+         end_event
+      end_mission_sequence

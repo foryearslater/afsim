@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>script_struct &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Script Types" href="script_types.html" />
+    <link rel="prev" title="Script Right Arrow Operator" href="script_right_arrow_operator.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_types.html" title="Script Types"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="script_right_arrow_operator.html" title="Script Right Arrow Operator"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="script-struct">
+<h1>script_struct<a class="headerlink" href="#script-struct" title="Permalink to this headline">¶</a></h1>
+<dl class="command">
+<dt id="script_struct">
+script_struct … script_struct<a class="headerlink" href="#script_struct" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">script_struct Name
+   <a class="reference internal" href="script_variables.html#scriptvariables"><span class="std std-ref">script_variables</span></a>
+   ...
+   end_script_variables
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">script</span></a> ...
+   ...
+   end_script
+   <a class="reference internal" href="#uncloneable">uncloneable</a>
+end_script_struct</pre>
+</dd></dl>
+
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Prior to WSF 2.0, script_struct instances were created with the <a class="reference internal" href="script/struct.html#struct.New" title="struct.New"><span class="xref wsf wsf-method">struct.New</span></a> method and the variables and methods in the instance
+had to be accessed via the ‘-&gt;’ operator. Unfortunately that implementation was not type-safe and lead to many hard-to-find errors. What is
+being described here is the new syntax. The old syntax should not be used unless you need the <a class="reference internal" href="#struct-on-the-fly">struct on the fly</a>
+capabilities.</p>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The ‘script_struct’ block defines an new ‘class’ that behaves much like any of the built-in classes (e.g.: <a class="reference internal" href="script/wsfgeopoint.html#WsfGeoPoint" title="WsfGeoPoint"><span class="xref wsf wsf-class">WsfGeoPoint</span></a>). Instances
+of the class can be used as arguments to or returned by script methods and be used as template types in the <a class="reference internal" href="script/array.html#Array&lt;T&gt;" title="Array&lt;T&gt;"><span class="xref wsf wsf-class">Array</span></a>,
+<a class="reference internal" href="script/map.html#Map&lt;T1,T2&gt;" title="Map&lt;T1,T2&gt;"><span class="xref wsf wsf-class">Map</span></a> and <a class="reference internal" href="script/set.html#Set&lt;T&gt;" title="Set&lt;T&gt;"><span class="xref wsf wsf-class">Set</span></a> containers. <strong>A script_struct block that defines a new class is valid only as a top-level command</strong> (that is,
+they cannot be inside platforms, processors or any other block). In addition, a script_struct class must be defined before it is used. The
+following section demonstrates the creation and use of a struct.</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="script_struct.uncloneable">
+<span id="uncloneable"></span>uncloneable<a class="headerlink" href="#script_struct.uncloneable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify that instances of this script_struct cannot be cloned.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">script_struct</span></code>s are cloneable by default.</p>
+</div>
+</dd></dl>
+
+</section>
+<section id="script-struct-example">
+<h2>script_struct example<a class="headerlink" href="#script-struct-example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script_struct</span> <span class="n">Car</span>
+   <span class="n">script_variables</span>
+      <span class="n">WsfGeoPoint</span>  <span class="n">position</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+      <span class="n">Vec3</span>         <span class="n">velocity</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+      <span class="n">string</span>       <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span><span class="p">;</span>
+   <span class="n">end_script_variables</span>
+   <span class="n">script</span> <span class="n">void</span> <span class="n">Honk</span><span class="p">()</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s2">&quot; car honks&quot;</span><span class="p">);</span>
+   <span class="n">end_script</span>
+<span class="n">end_script_struct</span>
+
+<span class="n">on_initialize</span>
+   <span class="c1"># Create a new instance of the struct</span>
+   <span class="n">Car</span> <span class="n">car</span> <span class="o">=</span> <span class="n">Car</span><span class="p">();</span>
+
+   <span class="c1"># Clone the new instance</span>
+   <span class="n">Car</span> <span class="n">clone</span> <span class="o">=</span> <span class="n">Car</span><span class="p">(</span><span class="n">car</span><span class="p">);</span>
+
+   <span class="c1"># Assign some values.</span>
+   <span class="n">car</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;blue&quot;</span><span class="p">;</span>
+   <span class="n">car</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="mi">39</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mf">125.0</span><span class="p">);</span>
+   <span class="n">car</span><span class="o">.</span><span class="n">velocity</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+   <span class="c1"># Call a script</span>
+   <span class="n">car</span><span class="o">.</span><span class="n">Honk</span><span class="p">();</span>
+
+   <span class="c1"># Print the contents of the struct</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="n">car</span><span class="p">);</span>
+<span class="n">end_on_initialize</span>
+</pre></div>
+</div>
+<p><strong>output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blue</span> <span class="n">car</span> <span class="n">honks</span>
+<span class="n">struct</span><span class="p">({</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="mi">39</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">90</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">w</span> <span class="mi">125</span><span class="p">,</span> <span class="s2">&quot;velocity&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">blue</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Another test that shows a struct being used as a container type</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script_struct</span> <span class="n">Cat</span>
+   <span class="n">script_variables</span>
+      <span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span><span class="p">;</span>
+      <span class="nb">int</span> <span class="n">livesLeft</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+   <span class="n">end_script_variables</span>
+   <span class="n">script</span> <span class="nb">int</span> <span class="n">UseA_Life</span><span class="p">()</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">livesLeft</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="n">livesLeft</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">livesLeft</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;So sorry, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot; has used all of its lives&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="n">livesLeft</span><span class="p">;</span>
+   <span class="n">end_script</span>
+<span class="n">end_script_struct</span>
+
+<span class="n">on_initialize</span>
+   <span class="n">Cat</span> <span class="n">cat1</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;fluffy&quot;</span><span class="p">;</span>
+   <span class="n">Cat</span> <span class="n">cat2</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+   <span class="n">cat2</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;morris&quot;</span><span class="p">;</span>
+
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+
+   <span class="nb">int</span> <span class="n">i1</span> <span class="o">=</span> <span class="n">cat1</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="n">cat1</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot; has &quot;</span><span class="p">,</span> <span class="n">cat1</span><span class="o">.</span><span class="n">livesLeft</span><span class="p">,</span> <span class="s2">&quot; lives left&quot;</span><span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">i1</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;-FAIL- fluffy should have 0 lives left, but has &quot;</span><span class="p">,</span> <span class="n">i1</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="nb">int</span> <span class="n">i2</span> <span class="o">=</span> <span class="n">cat2</span><span class="o">.</span><span class="n">UseA_Life</span><span class="p">();</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="n">cat2</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot; has &quot;</span><span class="p">,</span> <span class="n">cat2</span><span class="o">.</span><span class="n">livesLeft</span><span class="p">,</span> <span class="s2">&quot; lives left&quot;</span><span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">i2</span> <span class="o">!=</span> <span class="mi">8</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;-FAIL- morris should have 8 lives left, but has &quot;</span><span class="p">,</span> <span class="n">i1</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="c1"># Some simple tests of Cats as container members. Not a full-blown test,</span>
+   <span class="c1"># but at least it checks compilation.</span>
+
+   <span class="n">Array</span><span class="o">&lt;</span><span class="n">Cat</span><span class="o">&gt;</span> <span class="n">catArray</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+   <span class="n">catArray</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="n">cat1</span><span class="p">);</span>
+   <span class="n">catArray</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="n">cat2</span><span class="p">);</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;CatArray: &quot;</span><span class="p">,</span> <span class="n">catArray</span><span class="p">);</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;foreach over catArray&quot;</span><span class="p">);</span>
+   <span class="n">foreach</span> <span class="p">(</span><span class="n">Cat</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">catArray</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;  cat=&quot;</span><span class="p">,</span> <span class="n">cat</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="n">Map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">Cat</span><span class="o">&gt;</span> <span class="n">catMap</span> <span class="o">=</span> <span class="p">{</span> <span class="n">cat1</span><span class="o">.</span><span class="n">name</span> <span class="p">:</span> <span class="n">cat1</span><span class="p">,</span> <span class="n">cat2</span><span class="o">.</span><span class="n">name</span> <span class="p">:</span> <span class="n">cat2</span> <span class="p">};</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Cat Map: &quot;</span><span class="p">,</span> <span class="n">catMap</span><span class="p">);</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;foreach over catMap&quot;</span><span class="p">);</span>
+   <span class="n">foreach</span> <span class="p">(</span><span class="n">string</span> <span class="n">name</span> <span class="p">:</span> <span class="n">Cat</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">catMap</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">cat</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="n">Set</span><span class="o">&lt;</span><span class="n">Cat</span><span class="o">&gt;</span> <span class="n">catSet</span> <span class="o">=</span> <span class="p">{</span> <span class="n">cat1</span><span class="p">,</span> <span class="n">cat2</span> <span class="p">};</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Cat Set: &quot;</span><span class="p">,</span> <span class="n">catSet</span><span class="p">);</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;foreach over catSet&quot;</span><span class="p">);</span>
+   <span class="n">foreach</span> <span class="p">(</span><span class="n">Cat</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">catSet</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;  cat=&quot;</span><span class="p">,</span> <span class="n">cat</span><span class="p">);</span>
+   <span class="p">}</span>
+<span class="n">end_on_initialize</span>
+</pre></div>
+</div>
+<p><strong>output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">So</span> <span class="n">sorry</span><span class="p">,</span> <span class="n">fluffy</span> <span class="n">has</span> <span class="n">used</span> <span class="nb">all</span> <span class="n">of</span> <span class="n">its</span> <span class="n">lives</span>
+<span class="n">fluffy</span> <span class="n">has</span> <span class="mi">0</span> <span class="n">lives</span> <span class="n">left</span>
+<span class="n">morris</span> <span class="n">has</span> <span class="mi">8</span> <span class="n">lives</span> <span class="n">left</span>
+<span class="n">CatArray</span><span class="p">:</span> <span class="p">{</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})}</span>
+<span class="n">foreach</span> <span class="n">over</span> <span class="n">catArray</span>
+  <span class="n">cat</span><span class="o">=</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+  <span class="n">cat</span><span class="o">=</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+<span class="n">Cat</span> <span class="n">Map</span><span class="p">:</span> <span class="p">{</span><span class="n">fluffy</span> <span class="p">:</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span> <span class="n">morris</span> <span class="p">:</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})}</span>
+<span class="n">foreach</span> <span class="n">over</span> <span class="n">catMap</span>
+  <span class="n">fluffy</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+  <span class="n">morris</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+<span class="n">Cat</span> <span class="n">Set</span><span class="p">:</span> <span class="p">{</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span> <span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})}</span>
+<span class="n">foreach</span> <span class="n">over</span> <span class="n">catSet</span>
+  <span class="n">cat</span><span class="o">=</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fluffy</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+  <span class="n">cat</span><span class="o">=</span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">morris</span><span class="p">,</span> <span class="s2">&quot;livesLeft&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="struct-on-the-fly">
+<h2>struct on the fly<a class="headerlink" href="#struct-on-the-fly" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This example uses the old syntax for creating an instance of a struct and accessing the variables and methods. <strong>This is not type-safe</strong>
+and should be avoided unless you need to dynamically add new variables to the struct.</p>
+</div>
+<pre class="literal-block"># A struct is best used with the basic types (int, double, bool, string). However,
+# it can be used to contain the data of complex types (WsfPlatform, WsfGeoPoint, etc)
+#
+script_variables
+   WsfGeoPoint point1 = WsfGeoPoint();
+   point1.Set(0,0,1);
+end_script_variables
+platform test WSF_PLATFORM
+   on_initialize2
+      # Empty structs can be created and used like this:
+      struct container = struct();
+      container-&gt;a = 1.0;     # Gets recognized as a double
+      container-&gt;b = 5.0;     # Gets recognized as a double
+      container-&gt;c = &quot;test1&quot;; # Gets recognized as a string
+      container-&gt;d = 10;      # Gets recognized as an int
+      container-&gt;e = false;   # Boolean equal to false
+      container-&gt;x = (string)&quot;test2&quot;; # type cast to a string (overkill)
+      container-&gt;y = (double)10;      # force a type cast number without a decimal point to a double
+      container-&gt;z = (string)&quot;500&quot;;   # type cast to a string (overkill)
+      container-&gt;p1 = point1;         # bring in an external complex type variable
+      container-&gt;p2 = WsfGeoPoint();  # Create an empty GeoPoint complex type
+      container-&gt;p3 = WsfGeoPoint.Construct(0,0,0); # Create a GeoPoint that has an LLA
+
+      writeln(container); # The whole container can be passed around as one object...
+
+      <strong># THE ONLY PERIOD &quot;.&quot; METHODS AVAILABLE WHEN USING THE &quot;-&gt;&quot; OPERATOR ON COMPLEX TYPES</strong>
+      <strong># ARE ToString(), IsValid(), and IsNull().</strong>
+      writeln(&quot;p1 in container is &quot;, container-&gt;p1.ToString() );
+      writeln(&quot;p2 in container is &quot;, container-&gt;p2.ToString() );
+      writeln(&quot;p3 in container is &quot;, container-&gt;p3.ToString() );
+
+      # The following illustrates how to update objects in a container.
+      # If a struct variable is a complex type, a typical period &quot;.&quot; method CANNOT
+      # be used directly on the variable because the type is not known using the &quot;-&gt;&quot; operator.
+
+      container-&gt;a = container-&gt;a + 1; # Add 1 to var a. Since it is not using a &quot;.&quot;, it will work.
+
+      #container-&gt;p2 = container-&gt;p2.Set(0,0,2); # Set p2 to a new LLA   <strong>#WRONG - THIS LINE WILL FAIL</strong>
+      #Use one of these:
+      ((WsfGeoPoint)container-&gt;p2).Set(0,0,2);   # Cast to WsfGeoPoint and call Set();   OR:
+      WsfGeoPoint p2 = container-&gt;p2;            # Get value and call Set()
+      p2.Set(0,0,2);
+
+      #container-&gt;p3.Set(0,0,3); # Set p3 to a new LLA <strong># WRONG - THIS LINE WILL FAIL</strong>
+      ((WsfGeoPoint)container-&gt;p3).Set(0,0,3);   # Cast to WsfGeoPoint and call Set();   OR:
+      WsfGeoPoint p3 = container-&gt;p3;
+      p3.Set(0,0,3);
+
+      writeln(&quot;p2 in container after updating is &quot;, container-&gt;p2.ToString() );
+      writeln(&quot;p3 in container after updating is &quot;, container-&gt;p3.ToString() );
+   end_on_initialize2
+end_platform</pre>
+<p><strong>output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span><span class="p">({</span><span class="s2">&quot;p1&quot;</span><span class="p">:</span> <span class="n">WsfGeoPoint</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;p3&quot;</span><span class="p">:</span> <span class="n">WsfGeoPoint</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">test1</span><span class="p">,</span> <span class="s2">&quot;p2&quot;</span><span class="p">:</span>
+<span class="n">WsfGeoPoint</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">test2</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
+<span class="n">p1</span> <span class="ow">in</span> <span class="n">container</span> <span class="ow">is</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">e</span> <span class="mi">1</span>
+<span class="n">p2</span> <span class="ow">in</span> <span class="n">container</span> <span class="ow">is</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">e</span> <span class="mi">0</span>
+<span class="n">p3</span> <span class="ow">in</span> <span class="n">container</span> <span class="ow">is</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">e</span> <span class="mi">0</span>
+<span class="n">p2</span> <span class="ow">in</span> <span class="n">container</span> <span class="n">after</span> <span class="n">updating</span> <span class="ow">is</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">e</span> <span class="mi">2</span>
+<span class="n">p3</span> <span class="ow">in</span> <span class="n">container</span> <span class="n">after</span> <span class="n">updating</span> <span class="ow">is</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">n</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.0</span><span class="n">e</span> <span class="mi">3</span>
+</pre></div>
+</div>
+</section>
+<section id="using-a-map-containing-a-struct">
+<h2>Using a map containing a struct<a class="headerlink" href="#using-a-map-containing-a-struct" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This example uses the old syntax for creating an instance of a struct and accessing the variables and methods. <strong>This is not type-safe</strong>
+and should be avoided unless you need to dynamically add new variables to the struct.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform</span> <span class="n">TEST_VEHICLE</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">add</span> <span class="n">processor</span> <span class="n">script_proc</span> <span class="n">WSF_SCRIPT_PROCESSOR</span>
+      <span class="n">script_variables</span>
+         <span class="n">struct</span> <span class="n">myContainer</span> <span class="o">=</span> <span class="n">struct</span><span class="p">();</span> <span class="c1"># Make a struct named myContainer</span>
+         <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>  <span class="c1"># One field being a counter</span>
+         <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">JustAColor</span> <span class="o">=</span> <span class="s2">&quot;Gray&quot;</span><span class="p">;</span> <span class="c1"># Another field with a string</span>
+         <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">JustANumber</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1"># Any number</span>
+         <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">MaxNumber</span> <span class="o">=</span> <span class="mi">50</span><span class="p">;</span> <span class="c1"># A maximum number</span>
+      <span class="n">end_script_variables</span>
+
+      <span class="n">update_interval</span> <span class="mi">1</span> <span class="n">sec</span>
+      <span class="n">on_update</span>
+         <span class="n">extern</span> <span class="n">struct</span> <span class="n">myContainer</span><span class="p">;</span> <span class="c1"># Bring in the struct &quot;myContainer&quot;</span>
+         <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">AirplaneType</span> <span class="o">=</span> <span class="s2">&quot;F-18&quot;</span><span class="p">;</span> <span class="c1"># Add a member to myContainer&quot;</span>
+         <span class="n">Map</span><span class="o">&lt;</span><span class="nb">int</span><span class="p">,</span> <span class="n">struct</span><span class="o">&gt;</span> <span class="n">MyMapWithStruct</span> <span class="o">=</span> <span class="n">Map</span><span class="o">&lt;</span><span class="nb">int</span><span class="p">,</span> <span class="n">struct</span><span class="o">&gt;</span><span class="p">();</span> <span class="c1"># Create a map of a struct</span>
+         <span class="n">MyMapWithStruct</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">myContainer</span><span class="p">;</span> <span class="c1"># Set index 0 of the map to the contents of myContainer</span>
+         <span class="n">foreach</span> <span class="p">(</span><span class="nb">int</span> <span class="n">aKey</span> <span class="p">:</span> <span class="n">struct</span> <span class="n">aData</span> <span class="ow">in</span> <span class="n">MyMapWithStruct</span><span class="p">)</span>
+         <span class="p">{</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;key, data &quot;</span><span class="p">,</span> <span class="n">aKey</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="p">,</span> <span class="n">aData</span><span class="p">);</span>
+            <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">JustANumber</span> <span class="o">=</span>  <span class="n">MATH</span><span class="o">.</span><span class="n">Roll</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">);</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">counter</span> <span class="o">&gt;=</span> <span class="mi">25</span><span class="p">)</span>  <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">JustAColor</span> <span class="o">=</span> <span class="s2">&quot;Blue&quot;</span><span class="p">;</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">counter</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">MaxNumber</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="p">)</span> <span class="n">WsfSimulation</span><span class="o">.</span><span class="n">Terminate</span><span class="p">();</span>
+            <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">counter</span> <span class="o">=</span> <span class="n">myContainer</span><span class="o">-&gt;</span><span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+         <span class="p">}</span>
+      <span class="n">end_on_update</span>
+   <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="script/struct.html#struct" title="struct"><span class="xref wsf wsf-class">struct</span></a> - struct script class</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/script_struct.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_types.html" title="Script Types"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="script_right_arrow_operator.html" title="Script Right Arrow Operator"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

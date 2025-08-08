@@ -1,0 +1,224 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfGeoPoint
+-----------
+
+.. class:: WsfGeoPoint
+   :constructible:
+   :cloneable:
+
+WsfGeoPoint is used to represent a geographic location. It is often a product or an argument of many script methods.
+
+   .. note::
+      A default-constructed :class:`WsfGeoPoint` has an LLA (Latitude, Longitude, Altitude) location of (0n, 0e, 0 meters).
+
+Static Methods
+==============
+
+.. method:: static WsfGeoPoint Construct(double aLat, double aLon, double aAlt)
+            static WsfGeoPoint Construct(string aLatitudeLongitude)
+            static WsfGeoPoint ConstructWCS(double aWCS_X, double aWCS_Y, double aWCS_Z)
+            static WsfGeoPoint ConstructWCS(Vec3 aLocationVec)
+
+   Static methods to create a point using a specified position. Latitude and longitude are in decimal degrees. Altitude
+   and world coordinates are in meters.  See Values for the allowed string format
+   of latitude longitude.
+
+   Example::
+
+    WsfGeoPoint p1 = WsfGeoPoint.Construct(40, -90, 10000);
+    WsfGeoPoint p2 = WsfGeoPoint.Construct("32:00:00n 15.03w");
+
+Methods
+=======
+
+.. method:: double Latitude()
+
+   Return the geo point's latitude [-90 .. 90] (decimal degrees)
+
+.. method:: double Longitude()
+
+   Return the geo point's longitude [-180 .. 180] (decimal degrees)
+
+.. method:: double Altitude()
+
+   Return the geo point's altitude (meters)
+
+.. method:: double X()
+
+   Return the geo point's WCS x position. (meters)
+
+.. method:: double Y()
+
+   Return the geo point's WCS y position. (meters)
+
+.. method:: double Z()
+
+   Return the geo point's WCS z position. (meters)
+
+.. method:: Vec3 LocationWCS()
+
+   Return the geo point's WCS position. (meters)
+
+.. method:: Vec3 LocationECI()
+
+   Return the geo point's ECI position at the current simulation time. (meters)
+
+.. method:: double HeightAboveEllipsoid()
+
+   Returns the height of the point above the ellipsoid (HAE) at the latitude and longitude represented by the point. (meters)
+
+   .. note::
+      To enable proper calculation (non-zero return) the :command:`gravity_model` must be defined.
+
+.. method:: double GeoidHeight()
+
+   Returns the height of the Geoid at the latitude and longitude represented by the point. (meters).
+
+   .. note::
+      To enable proper calculation (non-zero return) the :command:`gravity_model` must be defined.
+
+   Example::
+
+    Subtract off the gravity correction factor when converting from HAE to MSL.
+
+    double altMSL = altHAE - geoPnt.GeoidHeight();
+
+    Add on the gravity correction factor when converting from MSL to HAE.
+
+    double altHAE = altMSL + geoPnt.GeoidHeight();
+
+.. method:: double HeightAboveTerrain()
+
+   Returns the height of the point above the terrain at the latitude and longitude represented by the point. (meters)
+
+.. method:: double TerrainHeight()
+            static double TerrainHeight(double aLat, double aLon)
+
+   Returns the height of the terrain above mean sea level (MSL) at the latitude and longitude represented by the point.
+   (meters).
+
+   The static form returns the height of the terrain above mean sea level (MSL) at the latitude and longitude specified by the arguments.
+   (decimal degrees). This allows one to get the terrain height without first having to create a WsfGeoPoint object.
+
+   .. note::
+
+      The static methods in :class:`WsfTerrain` should be used in new applications.
+
+.. method:: void Set(WsfGeoPoint aGeoPoint)
+            void Set(double aLatitude, double aLongtitude, double aAltitude)
+            void Set(WsfPlatform aPlatform)
+            void Set(WsfTrack aTrack)
+            void Set(WsfWaypoint aWaypoint)
+            void Set(Vec3 aLocationWCS)
+
+   Set the geo point's position to the specified location.
+
+.. method:: void SetWCS(Vec3 aLocation)
+
+   Set the geo point's position to the specified location in :ref:`WCS <WCS>`. This is a synonym for the :method:`WsfGeoPoint.Set` method
+   above that takes the :class:`Vec3` argument.
+
+.. method:: void SetAltitudeAGL(double aAltitudeAGL)
+
+   Sets the geo point's altitude in above ground level (AGL) meters.
+
+
+.. method:: void SetAltitudeHAE(double aAltitudeAGL)
+
+   Set the geo point's altitude in height-above-ellipsoid (HAE) meters.
+
+   .. note::
+      To enable proper calculation (non-zero return) the :command:`gravity_model` must be defined.
+
+.. method:: void Offset(double aHeading, double aDeltaX, double aDeltaY, double aDeltaZ)
+            void Offset(double aHeading, Vec3 aDeltaXYZ)
+
+   Adds an offset to the current location defined by the point. The addition takes place in a local frame whose origin is
+   the current point. The X-Y plane is tangent to the Earth's surface at the location of the current point, with the
+   X-axis aligned pointed in the direction specified by the first argument. The Z-axis points down and the Y-axis is
+   formed such that the resulting coordinate system is right-handed (i.e., Y = Z cross X).
+
+   aHeading is in degrees clockwise from north. aDeltaX, aDeltaY and aDeltaZ are in meters.
+
+.. method:: void OffsetNED(double aDeltaNorth, double aDeltaEast, double aDeltaDown)
+            void OffsetNED(Vec3 aDeltaNED)
+
+   Adds an offset given in north/east/down form to the current location defined by the point. The addition takes place in
+   a local North-East-Down frame whose origin is the current location defined by the point.
+
+   The offsets are in meters.
+
+.. method:: void OffsetRBE(double aRange, double aBearing, double aElevation)
+
+   Adds a offset given in range/bearing/elevation form to the current location defined by the point. The addition takes
+   place in a local North-East-Down frame whose origin is the current location of the point.
+
+   aRange is in meters, aBearing and aElevation are in degrees. aBearing is measured clockwise from north.
+
+.. method:: void OffsetWCS(double aDeltaX, double aDeltaY, double aDeltaZ)
+            void OffsetWCS(Vec3 aDeltaXYZ)
+
+   Adds a WCS vector to the current location of the point.
+
+   The offsets are in meters.
+
+.. method:: void Extrapolate(double aHeading, double aDistance)
+
+   Extrapolates the point's latitude and longitude position along a great circle heading for the specified distance. The
+   altitude is unchanged.
+
+   Heading in units of degrees measured clockwise from north; distance in units of meters.
+
+Relative Geometry Methods
+=========================
+
+.. method:: double SlantRangeTo(WsfGeoPoint aGeoPoint)
+            double SlantRangeTo(WsfGeoPoint aGeoPoint, bool aUseSpherical)
+
+   Returns the slant range from the current geo point to the specified geo point. If *aUseSpherical* is true, calculate using spherical coordinates; if it is false or left unspecified, calculate using ellipsoidal coordinates.
+
+.. method:: double GroundRangeTo(WsfGeoPoint aGeoPoint)
+
+   Returns the approximate ground range from the current geo point to the specified geo point.
+
+.. method:: double TrueBearingTo(WsfGeoPoint aGeoPoint)
+
+   Returns the true bearing from the current geo point to the specified geo point.  The bearing is relative to due north,
+   clockwise direction being positive.
+
+Other Methods
+=============
+
+.. method:: string ToString()
+
+   Return the point formatted as a string suitable for display.
+
+.. method:: string ToStringMGRS()
+
+   Return the point as an MGRS coordinate.
+
+.. method:: bool WithinZoneOf(WsfPlatform aPlatform, string aZoneName)
+
+   Return true if the point is within the zone on the specified platform.
+
+.. method:: bool WithinZone(string aZoneName)
+
+   Return true if the point is within the global zone.
+
+.. method:: double ApparentTimeNow()
+
+   Return the apparent mean solar time of this point in hours since midnight.
+
+.. method:: double ApparentTime(Calendar aEpoch)
+
+   Return the apparent mean solar time of this point at the given *aEpoch* in hours since midnight.

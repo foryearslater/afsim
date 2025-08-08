@@ -1,0 +1,95 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCommMediumMessageStatus
+--------------------------
+
+.. class:: WsfCommMediumMessageStatus
+
+Description
+===========
+
+The WsfCommMediumMessageStatus script class provides access to the internal data maintained by
+:command:`medium` objects during typical processing. Usage of this class allows inspection
+by the user of message transmission and propagation states for higher complexity script method logic
+and analysis purposes. The only mutable factor available to users using this class is to prevent
+future message delivery, and all other script objects available via this object are not mutable.
+
+Methods
+=======
+
+.. method:: WsfCommMessage GetMessage()
+
+   Returns the message associated with this message status object.
+
+.. method:: bool IsTransmitting()
+
+   Returns true if the message associated with this object is currently being transmitted over the medium.
+   Returns false if the message has finished transmitting and is currently propagating.
+
+   .. note::
+
+      If a message is transmitting, it is also implicitly propagating.
+
+.. method:: double GetTimeStart()
+
+   Returns the simulation time that this message began transmitting over the medium.
+
+.. method:: double GetTimeTransmissionEnd()
+
+   If a message is currently transmitting, provides the time this transmission is **expected** to end
+   transmission over the medium. If the message is **not** currently transmitting, this is the exact
+   time this message ended transmission over the medium.
+
+   .. note::
+
+      In the case that the message is currently transmitting, this time may be modified due to various
+      conditions within the communication framework that are encountered during transmission.
+      While usage of this time is the typical use case, it is not guaranteed.
+
+.. method:: double GetTimeDelivery()
+
+   Returns the simulation time this message is **expected** to be delivered over this medium.
+
+   .. note::
+
+      This is **always** an estimation, as the message status object is removed upon message delivery.
+      Various conditions within the communications framework that are encountered during transmission and
+      propagation may alter this time, or prevent the delivery of this message completely.
+
+.. method:: bool GetDeliveryFailure()
+
+   Returns true if this message is indicated to **NOT** be delivered. Messages that fail transmission or
+   propagation for various reasons internal to the communications framework still progress through the
+   typical medium processing even if indicated to not be delivered. The receiving communications object
+   will not receive this message.
+
+   Returns false if the message is processing normally, and is currently indicated to be delivered.
+
+   .. note::
+
+      This value may change at any point in the processing of a message over a medium. It is only valid
+      at the time this method is called.
+
+.. method:: bool SetDeliveryFailure()
+
+   Changes the abort delivery flag for this message such that it will **NOT** be delivered. Returns true
+   if this action was successful, false otherwise.
+
+   .. note::
+
+      This call is only applicable for messages that are currently not indicated to abort delivery. Users
+      may not change a message already indicated to not be delivered to one that will be delivered.
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt

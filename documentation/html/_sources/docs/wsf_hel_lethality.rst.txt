@@ -1,0 +1,128 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_HEL_LETHALITY
+=================
+
+.. model:: weapon_effects WSF_HEL_LETHALITY
+
+.. parsed-literal::
+
+   :command:`weapon_effects` <name> :model:`WSF_HEL_LETHALITY`
+      :command:`weapon_effects` Commands ...
+      :command:`WSF_EXPLICIT_WEAPON_EFFECTS` Commands ...
+
+      region <platform_type> <region_name>
+         Commands_
+      end_region
+
+      target_type < :command:`platform` type >
+         Commands_
+      end_target_type
+
+      category <category name>
+         Commands_
+      end_category
+
+      manage_kills_ ...
+
+   end weapon_effects
+
+Overview
+--------
+
+This is a specialized lethality that applies damage based on energy deposition by a High-Energy Laser (HEL) weapon
+(:model:`WSF_LASER_WEAPON` or :model:`WSF_CUED_LASER_WEAPON`).
+Lethality can be defined with respect to a region, target type, or category designation.  Regions are specified areas
+on platforms.  Currently these only have meaning when referring to defined lethal areas on an intersection mesh and
+defined in a :model:`WSF_INTERSECT_PROCESSOR` on the target.   platform_type definitions apply to all targets of the given
+type.  Category definitions apply to all targets that have been tagged with the given :command:`platform.category`.
+
+.. note::
+
+   In order to define custom scripted effects on target regions, implement either
+   :command:`weapon_effects.on_target_damaged` or :command:`weapon_effects.on_target_killed`.
+
+.. block:: WSF_HEL_LETHALITY
+   
+Commands
+--------
+
+.. attention::
+
+   The following :command:`weapon_effects` commands are not compatible with WSF_HEL_LETHALITY.  A warning will be issued when attempting to use these commands.
+
+   .. hlist::
+      :columns: 2
+	  
+      * :command:`weapon_effects.intercept_pk`
+      * :command:`weapon_effects.launch_pk`  
+      * :command:`weapon_effects.use_intercept_pk`
+      * :command:`weapon_effects.use_launch_pk`
+
+
+.. command:: damage_radius <length-value> 
+   
+   Specifies the radius over which the beam is effective.  If this is smaller than the beam size, only that part of the
+   beam incident within the circular region will be used for lethality calculations.  If it is larger than the beam size,
+   the entire beam will be used.  If specified, the area represented by the damage radius will be used in the energy
+   density calculation.  If not specified, the full beam size will be used in the energy density calculation.
+   
+   Default: Not specified (the beam size is used) 
+
+.. command:: minimum_energy <energy-value>
+   
+   Specifies the minimum energy deposition on target necessary to apply the lethality to the target.
+
+.. command:: minimum_energy_density  <fluence-value> 
+   
+   Specifies the minimum energy density (in j/cm^2 or equivalent) deposition on target necessary to apply the lethality to
+   the target.
+
+.. command:: pk_energy_table  table 
+   
+   Define a probability of kill vs. threshold energy table.
+   The table should have the following form::
+   
+     *number-of-rows*
+     *p-k_1 energy-threshold_1*
+     *p-k_2 energy-threshold_2*
+     *...*
+     *p-k_n energy-threshold_n*
+   
+   A simple example is as follows::
+   
+     pk_energy_table
+        5
+        0.1 1 kj
+        0.3 2 kj
+        0.5 3 kj
+        0.7 4 kj
+        0.9 5 kj
+      end_pk_energy_table
+   
+   Energy thresholds should be listed in increasing order.
+   A p-k draw will be made after each :command:`WSF_LASER_WEAPON.firing_update_interval` during the engagement.  The reference p-k value will be interpolated from the table
+   depending on the current cumulative energy deposition on target.  If the draw is less than the the reference value, the
+   effect of the lethality will be processed.
+   
+   .. note:: Changing the associated weapon's :command:`WSF_LASER_WEAPON.firing_update_interval` will affect the overall probability of kill when using the pk_energy_table_. More p-k draws will be made with decreasing :command:`WSF_LASER_WEAPON.firing_update_interval` (effect is more likely overall), and fewer p-k draws will be made with increasing :command:`WSF_LASER_WEAPON.firing_update_interval` (effect is less likely overall).
+
+General Commands
+----------------
+
+.. command:: manage_kills <boolean-value> 
+   
+   Tells the simulation whether it can kill and remove platforms.
+   For an API-based simulation, this should be disabled,
+   otherwise, it should be enabled.
+   
+   Default: true

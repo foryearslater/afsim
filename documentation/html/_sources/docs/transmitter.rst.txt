@@ -1,0 +1,456 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+transmitter
+-----------
+
+.. block:: _
+
+.. command:: transmitter ... end_transmitter
+     :block:
+
+.. parsed-literal::
+
+   :command:`_.transmitter`
+      ... :ref:`Antenna_Commands` ...
+
+      alternate_frequency_ <id> <frequency-value>
+      antenna_pattern_ <pattern-name>
+      antenna_pattern_table_ ... end_antenna_pattern_table
+      attenuation_model_ <derived-name>
+      attenuation_  ...  (attenuation is a synonym for attenuation_model)
+      aux_data_  ... end_aux_data
+      bandwidth_ <frequency-value>
+      beam_tilt_ <angle-value>
+      check_terrain_masking_ <boolean-value>
+      terrain_masking_mode_ [ terrain_and_horizon | terrain_only | horizon_only ]
+      duty_cycle_ <real-value>
+      earth_radius_multiplier_ <value>
+      effective_earth_radius_  <length-value>
+      frequency_ <frequency-value>
+      wavelength_ <length-value>
+      frequency_channels_  <lower-frequency-value> <step-frequency-value> <upper-frequency-value>
+      frequency_list_  ... end_frequency_list
+      internal_loss_ <db-ratio-value>
+      polarization_ [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular | default ]
+      power_ <power-value>
+      powers_ ... end_powers
+      propagation_model_ <derived-name>
+      pulse_compression_ratio_ <db-ratio-value>
+      pulse_repetition_frequency_ <frequency-value>
+      pulse_repetition_interval_ <time-value>
+      pulse_repetition_frequency_ ... end_pulse_repetition_frequency
+      pulse_repetition_interval_ ... end_pulse_repetition_interval
+      pulse_repetition_frequencies_ ... end_pulse_repetition_frequencies
+      pulse_repetition_intervals_ ... end_pulse_repetition_intervals
+      pulse_width_ <time-value>
+      use_peak_power_ <boolean-value>
+   end_transmitter
+
+Overview
+========
+
+The transmitter block defines the attributes of an electromagnetic transmitter.  Various :command:`sensor` and
+:command:`communication <comm>` objects make use of transmitters.
+
+Commands
+========
+
+.. command:: alternate_frequency <id> <frequency-value>
+
+   Specifies alternate frequencies. For :model:`WSF_RADAR_SENSOR` types, random frequencies can also be drawn during
+   simulation initialization via the :command:`randomize_radar_frequencies` command.
+   Multiple entries with consecutively increasing <id>'s may be entered.
+
+   <id>
+      An ordered input ID in the range [1,N] for adding multiple alternate frequencies.
+
+   <frequency-value>
+      The alternate frequency value for the given <id>.
+
+   .. note:: The frequency_ value is required and has an <id> of 0.  The frequency_ entry must precede all
+             alternate_frequency_ entries because the alternate frequency list is cleared when the
+             frequency_ value is parsed.
+
+   .. note:: On :model:`WSF_RADAR_SENSOR` types with multiple beams, each beam must have an equal number of
+             'frequency_id' inputs.
+
+   .. note:: Currently only used by :model:`WSF_RADAR_SENSOR` and :command:`comm`.
+
+.. command:: antenna_pattern <pattern-name>
+
+   Specifies the name of the antenna gain pattern used by the transmitter. The pattern must be defined using the
+   :command:`antenna_pattern` command.
+
+   **Default:** If neither antenna_pattern_ or antenna_pattern_table_ is specified, the antenna gain will assumed
+   to be a constant value of 1 (0 dB).
+
+   .. note::
+      If both antenna_pattern_ and antenna_pattern_table_ are specified, the last one specified
+      is used.
+
+
+.. command:: antenna_pattern_table ... end_antenna_pattern_table
+
+   This command allows the definition of frequency-dependent or polarization- and frequency-dependent antenna gain
+   pattern. Each named antenna pattern must be defined using the :command:`antenna_pattern` command.
+
+   To define a table that is only frequency-dependent
+
+   .. parsed-literal::
+
+    antenna_pattern_table_
+       frequency_ <frequency-value-1> <pattern-name-1>
+       frequency_ <frequency-value-2> <pattern-name-2>
+       frequency_ <frequency-value-n> <pattern-name-n>
+    end_antenna_pattern_table
+
+   To define a table that is polarization- and frequency-dependent:
+
+   .. parsed-literal::
+
+    antenna_pattern_table_
+       polarization_ default
+          frequency_ <frequency-value-1> <pattern-name-1>
+          frequency_ <frequency-value-2> <pattern-name-2>
+          frequency_ <frequency-value-n> <pattern-name-n>
+       polarization_ <polarization-type>
+          frequency_ <frequency-value-1> <pattern-name-1>
+          frequency_ <frequency-value-n> <pattern-name-n>
+       polarization_ <polarization-type>
+          frequency_ <frequency-value-1> <pattern-name-1>
+    end_antenna_pattern_table
+
+   When defining a polarization- and frequency-dependent table, the following rules must be noted:
+
+   * Any 'frequency' entry that occurs before the first 'polarization' entry is assumed to apply to the 'default'
+     polarization.
+   * Any polarization that is not defined will use the definition for the 'default' polarization.
+   * A 'default' polarization must be defined.
+
+
+   The process for determining gain uses the following algorithm:
+
+   * If a polarization-dependent table is being used, the polarization of the received signal is used to locate the
+     appropriate polarization-specific set of frequency entries. If there is not a corresponding entry for the polarization
+     of the signal being received, the 'default' entry is used.
+   * Frequencies greater than or equal *frequency-value-m* and less than *frequency-value-m+1* will use *pattern-name-m*
+   * Frequencies less than *frequency-value-1* will use *pattern-name-1*.
+   * Frequencies greater than or equal to *frequency-value-n* will use *pattern-name-n*.
+
+   **Default:** If neither antenna_pattern_ or antenna_pattern_table_ is specified, the antenna gain will assumed to be a constant value of 1 (0 dB).
+
+   .. note::
+      If both antenna_pattern_ and antenna_pattern_table_ are specified, the last specified one
+      is used.
+
+   .. note::
+      Entries will be sorted into increasing order of frequency.
+
+
+.. command:: attenuation_model <derived-name>
+             attenuation_model <base-name> ...commands... end_attenuation_model
+.. command:: attenuation  .....  (attenuation is a synonym for attenuation_model)
+
+   Specify the attenuation model. See the global command :command:`attenuation_model` for more information about the available
+   attenuation models and how to configure the models.
+
+   **Default:** **none** (No attenuation effects)
+
+   .. note::
+      The **end_attenuation[_model]** command is optional for the **none**, **blake**, models.
+
+
+.. command:: aux_data  ... end_aux_data
+
+   Defines application-specific 'auxiliary data'. See :command:`_.aux_data`
+
+   **Default:** No auxiliary data is defined.
+
+.. command:: bandwidth <frequency-value>
+
+   Specifies the spectral bandwidth of the transmitter. The transmit signals whose frequency is between:
+    [ frequency - 1/2 bandwidth, frequency + 1/2 bandwidth ]
+
+   **Default:** 0 hz
+
+   .. note::
+      For frequency-hopping systems, the frequency should be set to the center of
+      the frequency-hopping range, and the bandwidth should be set to encompass the range of frequencies. Note that WSF
+      does not currently model the actual instantaneous frequency hopping.
+
+
+.. command:: beam_tilt <angle-value>
+
+   This is only to be used when defining systems that employ multiple beams (e.g., when using multiple beams in
+   :model:`WSF_RADAR_SENSOR`). It specifies the elevation angle of the beam center above the horizontal plane.
+
+   Default: If there is an implicitly associated receiver(e.g. as in :model:`WSF_RADAR_SENSOR`), the default will be the value
+   of beam_tilt from the associated :command:`_.receiver`. Zero degrees is assume if there is not an associated
+   receiver, or if **beam_tilt** was not specified in the associated receiver}}
+
+   .. note::
+      the :command:`_.antenna_commands.antenna_tilt` or :command:`_.articulated_part.pitch` commands should not be used with this command.
+
+.. command:: check_terrain_masking <boolean-value>
+
+   Toggles the computation of terrain and horizon line of sight. This may be set to 'off' to either reduce computation or model sensors and comm devices which do not have line of sight limitations. By default, horizon masking is checked first, followed by a separate terrain masking check if terrain is loaded. The simple horizon masking check assumes a smooth bald spherical Earth and that any object below zero mean sea level is obscured. For subsurface sensors, horizon checking can be disabled by setting the terrain_masking_mode_ to terrain_only.
+
+   **Default:** on
+
+.. command:: terrain_masking_mode [ terrain_and_horizon | terrain_only | horizon_only ]
+
+   Sets the mode or type of masking checks to perform. By default, both horizon and terrain masking checks are enabled.
+
+   **Default:** terrain_and_horizon
+
+.. command:: duty_cycle <real-value>
+
+   Specifies the transmit duty-cycle for a pulsed transmitter. If entered then this value is multiplied by the peak power
+   entered and used as the average power in any calculations not specifically calling out for peak power.
+
+   **Default:** 1.0
+
+.. command:: earth_radius_multiplier <value>
+.. command:: effective_earth_radius  <length-value>
+
+   Specify either the multiplier for Earth's radius, or the effective earth radius, used to compute the effects of
+   atmospheric refraction of radio-frequency signals.
+
+   **Default:** earth_radius_multiplier 1.33333 (4/3)
+
+   .. note::
+      The Earth's radius is considered to be 6366707.019 meters, so the default effective Earth radius will
+      be 8488942.693 meters.
+
+.. command:: frequency <frequency-value>
+.. command:: wavelength <length-value>
+
+   The center frequency of the radiation emitted by the transmitter. The spectrum of frequencies transmitted will be:
+    [ frequency - 1/2 bandwidth, frequency + 1/2 bandwidth ]
+   **wavelength** is an alternative mechanism for entering the frequency. The resulting frequency will be computed as:
+    frequency = speed-of-light / wavelength
+
+   **Default:** None. Either frequency_, frequency_channels_ or frequency_list_ must be specified. If more
+   that one is specified, the last one specified is used.
+
+   .. note::
+      For frequency-hopping systems, the frequency should be set to the center of
+      the frequency-hopping range, and the bandwidth should be set to encompass the range of frequencies. Note that WSF
+      does not currently model the actual instantaneous frequency hopping.
+
+
+.. command:: frequency_channels  <lower-frequency-value> <step-frequency-value> <upper-frequency-value>
+
+   Specify alternate frequency channels. For :model:`WSF_RADAR_SENSOR` types, random frequencies can also be drawn during simulation initialization via the
+   :command:`randomize_radar_frequencies` command. A list of alternate
+   frequencies will be created from this input based on the channel limits and step size.
+
+   <lower-frequency-value> :
+      The lower bound of the frequency channel.
+   <step-frequency-value> :
+      The frequency step size for the frequency channel.
+   <upper-frequency-value> :
+      The upper bound of the frequency channel.
+
+   **Default:**: None. Either frequency_, frequency_channels_ or frequency_list_ must be specified. If more
+   that one is specified, the last one specified is used.
+
+   .. note::
+      On :model:`WSF_RADAR_SENSOR` types with multiple beams, the frequency channel size must be the same for
+      each beam.
+
+   .. note::
+      On :model:`WSF_RADAR_SENSOR` types the beams frequency will be set automatically to the
+      <lower-frequency-value> unless the
+      :command:`randomize_radar_frequencies` command is specified.
+
+   .. note::
+      Currently only used by :model:`WSF_RADAR_SENSOR` and :command:`comm`.
+
+
+.. command:: frequency_list  .. end_frequency_list
+
+   Specifies a list of alternate frequencies.  For :model:`WSF_RADAR_SENSOR` types, random frequencies can also be drawn during simulation initialization via the
+   :command:`randomize_radar_frequencies` command. Multiple entries with
+   consecutively increasing <id>'s may be entered.
+
+   .. parsed-literal::
+
+    frequency_list_
+       frequency_id <id> <frequency-value>
+       ...
+       frequency_id <id> <frequency-value>
+    end_frequency_list
+
+   <id>
+      An ordered input ID in the range [1,N] for adding multiple alternate frequencies.
+
+   <frequency-value>
+      The alternate frequency value for the given <id>.
+
+   **Default:** None. Either frequency_, frequency_channels_ or frequency_list_ must be specified. If more
+   that one is specified, the last one specified is used.
+
+   .. note::
+      On :model:`WSF_RADAR_SENSOR` types with multiple beams, each beam must have an equal number of
+      'frequency_id' inputs.
+
+   .. note::
+      Currently only used by :model:`WSF_RADAR_SENSOR` and :command:`comm`.
+
+.. command:: internal_loss <db-ratio-value>
+
+   A single number that can be used to model various losses between the transmitter and the antenna.
+
+   **Default:** 0 db
+
+   .. note::
+      This is a 'loss factor' and is typically has a positive 'dB' value or a linear value greater than 1.
+
+
+.. command:: polarization [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular | default ]
+
+   Specifies the polarization of the transmitted signal. This is an optional entry that can be used for modeling the
+   effects of polarization mismatch.
+
+   **Default:** default
+
+.. command:: power <power-value>
+
+   Peak power output from the transmitter.
+
+  **Default:** None. Either power_ or powers_ must be specified.
+
+   .. note::
+      If both power_ and powers_ are specified, the last one specified is used.
+
+
+.. command:: powers ... end_powers
+
+   This command allows the definition of frequency-dependent peak power output from the transmitter.
+
+   .. parsed-literal::
+
+    powers_
+       frequency_ <frequency-value-1> <power-value-1>
+       frequency_ <frequency-value-2> <power-value-2>
+       ...
+       frequency_ <frequency-value-n> <power-value-n>
+    end_powers
+
+   The process for determining power uses the following algorithm:
+
+   * Frequencies greater than or equal *frequency-value-m* and less than *frequency-value-m+1* will use *power-value-m*
+   * Frequencies less than *frequency-value-1* will use *power-value-1*.
+   * Frequencies greater than or equal to *frequency-value-n* will use *power-value-n*.
+
+   **Default:** None. Either power_ or powers_ must be specified.
+
+   .. note::
+      Entries will be sorted into increasing order of frequency.
+
+   .. note::
+      If both power_ and powers_ are specified, the last one specified is used.
+
+
+.. command:: propagation_model <derived-name>
+             propagation_model <base-name> ...commands... end_propagation_model
+
+   Specify the propagation model. See global command :command:`propagation_model` for more information about the available
+   propagation models and how to configure the models.
+
+   **Default:** **none** (No propagation effects)
+
+.. command:: pulse_compression_ratio <db-ratio-value>
+
+   Specify the gain due to pulse compression/coding techniques.
+
+   **Default:** 0 dB (no pulse compression)
+
+   .. note::
+      This does not alter the effective radiated power of the transmitted signal. The effects of pulse
+      compression are applied during the reception of the signal. It is defined on the transmitter because that is where the
+      compression/coding actually occurs.
+
+
+.. command:: pulse_repetition_frequency <frequency-value>
+.. command:: pulse_repetition_interval <time-value>
+
+   Specify the pulse rate or inter-pulse spacing for a pulsed transmitter, using one of the following methods:
+   - The average number pulses per unit second (*pulse_repetition_frequency*}}.
+   - The average time between the leading edge of the pulses (*pulse_repetition_interval*).
+
+   **Default:** pulse_repetition_frequency 0 hz
+
+   .. note::
+      If a non-zero value is specified then a non-zero pulse_width_ must be specified.
+
+
+.. command:: pulse_repetition_frequencies ... end_pulse_repetition_frequencies
+.. command:: pulse_repetition_intervals ... pulse_repetition_intervals
+
+   Specifies a list of the pulse rates or inter-pulse spacings for a pulsed transmitter, using one of the following methods:
+   - The average number pulses per unit second (''pulse_repetition_frequencies ... end_pulse_repetition_frequencies'').
+   - The average time between the leading edge of the pulses (''pulse_repetition_intervals .. end_pulse_repetition_intervals'').
+
+   .. parsed-literal::
+
+    pulse_repetition_frequencies
+       prf_id <id> <frequency-value>
+       ...
+       prf_id <id> <frequency-value>
+    end_pulse_repetition_frequencies
+
+    pulse_repetition_intervals
+       pri_id <id> <time-value>
+       ...
+       pri_id <id> <time-value>
+    end_pulse_repetition_intervals
+
+   <id>
+      An ordered input ID in the range [1,N] for adding multiple pulse repetition_frequencies.
+
+   <frequency-value>
+      The pulse repetition frequency value for the given <id>.
+
+   <time-value>
+      The pulse repetition interval value for the given <id>.
+
+   **Default:** 0 Hz, not defined
+
+   .. note::
+      If a non-zero value is specified then a non-zero pulse_width_ must be specified.
+
+.. command:: pulse_width <time-value>
+
+   Specifies the average width of the pulse (in units of time) for a pulsed transmitter.
+
+   **Default:** 0 seconds
+
+   .. note::
+      If a non-zero value is specified then a non-zero pulse_repetition_frequency_ or
+      pulse_repetition_interval_ must be specified.
+
+.. command:: use_peak_power <boolean-value>
+
+   When set to true, toggles this transmitter to use peak power in all applicable internal
+   calculations, and by extension, all resulting interactions predicated upon by this transmitter.
+   When set to false, average power is used instead.
+
+   **Default:** False (average power is used)
+
+See Also
+========
+
+* :command:`_.receiver`
+
+.. include:: _transmitter.wsf_mil.txt

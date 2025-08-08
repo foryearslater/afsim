@@ -1,0 +1,165 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Script demo 3.txt
+-----------------
+
+.. parsed-literal::
+
+ ################################################################################
+ #                           Relative Geometry Example
+ #
+ # This example demonstrates the syntax of the relative geometry method.
+ ################################################################################
+
+ script_interface
+    debug
+ end_script_interface
+
+ dis_interface
+   record output/script_demo_3.rep
+   mover_update_timer            5.0 seconds
+   entity_position_threshold    10 m  # default is 1 m
+   heartbeat_timer              5.0 seconds
+ end_dis_interface
+
+ // The 'object' body that will be referenced
+ platform_type SUB_BODY WSF_PLATFORM
+    icon 737
+    mover WSF_AIR_MOVER end_mover
+ end_platform_type
+
+ // The 'reference' body
+ platform_type REF_BODY WSF_PLATFORM
+    icon Truck
+    mover WSF_GROUND_MOVER end_mover
+    processor demo WSF_SCRIPT_PROCESSOR
+       script_variables
+          int count = 1;
+          double ref_heading = 0.0;
+       end_script_variables
+       update_interval 1 sec
+       on_update
+          if (TIME_NOW > 0.0)
+          {
+             writeln("\nCommander Heading ", PLATFORM.Heading());
+             foreach (WsfPlatform sub in PLATFORM.Subordinates(""))
+             {
+                // Create a track and a point from the subordinate platform so
+                // we can test alternate forms using the same data.
+
+                WsfTrack    track = sub.MakeTrack();
+                WsfGeoPoint point = sub.WsfGeoPoint();
+                double      lat   = sub.Latitude();
+                double      lon   = sub.Longitude();
+                double      alt   = sub.Altitude();
+
+                writeln("Platform: ", sub.Name());
+                writeln("  Slant  Range    : ",
+                      " ", PLATFORM.SlantRangeTo(sub),
+                      " ", PLATFORM.SlantRangeTo(track),
+                      " ", PLATFORM.SlantRangeTo(point),
+                      " ", PLATFORM.SlantRangeTo(lat, lon, alt));
+                writeln("  Ground Range    : ",
+                      " ", PLATFORM.GroundRangeTo(sub),
+                      " ", PLATFORM.GroundRangeTo(track),
+                      " ", PLATFORM.GroundRangeTo(point),
+                      " ", PLATFORM.GroundRangeTo(lat, lon, alt));
+                writeln("  True     Bearing: ",
+                      " ", PLATFORM.TrueBearingTo(sub),
+                      " ", PLATFORM.TrueBearingTo(track),
+                      " ", PLATFORM.TrueBearingTo(point),
+                      " ", PLATFORM.TrueBearingTo(lat, lon, alt));
+                writeln("  Relative Bearing: ",
+                      " ", PLATFORM.RelativeBearingTo(sub),
+                      " ", PLATFORM.RelativeBearingTo(track),
+                      " ", PLATFORM.RelativeBearingTo(point),
+                      " ", PLATFORM.RelativeBearingTo(lat, lon, alt));
+                writeln("  Closing  Speed  : ",
+                      " ", PLATFORM.ClosingSpeedOf(sub)   * MATH.NMPH_PER_MPS(), " kts",
+                      " ", PLATFORM.ClosingSpeedOf(track) * MATH.NMPH_PER_MPS(), " kts");
+             }
+             count = count + 1;
+             ref_heading = ref_heading + 90;
+             PLATFORM.TurnToHeading(ref_heading);
+             if ( count == 5 )
+                PROCESSOR.TurnOff();
+          }
+       end_on_update
+    end_processor
+ end_platform_type
+
+ ################################################################################
+
+ platform gb-1 REF_BODY
+    commander SELF
+    route
+      position 40n 90w heading 0 deg speed 50 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-n SUB_BODY
+    commander gb-1
+    route
+       position 41n 90w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-ne SUB_BODY
+    commander gb-1
+    route
+       position 41n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-e SUB_BODY
+    commander gb-1
+    route
+       position 40n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-se SUB_BODY
+    commander gb-1
+    route
+       position 39n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-s SUB_BODY
+    commander gb-1
+    route
+       position 39n 90w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-sw SUB_BODY
+    commander gb-1
+    route
+       position 39n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-w SUB_BODY
+    commander gb-1
+    route
+       position 40n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ platform ab-nw SUB_BODY
+    commander gb-1
+    route
+       position 41n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+    end_route
+ end_platform
+
+ end_time 20 sec

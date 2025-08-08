@@ -1,0 +1,662 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Electronic Warfare Effect Aggregation &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Link Update Guide" href="link_update_guide.html" />
+    <link rel="prev" title="Communications Primer" href="communications_primer.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="link_update_guide.html" title="Link Update Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="communications_primer.html" title="Communications Primer"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="electronic-warfare-effect-aggregation">
+<span id="id1"></span><h1>Electronic Warfare Effect Aggregation<a class="headerlink" href="#electronic-warfare-effect-aggregation" title="Permalink to this headline">¶</a></h1>
+<pre class="literal-block"><a class="reference internal" href="#overview">Overview</a>
+<a class="reference internal" href="#electronic-attack-effect-coherency">Electronic Attack Effect Coherency</a>
+  <a class="reference internal" href="#effect-coherency-types">Effect Coherency Types</a>
+  <a class="reference internal" href="#jamming-power-types">Jamming Power Types</a>
+<a class="reference internal" href="#ew-effects-interaction-variables">EW Effects Interaction Variables</a>
+  <a class="reference internal" href="#jamming-effects-variable-structure">Jamming Effects Variable Structure</a>
+  <a class="reference internal" href="#signal-effects-variable-structure">Signal Effects Variable Structure</a>
+  <a class="reference internal" href="#track-effects-variable-structure">Track Effects Variable Structure</a>
+  <a class="reference internal" href="#message-effects-variable-structure">Message Effects Variable Structure</a>
+<a class="reference internal" href="#aggregation-types">Aggregation Types</a></pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The Electronic Warfare (EW) effects in WSF include Electronic_Attack_Effects &amp; Electronic_Protect_Effects that are
+applied during a transmitter-receiver or transmitter-target-receiver interaction as defined by this effects behavior in
+software and user modifiable inputs. During this interaction, the interaction data for the EW are applied by applying
+the unmitigated Electronic Attack (EA) effect then applying any mitigating Electronic Protect (EP) effects to the
+Electronic Attack effect. This process is repeated until all EA effects on all techniques are applied along with
+mitigating EP effects and aggregated into a single data set that is used to modify the interaction between the
+transmitter-receiver or transmitter-target-receiver. The aggregation of this EW effects is defined below for more
+insight into how WSF is applying these effects.</p>
+</section>
+<section id="electronic-attack-effect-coherency">
+<h2>Electronic Attack Effect Coherency<a class="headerlink" href="#electronic-attack-effect-coherency" title="Permalink to this headline">¶</a></h2>
+<p>Jamming power within an interaction calculation is calculated using general WSF Electromagnetic calculations. Each EA
+effect possesses one or more of the coherency type on the individual effect. As the effects are applied the types of
+effect coherencies encountered are summed and at the end of all the EW effects calculations the jamming power is
+divided into three types of jamming power (non-coherent, non-coherent-pulse, coherent) based on the EA effects
+coherencies encountered during the application of the effects. The coherency types available are defined in the table
+below along with the jamming power type it is summed into.</p>
+<section id="effect-coherency-types">
+<h3>Effect Coherency Types<a class="headerlink" href="#effect-coherency-types" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 55%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Effect Coherency Types</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Jamming Power Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>None</strong></p></td>
+<td><p>Coherency not specified for the given effect.
+Assumes Non-Coherent</p></td>
+<td><p>Noise</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Non-Coherent</strong></p></td>
+<td><p>Waveform is non-coherent with the transmit and/or
+expected receive waveform. Assumes continuous noise
+type waveform in most basic sense.</p></td>
+<td><p>Noise</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Non-Coherent Pulse</strong></p></td>
+<td><p>Waveform is pulsed and is non-coherent with the
+transmit and/or expected receive waveform. Assumes
+pulsed noise type waveform in most basic sense.</p></td>
+<td><p>Pulse Noise</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Coherent</strong></p></td>
+<td><p>Waveform is coherent with the transmit and/or expected
+receive waveform. Assumed to be closely representing
+the signal in most basic sense.</p></td>
+<td><p>Coherent</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Coherent-Pulse</strong></p></td>
+<td><p>Waveform is pulse and is coherent with the transmit
+and/or expected receive waveform. Assumed to be
+closely representing the pulsed signal in most basic
+sense</p></td>
+<td><p>Coherent</p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+<section id="jamming-power-types">
+<h3>Jamming Power Types<a class="headerlink" href="#jamming-power-types" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 50%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Jamming Power Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Mapped Effect Coherency Type(s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Noise</strong></p></td>
+<td><p>Jamming induced power that acts like noise
+power to a <a class="reference internal" href="../receiver.html#_.receiver" title="receiver (_)"><span class="xref wsf wsf-command">receiver</span></a>.</p></td>
+<td><p>None &amp; Non-Coherent</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Pulsed-Noise</strong></p></td>
+<td><p>Pulse jamming power that acts like noise to a
+<a class="reference internal" href="../receiver.html#_.receiver" title="receiver (_)"><span class="xref wsf wsf-command">receiver</span></a>.</p></td>
+<td><p>Non-Coherent Pulse</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Coherent</strong></p></td>
+<td><p>Coherent (continuous and/or pulsed)jamming power
+that acts like a signal to a <a class="reference internal" href="../receiver.html#_.receiver" title="receiver (_)"><span class="xref wsf wsf-command">receiver</span></a>.</p></td>
+<td><p>Coherent &amp; Coherent Pulse</p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>Within most interactions the signal-to-interference (S/I) ratio is calculated using the signal power divided by the
+noise power + clutter power + jammer power. The jammer power used for the interference is the noise + pulse
+(non-coherent) jammer power.</p>
+</section>
+</section>
+<section id="ew-effects-interaction-variables">
+<h2>EW Effects Interaction Variables<a class="headerlink" href="#ew-effects-interaction-variables" title="Permalink to this headline">¶</a></h2>
+<p>The following EW effects variable structure is defined for each of the three types of jamming power as well as a
+separate signal, track and message effect structures. The following tables summarize these two structures and
+associated variables:</p>
+<section id="jamming-effects-variable-structure">
+<h3>Jamming Effects Variable Structure<a class="headerlink" href="#jamming-effects-variable-structure" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 18%" />
+<col style="width: 15%" />
+<col style="width: 18%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Power Effect Variable</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Aggregation Type(s)</p></th>
+<th class="head"><p>Default/Undefined Value</p></th>
+<th class="head"><p>Modifying Effect(s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Blanking Factor</strong></p></td>
+<td><p>Jamming blanking
+factor (e.g., sidelobe
+blanker)</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_slb_effect.html#WSF_SLB_EFFECT" title="WSF_SLB_EFFECT"><span class="xref wsf wsf-model">WSF_SLB_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Cancellation Factor</strong></p></td>
+<td><p>Jamming cancellation
+factor (e.g., sidelobe
+canceler)</p></td>
+<td><p>Minimum</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_slc_effect.html#WSF_SLC_EFFECT" title="WSF_SLC_EFFECT"><span class="xref wsf wsf-model">WSF_SLC_EFFECT</span></a>,
+<a class="reference internal" href="../wsf_slc_degrade_effect.html#WSF_SLC_DEGRADE_EFFECT" title="WSF_SLC_DEGRADE_EFFECT"><span class="xref wsf wsf-model">WSF_SLC_DEGRADE_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Modulation Factor</strong></p></td>
+<td><p>Jamming
+processing/modulation
+type factor, not to
+physical jamming
+power factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_power_effect.html#WSF_POWER_EFFECT" title="WSF_POWER_EFFECT"><span class="xref wsf wsf-model">WSF_POWER_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Jamming power Factor</strong></p></td>
+<td><p>Jamming physical
+power factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_power_effect.html#WSF_POWER_EFFECT" title="WSF_POWER_EFFECT"><span class="xref wsf wsf-model">WSF_POWER_EFFECT</span></a>,
+<a class="reference internal" href="../wsf_cover_pulse_effect.html#WSF_COVER_PULSE_EFFECT" title="WSF_COVER_PULSE_EFFECT"><span class="xref wsf wsf-model">WSF_COVER_PULSE_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>J/X Factor</strong></p></td>
+<td><p>Alternate jamming
+processing/modulation
+type that has a
+Jamming-
+to-Signal/Noise
+dependency.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_power_effect.html#WSF_POWER_EFFECT" title="WSF_POWER_EFFECT"><span class="xref wsf wsf-model">WSF_POWER_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Target Protection Flag</strong></p></td>
+<td><p>Flag to specify
+whether or not
+jamming power will be
+allowed to interact
+with the receiver for a
+given target or not.</p></td>
+<td><p>Undefined
+Boolean</p></td>
+<td><p>undefined</p></td>
+<td><p><a class="reference internal" href="../electronic_warfare_effect.html#electronic_warfare_effect" title="electronic_warfare_effect"><span class="xref wsf wsf-command">electronic_warfare_effect</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Pulse Suppression Factor</strong></p></td>
+<td><p>Pulse type jamming
+suppression factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_pulse_suppress_effect.html#WSF_PULSE_SUPPRESS_EFFECT" title="WSF_PULSE_SUPPRESS_EFFECT"><span class="xref wsf wsf-model">WSF_PULSE_SUPPRESS_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Radius Factor</strong></p></td>
+<td><p>Factor that evaluates
+the position of the
+target wrt jammer
+location to apply a
+user input factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_radius_effect.html#WSF_RADIUS_EFFECT" title="WSF_RADIUS_EFFECT"><span class="xref wsf wsf-model">WSF_RADIUS_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Repeater Jamming Factor</strong></p></td>
+<td><p>Physical jamming power
+factor dependent upon
+repeater behavior
+defined.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_repeater_effect.html#WSF_REPEATER_EFFECT" title="WSF_REPEATER_EFFECT"><span class="xref wsf wsf-model">WSF_REPEATER_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>RPJ Factor</strong></p></td>
+<td><p>Random pulse
+jamming factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_rpj_effect.html#WSF_RPJ_EFFECT" title="WSF_RPJ_EFFECT"><span class="xref wsf wsf-model">WSF_RPJ_EFFECT</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+<section id="signal-effects-variable-structure">
+<h3>Signal Effects Variable Structure<a class="headerlink" href="#signal-effects-variable-structure" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 22%" />
+<col style="width: 15%" />
+<col style="width: 18%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal Effect Variable</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Aggregation Type(s)</p></th>
+<th class="head"><p>Default/Undefined Value</p></th>
+<th class="head"><p>Modifying Effect(s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Signal Power Factor</strong></p></td>
+<td><p>Signal power factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_power_effect.html#WSF_POWER_EFFECT" title="WSF_POWER_EFFECT"><span class="xref wsf wsf-model">WSF_POWER_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Receiver Noise Power Factor</strong></p></td>
+<td><p>Receiver noise power factor.</p></td>
+<td><p>Multiplicative</p></td>
+<td><p>1.0</p></td>
+<td><p><a class="reference internal" href="../wsf_power_effect.html#WSF_POWER_EFFECT" title="WSF_POWER_EFFECT"><span class="xref wsf wsf-model">WSF_POWER_EFFECT</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+<section id="track-effects-variable-structure">
+<h3>Track Effects Variable Structure<a class="headerlink" href="#track-effects-variable-structure" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 20%" />
+<col style="width: 16%" />
+<col style="width: 19%" />
+<col style="width: 22%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Track Effect Variable</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Aggregation Type(s)</p></th>
+<th class="head"><p>Default/Undefined Value</p></th>
+<th class="head"><p>Modifying Effect(s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Azimuth Error</strong></p></td>
+<td><p>Track azimuth error.</p></td>
+<td><p>Maximum (EA) /
+Minimum (EP)</p></td>
+<td><p>0.0</p></td>
+<td><p><a class="reference internal" href="../wsf_track_effect.html#WSF_TRACK_EFFECT" title="WSF_TRACK_EFFECT"><span class="xref wsf wsf-model">WSF_TRACK_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Elevation Error</strong></p></td>
+<td><p>Track elevation error.</p></td>
+<td><p>Maximum (EA) /
+Minimum (EP)</p></td>
+<td><p>0.0</p></td>
+<td><p><a class="reference internal" href="../wsf_track_effect.html#WSF_TRACK_EFFECT" title="WSF_TRACK_EFFECT"><span class="xref wsf wsf-model">WSF_TRACK_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Range Error</strong></p></td>
+<td><p>Track range error.</p></td>
+<td><p>Maximum (EA) /
+Minimum (EP)</p></td>
+<td><p>0.0</p></td>
+<td><p><a class="reference internal" href="../wsf_track_effect.html#WSF_TRACK_EFFECT" title="WSF_TRACK_EFFECT"><span class="xref wsf wsf-model">WSF_TRACK_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Velocity Error</strong></p></td>
+<td><p>Track velocity error.</p></td>
+<td><p>Maximum (EA) /
+Minimum (EP)</p></td>
+<td><p>0.0</p></td>
+<td><p><a class="reference internal" href="../wsf_track_effect.html#WSF_TRACK_EFFECT" title="WSF_TRACK_EFFECT"><span class="xref wsf wsf-model">WSF_TRACK_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Track Drop/Maintain Flag</strong></p></td>
+<td><p>Track drop/maintain flag</p></td>
+<td><p>Undefined
+Boolean</p></td>
+<td><p>undefined</p></td>
+<td><p><a class="reference internal" href="../wsf_track_effect.html#WSF_TRACK_EFFECT" title="WSF_TRACK_EFFECT"><span class="xref wsf wsf-model">WSF_TRACK_EFFECT</span></a>,
+<a class="reference internal" href="../wsf_slb_effect.html#WSF_SLB_EFFECT" title="WSF_SLB_EFFECT"><span class="xref wsf wsf-model">WSF_SLB_EFFECT</span></a>
+(target blanking)</p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+<section id="message-effects-variable-structure">
+<h3>Message Effects Variable Structure<a class="headerlink" href="#message-effects-variable-structure" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 19%" />
+<col style="width: 16%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Track Effect Variable</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Aggregation Type(s)</p></th>
+<th class="head"><p>Default/Undefined Value</p></th>
+<th class="head"><p>Modifying Effect(s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Bit Error Rate (BER)</strong></p></td>
+<td><p>BER for communications
+device to use.</p></td>
+<td><p>Maximum (EA) /
+Minimum (EP)</p></td>
+<td><p>0.0</p></td>
+<td><p><a class="reference internal" href="../wsf_comm_effect.html#WSF_COMM_EFFECT" title="WSF_COMM_EFFECT"><span class="xref wsf wsf-model">WSF_COMM_EFFECT</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Message Drop/Maintain Flag</strong></p></td>
+<td><p>Message
+drop/maintain flag</p></td>
+<td><p>Undefined Boolean</p></td>
+<td><p>undefined</p></td>
+<td><p><a class="reference internal" href="../wsf_comm_effect.html#WSF_COMM_EFFECT" title="WSF_COMM_EFFECT"><span class="xref wsf wsf-model">WSF_COMM_EFFECT</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+</section>
+<section id="aggregation-types">
+<h2>Aggregation Types<a class="headerlink" href="#aggregation-types" title="Permalink to this headline">¶</a></h2>
+<p>The aggregation types given in the table below are used to aggregate (i.e., roll-up) the individual EW effect values
+into the interaction value to be used by the interaction to apply any EW related effects to the target detection,
+tracking process and/or message as applicable. All aggregation is done in standard units (i.e., multiplication is the
+same as addition in dB space.)</p>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 79%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Aggregation Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Maximum</strong></p></td>
+<td><p>The maximum of the interaction value and current effect value being applied is taken
+and used as the interaction value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Minimum</strong></p></td>
+<td><p>The minimum of the interaction value and current effect value being applied is taken
+and used as the interaction value.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Additive</strong></p></td>
+<td><p>The addition of the interaction value and current effect value being applied is used
+as the interaction value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Multiplicative</strong></p></td>
+<td><p>The multiplied product of the interaction value and current effect value being applied
+is used as the interaction value.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Boolean</strong></p></td>
+<td><p>A true/false (i.e., two-state) flag that can be toggled based on the current value and
+logging of the effect.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Undefined Boolean</strong></p></td>
+<td><p>Similar to the Boolean aggregation type, except an undefined state along with the
+true/false (i.e., three-state) is available as a value. This type can be toggled from
+undefined (its most common default state) to true/false (i.e., defined) and toggled
+between the three states thereafter based on the current value and logic of the effect.</p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+<section id="ew-interaction-flowchart">
+<h2>EW Interaction Flowchart<a class="headerlink" href="#ew-interaction-flowchart" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/ew_interactionflowchart.jpg" src="../../_images/ew_interactionflowchart.jpg" />
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/electronic_warfare_effect_aggregation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="link_update_guide.html" title="Link Update Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="communications_primer.html" title="Communications Primer"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

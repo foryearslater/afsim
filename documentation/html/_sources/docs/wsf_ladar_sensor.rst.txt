@@ -1,0 +1,431 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_LADAR_SENSOR
+----------------
+
+.. model:: sensor WSF_LADAR_SENSOR
+
+.. parsed-literal::
+
+   sensor <name> :model:`WSF_LADAR_SENSOR`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :command:`sensor` Commands ...
+
+      mode <name>
+         ... :ref:`Antenna_Commands` ...
+         ... :ref:`Sensor.Common_Mode_Commands` ...
+		 
+         # `Mode Commands`_
+         background_temperature_ or background_irradiance_ ...
+
+         # `Detection Processing Commands`_
+         integration_gain_ ...
+         detection_threshold_ ...
+         detection_probability_ ...
+
+         # `Transmitter Commands`_
+         :command:`_.transmitter`
+            ... :command:`Common Transmitter Commands <_.transmitter>` ...
+            aperture_diameter_ ...
+            optics_transmission_factor_ ...
+            beam_divergence_angle_ ...
+         end_transmitter
+
+         # `Receiver Commands`_
+         :command:`_.receiver`
+            ... :command:`Common Receiver Commands <_.receiver>` ...
+            aperture_diameter_ ...''
+            optics_transmission_factor_ ...
+            quantum_efficiency_ ...
+            detector_gain_ ...
+            circuit_temperature_ ...
+            circuit_capacitance_ ...
+            dark_current_rate or dark_current_ ...
+            focal_length_ ...
+            detector_size_ ...
+         end_receiver
+      end_mode
+   end_sensor
+
+Overview
+========
+
+WSF_LADAR_SENSOR implements a baseline direct-detection LADAR sensor. The model provides the radiometry and detection
+processing while the simulation framework provides all of the geometry computations and determination of target
+attributes such as projected area and reflectivity. It fully supports the implementation of multiple modes as defined
+in :command:`sensor`.
+
+The main product of the sensor is a track (:class:`WsfTrack`). Tracks are created using the normal track formation criteria
+as defined in :ref:`common sensor mode commands <sensor.Common_Mode_Commands>`. Sensor errors may also be included.
+
+Some general notes on the proper use of this sensor:
+
+ * Target platforms should have :command:`optical_signature` and :command:`optical_reflectivity` definitions.
+ * The detection model does not account for mis-cueing of the sensor (it is not like a radar that has an
+   :command:`antenna_pattern` that causes the gain to diminish if the target is located off-boresight.) To prevent a target from
+   being seen if too far off bore-sight always specify 'field-of-view'. For example, within a mode definition enter the
+   following :ref:`Antenna_Commands`:
+  
+     :command:`_.antenna_commands.azimuth_field_of_view`  -1 deg 1 deg
+
+     :command:`_.antenna_commands.elevation_field_of_view` -1 deg 1 deg
+
+  Do not set the field of view too small as the tracks that are supplying the cueing information are often not updated at
+  the same rate
+  as a real system.
+
+.. block:: WSF_LADAR_SENSOR
+
+Mode Commands
+=============
+
+.. command:: background_temperature <temperature-value>
+
+.. command:: background_irradiance <spectral-irradiance-value>
+   
+   These commands are used to define the background irradiance used to calculate the background noise due to the
+   reflectance of ambient light from the target into the receiver (See the section '`Computation of Noise`_' below for
+   more details.)
+   
+   background_temperature_ uses Plank's law to compute the background irradiance from a blackbody of the specified
+   temperature. background_irradiance_ can used to specify the background irradiance directly.
+   
+   Default: background_temperature 5778 K
+
+Detection processing commands
+*****************************
+
+These commands are used to determine the probability of detection (Pd) from the signal-to-noise ratio. The Pd can be
+computed from an internal algorithm or from a user-provided Pd curve.
+
+.. command:: integration_gain <value>
+   
+   Defines the gain achieved by integrating multiple pulses.
+   
+   Default: 1.0
+
+.. command:: detection_threshold <value>
+   
+   Defines the signal-to-noise ratio (SNR) that results in a Pd of 0.5.
+
+   .. note::
+   
+      This command is not used if detection_probability_ table is defined.
+   
+   Default: 1.0
+
+.. command:: detection_probability  <sn1> <pd1> ... <snn> <pdn> end_detection_probability
+   
+   If this command is provided it defines a table that is used to determine the probability of detection as a function of
+   signal-to-noise ratio. The user must provide pairs of numbers (signal-to-noise ratio and probability of detection, in
+   that order) that define the curve of Pd vs. SNR.
+
+Transmitter Commands
+====================
+
+The :command:`_.transmitter` block includes the standard :command:`_.transmitter` commands, plus commands that are unique to this sensor.
+The standard transmitter commands utilized by :model:`WSF_LADAR_SENSOR` follow. Please follow the link for each for a more
+detailed description.
+
+* :command:`_.transmitter.wavelength` - No default; must be specified.
+* :command:`_.transmitter.pulse_width` - No default; must be specified.
+* :command:`_.transmitter.pulse_repetition_interval` or :command:`_.transmitter.pulse_repetition_frequency`. No default; must be specified.
+* :command:`_.transmitter.bandwidth` - Defaults to the frequency equivalent to a wavelength of 1 nanometer.
+* attenuation_model - Specify the model for computing atmospheric attenuation (typically
+  :model:`WSF_OPTICAL_ATTENUATION`).
+
+The following commands are unique to :model:`WSF_LADAR_SENSOR`:
+
+.. command:: aperture_diameter <length-value>
+   
+   Defines the aperture diameter of the LADAR transmitter. Changing this parameter controls the diffraction-induced beam
+   spread, affecting the beam size on target. The larger the aperture diameter, the smaller the beam on target, and the
+   greater the energy density (energy density ~ (aperture diameter^2)).
+   
+   Default: No default. Aperture diameter is required.
+
+.. command:: optics_transmission_factor <value>
+   
+   Defines the percentage of the transmitted laser light that passes through the transmitter optics.
+   
+   Default: 1.0
+
+   .. note::
+   
+      This should be greater than 0.0 and less than or equal to 1.0.
+
+.. command:: beamwidth <angle-value>
+.. command:: beam_divergence_angle <angle-value>
+   
+   Specifies the 'beam width' of the the transmitted beam.
+   
+   Default: None. Must be specified.
+   
+   .. note::
+   
+      'beam_divergence_angle' is a synonym that is retained for backwards compatibility.
+
+Receiver Commands
+=================
+
+The :command:`_.receiver` block includes the standard :command:`_.receiver` commands, plus commands that are unique to this sensor. The
+standard receiver commands utilized by :model:`WSF_LADAR_SENSOR` follow. Please follow the link for each for a more detailed
+description.
+
+* :command:`_.receiver.bandwidth` - Defaults to the frequency equivalent to a wavelength of 1 nanometer.
+
+The following commands are unique to :model:`WSF_LADAR_SENSOR`
+
+.. command:: aperture_diameter <length-value>
+   
+   Defines the diameter of the LADAR receiver (detector) aperture.
+   
+   Default: No default. Aperture diameter is required.
+
+.. command:: optics_transmission_factor <value>
+   
+   Defines the fraction of the received laser laser light that passes through the receiver optics.
+   
+   Default: 1.0
+
+   .. note::
+   
+      This should be greater than 0.0 and less than or equal to 1.0.
+
+.. command:: quantum_efficiency <value>
+   
+   The fraction of the signal (number of photons) that is converted into photoelectrons.
+   
+   Default: 1.0 (100% Efficient)
+
+.. command:: detector_gain <value>
+   
+   The gain of the detector.
+   
+   Default: 1.0
+
+.. command:: circuit_temperature <temperature-value>
+
+.. command:: circuit_capacitance <capacitance-value>
+   
+   These are optional commands used to specify the data needed compute the thermal noise component as described in the
+   '`Computation of Noise`_' section below. Both commands must be specified to enable computation of thermal noise.
+   
+   Default: None.
+
+.. command:: dark_count_rate <frequency-value>
+
+.. command:: dark_current <current-value>
+   
+   These are optional commands used to specify data needed to compute dark count term in background noise component as
+   described in the '`Computation of Noise`_' section below). One or the other may be specified depending on
+   preference.
+   
+   dark_count_rate_ is typically quoted in LADAR performance. If used, dark_current_ will be used to generate
+   an equivalent dark_current_rate.
+   
+   Default: None.
+
+Commands Necessary to Compute Instantaneous Field-Of-View
+*********************************************************
+
+If the field of view of the receiver is so narrow that it can see only a portion of the target, then the results will
+be more accurate if both of the following values should be provided. The amount of transmitted laser energy that is
+reflected will be limited to the smallest of the following values:
+
+* The projected area of the target from its :command:`optical_signature`.
+* The area of the transmitted beam at the target plane.
+* The area of the receivers instantaneous field-of-view (IFOV) at the target plane.
+
+If the target projected area is generally larger than the IFOV then these values are not necessary.
+
+.. command:: focal_length <length-value>
+   
+   Specifies the focal length of the receiver optical system.
+   
+   Default: None
+
+.. command:: detector_size <length-value>
+   
+   Specifies the length of one side of the physical detector. It is assumed the detector is square.
+   
+   Default: None
+
+Computation of Energy Received from the Laser Pulse
+===================================================
+
+   :math:`N_{laser} =  E_t \tau_t \tau_a \left ( \frac {A_{ref} \rho} {\pi} \right ) \tau_a \left ( \frac {\pi D_r^2} {4 R^2} \right ) \tau_r \eta_{QE} \frac {\lambda} {h c} \,`
+
+Where:
+
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`N_{laser}\,` | The number of photons received from the laser pulse.                                   |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`E_t\,`       | The transmitted energy. This will be described below.                                  |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\tau_t\,`    | The value of optics_transmission_factor_ from the transmitter.                         |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\tau_a\,`    | The atmospheric attenuation computed using the attenuation_model from the transmitter  |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`A_{ref}\,`   | The area from which the laser light is reflected. This will be described below.        |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\rho\,`      | The target's optical_reflectivity                                                      |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`D_r\,`       | The value of aperture_diameter_ from the receiver block.                               |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`R\,`         | The range between the sensor and the target.                                           |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\tau_r\,`    | The value of optics_transmission_factor_ from the receiver block.                      |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\eta_{QE}\,` | The value of quantum_efficiency_ from the receiver block.                              |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`\lambda\,`   | The value of :command:`_.transmitter.wavelength` from the transmitter block.           |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`h\,`         | Plank's constant.                                                                      |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`c\,`         | The speed of light.                                                                    |
+   +---------------------+----------------------------------------------------------------------------------------+
+
+
+The transmitted energy is computed using one of the following (depending on what user inputs were provide):
+
+   :math:`E_t = P_t t_p\ \qquad \text {or} \qquad E_t = \frac {P_t} {f_p},` 
+
+Where:
+
+   +---------------+----------------------------------------------------------------------------------------------+
+   | :math:`P_t\,` | The value of :command:`_.transmitter.power` from the transmitter block.                      |
+   +---------------+----------------------------------------------------------------------------------------------+
+   | :math:`t_p\,` | The value of :command:`_.transmitter.pulse_repetition_interval` from the transmitter block.  |
+   +---------------+----------------------------------------------------------------------------------------------+
+   | :math:`f_p\,` | The value of :command:`_.transmitter.pulse_repetition_frequency` from the transmitter block. |
+   +---------------+----------------------------------------------------------------------------------------------+
+
+The reflected area,  :math:`A_{ref}\,`  is computed using the minimum:
+
+*  :math:`A_{beam}\,` - The area of the laser beam at the target plane.
+*  :math:`A_{proj}\,` - The projected area of the target as defined by its :command:`optical_signature`.
+*  :math:`A_{IFOV}\,` - The area of the receivers instantaneous field of view (IFOV) at the target plane (optional).
+
+The area of the laser beam at the target plane is computed as follows:
+
+   :math:`A_{beam} = \frac {\pi \theta^2 R^2} { 4 }\,` 
+
+where the value of  :math:`\theta\,` is the value of beamwidth_ from the transmitter. 
+
+The area of the receivers IFOV at the target plane will be computed as follows if the necessary input items are
+provided:
+
+ :math:`A_{IFOV} = {\left ( \frac {R S} {f} \right )}^2\,` 
+
+Where:
+
+   +-------------+------------------------------------------------------+
+   | :math:`R\,` | the range from the receiver to the target.           |
+   +-------------+------------------------------------------------------+
+   | :math:`S\,` | The value of detector_size_ from the receiver block. |
+   +-------------+------------------------------------------------------+
+   | :math:`f\,` | The value of focal_length_ from the receiver block.  |
+   +-------------+------------------------------------------------------+
+
+Computation of Noise
+====================
+
+Three components of noise are computed:
+
+* Background noise.
+* Thermal noise in the receiver.
+
+The number of photoelectrons due to background noise is composed of three primary components:
+
+* The ambient (solar) light reflected from the target back to the receiver.
+* Electrons that are 'detected' even when the receiver aperture is covered ('dark counts')
+* Statistical variations in :math:`N_{laser}`.
+
+The light reflected from the target is simply used in the 'receive' portion of the same equation used to compute the
+number of electrons received from the LADAR pulse.
+
+First the radiant intensity of the ambient light is computed as:
+
+   +--------------------------------------+-------------------------------------------------------------------------+
+   | :math:`L_B = S_B B_r\,`              | Background irradiance in the bandwidth of the receiver in Watts/meter^2 |
+   +--------------------------------------+-------------------------------------------------------------------------+
+   | :math:`P_{ref} = L_B A_{ref} \rho\,` | Power reflected from the target area in (W/sr)                          |
+   +--------------------------------------+-------------------------------------------------------------------------+
+   | :math:`E_{sr} = P_{ref} * \tau_p\,`  | The amount of reflected energy per steradian (J/sr)                     |
+   +--------------------------------------+-------------------------------------------------------------------------+
+
+Where:
+
+   +-------------------+-----------------------------------------------------------------------------+
+   | :math:`S_B\,`     | The value of background_irradiance_                                         |
+   +-------------------+-----------------------------------------------------------------------------+
+   | :math:`B_r\,`     | The value of bandwidth form the receiver block.                             |
+   +-------------------+-----------------------------------------------------------------------------+
+   | :math:`A_{ref}\,` | The reflection area computed in the previous section.                       |
+   +-------------------+-----------------------------------------------------------------------------+
+   | :math:`\rho\,`    | The value of the target optical reflectivity used in the previous section   |
+   +-------------------+-----------------------------------------------------------------------------+
+   | :math:`\tau_p\,`  | The value of :command:`_.transmitter.pulse_width` from the transmitter block|
+   +-------------------+-----------------------------------------------------------------------------+
+
+Then the receive portion of the equations in the previous section is used to compute the number of electrons:
+
+   :math:`N_{back} = E_{sr} \tau_a \frac {\pi D_r^2} {4 R^2} \tau_r \eta_e \frac {\lambda} {h c}\,` 
+
+The second component is the number of dark current photoelectrons that occur while the pulse is being received:
+
+   :math:`N_{dark} = f_{dc} * \tau_p\,` 
+
+Where:
+
+   +------------------+------------------------------------------------------------------------------+
+   | :math:`f_{dc}\,` | The value of dark_count_rate_ from the receiver block.                       |
+   +------------------+------------------------------------------------------------------------------+
+   | :math:`\tau_p\,` | The value of :command:`_.transmitter.pulse_width` from the receiver block.   |
+   +------------------+------------------------------------------------------------------------------+
+
+The composite background is simply:
+
+   :math:`N_{background} = N_{back} + N_{dark}\,` 
+
+The arrival of signal photons is assumed to be Poissonian, with the unamplified variance in the produced photoelectrons equal to the mean.  This variance is also a source of noise:
+
+   :math:`Q_{n,signal}^2 = N_{laser}`
+
+The number of photoelectrons due to thermal noise in the circuit is computed as:
+
+   :math:`Q_{n,thermal}^2 = \frac {k T C} {e^2}\,`
+
+   :math:`N_{thermal} = \sqrt {Q_{n,thermal}^2}\,`
+
+Where:
+
+   +-------------+------------------------------------------------------------+
+   | :math:`k\,` | The value of Boltzmann's constant.                         |
+   +-------------+------------------------------------------------------------+
+   | :math:`T\,` | The value of circuit_temperature_ from the receiver block. |
+   +-------------+------------------------------------------------------------+
+   | :math:`C\,` | The value of circuit_capacitance_ from the receiver block. |
+   +-------------+------------------------------------------------------------+
+   | :math:`e\,` | The value of the elementary charge (charge of an electron) |
+   +-------------+------------------------------------------------------------+
+
+Computation of Signal-To-Noise
+==============================
+
+The signal-to-noise ratio (SNR) is computed as:
+
+   :math:`SNR = \frac { G * N_{laser} } { \sqrt { Q_{n,thermal}^2 + G (Q_{n,signal}^2 + N_{background} ) } } \,`
+
+Where: :math:`G` is the value of detector_gain_ from the receiver block and the other values are computed as described
+in the preceding sections.

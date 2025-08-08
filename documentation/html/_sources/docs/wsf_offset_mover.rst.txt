@@ -1,0 +1,115 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_OFFSET_MOVER
+----------------
+
+.. model:: mover WSF_OFFSET_MOVER
+
+.. parsed-literal::
+
+   mover :model:`WSF_OFFSET_MOVER`
+
+      :ref:`Platform_Part_Commands` ...
+
+      // `Mover Commands`_
+
+      update_interval_ ...
+      update_time_tolerance_ ...
+
+      // `Offset Mover Commands`_
+
+      attachment_type_ ...
+      reference_platform_ ...
+      offset_from_reference_ ...
+      orphan_action_ ...
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_OFFSET_MOVER` implements a mover that forces the platform to stay at a prescribed offset from a specified leader
+platform. A platform may be attached 'rigidly' or 'tethered'.
+
+Special Considerations
+======================
+
+* The reference platform should be defined before the following platform so the following platform can establish its
+  location when it is initialized. If this is not the case, ensure that following platform has a 'position' command in
+  its definition.
+* If using tethered mode, ensure that the 'update_interval' of the lead platform is not too large. Otherwise the
+  follower may have to make some drastic moves to attain the prescribed spatial relationship.
+
+.. block:: WSF_OFFSET_MOVER
+  
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+   
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+   will be called only when it is necessary to determine the position of the containing platform.
+   
+   Default: 0 seconds unless overridden by the specific mover implementation.
+
+.. command:: update_time_tolerance <time-value>
+   
+   When a position update is requested by the simulation, if the time since the previous update is less than or equal to
+   this value then the mover will ignore the update.
+   
+   Default: Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is
+   appropriate for the implementation.
+
+   .. note::
+   
+      A mover implementation may choose to ignore this command.
+
+Offset Mover Commands
+=====================
+
+.. command:: attachment_type [ tether | rigid ]
+   
+   Specifies how the follower is attached to the leader.
+   
+   * **tether** - The follower moves as though it is attached to the leader by an elastic tether.
+   * **rigid** - The follower moves as though it is rigidly attached to the leader.
+   
+   Default: **tether**
+
+   .. note::
+   
+      The default of **tether** does not currently work. The initial capability only works with **rigid**.
+
+.. command:: reference_platform <name>
+   
+   Specifies the name of the reference or 'lead' platform (the platform to be followed).
+
+   .. note::
+   
+      In general, one should define the lead platform before defining the following platform.
+
+.. command:: offset_from_reference <x-length-units> <y-length-units> <z-length-units>
+   
+   Specifies the offset of the following platform in relation to the entity coordinate system of the reference platform.
+   
+   Default: 0 m 0 m 0 m
+
+.. command:: orphan_action [ stop | extrapolate | remove]
+   
+   Defines the action that should be performed if the reference platform is removed from the simulation. The values are as
+   follows
+   
+   * **stop** - stop at the current location.
+   * **extrapolate** - continue extrapolating along the last known heading.
+   * **remove** - remove the following platform from the simulation.
+   
+   Default: stop

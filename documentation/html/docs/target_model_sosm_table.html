@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SOSM target model table &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Target Recognition Commands" href="target_recognition_commands.html" />
+    <link rel="prev" title="SOSM target model simple" href="target_model_sosm_simple.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="target_recognition_commands.html" title="Target Recognition Commands"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="target_model_sosm_simple.html" title="SOSM target model simple"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sosm-target-model-table">
+<span id="id1"></span><h1>SOSM target model table<a class="headerlink" href="#sosm-target-model-table" title="Permalink to this headline">¶</a></h1>
+<p>This page describes the process for creating a ‘table’ ‘target_model’ that can been loaded with the
+<a class="reference internal" href="sosm_interface.html#sosm_interface.load_target" title="load_target (sosm_interface)"><span class="xref wsf wsf-command">sosm_interface load_target</span></a> command.</p>
+<p>Creating the target model is a three step process:</p>
+<ul class="simple">
+<li><p>Acquire raw spectral infrared signature data. This is generally accomplished by using an infrared prediction model
+like IRIMAGE. (See <a class="reference internal" href="#executing-irimage">Executing IRIMAGE</a>)</p></li>
+<li><p>Convert the raw spectral infrared signature data created in the first step to a format that can be read by SOSM. (See
+<a class="reference internal" href="#converting-irimage-kio3-files">Converting IRIMAGE ‘kio3’ Files</a>)</p></li>
+<li><p>Create the SOSM target definition file that specifies how the signature files created in the second step are to be
+used during a simulation. (See <a class="reference internal" href="#creating-the-target-definition-file">Creating the Target Definition File</a>)</p></li>
+</ul>
+<p>A pair of Perl scripts have been provided with the standard WSF distribution that assists in using IRIMAGE to
+complete the first two steps.</p>
+<section id="executing-irimage">
+<h2>Executing IRIMAGE<a class="headerlink" href="#executing-irimage" title="Permalink to this headline">¶</a></h2>
+<p>IRIMAGE is typically run by an IR signature analyst. This process can take a great deal of time (days to weeks
+depending on the number of cases desired). If you need to complete this step yourself then continue reading.</p>
+<p>A Perl script <em>execute_irimage.pl</em> is included with the standard WSF distribution in the directory <em>sosm/irimage</em>.
+This script facilitates executing IRIMAGE over a range of conditions. To execute the script:</p>
+<blockquote>
+<div><p><em>&lt;path-to-wsf&gt;</em>/sosm/irimage/execute_irimage.pl <em>&lt;basename&gt;</em></p>
+</div></blockquote>
+<p>Where <em>&lt;basename&gt;</em> is the base name of the target type, and perhaps Mach number. For instance <em>su-35_m12</em> might be used
+for a SU-35 at Mach 1.2.</p>
+<p>This script takes two files:</p>
+<dl class="simple">
+<dt><em>&lt;basename&gt;</em>.def</dt><dd><p>Contains commands that define the mach number, altitudes and bands for which data will be generated.</p>
+</dd>
+<dt><em>&lt;basename&gt;</em>.iri</dt><dd><p>Contains the template of the IRIMAGE input needed to run this the mach number in question.</p>
+</dd>
+</dl>
+<p>The script then invokes IRIMAGE for each altitude and band for the given mach number and produces a ‘.kio3’ file for
+each case.</p>
+<p>The files ‘su-35_m12.def’ and ‘su-35_m12.iri’ are provided as examples in the <em>sosm/irimage</em> directory.</p>
+</section>
+<section id="converting-irimage-kio3-files">
+<h2>Converting IRIMAGE ‘kio3’ Files<a class="headerlink" href="#converting-irimage-kio3-files" title="Permalink to this headline">¶</a></h2>
+<p>Once IRIMAGE has been run to create the necessary ‘kio3’ files, the files must be converted into the format that can be
+used by SOSM. This can be accomplished using the ‘kio3_to_sosm.pl’ script that is supplied with each WSF release in
+the directory <em>sosm/irimage</em>.</p>
+<p>The first thing that needs to be done is to create a file named ‘kio3_to_sosm.txt’ in the same directory that contains
+the ‘kio3’ files. A template for this file in supplied with each WSF release in the directory <em>sosm/irimage</em>. After
+copying the file, edit the copy and update the information as directed in the comments at the end of the file. In most
+cases all that will need to be provided is security classification information in the third line.</p>
+<p>After that is complete, execute the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">wsf</span><span class="o">&gt;*/</span><span class="n">sosm</span><span class="o">/</span><span class="n">irimage</span><span class="o">/</span><span class="n">kio3_to_sosm</span><span class="o">.</span><span class="n">pl</span> <span class="o">*.</span><span class="n">kio3</span>
+</pre></div>
+</div>
+<p>This will take each file of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*&lt;</span><span class="n">basename</span><span class="o">&gt;*.</span><span class="n">kio3</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>and produce four files:</dt><dd><p><em>&lt;basename&gt;</em>.bda          Projected area of the body
+<em>&lt;basename&gt;</em>.bdi          Radiant intensity of the body
+<em>&lt;basename&gt;</em>.pla          Projected area of the plume
+<em>&lt;basename&gt;</em>.pli          Radiant intensity of the plume</p>
+</dd>
+</dl>
+<p>These files should be copied the directory where the SOSM target definition will be created.</p>
+</section>
+<section id="creating-the-target-definition-file">
+<h2>Creating the Target Definition File<a class="headerlink" href="#creating-the-target-definition-file" title="Permalink to this headline">¶</a></h2>
+<p>The target definition file defines under what simulation conditions which signature files should be used. This can best
+be documented by example, but first the commands will be documented.</p>
+<pre class="literal-block"><a class="reference internal" href="#target_model">target_model</a> <strong>table</strong>
+   <a class="reference internal" href="#state">state</a> <em>&lt;state-name-1&gt;</em>
+
+      # ----- State selection control
+
+      <a class="reference internal" href="#altitude_range">altitude_range</a>      <em>&lt;lower-length-value&gt; &lt;upper-length-value&gt;</em>
+      <a class="reference internal" href="#mach_range">mach_range</a>          <em>&lt;lower-mach&gt; &lt;upper-mach&gt;</em>
+      <a class="reference internal" href="#speed_range">speed_range</a>         <em>&lt;lower-speed-value&gt; &lt;upper-speed-value&gt;</em>
+      <a class="reference internal" href="#throttle_range">throttle_range</a>      <em>&lt;lower-value&gt; &lt;upper-value&gt;</em>
+
+      # ----- Band Definitions
+
+      <a class="reference internal" href="#band">band</a> <em>&lt;band-name-1&gt;</em>
+
+         # ----- Body and plume definition using implied file extensions
+
+         <a class="reference internal" href="#body_and_plume">body_and_plume</a>   <em>&lt;file-base&gt;</em>     # reads .bda, .bdi, .pla and .pli
+         <a class="reference internal" href="#body">body</a>             <em>&lt;file-base&gt;</em>     # reads .bda and .bdi
+         <a class="reference internal" href="#plume">plume</a>            <em>&lt;file-base&gt;</em>     # reads .pla and .pli
+
+         # ----- Body and plume definition using explicit files
+
+         <a class="reference internal" href="#body_area">body_area</a>        <em>&lt;file-name&gt;</em>
+         <a class="reference internal" href="#body_intensity">body_intensity</a>   <em>&lt;file-name&gt;</em>
+         <a class="reference internal" href="#plume_area">plume_area</a>       <em>&lt;file-name&gt;</em>
+         <a class="reference internal" href="#plume_intensity">plume_intensity</a>  <em>&lt;file-name&gt;</em>
+      <strong>end_band</strong>
+
+      <a class="reference internal" href="#band">band</a> <em>&lt;band-name-n&gt;</em>
+         ... band-definition ...
+      <strong>end_band</strong>
+
+   <strong>end_state</strong>
+
+   <a class="reference internal" href="#state">state</a> <em>&lt;state-name-n&gt;</em>
+      ... state-definition ...
+   <strong>end_state</strong>
+<strong>end_target_model</strong></pre>
+</section>
+<section id="target-definition-commands">
+<h2>Target Definition Commands<a class="headerlink" href="#target-definition-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.target_model">
+<span id="target_model_sosm_table_commands.target_model"></span><span id="target_model"></span>target_model table … end_target_model<a class="headerlink" href="#_.target_model_sosm_table_commands.target_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Introduces a target model definition that uses tables. <strong>table</strong> is required.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.state">
+<span id="target_model_sosm_table_commands.state"></span><span id="state"></span>state<em> &lt;state-name&gt;</em> … end_state<a class="headerlink" href="#_.target_model_sosm_table_commands.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <em>state</em> identifies a set of target conditions to which the associated signature applies. The <a class="reference internal" href="#altitude_range">altitude_range</a>,
+<a class="reference internal" href="#mach_range">mach_range</a>, <a class="reference internal" href="#speed_range">speed_range</a> and <a class="reference internal" href="#throttle_range">throttle_range</a> define the target conditions to which the state
+applies. The contained <a class="reference internal" href="#band">band</a> blocks define the associated signature files.</p>
+<p><em>&lt;state-name&gt;</em> is simply a user-definable name for the state. It has no other purpose other than to uniquely identify
+the state within the target definition.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Every target definition must have at least one state.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The order of <a class="reference internal" href="#state">state</a> definitions is important. For each detection chance, the target conditions
+are used to select the appropriate <a class="reference internal" href="#state">state</a>. The list of states is searched in the order they are defined, and the
+first one that matches the target conditions is used. If no state matches the current target conditions, the last state
+defined is used.</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.altitude_range">
+<span id="target_model_sosm_table_commands.altitude_range"></span><span id="altitude_range"></span>altitude_range<em> &lt;lower-length-value&gt;</em><em> &lt;upper-length-value&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.altitude_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the range of altitudes for which the enclosing <a class="reference internal" href="#state">state</a> applies.</p>
+<p><strong>Default</strong> No limits - altitude is not a criteria</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.mach_range">
+<span id="target_model_sosm_table_commands.mach_range"></span><span id="mach_range"></span>mach_range<em> &lt;lower-mach&gt;</em><em> &lt;upper-mach&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.mach_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.speed_range">
+<span id="target_model_sosm_table_commands.speed_range"></span><span id="speed_range"></span>speed_range<em> &lt;lower-speed-value&gt;</em><em> &lt;upper-speed-value&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.speed_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the range of speeds for which the enclosing <a class="reference internal" href="#state">state</a> applies. The range can be defined in either terms of
+Mach number or absolute speed.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.throttle_range">
+<span id="target_model_sosm_table_commands.throttle_range"></span><span id="throttle_range"></span>throttle_range<em> &lt;lower-value&gt;</em><em> &lt;upper-value&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.throttle_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the throttle range for which the enclosing <a class="reference internal" href="#state">state</a> applies.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.band">
+<span id="target_model_sosm_table_commands.band"></span><span id="band"></span>band<em> &lt;band-name&gt;</em> … end_band<a class="headerlink" href="#_.target_model_sosm_table_commands.band" title="Permalink to this definition">¶</a></dt>
+<dd><p>Every <a class="reference internal" href="#state">state</a> must have one or more <strong>band</strong> blocks that define the signature files that apply to the specific
+bands. <em>&lt;band-name&gt;</em> is simply a user-definable string that identifies the band. The actual range of wavelengths to
+which the the enclosed files apply is determined by the file contents.</p>
+<p>Body area/intensity must be specified. Plume area/intensity is not required if a plume is not present.</p>
+<p>The signature files to be used can be loaded by the following commands:</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.body_and_plume">
+<span id="target_model_sosm_table_commands.body_and_plume"></span><span id="body_and_plume"></span>body_and_plume<em> &lt;base-name&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.body_and_plume" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.body">
+<span id="target_model_sosm_table_commands.body"></span><span id="body"></span>body<em> &lt;base-name&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.body" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.plume">
+<span id="target_model_sosm_table_commands.plume"></span><span id="plume"></span>plume<em> &lt;base-name&gt;</em><a class="headerlink" href="#_.target_model_sosm_table_commands.plume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load signature files using the assumed suffixes (.bda and .bdi for body, .pla and .pli for plume).</p>
+<ul class="simple">
+<li><p><strong>body_and_plume</strong> reads the signature files for both the body and the plume (<em>&lt;base-name&gt;</em>.bda, <em>&lt;base-name&gt;</em>.bdi,
+<em>&lt;base-name&gt;</em>.pla and <em>&lt;base-name&gt;</em>.pli).</p></li>
+<li><p><strong>body</strong> reads only the signature files for the body (<em>&lt;base-name&gt;</em>.bda and <em>&lt;base-name&gt;</em>.bdi).</p></li>
+<li><p><strong>plume</strong> reads only the signature files for the plume (<em>&lt;base-name&gt;</em>.pla and <em>&lt;base-name&gt;</em>.pli).</p></li>
+</ul>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.body_area">
+<span id="target_model_sosm_table_commands.body_area"></span><span id="body_area"></span>body_area<a class="reference internal" href="argumenttypes.html#file-name" title="file-name"><em> &lt;file-name&gt;</em></a><a class="headerlink" href="#_.target_model_sosm_table_commands.body_area" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.body_intensity">
+<span id="target_model_sosm_table_commands.body_intensity"></span><span id="body_intensity"></span>body_intensity<a class="reference internal" href="argumenttypes.html#file-name" title="file-name"><em> &lt;file-name&gt;</em></a><a class="headerlink" href="#_.target_model_sosm_table_commands.body_intensity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.plume_area">
+<span id="target_model_sosm_table_commands.plume_area"></span><span id="plume_area"></span>plume_area<a class="reference internal" href="argumenttypes.html#file-name" title="file-name"><em> &lt;file-name&gt;</em></a><a class="headerlink" href="#_.target_model_sosm_table_commands.plume_area" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_model_sosm_table_commands.plume_intensity">
+<span id="target_model_sosm_table_commands.plume_intensity"></span><span id="plume_intensity"></span>plume_intensity<a class="reference internal" href="argumenttypes.html#file-name" title="file-name"><em> &lt;file-name&gt;</em></a><a class="headerlink" href="#_.target_model_sosm_table_commands.plume_intensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load signature files without using the assumed suffixes.</p>
+</dd></dl>
+
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>Assume we are creating a definition for a new fighter call F-XX and that the first two steps have been executed for the
+following conditions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Two Mach numbers 0.8 and 1.2</p></li>
+<li><p>Three altitudes, 30000 feet, 35000 feet and 40000 feet.</p></li>
+<li><p>Two sensor bands, MWIR (3-5 um) and LWIR (8-12 um).</p></li>
+</ul>
+</div></blockquote>
+<p>This will result in having 12 sets of files, which will be assumed to be named as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m08_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m08_mwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m12_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m12_mwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m08_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m08_mwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m12_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m12_mwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m08_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m08_mwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m12_lwir</span><span class="o">.*</span>
+<span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m12_mwir</span><span class="o">.*</span>
+</pre></div>
+</div>
+<p>Furthermore, assume a directory ‘f-xx’ has been created.</p>
+<p>The target definition file <em>f-xx.txt</em> would then look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_model</span> <span class="n">table</span>
+   <span class="n">state</span> <span class="mi">30</span><span class="n">k_m08</span>
+      <span class="n">altitude_range</span> <span class="mi">0</span> <span class="n">ft</span> <span class="mi">32500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">0.0</span> <span class="mf">1.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m08_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m08_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+
+   <span class="n">state</span> <span class="mi">30</span><span class="n">k_m12</span>
+      <span class="n">altitude_range</span> <span class="mi">0</span> <span class="n">ft</span> <span class="mi">32500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">1.0</span> <span class="mf">10.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m12_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_30k_m12_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+
+   <span class="n">state</span> <span class="mi">35</span><span class="n">k_m08</span>
+      <span class="n">altitude_range</span> <span class="mi">32500</span> <span class="n">ft</span> <span class="mi">37500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">0.0</span> <span class="mf">1.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m08_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m08_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+
+   <span class="n">state</span> <span class="mi">35</span><span class="n">k_m12</span>
+      <span class="n">altitude_range</span> <span class="mi">32500</span> <span class="n">ft</span> <span class="mi">37500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">1.0</span> <span class="mf">10.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m12_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_35k_m12_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+
+   <span class="n">state</span> <span class="mi">40</span><span class="n">k_m08</span>
+      <span class="n">altitude_range</span> <span class="mi">37500</span> <span class="n">ft</span> <span class="mi">42500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">0.0</span> <span class="mf">1.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m08_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m08_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+
+   <span class="n">state</span> <span class="mi">40</span><span class="n">k_m12</span>
+      <span class="n">altitude_range</span> <span class="mi">37500</span> <span class="n">ft</span> <span class="mi">42500</span> <span class="n">ft</span>
+      <span class="n">mach_range</span>     <span class="mf">1.0</span> <span class="mf">10.0</span>
+      <span class="n">band</span> <span class="n">lwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m12_lwir</span> <span class="n">end_band</span>
+      <span class="n">band</span> <span class="n">mwir</span> <span class="n">body_and_plume</span> <span class="n">f</span><span class="o">-</span><span class="n">xx_40k_m12_mwir</span> <span class="n">end_band</span>
+   <span class="n">end_state</span>
+<span class="n">end_target_model</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/target_model_sosm_table.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="target_recognition_commands.html" title="Target Recognition Commands"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="target_model_sosm_simple.html" title="SOSM target model simple"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

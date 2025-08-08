@@ -1,0 +1,208 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_JTIDS_TERMINAL
+------------------
+
+.. model:: comm WSF_JTIDS_TERMINAL
+
+.. parsed-literal::
+
+   comm <name-or-type> :model:`WSF_JTIDS_TERMINAL`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :ref:`Antenna_Commands` ...
+      ... :command:`comm` Commands ...
+      ... :command:`_.transmitter` ... end_transmitter
+      ... :command:`_.receiver` ... end_receiver
+      ... :ref:`WSF_JTIDS_TERMINAL Commands<WSF_JTIDS_TERMINAL.Commands>` ...
+      slot_group <group-name>
+         ... :ref:`WSF_JTIDS_TERMINAL Slot Group Commands<WSF_JTIDS_TERMINAL.Slot_Group_Commands>` ...
+      end_slot_group
+      relay_slot_group
+         ... :ref:`WSF_JTIDS_TERMINAL Slot Group Commands<WSF_JTIDS_TERMINAL.Slot_Group_Commands>` ...
+      end_relay_slot_group
+   end_comm
+ 
+Overview
+========
+
+:model:`WSF_JTIDS_TERMINAL` is an implementation that models the transport of data over a JTIDS network. It does 
+not model either the message content or the pulse-level characteristics.
+The current implementation of the JTIDS terminal was derived mostly from reading **Understanding Link-16; a Guidebook
+for New Users (Logicon, Inc.), NATO STANAG 5516**. It models network capacity by requiring only the number of slots per
+frame needed by a slot group. It does not require (nor does it yet allow) a network definition via actual time slot
+block definitions (The current structure will allow it to be implemented at a future date). The model also allows
+changing of the basic network slot parameters (bits per slot, seconds per slot, slots per frame) to allow modeling of
+future concepts that may use the JTIDS TDMA architecture but with some modifications.
+
+**The current model implements:**
+   
+   * multiple networks
+   * per-slot-group packing limit
+   * paired slot relays
+   * dedicated access
+   * time-slot reuse in relays (flood relays)
+
+**The model does not yet implement:**
+   
+   * Contention access
+   * Time slot reallocation access
+   * Repromulgated relays
+
+.. note::
+
+   This is NOT a Link-16 model - it doesn't explicitly model the J-series messages. That is left to
+   something higher up. This really just models the physical transport of a message.
+
+.. block:: WSF_JTIDS_TERMINAL
+   
+.. _WSF_JTIDS_TERMINAL.Commands:   
+
+Commands
+========
+
+.. command:: command_chain <command-chain-name> <slot-group-name>
+   
+   Maps a command chain name to a slot group name, which allows platforms to form slot groups based on their
+   command chain.
+
+.. command:: maximum_range <length-value>
+   
+   Defines the maximum range between the receiver and transmitter. This value will override any maximum_range explicitly defined in an antenna block.
+   For JTIDS terminals, the Normal range is 300 nm and the Extended range is 500 nm. All JTIDS units in the same network should have identical range settings; however,
+   this model does not enforce this restriction.
+   
+   **Default:** 300 nautical miles
+
+*The remaining values are purely optional and are provided purely as a means to allow the simulation of future systems.
+These commands must be specified before any commands* that create the slot groups.
+
+.. command:: time_per_slot <time-value>
+   
+   Overrides the amount of time per time slot.
+   
+   **Default:** 7.8125 milliseconds
+
+.. command:: slot_size <data-size-value>
+   
+   Overrides the amount of data than can be contained in a slot (at the 'normal' packing density).
+   
+   **Default:** 210 bits
+
+.. command:: sets_per_frame <integer-value>
+   
+   Overrides the number of interleaved sets per frame. Must be a value greater than zero.
+   
+   **Default:** 3
+
+.. command:: slots_per_set <integer-value>
+   
+   Overrides the number of slots per set within a frame. Must be a value greater than one.
+   
+   **Default:** 512
+
+.. _WSF_JTIDS_TERMINAL.Slot_Group_Commands:
+
+Slot Group Commands
+===================
+
+.. command:: network <integer-value>
+   
+   The JTIDS network number in the range [0, 127].
+   
+   **Default:** 0
+
+.. command:: tsec <integer-value>
+   
+   The JTIDS cryptovariable specified for transmission security (TSEC) in the range [0, 127]. This model does not perform encryption/decryption of data.
+   This value is used in Link-16 message headers.
+   
+   **Default:** 0
+
+.. command:: msec <integer-value>
+   
+   The JTIDS cryptovariable specified for message security (MSEC) in the range [0, 127]. This model does not perform encryption/decryption of data.
+   This value is used in Link-16 message headers.
+   
+   **Default:** 0
+
+.. command:: queue_limit <integer-value>
+   
+   The maximum transmit queue size in the range [0, infinity].
+   
+   **Default:** 99999
+
+.. command:: packing_limit [standard | p2sp | p2dp | p4sp]
+   
+   The packing format for messages, which affects the number of time slots needed to transmit a message. In Extended Range Mode (ERM) (i.e. a maximum range setting of 500 nm),
+   a JTIDS terminal does not support the p2dp and p4sp packing structure. This model does not enforce this restriction.
+   
+   * standard: Standard double pulse ( 3x70 bits per time slot)
+   * p2sp: Packed-2 single pulse ( 6x70 bits per time slot)
+   * p2dp: Packed-2 double pulse ( 6x70 bits per time slot)
+   * p4sp: Packed-4 single pulse (12x70 bits per time slot)
+   
+   **Default:** standard
+
+.. command:: relay_slot_offset <integer-value>
+   
+   The offset of the paired relay slot group from the source slot group. The offset should be in the range of [1,
+   infinity].
+
+   .. note::
+   
+      The JTIDS protocol requires offsets to be in the range [5, 32].
+   
+   **Default:** 6
+
+.. command:: npg <integer-value>
+   
+   The network participation group. The NPG may be either:
+   
+   * An integer between 1 and 511
+   * One of the following: *initial_entry, rtt_a, rtt_b, network_management, ppli_a, ppli_b, surveillance,
+     weapons_coordination, air_control, electronic_warfare, unassigned, voice_a, voice_b, indirect_ppli, wc,
+     fighter_to_fighter_dedicated, fighter_to_fighter_contention, engagement_coordination, joint_ppli,
+     distributed_network_management, residual_message, ijms_position, ijms_message*
+   
+   **Default:** 0
+
+*Use the following three commands for a simplified way to allocate time slot blocks*
+
+.. command:: slots_per_frame <integer-value>
+   
+   Slots per frame provides a simplified way to allocate TSBs. The number of slots per frame must in the range [1,
+   terminal's number of slots per frame].
+   
+   **Default:** 1
+
+.. command:: per_unit_slots_per_frame <integer-value>
+   
+   The number of fractional slots that this slot group will use per frame.
+   
+   **Default:** -1 (has no affect by default)
+
+.. command:: receive_only
+   
+   Indicates that this slot group can receive only.
+
+*Use the following two commands for an explicit way to allocate time slot blocks*
+
+.. command:: receive_slot_block <set>-<index>-<rrn>
+   
+   Creates a receive slot block with the specified set (e.g., A, B, C), slot index, and recurrence rate number (RRN).
+   The recurrence rate number must be in the range [1, 15].
+
+.. command:: transmit_slot_block <set>-<index>-<rrn>
+   
+   Creates a transmit slot block with the specified set (e.g., A, B, C), slot index, and recurrence rate number (RRN).
+   The recurrence rate number must be in the range [1, 15].

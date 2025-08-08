@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Command Chains &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Common Script Interface" href="common_script_interface.html" />
+    <link rel="prev" title="comm demo" href="comm_demos.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="common_script_interface.html" title="Common Script Interface"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="comm_demos.html" title="comm demo"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="command-chains">
+<span id="id1"></span><h1>Command Chains<a class="headerlink" href="#command-chains" title="Permalink to this headline">¶</a></h1>
+<section id="explicit-command-chains">
+<h2>Explicit Command Chains<a class="headerlink" href="#explicit-command-chains" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>A chain of command can be used by decision making routines to determine to whom orders can be
+issued and where reports should be sent. A command chain is constructed using the <a class="reference internal" href="platform.html#platform.commander" title="commander (platform)"><span class="xref wsf wsf-command">commander</span></a>
+and <a class="reference internal" href="platform.html#platform.command_chain" title="command_chain (platform)"><span class="xref wsf wsf-command">command_chain</span></a> commands on individual platforms.</p>
+<p>Command chains consist of commanders, subordinates, and peers.  Each command chain must have at least one commander
+(even if that commander is yourself).  By building up layers of commanders using this input, a complex, multilayered
+hierarchy can be created.</p>
+<p><a class="reference internal" href="comm.html#comm" title="comm"><span class="xref wsf wsf-command">Comm</span></a> devices use command chains to send messages to recipients (see <a class="reference internal" href="external_link_commands.html#external-link-commands"><span class="std std-ref">external_links</span></a>).
+In the case of a commander, this is a single recipient; whereas in the case of peers and subordinates, there
+may be zero, one, or many recipients.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A platform may be a member of more than one chain of command, but may only be a member of each command chain once.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="n">this</span> <span class="n">example</span> <span class="n">there</span> <span class="n">are</span> <span class="n">two</span> <span class="n">command</span> <span class="n">chains</span><span class="p">:</span>  <span class="n">ATC</span> <span class="ow">and</span> <span class="n">AIRLINERS</span><span class="o">.</span>
+<span class="n">On</span> <span class="n">the</span> <span class="n">AIRLINERS</span> <span class="n">command</span> <span class="n">chain</span><span class="p">,</span> <span class="mi">737</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">737</span><span class="o">-</span><span class="mi">2</span> <span class="ow">and</span> <span class="mi">737</span><span class="o">-</span><span class="mi">3</span> <span class="n">report</span> <span class="n">to</span> <span class="mi">737</span><span class="o">-</span><span class="n">cmd</span><span class="o">-</span><span class="mi">1</span> <span class="n">who</span> <span class="n">reports</span> <span class="n">to</span> <span class="n">joint</span><span class="o">-</span><span class="n">cmdr</span><span class="o">.</span>
+<span class="n">In</span> <span class="n">addition</span><span class="p">,</span> <span class="mi">737</span><span class="o">-</span><span class="mi">3</span> <span class="n">has</span> <span class="n">a</span> <span class="n">dual</span> <span class="n">role</span> <span class="ow">and</span> <span class="n">reports</span> <span class="n">directly</span> <span class="n">to</span> <span class="n">the</span> <span class="n">joint</span><span class="o">-</span><span class="n">cmdr</span> <span class="n">on</span> <span class="n">the</span> <span class="n">ATC</span> <span class="n">command</span> <span class="n">chain</span><span class="o">.</span>
+<span class="n">platform</span> <span class="n">joint</span><span class="o">-</span><span class="n">cmdr</span> <span class="n">COMMAND_POST</span>
+  <span class="n">command_chain</span> <span class="n">ATC</span> <span class="n">SELF</span>
+  <span class="n">command_chain</span> <span class="n">AIRLINERS</span> <span class="n">SELF</span>
+<span class="n">end_platform</span>
+<span class="n">platform</span> <span class="mi">737</span><span class="o">-</span><span class="n">cmd</span><span class="o">-</span><span class="mi">1</span> <span class="n">COMMAND_POST</span>
+   <span class="n">command_chain</span> <span class="n">AIRLINERS</span> <span class="n">joint</span><span class="o">-</span><span class="n">cmdr</span>
+   <span class="n">end_platform</span>
+<span class="n">platform</span> <span class="mi">737</span><span class="o">-</span><span class="mi">1</span> <span class="n">F</span><span class="o">-</span><span class="mi">18</span>
+   <span class="n">command_chain</span> <span class="n">AIRLINERS</span> <span class="mi">737</span><span class="o">-</span><span class="n">cmd</span><span class="o">-</span><span class="mi">1</span>
+   <span class="n">end_platform</span>
+<span class="n">platform</span> <span class="mi">737</span><span class="o">-</span><span class="mi">2</span> <span class="n">F</span><span class="o">-</span><span class="mi">18</span>
+   <span class="n">command_chain</span> <span class="n">AIRLINERS</span> <span class="mi">737</span><span class="o">-</span><span class="n">cmd</span><span class="o">-</span><span class="mi">1</span>
+   <span class="n">end_platform</span>
+<span class="n">platform</span> <span class="mi">737</span><span class="o">-</span><span class="mi">3</span> <span class="n">F</span><span class="o">-</span><span class="mi">18</span>
+   <span class="n">command_chain</span> <span class="n">AIRLINERS</span> <span class="mi">737</span><span class="o">-</span><span class="n">cmd</span><span class="o">-</span><span class="mi">1</span>
+   <span class="n">command_chain</span> <span class="n">ATC</span> <span class="n">joint</span><span class="o">-</span><span class="n">cmdr</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="default-command-chain">
+<h2>Default Command Chain<a class="headerlink" href="#default-command-chain" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>The default command chain can be constructed using the <a class="reference internal" href="platform.html#platform.commander" title="commander (platform)"><span class="xref wsf wsf-command">commander</span></a> command, using the <a class="reference internal" href="platform.html#platform.command_chain" title="command_chain (platform)"><span class="xref wsf wsf-command">command_chain</span></a>
+command with a command chain name of “default”, or implicitly constructed.  In the case where the default command chain is explicitly
+constructed, its behavior is the same as other explicitly constructed command chains.</p>
+<p>An implicitly constructed default command chain occurs when an explicit command chain is specified but no default command chain is specified.
+If a platform is a member of exactly one named (non-default) command chain, the platform will have the same commander on the default command chain.
+If a platform is a member of more than one named command chain, the commander on the default command chain will be a commander from one of the
+named command chains.  Which commander is chosen is not guaranteed and therefore, it is not recommended to use an implicitly constructed command
+chain along with multiple named command chains.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is suggested to use named command chains over the implicitly constructed default command chain when a scenario consists of more than one command chain.</p>
+</div>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 2.9: </span>Usage of an implicitly constructed default command chain is deprecated and will be unsupported in a future release, as this behavior leads to
+ambiguity when multiple named command chains exist.</p>
+</div>
+</div></blockquote>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/command_chains.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="common_script_interface.html" title="Common Script Interface"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="comm_demos.html" title="comm demo"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

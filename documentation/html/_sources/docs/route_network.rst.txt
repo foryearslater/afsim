@@ -1,0 +1,566 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+route_network
+=============
+
+.. command:: route_network ... end_route_network
+   :block:
+
+.. parsed-literal::
+
+    route_network *<route-network-name>*
+      # Repeat as required to specify routes in network
+      :command:`route`
+        ...
+      end_route
+
+      # Repeat as required to specify routes in network
+      use_route_ *<route-name>*
+
+      # Test to solve the shortest path for routes in network
+      test_
+
+      # Test to solve the shortest path between 2 nodes
+      test_nodes_ *<from-node-id>* *<to-node-id>*
+
+      # Generate debugging output
+      verbose_
+    end_route_network
+
+Overview
+--------
+
+A route_network_ is typically used to represent a network of roads, airways, or waterways.  It is generally used by objects such as :command:`air_traffic`, :command:`road_traffic`, and :command:`sea_traffic` to define the paths on which the platforms navigate or move.
+
+.. note:: A :command:`route` must have at least two waypoints defined to be added to the route_network_.
+
+Commands
+--------
+
+.. command:: use_route <route-name>
+
+   Include the route type with the specified name as part of the route definition. Repeat as required to specify the route network.
+
+.. command:: test
+
+   During initialization, *test* all possible paths between each :command:`route.node_id` in all :command:`route`'s to solve the shortest path.  A count of *Nodes* in the route_network_ tested is output to the console.  See `Example 1 - route_network with test command`_.
+   
+   .. note:: A *Warning* is provided in the output when the shortest path cannot be solved between each start and end node path tested.  See `Example 2 - route_network with test command - cannot solve the shortest path`_.
+
+   .. tip:: Use verbose_ to generate additional debugging data when using the test_ command.
+
+.. command:: test_nodes <from-node-id> <to-node-id>
+
+   During initialization, test all routes to solve the shortest path between *<from-node-id>* and *<to-node-id>* (specified as integers).
+   
+   The following data is output to the console:
+   
+   * From: <from-node-id>
+   * To: <to-node-id>
+   * Cost: (computed cost value of the tested path)
+   * Path: (list of :command:`route.node_id`'s included in the tested path)
+   
+   See `Example 3 - route_network with test_nodes command`_.
+   
+   .. note:: When the path cannot be solved, *Cost: = -1* and *Path:* is empty.
+
+.. command:: verbose
+
+   Generates additional debug data when used with the test_ command.  The following data is output to the console for each path tested:
+   
+   * From: <from-node-id>
+   * To: <to-node-id>
+   * Cost: (computed cost value of the tested path)
+   * Path: (list of :command:`route.node_id`'s included in the tested path)
+
+   See `Example 4 - route_network with test and verbose commands`_.
+
+   .. note:: The shortest path cannot be solved when a disconnection is detected in the route(s) to the target node.  When the shortest path cannot be solved, a *Warning* is provided, *Cost: = -1* and *Path: = No path could be found.*  See `Example 5 - test command with verbose - cannot solve the shortest path`_.
+   
+Examples
+--------
+
+Example 1 - route_network with test command
+"""""""""""""""""""""""""""""""""""""""""""
+
+.. list-table::
+   :class: header-text-center
+      :class: align-top
+   :widths: auto
+   :header-rows: 1
+
+   * - Example
+     - Output
+ 
+   * - .. parsed-literal::
+
+         # route_network with test command
+         route_network network_test
+            route
+               name North_Street
+               navigation
+                 position 39.219389n 86.5141197w
+                     node_id 180609922
+                  position 39.2211938n 86.5141739w
+                     node_id 180609925
+                 end_navigation
+            end_route
+            route
+               name North_West_Drive
+               navigation
+                  position 39.2222346n 86.5172063w
+                     node_id 180585436
+                  position 39.2221397n 86.5168094w
+                     node_id 180585443
+                  position 39.2220435n 86.5141509w
+                     node_id 180585448
+               end_navigation
+            end_route
+            route
+               name North_East_Drive
+               navigation
+                  position 39.2204988n 86.5114021w
+                     node_id 180618988
+                  position 39.220344n 86.51123w
+                     node_id 180646456
+               end_navigation
+            end_route
+            route
+               name East_Street
+               navigation
+                  position 39.2193807n 86.5145605w
+                     node_id 180609922
+                  position 39.2193854n 86.5137976w
+                     node_id 180646456
+                  position 39.2193414n 86.5099257w
+               end_navigation
+            end_route
+            route
+               name West_Drive
+               navigation
+                  position 39.2220473n 86.5160534w
+                     node_id 180585443
+                  position 39.2219058n 86.5160317w
+                     node_id 180609925
+                  position 39.2211938n 86.5127147w
+                     node_id 180585448
+                  position 39.2210674n 86.5124463w
+                     node_id 180618988
+               end_navigation
+            end_route
+	  
+            test
+
+         end_route_network
+
+     - .. parsed-literal::
+
+         ...
+         Loading simulation input.
+         Begin testing route network.
+             Network: network_test
+             Nodes: 8
+         Done testing route network.
+         ...
+
+Example 2 - route_network with test command - cannot solve the shortest path
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+.. list-table::
+   :class: header-text-center
+      :class: align-top
+   :widths: auto
+   :header-rows: 1
+
+   * - Example
+     - Output
+ 
+   * - .. parsed-literal::
+
+         # route_network with test command cannot solve shortest path
+         route_network network_test
+            route
+               name North_Street
+               navigation
+                 position 39.219389n 86.5141197w
+                     node_id 180609922
+                  position 39.2211938n 86.5141739w
+                     node_id 180609925
+                 end_navigation
+            end_route
+            route
+               name North_East_Drive
+               navigation
+                  position 39.2204988n 86.5114021w
+                     node_id 180618988
+                  position 39.220344n 86.51123w
+                     node_id 180646456
+               end_navigation
+            end_route
+
+            verbose
+
+         end_route_network
+
+     - .. parsed-literal::
+
+         ...
+         Loading simulation input.
+         Begin testing route network.
+         Network: osm_roadnetwork
+         Nodes: 4
+         ***** WARNING: Could not solve shortest path. 
+         From: 180609922
+         To: 180618988
+         ***** WARNING: Could not solve shortest path. 
+         From: 180609922
+         To: 180646456
+         ***** WARNING: Could not solve shortest path. 
+         From: 180609925
+         To: 180618988
+         ***** WARNING: Could not solve shortest path. 
+         From: 180609925
+         To: 180646456
+         ***** WARNING: Could not solve shortest path. 
+         From: 180618988
+         To: 180609922
+         ***** WARNING: Could not solve shortest path. 
+         From: 180618988
+         To: 180609925
+         ***** WARNING: Could not solve shortest path. 
+         From: 180646456
+         To: 180609922
+         ***** WARNING: Could not solve shortest path. 
+         From: 180646456
+         To: 180609925
+         Done testing route network.
+         ...
+
+
+Example 3 - route_network with test_nodes command
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+.. list-table::
+   :class: header-text-center
+      :class: align-top
+   :widths: auto
+   :header-rows: 1
+
+   * - Example
+     - Output
+ 
+   * - .. parsed-literal::
+
+         # route_network with test_nodes command
+         route_network network_test_nodes
+            route
+               name North_Street
+               navigation
+                 position 39.219389n 86.5141197w
+                     node_id 180609922
+                  position 39.2211938n 86.5141739w
+                     node_id 180609925
+                 end_navigation
+            end_route
+            route
+               name North_West_Drive
+               navigation
+                  position 39.2222346n 86.5172063w
+                     node_id 180585436
+                  position 39.2221397n 86.5168094w
+                     node_id 180585443
+                  position 39.2220435n 86.5141509w
+                     node_id 180585448
+               end_navigation
+            end_route
+            route
+               name North_East_Drive
+               navigation
+                  position 39.2204988n 86.5114021w
+                     node_id 180618988
+                  position 39.220344n 86.51123w
+                     node_id 180646456
+               end_navigation
+            end_route
+            route
+               name East_Street
+               navigation
+                  position 39.2193807n 86.5145605w
+                     node_id 180609922
+                  position 39.2193854n 86.5137976w
+                     node_id 180646456
+                  position 39.2193414n 86.5099257w
+               end_navigation
+            end_route
+            route
+               name West_Drive
+               navigation
+                  position 39.2220473n 86.5160534w
+                     node_id 180585443
+                  position 39.2219058n 86.5160317w
+                     node_id 180609925
+                  position 39.2211938n 86.5127147w
+                     node_id 180585448
+                  position 39.2210674n 86.5124463w
+                     node_id 180618988
+               end_navigation
+            end_route
+	  
+            test_nodes 180609922 180585443
+
+         end_route_network
+
+     - .. parsed-literal::
+
+         ...
+         Loading simulation input.
+         Route network 'test_nodes':
+         From Node: 180609922
+         To Node: 180585443
+         Cost: 215
+         Path:
+             180609922
+             180609925
+             180585443
+         ...
+
+Example 4 - route_network with test and verbose commands
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+.. list-table::
+   :class: header-text-center
+      :class: align-top
+   :widths: auto
+   :header-rows: 1
+
+   * - Example
+     - Output
+ 
+   * - .. parsed-literal::
+
+         # route_network with test and verbose commands
+         route_network network_test
+            route
+               name North_Street
+               navigation
+                 position 39.219389n 86.5141197w
+                     node_id 180609922
+                  position 39.2211938n 86.5141739w
+                     node_id 180609925
+                 end_navigation
+            end_route
+            route
+               name North_West_Drive
+               navigation
+                  position 39.2222346n 86.5172063w
+                     node_id 180585436
+                  position 39.2221397n 86.5168094w
+                     node_id 180585443
+                  position 39.2220435n 86.5141509w
+                     node_id 180585448
+               end_navigation
+            end_route
+            route
+               name North_East_Drive
+               navigation
+                  position 39.2204988n 86.5114021w
+                     node_id 180618988
+                  position 39.220344n 86.51123w
+                     node_id 180646456
+               end_navigation
+            end_route
+            route
+               name East_Street
+               navigation
+                  position 39.2193807n 86.5145605w
+                     node_id 180609922
+                  position 39.2193854n 86.5137976w
+                     node_id 180646456
+                  position 39.2193414n 86.5099257w
+               end_navigation
+            end_route
+            route
+               name West_Drive
+               navigation
+                  position 39.2220473n 86.5160534w
+                     node_id 180585443
+                  position 39.2219058n 86.5160317w
+                     node_id 180609925
+                  position 39.2211938n 86.5127147w
+                     node_id 180585448
+                  position 39.2210674n 86.5124463w
+                     node_id 180618988
+               end_navigation
+            end_route
+
+            verbose
+	  
+            test
+
+         end_route_network
+
+     - .. parsed-literal::
+
+         ...
+         Loading simulation input.
+         Begin testing route network.
+         Network: network_test
+         Nodes: 8
+
+         From: 180609922
+         To: 180609925
+         Cost: 200
+         Path:
+             180609922
+             180609925
+
+         From: 180609922
+         To: 180585436
+         Cost: 250
+         Path:
+             180609922
+             180609925
+             180585443
+             180585436
+
+         From: 180609922
+         To: 180585443
+         Cost: 215
+         Path:
+             180609922
+             180609925
+             180585443
+
+         From: 180609922
+         To: 180585448
+         Cost: 114
+         Path:
+             180609922
+             180646456
+             180618988
+             180585448
+
+         From: 180609922
+         To: 180618988
+         Cost: 87
+         Path:
+             180609922
+             180646456
+             180618988
+
+         From: 180609922
+         To: 180646456
+         Cost: 65
+         Path:
+             180609922
+             180646456
+         ...
+
+Example 5 - test command with verbose - cannot solve the shortest path
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+.. list-table::
+   :class: header-text-center
+      :class: align-top
+   :widths: auto
+   :header-rows: 1
+
+   * - Example
+     - Output
+ 
+   * - .. parsed-literal::
+
+         # test command with verbose - cannot solve shortest path
+         route_network network_test
+            route
+               name North_Street
+               navigation
+                 position 39.219389n 86.5141197w
+                     node_id 180609922
+                  position 39.2211938n 86.5141739w
+                     node_id 180609925
+                 end_navigation
+            end_route
+            route
+               name North_East_Drive
+               navigation
+                  position 39.2204988n 86.5114021w
+                     node_id 180618988
+                  position 39.220344n 86.51123w
+                     node_id 180646456
+               end_navigation
+            end_route
+
+            verbose
+	  
+            test
+
+         end_route_network
+
+     - .. parsed-literal::
+
+              ...
+              Loading simulation input.
+              Begin testing route network.
+              Network: network_test
+              Nodes: 4
+
+              From: 180609922
+              To: 180609925
+              Cost: 200
+              Path:
+                  180609922
+                  180609925
+              ***** WARNING: Could not solve shortest path. 
+              From: 180609922
+              To: 180618988
+
+              From: 180609922
+              To: 180618988
+              Cost: -1
+              Path:
+                  No path could be found.
+              ***** WARNING: Could not solve shortest path. 
+              From: 180609922
+              To: 180646456
+
+              From: 180609922
+              To: 180646456
+              Cost: -1
+              Path:
+                  No path could be found.
+
+              From: 180609925
+              To: 180609922
+              Cost: 200
+              Path:
+                  180609925
+                  180609922
+              ***** WARNING: Could not solve shortest path. 
+              From: 180609925
+              To: 180618988
+
+              From: 180609925
+              To: 180618988
+              Cost: -1
+              Path:
+                  No path could be found.
+              ***** WARNING: Could not solve shortest path. 
+              From: 180609925
+              To: 180646456
+
+              From: 180609925
+              To: 180646456
+              Cost: -1
+              Path:
+                  No path could be found.
+              ...

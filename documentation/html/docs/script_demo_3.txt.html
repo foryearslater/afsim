@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Script demo 3.txt &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Script demo 4.txt" href="script_demo_4.txt.html" />
+    <link rel="prev" title="Script demo 2.txt" href="script_demo_2.txt.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demo_4.txt.html" title="Script demo 4.txt"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_2.txt.html" title="Script demo 2.txt"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="script-demo-3-txt">
+<h1>Script demo 3.txt<a class="headerlink" href="#script-demo-3-txt" title="Permalink to this headline">¶</a></h1>
+<pre class="literal-block">################################################################################
+#                           Relative Geometry Example
+#
+# This example demonstrates the syntax of the relative geometry method.
+################################################################################
+
+script_interface
+   debug
+end_script_interface
+
+dis_interface
+  record output/script_demo_3.rep
+  mover_update_timer            5.0 seconds
+  entity_position_threshold    10 m  # default is 1 m
+  heartbeat_timer              5.0 seconds
+end_dis_interface
+
+// The 'object' body that will be referenced
+platform_type SUB_BODY WSF_PLATFORM
+   icon 737
+   mover WSF_AIR_MOVER end_mover
+end_platform_type
+
+// The 'reference' body
+platform_type REF_BODY WSF_PLATFORM
+   icon Truck
+   mover WSF_GROUND_MOVER end_mover
+   processor demo WSF_SCRIPT_PROCESSOR
+      script_variables
+         int count = 1;
+         double ref_heading = 0.0;
+      end_script_variables
+      update_interval 1 sec
+      on_update
+         if (TIME_NOW &gt; 0.0)
+         {
+            writeln(&quot;nCommander Heading &quot;, PLATFORM.Heading());
+            foreach (WsfPlatform sub in PLATFORM.Subordinates(&quot;&quot;))
+            {
+               // Create a track and a point from the subordinate platform so
+               // we can test alternate forms using the same data.
+
+               WsfTrack    track = sub.MakeTrack();
+               WsfGeoPoint point = sub.WsfGeoPoint();
+               double      lat   = sub.Latitude();
+               double      lon   = sub.Longitude();
+               double      alt   = sub.Altitude();
+
+               writeln(&quot;Platform: &quot;, sub.Name());
+               writeln(&quot;  Slant  Range    : &quot;,
+                     &quot; &quot;, PLATFORM.SlantRangeTo(sub),
+                     &quot; &quot;, PLATFORM.SlantRangeTo(track),
+                     &quot; &quot;, PLATFORM.SlantRangeTo(point),
+                     &quot; &quot;, PLATFORM.SlantRangeTo(lat, lon, alt));
+               writeln(&quot;  Ground Range    : &quot;,
+                     &quot; &quot;, PLATFORM.GroundRangeTo(sub),
+                     &quot; &quot;, PLATFORM.GroundRangeTo(track),
+                     &quot; &quot;, PLATFORM.GroundRangeTo(point),
+                     &quot; &quot;, PLATFORM.GroundRangeTo(lat, lon, alt));
+               writeln(&quot;  True     Bearing: &quot;,
+                     &quot; &quot;, PLATFORM.TrueBearingTo(sub),
+                     &quot; &quot;, PLATFORM.TrueBearingTo(track),
+                     &quot; &quot;, PLATFORM.TrueBearingTo(point),
+                     &quot; &quot;, PLATFORM.TrueBearingTo(lat, lon, alt));
+               writeln(&quot;  Relative Bearing: &quot;,
+                     &quot; &quot;, PLATFORM.RelativeBearingTo(sub),
+                     &quot; &quot;, PLATFORM.RelativeBearingTo(track),
+                     &quot; &quot;, PLATFORM.RelativeBearingTo(point),
+                     &quot; &quot;, PLATFORM.RelativeBearingTo(lat, lon, alt));
+               writeln(&quot;  Closing  Speed  : &quot;,
+                     &quot; &quot;, PLATFORM.ClosingSpeedOf(sub)   * MATH.NMPH_PER_MPS(), &quot; kts&quot;,
+                     &quot; &quot;, PLATFORM.ClosingSpeedOf(track) * MATH.NMPH_PER_MPS(), &quot; kts&quot;);
+            }
+            count = count + 1;
+            ref_heading = ref_heading + 90;
+            PLATFORM.TurnToHeading(ref_heading);
+            if ( count == 5 )
+               PROCESSOR.TurnOff();
+         }
+      end_on_update
+   end_processor
+end_platform_type
+
+################################################################################
+
+platform gb-1 REF_BODY
+   commander SELF
+   route
+     position 40n 90w heading 0 deg speed 50 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-n SUB_BODY
+   commander gb-1
+   route
+      position 41n 90w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-ne SUB_BODY
+   commander gb-1
+   route
+      position 41n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-e SUB_BODY
+   commander gb-1
+   route
+      position 40n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-se SUB_BODY
+   commander gb-1
+   route
+      position 39n 89w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-s SUB_BODY
+   commander gb-1
+   route
+      position 39n 90w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-sw SUB_BODY
+   commander gb-1
+   route
+      position 39n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-w SUB_BODY
+   commander gb-1
+   route
+      position 40n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+platform ab-nw SUB_BODY
+   commander gb-1
+   route
+      position 41n 91w altitude 35000 ft heading 0 deg speed 150 kts  extrapolate
+   end_route
+end_platform
+
+end_time 20 sec</pre>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/script_demo_3.txt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demo_4.txt.html" title="Script demo 4.txt"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_2.txt.html" title="Script demo 2.txt"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

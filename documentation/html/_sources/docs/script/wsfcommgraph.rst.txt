@@ -1,0 +1,112 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCommGraph
+------------
+
+.. class:: WsfCommGraph
+
+Description
+===========
+
+The :class:`WsfCommGraph` represents network states, routing tables, etc. in the comm framework.
+All graphs consist of :class:`WsfCommGraphNode` and :class:`WsfCommGraphEdge` objects, representing
+the comm interfaces and their ability to communicate. Graph objects are used to store the network truth state
+via the Network Manager in the simulation, and many protocols on routers use such graphs to store their
+perception of the network state locally. Such graphs are ultimately used to make determinations on how and
+where to send messages to reach their destination in an efficient manner.
+
+Methods
+=======
+
+.. method:: bool HasNode(WsfAddress aAddress)
+
+   Returns true if a node exists on this graph with the indicated address, false otherwise.
+
+.. method:: bool HasEdge(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Returns true if an edge exists on this graph with the indicated source and destination node addresses, false otherwise.
+
+.. method:: WsfCommGraphNode GetNode(WsfAddress aAddress)
+
+   Returns the node with the corresponding address on this graph.
+
+.. method:: WsfCommGraphEdge GetEdge(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Returns the edge with the corresponding source and destination interface addresses on this graph.
+
+.. method:: Array<WsfAddress> GetNodes()
+
+   Returns the addresses of all nodes that exist in this graph at the time of the call.
+
+.. method:: Array<WsfCommGraphEdge> GetIncomingNodeEdges(WsfAddress aAddress)
+
+   Given the node indicated by the address provided, returns all of the edges that are incoming to this node in the graph.
+   Since edges in comm graphs are directional, incoming edges are the edges whose destination is the node specified.
+
+.. method:: Array<WsfCommGraphEdge> GetOutgoingNodeEdges(WsfAddress aAddress)
+
+   Given the node indicated by the address provided, returns all of the edges that are outgoing from this node in the graph.
+   Since edges in comm graphs are directional, outgoing edges are the edges whose source is the node specified.
+
+.. method:: Array<WsfAddress> FindPath(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Attempts to find a path in the graph from the indicated source address node to the destination address node. Finding a path
+   between such members indicates that communications are possible between the two comm interfaces, at least in the context of
+   this graph (this may not be ultimately true given if the graph state doesn't represent truth, or other limitations due to model
+   implementations, future changes, etc.).
+
+   If found, the most optimal path is returned, with the addresses returned indicating each node along the path starting from
+   the source interface to the destination interface, in order.
+
+   If a path is not found, the array will not contain any address entries.
+
+.. method:: bool CreateNode(WsfAddress aAddress)
+
+   Creates a node in the graph with the indicated address. Returns true if successful, false otherwise.
+
+   .. note:: This method bypasses the typical comm framework API. It will not cause the creation of events or notification of
+      observers typically provided when such interfaces are created within the comm framework.
+
+.. method:: bool RemoveNode(WsfAddress aAddress)
+
+   Removes a node in the graph with the indicated address. Returns true if successful, false otherwise.
+
+   .. note:: This method bypasses the typical comm framework API. It will not cause the creation of events or notification of
+      observers typically provided when such interfaces are removed within the comm framework.
+
+.. method:: bool InsertEdge(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Creates an edge in the graph with the indicated source and destination address.
+   Returns true if successful, false otherwise.
+
+   .. note:: This method bypasses the typical comm framework API. It will not cause the creation of events or notification of
+      observers typically provided when such connections are created within the comm framework.
+
+.. method:: bool EraseEdge(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Removes an edge in the graph with the indicated source and destination address.
+   Returns true if successful, false otherwise.
+
+   .. note:: This method bypasses the typical comm framework API. It will not cause the creation of events or notification of
+      observers typically provided when such connections are removed within the comm framework.
+
+.. method:: bool Clear()
+
+   Removes all nodes and edges in the graph. Returns true if successful, false otherwise.
+
+   .. note:: This method bypasses the typical comm framework API. It will not cause the creation of events or notification of
+      observers typically provided when such nodes or connections are removed within the comm framework.
+
+.. method:: bool SetEdgeWeight(WsfAddress aSourceAddress, WsfAddress aDestinationAddress, double aWeight)
+
+   Modifies the edge indicated by the provided source and destination address to have the weight provided.
+   Returns true if the weight modification was successful, false otherwise.

@@ -1,0 +1,110 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSixDOF_FormationTurnToHeadingCommand
+---------------------------------------
+
+.. class:: WsfSixDOF_FormationTurnToHeadingCommand inherits WsfSixDOF_FormationCommand
+
+:class:`WsfSixDOF_FormationTurnToHeadingCommand` will cause the formation to which
+it is assigned to turn to a given heading. This turn will proceed in one of two
+ways depending on the geometry of the offsets in the formation. 
+The relative speeds needed to keep formation during the turn for the various
+members of the formation relative to the lead platform are computed. If the
+lowest speed or highest speed do not exceed limits provided by the command,
+the turn will be a *plain turn*. Otherwise the turn will be a *delayed turn*.
+
+In a plain turn, the lead platform will execute the turn to the given heading
+and the other member platforms will keep station relative to that leader.
+In a delayed turn, each platform will execute the turn at the same speed as
+the leader, but will do so at different times, with the result that the 
+member platforms will end up in formation as before, but with any left/right
+offset swapped before and after. If a delayed turn is called for, but the
+angle through which the formation will turn is smaller than a given limit,
+the turn will be executed as a plain turn instead.
+
+In a multilevel formation, the type of turn executed at each level is computed
+independently. So it could be that two sections of a formation each execute
+plain turns, but the turn of each section relative to the other is a delayed
+turn.
+
+.. note:: Currently, only a single :class:`WsfSixDOF_FormationTurnToHeadingCommand`
+          can be used in a :class:`WsfSixDOF_CommandSequence`. This limitation will
+          be removed in the future.
+
+
+Methods
+=======
+
+.. method:: static WsfSixDOF_FormationTurnToHeadingCommand Construct(double aTargetHeadingDeg)
+
+   Create a command that will turn a formation to the given heading.
+
+.. method:: double GetTargetHeading()
+
+   Return the target heading for the command in degrees.
+
+.. method:: void SetTargetHeading(double aTargetHeadingDeg)
+
+   Set the target heading for the command in degrees.
+
+.. method:: double GetMinSpeedRatio()
+
+   Get the speed of a member platform relative to the lead platform below
+   which a plain turn will not be executed.
+
+.. method:: void SetMinSpeedRatio(double aMinSpeedRatio)
+
+   Set the speed of a member platform relative to the lead platform below
+   which a plain turn will not be executed.
+
+.. method:: double GetMaxSpeedRatio()
+
+   Get the speed of a member platform relative to the lead platform above
+   which a plain turn will not be executed.
+
+.. method:: void SetMaxSpeedRatio(double aMaxSpeedRatio)
+
+   Set the speed of a member platform relative to the lead platform above
+   which a plain turn will not be executed.
+
+.. method:: double GetSmallAngleLimit()
+
+   Get the angle below which a plain turn will always be executed.
+
+.. method:: void SetSmallAngleLimit(double aSmallAngleDeg)
+
+   Set the angle below which a plain turn will always be executed.
+
+.. method:: double GetMaxBankAngle()
+
+   Get the maximum bank angle in degrees allowed by the turn.
+
+.. method:: void SetMaxBankAngle(double aMaxBankAngleDeg)
+
+   Set the maximum bank angle in degrees allowed by the turn. This limit will
+   only be applied during the turn, and only on those member platforms that
+   are not solely station keeping during the turn.
+
+   .. note:: For best results, it is suggested that some maximum be set that
+             is lower than the platform's nominal maximum to allow and
+             formation members keeping station some freedom to maneuver into
+             their proper station.
+
+.. method:: double GetMaxRollRate()
+
+   Get the maximum roll rate in degrees per second allowed by the turn.
+
+.. method:: void SetMaxRollRate(double aMaxRollRateDegPerSec)
+
+   Set the maximum roll rate in degrees per second allowed by the turn. This
+   limit will only be applied during the turn, and only on those member
+   platforms that are not solely station keeping during the turn.

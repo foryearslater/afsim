@@ -1,0 +1,160 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _field_of_view_commands:
+
+Field of View Commands
+----------------------
+
+.. parsed-literal::
+
+   field_of_view :ref:`<field-of-view-type> <field_of_view_commands.available_field_of_views>`
+      ... :ref:`Type Commands <field_of_view_commands>` ...
+   end_field_of_view
+   
+Field of views specify geometrical limits to determine if a subsystem can potentially interact with another object.  Field of views are valid for anything that uses an electromagnetic antenna, including :command:`_.transmitter`, :command:`_.receiver`.
+
+*<field-of-view-type>* can be:
+
+.. include:: field_of_view_types.txt
+
+Each type have their own unique input keywords.
+
+.. _field_of_view_commands.available_field_of_views:
+
+Available Fields of View
+========================
+
+.. _field_of_view_commands.rectangular:
+
+.. block:: field_of_view
+
+rectangular
+^^^^^^^^^^^
+
+.. parsed-literal::
+
+  field_of_view rectangular
+     azimuth_field_of_view_ <angle-value> <angle-value>
+     elevation_field_of_view_ <angle-value> <angle-value>
+  end_field_of_view
+
+.. block:: field_of_view.rectangular
+
+Defines a field of view with azimuth and elevation extents.
+
+.. command:: azimuth_field_of_view <angle-value> <angle-value>
+   
+   Specify the minimum and maximum angle about which the subsystem can see in azimuth.  The limits are with respect to the
+   current cue.  In general these values should be greater than or equal to the :command:`_.antenna_commands.azimuth_scan_limits` (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+   
+   **Default** -180.0 degrees to 180 degrees
+      
+   .. note::
+      These values are used only for initial screening to determine if the object can potentially interact with another
+      object.
+
+.. command:: elevation_field_of_view <angle-value> <angle-value>
+   
+   Specifies the minimum and maximum angle about which the subsystem can see in elevation.  The limits are with respect to
+   the current cue.  In general these values should be greater than or equal to the :command:`_.antenna_commands.azimuth_scan_limits` (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+   
+   **Default** -90.0 degrees to 90 degrees
+
+   .. note::
+      This is the default field of view type.
+
+.. _field_of_view_commands.circular:
+
+.. block:: field_of_view
+
+circular
+^^^^^^^^
+
+.. parsed-literal::
+
+  field_of_view circular
+     half_angle_ <angle-value>
+  end_field_of_view
+
+.. block:: field_of_view.circular
+
+Defines a field of view that is circular, defining a conical solid angle.
+
+.. command:: half_angle <angle-value>
+
+   Specify the half angle from the center to the edge of the circle that the subsystem can see.
+
+.. _field_of_view_commands.polygonal:
+
+.. block:: field_of_view
+
+polygonal
+^^^^^^^^^
+
+.. parsed-literal::
+
+  field_of_view polygonal
+     azimuth_elevation_ <angle-value> <angle_value>  # 1st point
+     azimuth_elevation_ <angle-value> <angle_value>  # 2nd point
+     azimuth_elevation_ <angle-value> <angle_value>  # 3rd point
+     ...
+     azimuth_elevation_ <angle-value> <angle_value>  # nth point
+  end_field_of_view
+
+.. block:: field_of_view.polygonal
+
+Defines a field of view that is polygonal, as defined by a series of azimuth_elevation_ values from the eyepoint.  At least three values are required.
+
+.. command:: azimuth_elevation <angle-value> <angle-value>
+
+   Specify the az and el values to a point defining the polygonal field of view.
+
+.. _field_of_view_commands.equatorial:
+
+.. block:: field_of_view
+
+equatorial
+^^^^^^^^^^
+
+.. parsed-literal::
+
+  field_of_view equatorial
+     equatorial_field_of_view_ <angle-value> <angle-value>
+     polar_field_of_view_ <angle-value> <angle-value>
+  end_field_of_view
+
+.. block:: field_of_view.equatorial
+
+Defines a field of view that is rectangular but, unlike the :ref:`rectangular field of view<field_of_view_commands.rectangular>`,
+has as its sphere of orientation a celestial sphere with equator matching the earth's projected, instantaneous equator,
+rather than a celestial sphere with equator matching the local horizon (i.e., the North-East plane in the local North-East-Down coordinate system).  The difference between
+an equatorial field of view and similarly defined rectangular field of view is a rotation by the parallactic angle about the sensor's pointing direction.
+
+.. command:: equatorial_field_of_view <angle-value> <angle-value>
+   
+   Specify the minimum and maximum angle about which the subsystem can see in the equatorial coordinate (azimuthal angle of the equatorial celestial sphere).
+   The limits are with respect to the current cue.
+   
+   **Default** -180.0 degrees to 180 degrees
+      
+   .. note::
+      These values are used only for initial screening to determine if the object can potentially interact with another
+      object.
+
+.. command:: polar_field_of_view <angle-value> <angle-value>
+   
+   Specifies the minimum and maximum angle about which the subsystem can see in the polar coordinate (polar angle of the equatorial celestial sphere).
+   The limits are with respect to the current cue.
+   
+   **Default** -90.0 degrees to 90 degrees

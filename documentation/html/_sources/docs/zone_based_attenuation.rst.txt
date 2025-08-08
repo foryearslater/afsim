@@ -1,0 +1,84 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _zone-based_attenuation:
+
+Zone-based attenuation
+----------------------
+
+Overview
+========
+
+Zone-based attenuation provides the ability to do line-of-sight checks against :command:`zone`\ s.  Zones can be used to represent anything, including clouds, buildings, and vegetation.  If a line-of-sight check interacts with a :command:`zone`, a penetration distance is calculated, which in turn is used to calculate the attenuation of the device doing the line-of-sight check.
+
+.. note:: Penetration calculations are approximate. Implicit projections using latitude and longitude are employed, so that the farther the attenuation distance is from one (latitude, longitude) point to another through a zone, the more inaccurate the result will be (this is not the case for altitude differences).  For that reason, one should be especially careful when implementing zone attenuation for individual zones that span degrees or more of latitude and longitude.
+
+Requirements
+============
+
+In order to use :ref:`zone-based_attenuation` the following are required:
+
+* Either:
+   * A :doc:`zone` with :command:`modifiers<zone.modifier>` defined that correspond with modifier_categories defined on comms and sensors (:command:`comm modifier_category<comm.modifier_category>` and :command:`sensor modifier_category<sensor.modifier_category>`).
+   * An ESRI Shape file (.shp) (loaded into WSF as a :command:`zone_set`), with corresponding input of an :command:`zone_set.attenuation_parameters` block.
+* At least one :command:`sensor` or :command:`comm` device.  See documentation for the device you intend to use for instruction on how to set up the attenuation modifier.  Multiple devices can be defined, each with separate attenuation modifiers (:command:`comm modifier_category<comm.modifier_category>` and :command:`sensor modifier_category<sensor.modifier_category>`)
+
+Examples
+========
+
+::
+
+  sensor los_geo_sensor WSF_GEOMETRIC_SENSOR
+      azimuth_field_of_view -180.0 degrees 180.0 degrees
+      elevation_field_of_view -90.0 degrees 90.0 degrees
+      minimum_range 0 m
+      maximum_range 100000 m
+      on
+      frame_time              0.5 sec
+      reports_location
+      ...
+      modifier_category test_los_category
+  end_sensor
+  
+**modifier_category** is the keyword necessary to define the attenuation category assigned to this sensor.
+
+*test_los_category* is the name of the category and will be used in the :command:`zone_set` block.
+
+::
+
+  comm voice_comm_base WSF_RADIO_TRANSCEIVER
+      modifier_category test_comm_category
+      network_name patrol_voice_base
+      transfer_rate 100 mbits/sec
+      transmitter
+        ...
+      end_transmitter
+      receiver
+       ...
+      end_receiver
+   end_comm
+   
+**modifier_category** is the keyword necessary to define the attenuation category assigned to this comm.
+
+*test_comm_category* is the name of the category and will be used in the :command:`zone_set` block.
+
+::
+
+  zone_set zoneSetName
+     attenuation_parameters
+        file buildingShapeFile
+        height_parameter ""
+        constant_height 50 ft
+        comm_modifier  test_comm_category 0.1
+        sensor_modifier test_los_category 1.0
+        projection geodetic
+     end_attenuation_parameters
+  end_zone_set

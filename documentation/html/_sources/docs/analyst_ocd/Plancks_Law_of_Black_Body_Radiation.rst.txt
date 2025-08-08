@@ -1,0 +1,130 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Integration of Planck's Law of Black Body Radiation Over an Interval
+====================================================================
+
+Reference
+=========
+
+Integration of the Planck blackbody radiation function, W. K. Widger, Jr. and M. P. Woodall, Bulletin American Meteorological Society, Vol. 57, No. 10, Oct 1976, pp. 1217-1219
+
+The above reference describes a mechanism for integration of Planck's law of black body radiation over a band of wavelengths without resorting to numerical methods that require a large number of iterations. The derivation is repeated here as an exercise.
+
+Planck's Law of Black Body Radiation
+====================================
+
+Planck's law of black body radiation states:
+
+.. math::
+   B(T,\lambda) =  \frac{2hc^2}{\lambda^5} \frac{1}{e^{\frac{hc}{kT\lambda}} - 1}
+
+Or in terms of the radiation constants:
+
+.. math::
+   B(T,\lambda) = \frac{c_{1L}}{\lambda^5} \frac{1}{e^{\frac{c_2}{T\lambda}}-1} \text{   (units:   } \frac{W}{m^2 \cdot sr \cdot m} \text{)}
+
+Where the radiations constants are defined as:
+
+.. math::
+   c_{1L} = 2hc^2 \text{    and   } c_2 = \frac{hc}{k}
+
+This may be integrated to determine the radiance over a band of wavelengths:
+
+.. math::
+   B_b (T) = \int_{\lambda_1}^{\lambda_2}B(T,\lambda)d\lambda     \text{   (units:} \frac{W}{m^2 \cdot sr} \text{)}
+
+For a discrete spectral band, this may be replaced by:
+
+.. math::
+   B_b (T) = \int_{\lambda_1}^{\lambda_2}B(T,\lambda)d\lambda = \int_{\lambda_1}^{\infty}B(T,\lambda)d\lambda - \int_{\lambda_2}^{\infty}B(T,\lambda)d\lambda
+
+
+Assume a substitution of variables:
+
+.. math::
+   x = \frac{hc}{kT\lambda} \text{      or    } \lambda = \frac{hc}{kTx}
+
+.. math::
+   dx = -\frac{hc}{kT\lambda^2} d\lambda \text{    or    } d\lambda = -\frac{kT\lambda^2}{hc} dx = -\frac{kT}{hc} \frac{h^2 c^2}{k^2 T^2 x^2} dx = -\frac{hc}{kTx^2}dx
+
+Performing the substitution (ignoring the limits for now):
+
+.. math::
+   \int \frac{2hc^2}{\lambda^5} \frac{1}{e^{\frac{hc}{kT\lambda}}-1} d\lambda = \int -2hc^2 \frac{k^5 T^5 x^5}{h^5 c^5} \frac{1}{e^x-1} \frac{hc}{kTx^2}dx
+
+Now for some algebraic manipulation:
+
+.. math::
+   &=\int -2hc^2 \frac{k^5 T^5 x^5}{h^5 c^5} \frac{hc}{kTx^2} \frac{1}{e^x-1}  dx \\
+   &= -2hc^2 \frac{k^4 T^4}{h^4 c^4} \int x^3 \frac{1}{e^x-1}dx \\
+   &= -\frac{c_{1L}}{c_2^4} T^4 \int x^3 \frac{1}{e^x-1} dx
+
+Multiple top and bottom by :math:`e^{-x}`:
+
+.. math::
+   = -\frac{c_{1L}}{c_2^4} T^4 \int x^3 \frac{e^{-x}}{1-e^{-x}} dx
+
+The series expansion:
+
+.. math::
+   (1 \pm z)^{-n} = 1 \mp nz + \frac{n(n+1) z^2}{2!} \mp \frac{n(n+1)(n+2) z^3}{3!} + \ldots (z^2 < 1)
+
+If we let :math:`z=e^{-x}` and :math:`n=1`:
+
+.. math::
+   \frac{1}{1-e^{-x}} = (1-e^{-x})^{-1} = 1 + e^{-x} + e^{-2x} + e^{-3x} + \ldots
+
+Note that :math:`x` is always greater than zero because all of the factors that define it are positive. As a result, :math:`[0<z<1]` and :math:`[0<z^2<1]`, as required.
+The integral can then be rewritten:
+
+.. math::
+   &= -\frac{c_{1L}}{c_2^4} T^4 \int x^3 e^{-x} (1 + e^{-x} + e^{-2x} + e^{-3x} + e^{-4x} + \ldots )dx \\
+   &= -\frac{c_{1L}}{c_2^4} T^4 \sum_{n=1}^\infty \int x^3 e^{-nx} dx
+
+The integral can be explicitly evaluated using integration by parts:
+
+.. math::
+   \int x^m e^{ax} dx = e^{ax} \sum_{r=0}^m (-1)^r \frac{m!x^{m-r}}{(m-r)!a^{r+1}}
+
+With :math:`m=3` and :math:`a=-n` we have:
+
+.. math::
+   \int x^3 e^{-nx} dx &= e^{-nx} [-\frac{3!x^3}{3!{(-n)}^1} + \frac{3!x^2}{2!{(-n)}^2} - \frac{3!x}{1!{(-n)}^3}+ \frac{3!}{0!{(-n)}^4}] \\
+                       &= e^{-nx} [\frac{x^3}{n} + \frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}]
+
+Substituting this for the integral in the summation we have:
+
+.. math::
+   = -\frac{c_{1L}}{c_2^4} T^4 \sum_{n=1}^{\infty } \int x^3 e^{-nx} dx = -\frac{c_{1L}}{c_2^4} T^4 \sum_{n=1}^{\infty}e^{-nx} [\frac{x^3}{n} + \frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}]
+
+The paper had an additional simplification that was stated to require fewer iterations for the same accuracy. We will not be using it because it varied from the direct numeric integration for low temperatures (<100 K) and short wavelengths (short than infrared), and the performance improvements were small or not observed. But I will include it here for completeness.
+
+Note the following series:
+
+.. math::
+   ln(1+z) = z - \frac{z^2}{2} + \frac{z^3}{3} - \frac{z^4}{4} + \ldots (-1 < z < 1)
+
+Let :math:`z=-e^{-x}`,
+
+.. math::
+   ln(1-e^{-x}) = -e^{-x}-\frac{(e^{-x})^2}{2}-\frac{(e^{-x})^3}{3} - \ldots - \frac{(e^{-x})^n}{n}
+
+The first term of the summation can then be replaced:
+
+.. math::
+   \sum_{n=1}^\infty e^{-nx} \frac{x^3}{n} = x^3 \sum_{n=1}^{\infty} \frac{(e^{-x} )^n}{n} = -x^3  ln(1-e^{-x})
+
+And the integral can be updated:
+
+.. math::
+   &= -\frac{c_{1L}}{c_2^4} T^4 [-x^3 ln(1-e^{-x})] \sum_{n=1}^{\infty} e^{-nx} [\frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}] \\
+   &= \frac{c_{1L}}{c_2^4} T^4 [x^3 ln(1-e^{-x})] \sum_{n=1}^{\infty} e^{-nx} [\frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}]

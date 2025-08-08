@@ -1,0 +1,122 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.6:
+
+WSF 1.6.6 - 28 April 2010
+-------------------------
+
+Important Notes
+===============
+
+* Many of the radar sensor (:model:`WSF_RADAR_SENSOR`) definitions in the classified repository have been updated to
+  include:
+   
+   * Modified :command:`clutter_model` input definitions.
+   
+   * Modified :command:`propagation_model` input definitions
+   
+   * Addition of :command:`Electronic Protect techniques <electronic_protect>` (i.e. side-lobe cancelers, side-lobe blankers and
+     frequency agility).
+   
+   * Addition of a :command:`false_target_screener` to allow the radar sensor to interact with false targets defined in the
+     :model:`WSF_FALSE_TARGET_EFFECT`
+   
+   * Addition of :model:`jamming perception thresholds <WSF_RADAR_SENSOR>`.
+   
+   * Addition of :model:`alternate_frequency <WSF_RADAR_SENSOR>`,
+     :model:`frequency_list <WSF_RADAR_SENSOR>`, and :model:`frequency_channels <WSF_RADAR_SENSOR>`.
+
+* The addition of the :model:`alternate_frequency <WSF_RADAR_SENSOR>`,
+  :model:`frequency_list <WSF_RADAR_SENSOR>`, and :model:`frequency_channels <WSF_RADAR_SENSOR>` will
+  cause some of these radars to have a different frequency than was previously used in the scenarios as defined in the
+  reference for the input command. Furthermore, some radars employ the :model:`WSF_AGILITY_EFFECT` that specifies
+  **frequency_agility** to allow it to automatically change frequency in the presence of jamming that is over the jamming
+  perception thresholds defined for the sensor. For all of the sensors the SUPPRESSOR database did not have a delay on
+  the selection of the frequencies (see :model:`frequency_select_delay <WSF_RADAR_SENSOR>`), so the
+  change in frequency will happen immediately. To randomize the frequencies for radar sensors (with multiple frequencies)
+  at simulation startup see :command:`randomize_radar_frequencies`.
+
+* Many of the current platform jamming scripts do not currently employ script methods to handle frequency agile
+  radar sensors. A jammer that does is modeled in the unclassified **aea_demo** scenario that can be used as a template
+  to incorporate a closed loop jammer that responds to radar sensor's frequency changes, as well as multi-beam
+  multi-frequency radars using a tracks :ref:`Signal <WsfTrack.Signal_Methods>` capability.
+
+General
+=======
+
+* Added the ability to use the :ref:`ALARM <ALARM_Interface>` (Advanced Low Altitude Radar Model) clutter and propagation
+  models in :model:`WSF_RADAR_SENSOR` (non-exportable version only)
+
+Corrections
+===========
+
+* **(CR 7354)** When a platform (platformA) is unable to transmit a message to a desired destination platform
+  (platformB) directly, and Begins to search for available platforms with receivers capable of accepting and relaying
+  (i.e. platformC) the message to the destination platform Then, only allow platformA to forward the message to the
+  platformC receiver if the platformC relay-enabled receiver has a transmitter configured for relay that is currently
+  (main change) on the same network as a receiver on the destination platform.  Otherwise, the platformC relay-enabled
+  receiver will not receive any message to queue.
+
+* **(CR 7434)** Corrected problems with versions of :method:`WsfPlatform.FollowRoute` that take a waypoint index or
+  label.
+
+* **(CR 7505)** Corrected a problem where the :command:`antenna_pattern steered_array_pattern <antenna_pattern>` antenna pattern generator
+  would crash if invalid input was provided.
+
+* **(CR 7509)** Corrected a problem where the :model:`WSF_AGILITY_EFFECT` was causing a segmentation fault when used with
+  :model:`WSF_FALSE_TARGET_EFFECT` jamming.
+
+* **(CR 7521)** Added the ability to read multiple Link 16 messages from a single DIS Signal PDU. This was causing a
+  problem with the Link 16 model being used by VWC & ADS.
+
+* **(CR 7600)** Corrected a problem where some uses of the scripting language could lead to high memory usage and
+  slow execution -- specifically when creating multiple unique strings.
+
+Enhancements
+============
+
+* Modified **WSF_NEW_GUIDED_MOVER** to allow massless stages that can be used for 'coast' stages with a change of
+  aero properties.
+
+* Modified the script :command:`observer` SENSOR_DETECTION_ATTEMPT function call to include the boolean result of the
+  detection attempt.
+
+* Added a mode.pd_range_table to the :model:`WSF_GEOMETRIC_SENSOR`. 
+
+* Added methods to :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` to support the determination of multiple launch windows
+  and updated :class:`WsfLaunchComputer` to allow retrieval of the data from script.
+
+* Added the :command:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.maximum_intercept_slant_range` command to
+  :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` to facilitate the modeling of 'launch on remote' firing doctrine.
+
+* **(CR 7582)** Add the script method :method:`WsfArticulatedPart.ApparentLocationOf` to :class:`WsfArticulatedPart` to allow
+  the computation of a sensor cue that includes the effects of atmospheric refraction.
+
+* Added script methods to :class:`WsfGeoPoint` to query the :method:`terrain height <WsfGeoPoint.TerrainHeight>` at the point and
+  the :method:`height above terrain <WsfGeoPoint.HeightAboveTerrain>` of the point.
+
+* Added new methods to the :class:`string` script type [Substring(), Split(), Join(), Strip(), Upper(), Lower()]
+
+* Added 2 new properties to :ref:`WSF_SURFACE_MOVER.Route_Mover_Commands` to provide simple "crowd movement":
+  :model:`speed_variance_percent <WSF_SURFACE_MOVER>`,
+  :model:`path_variance_radius <WSF_SURFACE_MOVER>`
+
+* Added :class:`WsfGroup` capability to aggregate platforms and platform parts into functional groups. See
+  :ref:`WsfPlatform <WsfPlatform.Group_Methods>` and :ref:`WsfPlatformPart <WsfPlatformPart.Group_Methods>`
+
+* Added the capability to define :model:`frequency_channels <WSF_RADAR_SENSOR>` and a
+  :model:`frequency_list <WSF_RADAR_SENSOR>` on a :model:`WSF_RADAR_SENSOR`.
+
+* **(CR 7633)** Added script methods RelativeAzimuthOf and RelativeElevationOf to
+  :method:`WsfPlatform <WsfPlatform.RelativeAzimuthOf>` and :method:`WsfArticulatedPart <WsfArticulatedPart.RelativeAzimuthOf>` to
+  provide the azimuth and elevation of a point with respect to the coordinate frame of a platform or a platform subsystem
+  (e.g. sensor). This includes all considerations of roll, pitch, yaw and cuing.

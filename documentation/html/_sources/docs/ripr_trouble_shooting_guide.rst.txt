@@ -1,0 +1,283 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _RIPR_Trouble_Shooting_Guide:
+
+RIPR Trouble Shooting Guide
+---------------------------
+
+#. `Tips and Tricks`_
+#. `Are your agents sensing the enemy platforms?`_
+#. `Do your agents have tracks of the enemy platforms?`_
+#. `Do your commanders have tracks?`_
+#. `Did your commander agents create jobs?`_
+#. `Are your agents bidding on the jobs?`_
+#. `Should your agents even be winning a job?`_
+#. `Are your behavior trees visiting the desired behaviors?`_
+#. `Are behavior's being executed?`_
+#. `Are your behavior parameters set to good values?`_
+#. `Are the agent behaviors acting right?`_
+#. `Do you have enough tools for the job?`_
+
+Overview
+========
+
+RIPR agents are simply WSF platforms that contain a RIPR processor.  The RIPR processor interacts with other platform
+components and systems during operation.  Given this fact, sometimes "RIPR problems" are just misunderstandings of the
+WSF framework or different platform systems.  Agents operate on perception; this often means that agents must have
+tracks because tracks are an available perception of an agent's environment.  The first few steps of this debugging
+guide are to help you verify the agents have a working perception, and then the latter two thirds of the guide will
+deal with specific RIPR agent script issues.
+
+Tips and Tricks
+===============
+
+* Temporarily remove platforms that aren't involved:  platform_availability name <the name> availability 0.
+* Temporarily remove behaviors that aren't necessary: comment out: *behavior <name>* in the behavior_tree.
+* Verify your suspect behavior script is actually be used: Either: writeln_d() or event_output with BTREE_NODE_EXEC events.
+* Verify jobs are being awarded: insert the *debug_job_board* behavior into commander's behavior tree.
+* Turn script_debug_writes on for all suspect script.
+* Put a writeln_d() before each return statement to explain why that script is returning.
+* Put a writeln_d() before each for loop or while loop and write out how many loops will occur (often this is the 
+  size of an array or track list).
+* Put a writeln_d() after complicated script and write out the value of a variable that the script modified.
+* Replace complicated script with simpler more understandable script, example:  return (1000000  range); //bid value
+
+
+Are your agents sensing the enemy platforms?
+============================================
+
+**Verify**
+
+* Check for SENSOR_TRACK_INITIATED events in the :command:`event_output <event_output.enable>`.
+* If your sensors are correctly not detecting and tracking, then at the very least look for SENSOR_DETECTION_ATTEMPT
+  events to show that they are trying.
+
+**Debug**
+
+* Make sure your sensors are turned on.
+* Make sure your sensors have been set up correctly. Example: you are using the desired frequency on your transmitters
+  and receivers for the beams of the modes of your :model:`radar sensor <WSF_RADAR_SENSOR>`.
+* Try using a simple :model:`WSF_GEOMETRIC_SENSOR` with a large maximum_range to test that at least a truth detection can
+  take place.
+
+
+Do your agents have tracks of the enemy platforms?
+==================================================
+
+**Verify**
+
+* Check for LOCAL_TRACK_INITIATED events in the :command:`event_output <event_output.enable>`.  Field three identifies the
+  platform owning the track.
+
+**Debug**
+
+* Make sure the platform has a :model:`WSF_TRACK_PROCESSOR` component defined.
+* Make sure the platform sensors are reporting tracks to the :model:`WSF_TRACK_PROCESSOR` component. Use the
+  :command:`_.platform_part.internal_link` command on the sensor to report tracks internally.
+
+Do your commanders have tracks?
+===============================
+
+**Verify**
+
+* Check for LOCAL_TRACK_INITIATED events in the :command:`event_output <event_output.enable>`.  Field three identifies the
+  platform owning the track.
+
+**Debug**
+
+* Make sure a :command:`comm device <comm>` is defined on the sending and receiving platforms.
+* Make sure your track processors are command:`_.External_Link_Commands.external_link` reporting tracks to the necessary
+  platforms.  Example (on a subordinate track processor):  external_link commander via <comm name>.
+* Make sure your command chain is in tact.  Use the :command:`platform.commander` or
+
+:command:`platform.command_chain` commands in the platform input block.
+
+Did your commander agents create jobs?
+======================================
+
+**Verify**
+
+* Attach the *debug_job_board* behavior to your commander agent's behavior tree at the root level and look at the
+  standard output.  The behavior can be included from *site_types/processors/ripr_agents/aiai/* in the unclassified
+  analyst repository.  If the agent ever creates jobs, it will print out a representation of its job board in a table
+  form.
+
+**Debug**
+
+* Turn on :command:`_.script_commands.script_debug_writes` on behaviors that should have created jobs.
+* Study the agent behavior scripts and add :method:`__BUILTIN__.writeln_d` statements of your own.
+* The agent behaviors that currently create jobs exclusively from tracks are:
+
+  * *behavior_create_clustering_jobs* found in *site_types/processors/ripr_agents/aigci/*. (very common for GCI agents)
+  * *behavior_create_target_jobs_self* found in *site_types/processors/ripr_agents/aifl/*. (very common for flight lead
+    agents if no GCI are used)
+  * *behavior_manage-pincer* found in *site_types/processors/ripr_agents/aifl/*
+
+Are your agents bidding on the jobs?
+====================================
+
+**Verify**
+
+* Attach the *debug_job_board* behavior to your commander agent's behavior tree at the root level and look at the
+  standard output.  The behavior can be included from *site_types/processors/ripr_agents/aiai/* in the unclassified
+  analyst repository.  The agent will print out a representation of its job board in a table form, and each column
+  represents a subordinate and his bids on the jobs in each row.  If an agent has no bid for a job, then a '-' character
+  will be present in its column instead of a numerical value.
+
+**Debug**
+
+* Turn on :command:`_.script_commands.script_debug_writes` on behaviors that should have bid on jobs.
+* Study the *query_bid_type* script block in the agent behavior scripts and add :method:`__BUILTIN__.writeln_d`
+  statements of your own.
+* The agent behaviors that currently bid on the aforementioned jobs are:
+
+  * *behavior_interpret_zone_jobs* found in *site_types/processors/ripr_agents/aifl/*. (very common for flight lead
+    agents if GCI are used)
+  * *behavior_pursue-target* found in *site_types/processors/ripr_agents/aiai/*. (very common for airborne interceptor
+    agents)
+  * *behavior_pincer* found in *site_types/processors/ripr_agents/aiai/*
+
+Should your agents even be winning a job?
+=========================================
+
+**Verify**
+
+* Looking at the output of the *debug_job_board* behavior, are other agents rightfully winning the job of interest?
+* Is your agent of interest rightfully winning a different job?
+* The job allocation will be optimal so some of the bids must be higher or lower than you want.
+
+**Debug**
+
+* Turn on :command:`_.script_commands.script_debug_writes` on the *bid_on_jobs* behavior and on the behavior
+  that owns the :command:`query_bid_type block <WSF_RIPR_PROCESSOR.query_bid_type>` for the job of interest.
+* Add writeln_d() statements to that :command:`WSF_RIPR_PROCESSOR.query_bid_type` script block to find out what
+  is causing your bids to go too high or too low.
+* Often the problem will be a misunderstanding of one or two parameters (e.g., bidding too low on a target because
+  somebody ELSE has shot at it).
+
+Are your behavior trees visiting the desired behaviors?
+=======================================================
+
+**Verify**
+
+* Check for BTREE_NODE_EXEC events in the :command:`event_output <event_output.enable>`.
+* Or turn *script_debug_writes on* for the behavior of interest.  Most behaviors have writeln_d() statements inside
+  their precondition script block.
+
+**Debug**
+
+* Field 3 is the platform, field 5 is the behavior name, field 6 shows 0 or 1 for if the behavior changed execution
+  state at that time
+* If the behavior did not run then field 7 shows a reason for failure.  If the failure reason displays "not considered"
+  and never changes, then your behavior tree is constructed poorly.
+* Make sure you did not attach the behavior of interest on the tree in such a way that it will never run:
+
+  * If it is in a selector node, is there a behavior before it that will always pass and always be selected?
+  * If it is in a sequence node, is there a behavior before it that will always fail and break the sequence of execution?
+
+Are behavior's being executed?
+==============================
+
+**Verify**
+
+* Check for BTREE_NODE_EXEC events in the :command:`event_output <event_output.enable>` to see if your behaviors run. Field 6
+  shows the execution state.
+* Or turn *script_debug_writes on* for the behavior of interest.  Most behaviors have writeln_d() statements inside
+  their execute script block.
+
+**Debug**
+
+* The precondition script in the behavior node might be too strict or faulty.
+* Try making the precondition script less limiting:
+
+  * Try different values for behavior parameters such that the precondition should pass.
+  * Temporarily changing the precondition to always return true.
+  * Add your own writeln_d() statements near complicated script to help you understand why it might fail.
+
+Are your behavior parameters set to good values?
+================================================
+
+**Verify**
+
+* Check all of my parameter edits to see how they differ from the release example behaviors.
+* Note: the release example behaviors should have their parameters set up in such a way to allow maximum action.  In
+  other words, they aren't very limiting.
+
+**Debug**
+
+* Common issues:
+
+  * I require a track quality that is too high.
+  * I shoot at very low percent of max range.
+  * I have not set up my intercept speeds for different platforms.
+  * I forgot to add all my weapons to the weapons array map.
+
+Are the agent behaviors acting right?
+=====================================
+
+**Verify**
+
+* There can always be bugs in behavior script or edge cases that the script did not account for.
+* Check that the scripts and files you wanted to include were actually used.  The WSF IDE makes this easy, just
+  right-click and select "go to definition."
+
+**Debug**
+
+* Study the script well and determine if there appears to be large parts of it that are never executed.
+* Check for IF statements that are never entered, check for loops that are never looped, and check for early return
+  statements.
+* Look for unique or seldom used platform script methods or subsystem methods.  Were proper parameters passed in?
+
+Do you have enough tools for the job?
+=====================================
+
+**Verify**
+
+* Check that you understand the intended use of your agent behaviors.  You might need to create a new behavior, or get
+  help modifying an existing one.  Here is a short list of the most common and most used behaviors and a small
+  description of their purpose.
+* GCI behaviors (aigci):
+
+  * *behavior_create_clustering_jobs* is for using a WsfClusterManager to create clusters of tracks and a zone job for
+    each cluster.
+
+* Flight Lead behaviors (aifl):
+
+  * *behavior_create_target_jobs_self* is for creating pursue-target jobs from local tracks. Good for when a GCI
+    commander is not used.
+  * *behavior_interpret_zone_jobs* is for bidding on and performing zone jobs.  It creates pursue-target jobs from every
+    cluster member given in the job.
+  * *behavior_create_point_job* is for creating a pursue-point job when there are not enough cluster members in a zone
+    job to send the whole flight group.
+  * *behavior_create_cap-routes* is for creating cap-route jobs from a user given list of points and route names.
+  * *behavior_manage-pincer* is for creating a pincer job if the conditions are appropriate.
+  * *behavior_manage-uplinks* simply removes uplink jobs if they are invalid. AIAI agents add uplink jobs to AIFL agents.
+
+* Airborne Interceptor behaviors (aiai):
+
+  * *behavior_pursue-target* is for bidding on and performing pursue-target jobs.  It sets the target on the RIPR
+    processor and flies towards it.
+  * *behavior_engage-target* is for shooting weapons at the RIPR processor's set target.
+  * *behavior_default-flight* is for flying (or bringing the platform back onto) the planned route of the platform.
+  * *behavior_evade* is for using a WSF_THREAT_PROCESSOR to find threats and then fly away from them.  It also flies
+    away from allies if evading a threat.
+  * *behavior_cap-route* is for bidding on and performing cap-route jobs.  It flies the given route around the given
+    point.
+  * *behavior_escort* is for flying in formation with a care package and ignoring tracks that aren't a threat to said
+    package.
+  * *behavior_go_home* is for monitoring subsystems (e.g., weapons, fuel) and other considerations in order to fly the
+    agent home.
+  * *behavior_pincer* is for bidding on and performing pincer jobs.  Two or more platforms separate to flank and/or drag
+    a target area.
+  * *behavior_pursue-point* is for bidding on and performing pursue-point jobs.  It flies towards the given point.
+  * *behavior_weapon-uplink* is for creating, bidding on, and performing weapon_uplink jobs.  It creates weapon_uplink
+    jobs when trying to pass off an uplink.

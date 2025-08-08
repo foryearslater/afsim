@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>line_of_sight_manager &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Link16 Script Classes" href="link16_classes.html" />
+    <link rel="prev" title="launcher demo" href="launcher.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="link16_classes.html" title="Link16 Script Classes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="launcher.html" title="launcher demo"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="line-of-sight-manager">
+<h1>line_of_sight_manager<a class="headerlink" href="#line-of-sight-manager" title="Permalink to this headline">¶</a></h1>
+<dl class="command">
+<dt id="line_of_sight_manager">
+line_of_sight_manager … end_line_of_sight_manager<a class="headerlink" href="#line_of_sight_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<pre class="literal-block">line_of_sight_manager
+
+   // <a class="reference internal" href="#commands">Commands</a>
+
+   <a class="reference internal" href="#maximum_location_change">maximum_location_change</a> ...
+   <a class="reference internal" href="#vegetation_layer_masking">vegetation_layer_masking</a> ...
+   <a class="reference internal" href="#debug">debug</a>
+   <a class="reference internal" href="#use_height_for_ground_platforms">use_height_for_ground_platforms</a> ...
+
+   // <a class="reference internal" href="#multi-thread-commands">Multi-thread Commands</a>                     (Applicable only in frame-step simulations)
+
+   <a class="reference internal" href="#multi_thread">multi_thread</a>
+   <a class="reference internal" href="#debug_thread">debug_thread</a>
+
+   // <a class="reference internal" href="#multi-thread-performance-commands">Multi-thread Performance Commands</a>         (Applicable only when multi-threaded)
+
+   <a class="reference internal" href="#number_of_priority_levels">number_of_priority_levels</a> ...
+   <a class="reference internal" href="#max_steps_in_priority_level">max_steps_in_priority_level</a> ...
+   <a class="reference internal" href="#processing_rate">processing_rate</a> ...
+
+end_line_of_sight_manager</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The Line-of-sight (LOS) manager calculates and maintains LOS information between entities and/or entity parts in the
+simulation on request.</p>
+<p>For event-based simulations, the first time a LOS check is requested for a given pair, the LOS manager performs the LOS
+calculation and saves the result. For subsequent LOS requests for the same pair, the LOS manager checks first for
+movement using the <a class="reference internal" href="#maximum_location_change">maximum_location_change</a> criteria to determine if LOS information needs updating. If neither
+player has moved, then the LOS manager references the saved LOS result.</p>
+<p>For frame-step simulations, similar to the behavior in event-based simulations, the first time a LOS check is requested
+for a given pair, the LOS manager performs the LOS calculation and saves the result. However, for each subsequent
+frame, after platform-mover updates occur at the beginning of the frame, all previously requested platforms are
+considered again. The LOS manager checks first for movement using the same check as in event-based simulations. If
+movement has occurred beyond the threshold criteria, the LOS manager performs the LOS calculation and updates the LOS
+information for all LOS interactions it has knowledge of containing that platform.</p>
+<p>The frame-step approach can be more computationally intensive; therefore, a multi-threading option is available. With
+this option enabled, the LOS manager creates a worker thread for LOS calculation processing.</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="line_of_sight_manager.maximum_location_change">
+<span id="maximum_location_change"></span>maximum_location_change<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#line_of_sight_manager.maximum_location_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>The distance a platform must move when determining whether LOS information needs updating.</p>
+<p><strong>Default</strong> 0.0 meters</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.vegetation_layer_masking">
+<span id="vegetation_layer_masking"></span>vegetation_layer_masking<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#line_of_sight_manager.vegetation_layer_masking" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates that line of sight masking is to be performed with the vegetation layer of the terrain instead of the bare
+earth layer.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.debug">
+<span id="debug"></span>debug<a class="headerlink" href="#line_of_sight_manager.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes additional information to standard output when debugging the LOS manager’s main thread logic.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Debug only one thread at a time for best results.</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.use_height_for_ground_platforms">
+<span id="use_height_for_ground_platforms"></span>use_height_for_ground_platforms<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#line_of_sight_manager.use_height_for_ground_platforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates that a ground platform’s <a class="reference internal" href="platform.html#platform.height" title="height (platform)"><span class="xref wsf wsf-command">height</span></a> is to be added to its altitude when doing terrain masking
+checks.</p>
+</dd></dl>
+
+</section>
+<section id="multi-thread-commands">
+<h2>Multi-thread Commands<a class="headerlink" href="#multi-thread-commands" title="Permalink to this headline">¶</a></h2>
+<p>Applicable only in frame-step simulations.</p>
+<dl class="command">
+<dt id="line_of_sight_manager.multi_thread">
+<span id="multi_thread"></span>multi_thread<a class="headerlink" href="#line_of_sight_manager.multi_thread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a worker thread for processing line-of-sight calculations.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.debug_thread">
+<span id="debug_thread"></span>debug_thread<a class="headerlink" href="#line_of_sight_manager.debug_thread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes additional information to standard output when debugging the LOS manager’s worker thread logic.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Debug only one thread at a time for best results.</p>
+</div>
+</dd></dl>
+
+</section>
+<section id="multi-thread-performance-commands">
+<h2>Multi-thread Performance Commands<a class="headerlink" href="#multi-thread-performance-commands" title="Permalink to this headline">¶</a></h2>
+<p>These commands provide capability to change processing performance of the LOS manager’s worker thread. Improvement is
+not guaranteed; use with caution.</p>
+<p>If the worker thread is overloaded and unable to perform all LOS calculations in the current frame, the unprocessed
+requests are saved for the next frame. In the next frame, requests with highest priority are processed first.</p>
+<p>By default, there are 3 priority levels (queues) each requiring 5 requests before the request before moving to a higher
+level. For example, assume a platform is moving at a distance greater than the <a class="reference internal" href="#maximum_location_change">maximum_location_change</a> each
+frame. The LOS manager internally generates a request to update the LOS information for all LOS interactions it has
+knowledge of containing that platform. If the platform does not get processed for 5 frames it will move up in priority.
+If 5 more frames go by and the LOS interactions for that platform are still not getting updated, the platform will move
+up again in priority.</p>
+<dl class="command">
+<dt id="line_of_sight_manager.number_of_priority_levels">
+<span id="number_of_priority_levels"></span>number_of_priority_levels &lt;positive integer&gt;<a class="headerlink" href="#line_of_sight_manager.number_of_priority_levels" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of priority levels used when processing line-of-sight calculation requests.</p>
+<p><strong>Default</strong> 3 (minimum is 1)</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.max_steps_in_priority_level">
+<span id="max_steps_in_priority_level"></span>max_steps_in_priority_level &lt;positive integer&gt;<a class="headerlink" href="#line_of_sight_manager.max_steps_in_priority_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of requests received for a given LOS interaction required before it moves up in priority.</p>
+<p><strong>Default</strong> 5 (minimum is 1)</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="line_of_sight_manager.processing_rate">
+<span id="processing_rate"></span>processing_rate &lt;positive integer&gt;<a class="headerlink" href="#line_of_sight_manager.processing_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of line-of-sight updates performed by the worker thread in one cycle.  A cycle consists of processing
+requests, determining priority, and then updating the LOS data.  This keeps the thread from getting stuck processing
+requests and never getting to actually updating the LOS data.  It also facilitates pausing the thread, since this can
+only be done between cycles.</p>
+<p><strong>Default</strong> 10 (minimum is 1)</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/line_of_sight_manager.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="link16_classes.html" title="Link16 Script Classes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="launcher.html" title="launcher demo"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,205 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Subsystem location, orientation, slewing and scanning
+-----------------------------------------------------
+
+Overview
+========
+
+The following subcommands are common to the definitions of communication, sensor, and weapon subsystems.  They define
+the location, orientation, slewing and scanning limits, and field-of-view of the object with respect to the host
+platform.
+
+Defining the nominal subsystem location and orientation
+=======================================================
+
+These commands define the subsystem coordinate frame (i.e., the coordinate frame about which the sensor can slew or
+scan).
+
+**location <x> <y> <z> <length-units>**
+
+| Specify the location of the origin of the subsystem coordinate frame relative to the origin of the platform.  This is
+  specified in the entity coordinate system where +X is forward, +Y is to the right (when looking forward) and +Z is
+  down.  This value, along with the values of yaw, pitch, and roll define the location and orientation of the subsystem
+  coordinate frame.
+| Default: 0 0 0 meters
+ 
+**yaw <angle>**
+
+**pitch <angle>**
+
+**roll <angle>**
+
+| Specify the orientation of the subsystem coordinate frame.
+| Default: All 0.0 degrees
+| Note: These values should not be used to specify the antenna tilt angle for a scanning system.  Use the
+  **antenna_tilt** subcommand in the :command:`_.receiver` and :command:`_.transmitter` block for that purpose.
+
+Defining the slewing mode and limits
+====================================
+
+The slewing mode (and the corresponding limits) defines the ability of a subsystem to respond to cue.  If a system is
+not cued then it is oriented in the direction specified by **yaw**, **pitch**, and **roll**.
+
+**slew_mode [ fixed | azimuth | elevation | both ]**
+
+ Indicates how the subsystem can respond in response to a cue:
+ 
+ * fixed  The system cannot be cued. This is the default.
+ * azimuth  The system can be cued only in azimuth.
+ * elevation  The system can be cued only in elevation.
+ * both  The system  in both azimuth and elevation.
+ 
+ Default: fixed
+ 
+**azimuth_slew_limits <min-angle-value> <max-angle-value>**
+
+ | Specify the minimum and maximum angle about which the
+   subsystem can be slewed in azimuth.  These values are applicable only if slew_mode is azimuth or both.  The limits are
+   specified in the subsystem coordinate frame.
+ | Default: -180.0 degrees to 180 degrees
+ 
+**elevation_slew_limits <min-angle-value> <max-angle-value>**
+
+ | Specify the minimum and maximum angle about which the
+   subsystem can be slewed in elevation.  These values are applicable only if **slew_mode** is **elevation** or **both**. 
+   The limits are specified in the system coordinate frame.
+ | Default: -90.0 degrees to 90 degrees
+
+Define the scanning mode and limits
+===================================
+
+Scanning is the process of systematically searching about the current cue (or the nominal subsystem coordinate frame if
+no cue is defined).
+
+**scan_mode [ fixed | azimuth | elevation | both ]**
+
+ Indicates how the subsystem scans in respect to the current cue:
+ 
+ * fixed  The subsystem does not move. This is the default.
+ * azimuth  The subsystem scans only in azimuth.
+ * elevation  The subsystem scans only in elevation.
+ * both  The subsystem scans in both azimuth and elevation.
+ 
+ Default: fixed
+ 
+**azimuth_scan_limits <min-angle-value> <max-angle-value>**
+ 
+ | Specify the minimum and maximum angle about which the subsystem can scan in azimuth.  These values are applicable only
+   if scan_mode is azimuth or both.  The limits are with respect to the current cue.
+ | Default: -180.0 degrees to 180 degrees.
+ 
+**elevation_scan_limits <min-angle-value> <max-angle-value>**
+ 
+ | Specify the minimum and maximum angle about which the subsystem can be scan in elevation.  These values are applicable
+   only if scan_mode is elevation or both. The limits are with respect to the current cue.
+ | Default: -90.0 degrees to 90 degrees
+
+Defining the field-of-view
+==========================
+
+The field of view definition (azimuth, elevation, and range) is totally optional. If the target object is outside the
+field of view then the remainder of the computations for the communication, jamming or sensing opportunity can be
+bypassed.
+
+**azimuth_field_of_view <min-angle-value> <max-angle-value>**
+
+ | Specify the minimum and maximum angle about which the subsystem can see in azimuth.  The limits are with respect to
+   the current cue.  In general these values should be greater than or equal to the azimuth_scan_limits (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+ | Default: -180.0 degrees to 180 degrees.
+ | Note: This value is only used for initial screening to determine if the object can potentially interact with another
+   object.
+
+**elevation_field_of_view <min-angle-value> <max-angle-value>**
+
+ | Specifies the minimum and maximum angle about which the subsystem can see in elevation.  The limits are with respect
+   to the current.  In general these values should be greater than or equal to the azimuth_scan_limits (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+ | Default: -90.0 degrees to 90 degrees.
+ | Note: This value is only used for initial screening to determine if the subsystem can potentially interact with
+   another object.
+   
+**minimum_range <length-value>**
+
+ | Specify the minimum range at which the system can interact with another object.
+ | Default: 0 meters.
+ | Note:  This value is only used for initial screening to determine if the subsystem can potentially interact with
+   another object.
+   
+**maximum_range <length-value>**
+
+ | Specifies the maximum range at which the subsystem can interact with another object.
+ | Default: infinity.
+ | Note:  This value is only used for initial screening to determine if the subsystem can potentially interact with
+   another object.
+   
+Examples
+========
+
+The interaction of these subcommands can be confusing.  This section will attempt to provide some hints and examples.
+
+A mechanically-scanned ground-based early warning radar
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A system of this type typically just rotates round and round.  It does not respond to a cue, so **slew_mode** is fixed.
+
+::
+
+   # The z coordinate gives the antenna height
+   location 0 0 -10 meters
+
+   # The antenna is tilted up 5 degrees from the scan plane
+   # Do NOT use the "pitch' command for this as it will tilt the scan plane!
+   antenna_tilt 5 degrees
+
+   slew_mode fixed
+   scan_mode azimuth
+   azimuth_scan_limits -180 degrees 180 degrees
+
+A height-finding system
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Systems of this type are typically cued to a specific azimuth and then it "nods' up and down.
+
+::
+
+   slew_mode azimuth
+   azimuth_slew_limits -180 degrees 180 degrees
+   scan_mode elevation
+   elevation_scan_limits 0 deg 50 deg
+
+An acquisition system
+^^^^^^^^^^^^^^^^^^^^^
+
+A system of this type is cued to an azimuth and elevation and then searches a small volume.
+
+::
+
+   slew_mode both
+   azimuth_slew_limits -180 degrees 180 degrees
+   elevation_slew_limits 0 degrees 40 degrees
+   scan_mode both
+   azimuth_scan_limits -2 degrees 2 degrees
+   elevation_scan_limits -2 degrees 2 degrees
+
+A tracking system
+^^^^^^^^^^^^^^^^^
+
+This type of system is constantly being re-cued in response to a track.
+
+::
+
+   slew_mode both
+   azimuth_slew_limits -180 degrees 180 degrees
+   elevation_slew_limits 0 80 degrees
+   scan_mode fixed

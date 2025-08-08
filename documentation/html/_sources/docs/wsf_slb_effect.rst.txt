@@ -1,0 +1,145 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SLB_EFFECT
+--------------
+
+.. model:: effect WSF_SLB_EFFECT
+
+    .. parsed-literal::
+
+       effect <effect-name> WSF_SLB_EFFECT
+          :command:`electronic_warfare_effect` Commands
+          :model:`WSF_POWER_EFFECT` Commands
+
+          auxiliary_antenna_pattern_ *<pattern-name>*
+          auxiliary_beam_tilt_ <angle-value>
+          blanking_threshold_ <dbratio-value>
+          main_jnr_thresholds_ *<min-db-ratio> <max-db-ratio>*
+          auxiliary_jnr_thresholds_ *<min-db-ratio> <max-db-ratio>*
+          saturation_effect_ ...  end_saturation_effect
+          target_blanking_effect_ ...  end_target_blanking_effect
+
+          # Optional Inputs - uses main channel antenna and/or receiver parameters if not specified.
+          :ref:`Antenna_Commands` ...
+          :command:`_.receiver`
+               ... receiver commands ...
+          end_receiver
+       end_effect
+
+    This base effect type can be included in the :command:`electronic_protect` or
+    :command:`electronic_attack` technique block as one of the many available effects for a given
+    technique. The commands listed below are the base-type commands that can be specified in the effect block for this
+    effect type.
+
+    .. note::
+
+        If :command:`_.receiver` and/or :ref:`Antenna_commands` are entered this will override the default use of a
+        matched main and auxiliary channel receiver and/or antenna, respectively. In cases where these commands are used,
+        parameters are not copied from the main channel receiver and/or antenna and all parameters of interest should be set by
+        the user.
+
+.. _WSF_SLB_EFFECT.Commands:
+
+Commands
+========
+
+.. command:: auxiliary_antenna_pattern  <pattern-name> 
+   
+   Specifies the antenna pattern name to be used.
+
+   .. note::
+   
+       This antenna pattern will become the only and default antenna pattern.
+   
+   .. note::
+   
+       This input will override (i.e., takes precedence over) the :command:`_.receiver`
+       :command:`_.receiver.antenna_pattern`.
+
+.. command:: auxiliary_beam_tilt  <angle-value> 
+   
+   Specifies the beam tilt of the auxiliary receiver. The default tilt is angle is derived from the receiver this effect
+   is attached to if this is not defined.
+   
+   Default: :command:`_.receiver.beam_tilt` of the receiver for which the effect is attached
+
+.. command:: blanking_threshold  <dbratio-value> 
+   
+   Specifies the blanking threshold level at which the signal will be blanked.
+   Signal blanking will occur if the (auxiliary receiver channel)/(main channel power) >= blanking_threshold.
+   
+   Default: 0.0 dB
+
+.. command:: main_jnr_thresholds  <min-db-ratio> <max-db-ratio> 
+   
+   Specifies the main channel JNR threshold levels to use as the lower and upper levels, respectively, at which the SLB
+   will operate with the input jamming signal.
+   
+   Default: Main receivers SNR threshold as defined on the sensing receiver for the lower level and large value for the
+   maximum upper level.
+
+.. command:: auxiliary_jnr_thresholds  <min-db-ratio> <max-db-ratio> 
+   
+   Specifies the auxiliary channel JNR threshold levels to use as the lower and upper levels, respectively, at which the
+   SLB will operate with the input jamming signal.
+   
+   Default: Main receivers SNR threshold as defined on the sensing receiver for the lower level and large value for the
+   maximum upper level.
+
+.. command:: saturation_effect  <saturation-type> ... end_saturation_effect 
+   
+   Input block to provide the saturation effect and it's associated input commands.
+
+   **<saturation-type>** 
+      Specifies the saturation type to be used. Available saturation effects are as follows:
+
+       no_saturation_effect
+            No saturation effects will be applied.
+       duty_cycle_limit_effect
+            Duty-cycle saturation effects will be applied. See saturation_duty_cycle for more
+            information.
+   
+   Default: no_saturation_effect
+
+.. command:: duty_cycle_limit  <value> 
+   
+   Specifies the maximum duty-cycle of the incoming jamming signal at which blanking will occur. Any jamming signal with a
+   duty-cycle greater than this value will not be blanked (i.e., the blanker will not be operational). Valid values in
+   range of [0..1].
+   
+   Default: 1.0
+
+.. command:: target_blanking_effect  <target-blanking-type> ... end_target_blanking_effect 
+
+Input block to provide the saturation effect and its associated input commands.
+
+<target-blanking-type>
+    Specifies the target blanking type to be used. Available target blanking effects are as
+    follows:
+   
+       no_target_blanking_effect
+           No saturation effects will be applied.
+       duty_cycle_probability_effect
+           Probability draw and comparisons to the incoming signal duty-cycle will be used
+           for target blanking effects.
+   
+   Default: no_target_blanking_effect
+
+.. command:: probabilities  ... end_probabilities 
+
+Input block to provide a target blanking probability table effect and its associated input commands.
+
+pulse_density <pulse-density> <probability-value>
+
+duty_cycle <duty-cycle > <probability-value>
+    Specifies the target blanking probability for the specified
+    received pulse-density or duty-cycle from the jamming signal. Multiple entries create a lookup table.

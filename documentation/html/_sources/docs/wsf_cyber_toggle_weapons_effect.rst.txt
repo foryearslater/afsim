@@ -1,0 +1,89 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CYBER_TOGGLE_WEAPONS_EFFECT
+-------------------------------
+
+.. model:: cyber_effect WSF_CYBER_TOGGLE_WEAPONS_EFFECT
+
+.. parsed-literal::
+
+   cyber_effect <effect_name> :model:`WSF_CYBER_TOGGLE_WEAPONS_EFFECT`
+    
+      platform_type <type>
+         ... weapon_effect_targeting_ definitions
+         target_list <weapon-name> ... <weapon-name> ... end_target_list
+         select_all
+      end_platform_type
+      
+      platform <name>
+         ... weapon_effect_targeting_ definitions
+      end_platform
+	  
+      default
+         ... weapon_effect_targeting_ definitions
+      end_default		 
+   
+   end_cyber_effect
+   
+Overview
+========
+
+:model:`WSF_CYBER_TOGGLE_WEAPONS_EFFECT` is a cyber_effect that allows disabling of one
+or more weapons on affected victim platforms.
+
+.. note:: This effect does NOT require user supplied data during a CyberAttack initiation call.
+
+Commands
+========
+
+.. command:: platform_type <type> ... end_platform_type
+
+   Define the effect targeting for a platform type.
+   This command may be repeated as necessary.
+
+.. command:: platform <name> ... end_platform
+
+   Define the effect targeting for a specific platform.
+   This command may be repeated as necessary.
+
+.. command:: default ... end_default
+
+   Define the effect targeting parameters for all platforms that are not
+   of the provided platform or platform_type definitions.
+   
+.. note:: This effect attempts to match the most specific case to the victim platform 
+          for determination of which block is applicable. Matching is first attempted 
+          by platform name, then by all platform_types that the victim derives from 
+          (from most to least specific), and finally by using the default block (if defined). 
+          If a match is not found due to the default block not being defined and 
+          previous matching attempts failing, then this effect will have no affect 
+          on the victim platform.
+
+.. _weapon_effect_targeting:
+
+Weapon Effect Targeting
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For a platform subject to this effect and matching a defined platform, platform_type, or default block,
+the following options are provided for determining which weapons on the victim are subject to being toggled off:
+
+.. command:: target_list <weapon-name> ... <weapon-name> ... end_target_list
+
+   A target_list defines the names of the weapons that should be disabled by this effect. Any weapon name
+   matching the provided names will be turned off. All other weapons will be unaffected. 
+   
+.. command:: select_all
+
+   Specifying this command in lieu of the target_list will disable all weapons on the victim platform. Defining
+   both the select_all and target_list block commands will result in an error in loading the scenario input. 
+
+

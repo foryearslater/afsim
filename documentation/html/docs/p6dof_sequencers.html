@@ -1,0 +1,600 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>P6DOF Sequencers &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="P6DOF Subobjects" href="p6dof_subobjects.html" />
+    <link rel="prev" title="P6DOF Propulsion System Definition" href="p6dof_propulsion_system.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_subobjects.html" title="P6DOF Subobjects"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_propulsion_system.html" title="P6DOF Propulsion System Definition"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="p6dof-sequencers">
+<span id="p6dof-sequencers-label"></span><h1>P6DOF Sequencers<a class="headerlink" href="#p6dof-sequencers" title="Permalink to this headline">¶</a></h1>
+<p>A <a class="reference internal" href="p6dof_object_type.html"><span class="doc">p6dof_object_type</span></a> may include one or more “sequencers” which provide a means for a P6Dof object to take action based on the occurrence of one or more events. Sequencers can be used to perform a range of tasks, such as deploying high-drag devices on a retarded-fall bomb several seconds after release from its parent aircraft, or triggering staging events on a multi-stage rocket. Sequencers are a powerful, yet easy to use, means of controlling a sequence of events
+for a P6Dof object that can be triggered by events based on time, altitude, speed, etc.</p>
+<dl class="command">
+<dt id="sequencer">
+sequencer … end_sequencer<a class="headerlink" href="#sequencer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A sequencer block has an identifier, which is the string argument after ‘sequencer’. This identifier must be unique within the <a class="reference internal" href="p6dof_object_type.html"><span class="doc">p6dof_object_type</span></a>.
+The sequencer block has to include at least one <a class="reference internal" href="#sequencer-actions">Sequencer Actions</a>, which is the action the sequencer shall perform when it is activated.
+The sequencer block may include one or more <a class="reference internal" href="#sequencer-events">Sequencer Events</a>, if no Sequencer Events are provided the sequencer may only be activated through the <a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.ActivateSequencer" title="WsfP6DOF_Mover.ActivateSequencer"><span class="xref wsf wsf-method">WsfP6DOF_Mover.ActivateSequencer</span></a> script function.
+The sequencer block may include one or more <a class="reference internal" href="#nested-sequencers">Nested Sequencers</a> which will be used once the containing sequencer has been activated – this allows for sequential events, where the second event cannot occur until the first event has occurred.</p>
+<pre class="literal-block">sequencer &lt;string&gt;
+
+   // <a class="reference internal" href="#sequencer-events">Sequencer Events</a>
+   <a class="reference internal" href="#event_timer">event_timer</a> ...
+   <a class="reference internal" href="#event_timer_int_msec">event_timer_int_msec</a> ...
+   <a class="reference internal" href="#event_timer_int_nanosec">event_timer_int_nanosec</a> ...
+   <a class="reference internal" href="#event_lifetime">event_lifetime</a> ...
+   <a class="reference internal" href="#event_lifetime_int_msec">event_lifetime_int_msec</a> ...
+   <a class="reference internal" href="#event_lifetime_int_nanosec">event_lifetime_int_nanosec</a> ...
+   <a class="reference internal" href="#event_above_alt">event_above_alt</a> ...
+   <a class="reference internal" href="#event_below_alt">event_below_alt</a> ...
+   <a class="reference internal" href="#event_dynamic_pressure_above">event_dynamic_pressure_above</a> ...
+   <a class="reference internal" href="#event_dynamic_pressure_below">event_dynamic_pressure_below</a> ...
+   <a class="reference internal" href="#event_static_pressure_above">event_static_pressure_above</a> ...
+   <a class="reference internal" href="#event_static_pressure_below">event_static_pressure_below</a> ...
+   <a class="reference internal" href="#event_fuel_percent_below">event_fuel_percent_below</a> ...
+   <a class="reference internal" href="#event_ground_distance">event_ground_distance</a> ...
+   <a class="reference internal" href="#event_nx_above">event_nx_above</a> ...
+   <a class="reference internal" href="#event_nx_below">event_nx_below</a> ...
+   <a class="reference internal" href="#event_ny_above">event_ny_above</a> ...
+   <a class="reference internal" href="#event_ny_below">event_ny_below</a> ...
+   <a class="reference internal" href="#event_nz_above">event_nz_above</a> ...
+   <a class="reference internal" href="#event_nz_below">event_nz_below</a> ...
+   <a class="reference internal" href="#event_released_from_parent">event_released_from_parent</a> ...
+   <a class="reference internal" href="#event_manual_input_trigger">event_manual_input_trigger</a> ...
+   <a class="reference internal" href="#event_manual_input_button">event_manual_input_button</a> ...
+   <a class="reference internal" href="#event_manual_input_button_released">event_manual_input_button_released</a> ...
+   <a class="reference internal" href="#event_boolean_input">event_boolean_input</a> ...
+   <a class="reference internal" href="#event_null">event_null</a> ...
+   <a class="reference internal" href="#all_events">all_events</a> ...
+
+   // <a class="reference internal" href="#sequencer-actions">Sequencer Actions</a>
+   <a class="reference internal" href="#action_null">action_null</a> ...
+   <a class="reference internal" href="#action_jett_obj">action_jett_obj</a> ...
+   <a class="reference internal" href="#action_jett_self">action_jett_self</a> ...
+   <a class="reference internal" href="#action_ignite_engine">action_ignite_engine</a> ...
+   <a class="reference internal" href="#action_ignite_subobject">action_ignite_subobject</a> ...
+   <a class="reference internal" href="#action_ignite_self">action_ignite_self</a> ...
+   <a class="reference internal" href="#action_terminate_thrust">action_terminate_thrust</a> ...
+   <a class="reference internal" href="#action_shutdown_engine">action_shutdown_engine</a> ...
+   <a class="reference internal" href="#action_shutdown_subobject">action_shutdown_subobject</a> ...
+   <a class="reference internal" href="#action_change_aero_mode">action_change_aero_mode</a> ...
+   <a class="reference internal" href="#action_enable_size_factor">action_enable_size_factor</a> ...
+   <a class="reference internal" href="#action_set_graphical_model">action_set_graphical_model</a> ...
+   <a class="reference internal" href="#action_activate_subobject_sequencer">action_activate_subobject_sequencer</a> ...
+   <a class="reference internal" href="#action_enable_controls">action_enable_controls</a> ...
+   <a class="reference internal" href="#action_disable_controls">action_disable_controls</a> ...
+
+   // <a class="reference internal" href="#nested-sequencers">Nested Sequencers</a>
+   <a class="reference internal" href="#sequencer">sequencer</a> ... end_sequencer
+
+end_sequencer
+
+Each sequencer is named, using the first argument after sequencer.</pre>
+<p>An example of a simple, timer-event sequencer that jettisons two external fuel tank objects after 120 seconds has elapsed  is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sequencer</span> <span class="n">DropTipTanks</span>
+   <span class="n">event_timer</span>      <span class="mf">120.0</span> <span class="n">sec</span>
+   <span class="n">action_jett_obj</span>  <span class="n">RightTipTank</span>
+   <span class="n">action_jett_obj</span>  <span class="n">LeftTipTank</span>
+<span class="n">end_sequencer</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="sequencer-events">
+<h1>Sequencer Events<a class="headerlink" href="#sequencer-events" title="Permalink to this headline">¶</a></h1>
+<p>Sequencer events are tested to determine if a sequencer should be activated. If more than one event is specified, the sequencer will activate if at least one of the events is true. If is it desired to activate only if all of the events are true, the <a class="reference internal" href="#all_events">all_events</a> command should be included.</p>
+<dl class="command">
+<dt id="event_timer">
+event_timer<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#event_timer" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified time. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to <a class="reference internal" href="#event_lifetime">event_lifetime</a> but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_timer_int_msec">
+event_timer_int_msec<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#event_timer_int_msec" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified time, which is an integer number of milliseconds. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to <a class="reference internal" href="#event_lifetime_int_msec">event_lifetime_int_msec</a> but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_timer_int_nanosec">
+event_timer_int_nanosec<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#event_timer_int_nanosec" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified time, which is an integer number of nanoseconds. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to <a class="reference internal" href="#event_lifetime_int_nanosec">event_lifetime_int_nanosec</a> but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_lifetime">
+event_lifetime<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#event_lifetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified lifetime. The lifetime timer begins counting once the platform is active (alive). This timer is different from the <a class="reference internal" href="#event_timer">event_timer</a> since it uses a platform-centric timer as opposed to a sequencer-centric timer.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_lifetime_int_msec">
+event_lifetime_int_msec<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#event_lifetime_int_msec" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified lifetime, which is an integer number of milliseconds.  The lifetime timer begins counting once the platform is active (alive). This timer is different from the <a class="reference internal" href="#event_timer_int_msec">event_timer_int_msec</a> since it uses a platform-centric timer as opposed to a sequencer-centric timer.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_lifetime_int_nanosec">
+event_lifetime_int_nanosec<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#event_lifetime_int_nanosec" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on reaching the specified lifetime, which is an integer number of nanoseconds.  The lifetime timer begins counting once the platform is active (alive). This timer is different from the <a class="reference internal" href="#event_timer_int_nanosec">event_timer_int_nanosec</a> since it uses a platform-centric timer as opposed to a sequencer-centric timer.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_above_alt">
+event_above_alt<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#event_above_alt" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform being above the specified altitude (MSL).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_below_alt">
+event_below_alt<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#event_below_alt" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform  being below the specified altitude (MSL).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_dynamic_pressure_above">
+event_dynamic_pressure_above<a class="reference internal" href="argumenttypes.html#pressure-value" title="pressure-value"><em> &lt;pressure-value&gt;</em></a><a class="headerlink" href="#event_dynamic_pressure_above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform having a dynamic pressure above the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_dynamic_pressure_below">
+event_dynamic_pressure_below<a class="reference internal" href="argumenttypes.html#pressure-value" title="pressure-value"><em> &lt;pressure-value&gt;</em></a><a class="headerlink" href="#event_dynamic_pressure_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform having a dynamic pressure below the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_static_pressure_above">
+event_static_pressure_above<a class="reference internal" href="argumenttypes.html#pressure-value" title="pressure-value"><em> &lt;pressure-value&gt;</em></a><a class="headerlink" href="#event_static_pressure_above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform having a static pressure above the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_static_pressure_below">
+event_static_pressure_below<a class="reference internal" href="argumenttypes.html#pressure-value" title="pressure-value"><em> &lt;pressure-value&gt;</em></a><a class="headerlink" href="#event_static_pressure_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform having a static pressure below the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_fuel_percent_below">
+event_fuel_percent_below<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#event_fuel_percent_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the fuel value as a normalized number (50% is 0.50). This event is based on the fuel level in the “main tank” being below the specified value. The main tank is considered to be the first tank specified in the <a class="reference internal" href="p6dof_propulsion_system.html#propulsion_data" title="propulsion_data"><span class="xref wsf wsf-command">propulsion_data</span></a> block.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_ground_distance">
+event_ground_distance<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#event_ground_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform being beyond the specified distance (great circle) from the point at which it started.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_nx_above">
+event_nx_above<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_nx_above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the x-acceleration, known as Nx, (in body coordinates) being above the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_nx_below">
+event_nx_below<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_nx_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the y-acceleration, known as Nx, (in body coordinates) being below the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_ny_above">
+event_ny_above<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_ny_above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the y-acceleration, known as Ny, (in body coordinates) being above the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_ny_below">
+event_ny_below<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_ny_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the y-acceleration, known as Ny, (in body coordinates) being below the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_nz_above">
+event_nz_above<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_nz_above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the z-acceleration, known as Nz, (in body coordinates) being above the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_nz_below">
+event_nz_below<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#event_nz_below" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the z-acceleration, known as Nz, (in body coordinates) being below the specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_released_from_parent">
+event_released_from_parent<a class="headerlink" href="#event_released_from_parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on the platform being newly released from its parent.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_manual_input_trigger">
+event_manual_input_trigger<a class="headerlink" href="#event_manual_input_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event allows a trigger pulled input from the P6Net interface to activate.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_manual_input_button">
+event_manual_input_button<a class="headerlink" href="#event_manual_input_button" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event allows an input button down from the P6Net interface to activate.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_manual_input_button_released">
+event_manual_input_button_released<a class="headerlink" href="#event_manual_input_button_released" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event allows an input button release from the P6Net interface to activate.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_boolean_input">
+event_boolean_input<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#event_boolean_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>This event is based on a <a class="reference internal" href="p6dof_flight_control_system.html#flight_controls.control_boolean" title="control_boolean (flight_controls)"><span class="xref wsf wsf-command">control_boolean</span></a> within <a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a> being true. This allows an event to be controlled by a ManualPilot or SyntheticPilot, for example.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="event_null">
+event_null<a class="headerlink" href="#event_null" title="Permalink to this definition">¶</a></dt>
+<dd><p>This purpose of this event is for to prevent any action without an <strong>external</strong> command to active the sequencer (see <a class="reference internal" href="#action_activate_subobject_sequencer">action_activate_subobject_sequencer</a>).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="all_events">
+all_events<a class="headerlink" href="#all_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>This flag indicates that the sequencer will be activated only if all events for the sequencer are true.</p>
+</dd></dl>
+
+</section>
+<section id="sequencer-actions">
+<h1>Sequencer Actions<a class="headerlink" href="#sequencer-actions" title="Permalink to this headline">¶</a></h1>
+<dl class="command">
+<dt id="action_null">
+action_null<a class="headerlink" href="#action_null" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action should be specified when no action is desired, such as for a parent sequencer that does not need any action to be performed at its level.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_jett_obj">
+action_jett_obj<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_jett_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will jettison the specified subobject.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_jett_self">
+action_jett_self<a class="headerlink" href="#action_jett_self" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will jettison the object from its parent.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_ignite_engine">
+action_ignite_engine<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_ignite_engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will “ignite” the specified engine and set thrust (if applicable) to 100%.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_ignite_subobject">
+action_ignite_subobject<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_ignite_subobject" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will “ignite” all engines on the specified subobject.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_ignite_self">
+action_ignite_self<a class="headerlink" href="#action_ignite_self" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will “ignite” all engines on the object.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_terminate_thrust">
+action_terminate_thrust<a class="headerlink" href="#action_terminate_thrust" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will terminate the thrust for all engines on the object (shutdown the engines).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_shutdown_engine">
+action_shutdown_engine<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_shutdown_engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will “shutdown” the specified engine and set thrust (if applicable) to 0%.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_shutdown_subobject">
+action_shutdown_subobject<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_shutdown_subobject" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will “shutdown” all engines on the specified subobject.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_change_aero_mode">
+action_change_aero_mode<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_change_aero_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will change the object’s <a class="reference internal" href="p6dof_aerodynamics_data.html#aero_mode" title="aero_mode"><span class="xref wsf wsf-command">aero_mode</span></a> to the specified mode.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_enable_size_factor">
+action_enable_size_factor<a class="headerlink" href="#action_enable_size_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will enable the size factor. See <a class="reference internal" href="p6dof_object_type.html#p6dof-size-factor-parameters"><span class="std std-ref">Size Factor Parameters</span></a> for details.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_set_graphical_model">
+action_set_graphical_model<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#action_set_graphical_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will set the current graphical model for networked tools.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_activate_subobject_sequencer">
+action_activate_subobject_sequencer<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#action_activate_subobject_sequencer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The first string is the name of the subobject and the second string is the name of the sequencer. This action will activate the sequencer with the specified name on the specified subobject. If no subobject or sequencer exists, no action will be performed.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_enable_controls">
+action_enable_controls<a class="headerlink" href="#action_enable_controls" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will enable control input for normal operation. See <a class="reference internal" href="#action_disable_controls">action_disable_controls</a> to turn off the controls.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="action_disable_controls">
+action_disable_controls<a class="headerlink" href="#action_disable_controls" title="Permalink to this definition">¶</a></dt>
+<dd><p>This action will disable control input, zeroing all control inputs. See <a class="reference internal" href="#action_enable_controls">action_enable_controls</a> to turn on the controls.</p>
+</dd></dl>
+
+</section>
+<section id="nested-sequencers">
+<h1>Nested Sequencers<a class="headerlink" href="#nested-sequencers" title="Permalink to this headline">¶</a></h1>
+<p>Nested sequencers are sequencers that are defined within another (parent) sequencer. The nested sequencer does not have its events tested until its parent sequencer has been activated. This allows for sequential events, since the second event cannot occur until the first event has occurred. In many cases, the various parent sequencers will use an <a class="reference internal" href="#action_null">action_null</a> action, since no action is desired until the final sequencer is activated.</p>
+<p>Consider this case:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sequencer</span>
+   <span class="n">name</span>             <span class="n">Sequencer1</span>
+   <span class="n">event_above_alt</span>  <span class="mf">80000.0</span> <span class="n">ft</span>
+   <span class="n">action_null</span>
+   <span class="n">sequencer</span>
+      <span class="n">name</span>             <span class="n">Sequencer2</span>
+      <span class="n">event_below_alt</span>   <span class="mf">70000.0</span> <span class="n">ft</span>
+      <span class="n">action_null</span>
+      <span class="n">sequencer</span>
+         <span class="n">name</span>                  <span class="n">Sequencer3</span>
+         <span class="n">event_timer</span>           <span class="mf">10.0</span> <span class="n">sec</span>
+         <span class="n">action_ignite_engine</span>  <span class="n">BoostRocket</span>
+      <span class="n">end_sequencer</span>
+   <span class="n">end_sequencer</span>
+<span class="n">end_sequencer</span>
+</pre></div>
+</div>
+<p>In this case, the sequencer chain will ignite a BoostRocket 10 seconds after the platform comes back down below 70,000 feet after first reaching 80,000 feet.</p>
+</section>
+<section id="removing-sequencers">
+<h1>Removing Sequencers<a class="headerlink" href="#removing-sequencers" title="Permalink to this headline">¶</a></h1>
+<dl class="command">
+<dt id="remove_sequencer">
+remove_sequencer<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#remove_sequencer" title="Permalink to this definition">¶</a></dt>
+<dd><p>This removes the specified sequencer. It is typically used to remove a sequencer that was derived from a parent class object. If no sequencer with the specified name exists, the command is ignored.</p>
+</dd></dl>
+
+<p>Return to <a class="reference internal" href="p6dof_object_types.html"><span class="doc">p6dof_object_types</span></a> or <a class="reference internal" href="p6dof_object_type.html"><span class="doc">p6dof_object_type</span></a></p>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/p6dof_sequencers.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_subobjects.html" title="P6DOF Subobjects"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_propulsion_system.html" title="P6DOF Propulsion System Definition"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

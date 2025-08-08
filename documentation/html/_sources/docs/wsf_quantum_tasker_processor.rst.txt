@@ -1,0 +1,281 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_QUANTUM_TASKER_PROCESSOR
+----------------------------
+
+.. model:: processor WSF_QUANTUM_TASKER_PROCESSOR
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+**Brother To:** :model:`WSF_TASK_PROCESSOR`
+
+**Script Classes:** :class:`WsfQuantumTaskerProcessor`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_QUANTUM_TASKER_PROCESSOR`
+
+     :command:`WSF_SCRIPT_PROCESSOR` Commands ...
+     :command:`processor` Commands ...
+     :ref:`Platform_Part_Commands` ...
+
+     // `Quantum Tasker Commands`_
+
+     ignore_ally_tracks_
+     asset_representation_ ...
+     generator_ ...
+     evaluator_ ...
+     allocator_ ...
+     allocator_extra_tasks_ ...
+     allocator_extra_assets_ ...
+     reallocation_strategy_ ...
+     update_assignments_
+
+     // `Task Processor Commands`_
+
+     comm_retry_attempts_ ...
+     comm_retry_interval_ ...
+     operating_level_ ...
+     track_processor_ ...
+     time_to_recognize_messages_ ...
+     track_update_interval_ ...
+     track_update_strategy_ ...
+     show_task_messages_
+     show_uncompleted_tasks_
+     queuing_method_ ...
+     number_of_servers_ ...
+
+   end_processor
+
+Overview
+========
+
+**WSF_QUANTUM_TASKER_PROCESSOR** provides a common mechanism for sending and receiving "task assignments' (could be
+associated with tracks).  **WSF_QUANTUM_TASKER_PROCESSOR** provides additional script commands (e.g.,
+:method:`AssignTask <WsfQuantumTaskerProcessor>`, :method:`CancelTask <WsfQuantumTaskerProcessor>` as defined in
+:class:`WsfQuantumTaskerProcessor`) that allow tasks to be sent and received.
+
+Method of Operation
+===================
+
+When the WSF_QUANTUM_TASKER_PROCESSOR (processor) updates, it performs these basic steps:
+
+* Uses asset perception from platform (WSF_PERCEPTION_PROCESSOR)
+* Uses threat perception from platform (WSF_PERCEPTION_PROCESSOR)
+* Calls the generator to create a task list
+* Calls the evaluator to give values to all possible asset-task pairings
+* Calls the allocator to compute the appropriate allocation given the current evaluation (max profit allocation for
+  example)
+* Sends out task assignments according to the selected reallocation strategy (for example: a static strategy does not
+  allow reallocation of previously assigned tasks)
+
+  .. note:: If the processor has multiple WSF_PERCEPTION_PROCESSORs, it will implicitly link to the first one attached to it.
+
+Script Interface
+================
+
+:model:`WSF_QUANTUM_TASKER_PROCESSOR` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`
+
+.. block:: WSF_QUANTUM_TASKER_PROCESSOR
+
+Quantum Tasker Commands
+=======================
+
+.. command:: ignore_ally_tracks
+
+   Indicates that the Quantum Tasker should not pass tracks of allies to the task generator, and subsequently should not
+   have any tasks related to ally tracks.
+
+.. command:: asset_representation [ platform | systems | resources ]
+
+   Indicates how the Quantum Tasker should represent asset perception objects.  If 'systems' is defined then each platform
+   subsystem is considered as an individual asset that can receive task assignments separate from other subsystems. If
+   'resources' is defined then each resource of a subsystem is considered as a taskable individual asset (missiles,
+   sensor/jammer beams).  However, the task assignments are still sent to the owning platform for processing as required.
+
+.. command:: generator [ simple_weapon | simple_jammer | simple_sensor | custom <script method name> ]
+
+   Indicates which task generator the Quantum Tasker is to use.
+
+   * simple_weapon : creates a weapon task for every track given.
+   * simple_jammer : creates a jammer task for every track given.
+   * simple_sensor : creates a sensor task for every track given.
+   * custom        : allows the user to define a script method for generating tasks.  Method must adhere to this script
+     signature:
+
+   .. parsed-literal::
+
+      script Array<:class:`WsfQuantumTask`> method_name ( Array<:class:`WsfLocalTrack`>, Array<:class:`WsfAssetPerception`> )
+      ...
+      end_script
+
+   .. note::
+
+      Custom generator arguments are only valid during the lifetime of this method.
+
+.. command:: evaluator [ simple | distance | intercept_time | custom <script method name> ]
+
+   Indicates which task evaluator the Quantum Tasker is to use.
+
+   * simple         : evaluates every pairing with a value of '1.0'.
+   * distance       : evaluates an asset-task pairing according to the inverse distance between the asset and the task
+     track (if exists).
+   * intercept_time : evaluates an asset-task pairing according to the inverse intercept time of the asset with the task
+     track (if exists).
+   * custom         : allows the user to define a script method for evaluating possible asset-task pairings.  Method must
+     adhere to this script signature:
+
+   .. parsed-literal::
+
+      script double method_name ( :class:`WsfQuantumTask`, :class:`WsfAssetPerception` )
+      ...
+      end_script
+
+   .. note::
+
+      Custom evaluator arguments are only valid during the lifetime of this method.
+
+.. command:: allocator [ simple | greedy_isolated | greedy_priority | greedy_value | greedy_profit | optimal_profit | custom <script method name> ] [type <task_type>]
+
+   Indicates which allocation algorithm the Quantum Tasker is to use to assign tasks to assets given the current
+   evaluation values.
+
+   * simple          : Assigns the first task to the first asset, etc.
+   * greedy_isolated : An asset is assigned whatever task it evaluated the best for, regardless of other assignments.
+     This could lead to many assets performing the same task.
+   * greedy_priority : Assigns the remaining highest priority task to whatever non-busy asset evaluated highest, then
+     marks that asset as busy, & repeats.
+   * greedy_value    : Assigns whatever remaining asset-task pairing evaluated the highest, marks asset as busy, & repeats.
+   * greedy_profit   : Assigns whatever remaining asset-task pairing has the highest profit (profit = pairing evaluation *
+     task priority), marks asset as busy, & repeats.
+   * optimal_profit  : Performs a max weighting algorithm to determine the assignment that provides the maximum cumulative
+     profit.
+   * custom          : allows the user to define a script method for allocating tasks to assets given the current matrix
+     of values. Method must adhere to this script signature:
+
+   .. parsed-literal::
+
+      script Map<:class:`WsfAssetPerception`, :class:`WsfQuantumTask`> method_name ( Array<Array<double>> , Array<:class:`WsfAssetPerception`> , Array<:class:`WsfQuantumTask`> )
+      ...
+      end_script
+
+   .. note::
+
+      Custom allocator arguments are only valid during the lifetime of this method.
+
+
+   If <task_type> is specified, then an allocation pass is performed using only tasks of that type.  Multiple allocators
+   can be defined.  If no task type is specified, then all tasks are considered in the allocation pass.
+
+.. command:: allocator_extra_tasks [ simple | greedy_isolated | greedy_priority | greedy_value | greedy_profit | optimal_profit | custom <script method name> ]
+
+   Indicates which allocator will be used on any extra tasks that were not allocated by the primary allocator. If used,
+   this means assets might have more than one task to perform.  This allocator will be called repeatedly as long there are
+   tasks that are still remaining and as long as it keeps finding at least one new allocation each pass.  If no assets
+   evaluated a task positively, then that task will not be allocated.
+
+   **Default:** none - extra tasks left unassigned.
+
+.. command:: allocator_extra_assets [ simple | greedy_isolated | greedy_priority | greedy_value | greedy_profit | optimal_profit | custom <script method name> ]
+
+   Indicates which allocator will be used on any extra assets that were not allocated by the primary allocator.  If used,
+   this means tasks might have more than one asset performing them.  This allocator will be called repeatedly as long
+   there are assets that are still remaining and as long as it keeps finding at least one new allocation each pass.  If an
+   asset did not evaluate any task positively, then that asset will not be allocated to a task.
+
+   **Default:** none - extra assets left unassigned.
+
+.. command:: reallocation_strategy [ static | dynamic | response | event ]
+
+   Indicates how the Quantum Tasker handles previously assigned tasks and changes in task assignments.
+
+   * static   : never allow a task reassignment, ever
+   * dynamic  : always allow task reassignment, possible on every update (however, this is unlikely if your evaluator operates on a continuous spectrum).
+   * response : only allow a task reassignment when the original recipient rejects or cancels the task.
+   * event    : perform a complete allocation when a new task appears, an asset changes state, or a task is rejected/canceled. (kind of like an event driven version of the 'dynamic' strategy)
+
+   **Default:** static
+
+.. command:: update_assignments
+
+   If declared, a task assign message is sent to all assigned assets every update. This is only useful when task data (like aux data)
+   is updated regularly on the tasks.
+
+   **Default:** not declared
+
+Task Processor Commands
+=======================
+
+.. command:: comm_retry_attempts <integer>
+
+   Indicates the number of attempts to retry failed communications.
+
+.. command:: comm_retry_interval <time-value>
+
+   Indicates the amount of time between attempts to retry failed communications.
+
+.. command:: operating_level <name> <level>
+
+   Indicates the operating condition or state and the associated level.
+
+   Example::
+
+      operating_level Engage 0
+
+.. command:: track_processor <track-proc-name>
+
+   Specifies the name of a :model:`WSF_TRACK_PROCESSOR` (typically operating as a
+   :command:`WSF_TRACK_PROCESSOR.non_master_track_processor`) whose track list will provide the tracks used in the evaluation
+   process.
+
+   **Default:** Uses the platforms master track list.
+
+.. command:: time_to_recognize_messages <time-value>
+
+   Indicates the amount of time it takes to recognize a message.
+
+.. command:: track_update_interval <time-value>
+
+   Indicates the time interval for sending track updates to assignees.
+
+.. command:: track_update_strategy [ default | suppressor ]
+
+   Indicates how track updates are sent. With default behavior, if a task has been accepted then periodic track updates
+   are sent to the assignee. With the Suppressor behavior, track updates are sent to assignees only when the track manager
+   indicates a track has been updated.
+
+.. command:: show_task_messages
+
+   Indicates that information related task assignment, cancellation and completion are to be written to standard output.
+
+.. command:: show_uncompleted_tasks
+
+   This is a debugging tool that indicates information about uncompleted tasks is to be written to standard output during
+   the destruction of the task processor.
+
+.. command:: queuing_method [ first_in_first_out | last_in_first_out | none ]
+
+   Only used if *time_to_recognize_messages* is defined and greater than zero. Specifies how incoming messages are to be
+   queued if all of the servers are busy. A value of **none** indicates the message will be discarded.
+
+   **Default:** first_in_first_out
+
+.. command:: number_of_servers [ <integer-reference> | infinite ]
+
+   Only used if *time_to_recognize_messages* is defined and greater than zero. Specifies the maximum number of messages
+   that can be 'in process' at any given instant of time. If a new message is received and all the servers are busy, the
+   message will be queued according to the queuing_method_
+
+   If 'infinite' is specified (the default), received messages are simply delayed by the required amount before being
+   forwarded.
+
+   **Default:** infinite

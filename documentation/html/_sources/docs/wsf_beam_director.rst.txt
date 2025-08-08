@@ -1,0 +1,93 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_BEAM_DIRECTOR
+-----------------
+
+.. model:: sensor WSF_BEAM_DIRECTOR
+
+.. parsed-literal::
+
+   sensor <name> :model:`WSF_BEAM_DIRECTOR`
+
+      ... :ref:`Platform_Part_Commands` ...
+      ... :command:`sensor` Commands ...
+      mode <name>
+         angular_resolution_ ...
+         perfect_correlation_ ...
+         type_ ...
+         min_pixels_for_cue_ ...
+      end_mode
+   end_sensor
+
+Overview
+========
+
+WSF_BEAM_DIRECTOR is a sensor meant to be used as a beam director (target tracker) for a
+High-Energy Laser (HEL).  Specifically, this sensor is meant to work
+with the :model:`WSF_CUED_LASER_WEAPON`.
+
+This sensor has three modes: scanning, locked with imaging, and cued to image.
+During the scan phase the laser sensor is cued to a location or track.
+It uses this location as the center of its field-of-view.
+It will then scan for targets within its scan field-of-view.  If it detects one,
+it will "lock on" to this target and commence its imaging sequence.
+Once an image is acquired, if it subtends a given critical
+size (min_pixels_for_cue_), the sensor will "cue to the image," meaning
+it simulates a lock onto a sub-portion of the image.  At this point, a co-pointed
+HEL can fire.
+
+The beam director sends specific messages during mode transitions.  These messages have the following type names:
+
+::
+
+   Transition          Message Name
+   --------------------------------
+   LOCKED-->CUED       CUED_TO_IMAGE
+   CUED-->LOCKED       LOST_IMAGE_CUE
+   LOCKED-->SCANNING   BREAKLOCK
+
+When the "CUED_TO_IMAGE" message is received by the :model:`WSF_CUED_LASER_WEAPON`, high-energy lasing commences.  This is
+indicated in the simulation by a :ref:`DIRECTED_ENERGY_WEAPON_BEGIN_SHOT <DIRECTED_ENERGY_WEAPON_SHOT_INFO>` event.  If the
+"LOST_IMAGE_CUE" is received while lasing, the high-energy lasing is aborted, and a
+:ref:`DIRECTED_ENERGY_WEAPON_END_SHOT <DIRECTED_ENERGY_WEAPON_SHOT_INFO>` event is issued.
+
+.. block:: WSF_BEAM_DIRECTOR
+
+Mode Commands
+=============
+
+.. command:: angular_resolution <angle-value>
+
+   Specify the angular resolution of the sensor.
+
+   Default: 3.0E-5 radians
+
+.. command:: perfect_correlation <boolean-value>
+
+   Specify whether the sensor will perfectly correlate when tracking from an initial cue.
+
+   Default: false (It will pick the object closest to the center of the field-of-view to track.)
+
+.. command:: type  scanning | locked | cued
+
+   Determines the type of mode.  Using the *type* input simplifies the task of modeling the beam director as a set of
+   finer and finer tracking modes.  One typically specifies a scanning mode, one or more locked modes, and finally, a cued
+   mode.  Once the cued mode is entered, a message is sent to the associated :model:`WSF_CUED_LASER_WEAPON`, and HEL lasing
+   commences.
+
+   Default: *cued*
+
+.. command:: min_pixels_for_cue <integer-value>
+
+   Specify the minimum number of pixels required to initiate a successful transition to a cued mode.
+
+   Default: 0

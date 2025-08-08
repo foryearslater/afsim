@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Descriptions of Script Utilities &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Adding New Scenario Analyzer Checks" href="scenario_analyzer_add_checks_tutorial.html" />
+    <link rel="prev" title="Descriptions of Included Checks" href="scenario_analyzer_check_suites.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="scenario_analyzer_add_checks_tutorial.html" title="Adding New Scenario Analyzer Checks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="scenario_analyzer_check_suites.html" title="Descriptions of Included Checks"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+
+          <li class="nav-item nav-item-1"><a href="../wizard_reference_guide.html" >Wizard Reference Guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="wiz_scenario_analyzer.html" accesskey="U">Scenario Analyzer</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="line-block" id="scenario-analyzer-utilities">
+<div class="line"><a class="reference internal" href="wiz_scenario_analyzer.html"><span class="doc">Scenario Analyzer Tool Table of Contents</span></a></div>
+<div class="line"><a class="reference internal" href="scenario_analyzer_check_suites.html"><span class="doc">Previous: Descriptions of Included Checks</span></a></div>
+<div class="line"><a class="reference internal" href="scenario_analyzer_add_checks_tutorial.html"><span class="doc">Next: Adding New Scenario Analyzer Checks</span></a></div>
+</div>
+<section id="descriptions-of-script-utilities">
+<h1>Descriptions of Script Utilities<a class="headerlink" href="#descriptions-of-script-utilities" title="Permalink to this headline">¶</a></h1>
+<section id="utilities-for-communicating-results">
+<h2>Utilities for Communicating Results<a class="headerlink" href="#utilities-for-communicating-results" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="scenario_analyzer_add_checks_tutorial.html#general-instructions"><span class="std std-ref">As described in the tutorial</span></a> for adding new Scenario Analyzer Checks, Checks communicate their results in a way that can be displayed in the Scenario Analyzer Results pane by logging messages composed of strings that represent information about the Check (suite, severity, and name) and a detailed message describing any Check failures. When writing a new Check, <a class="reference internal" href="#send-result-message"><span class="std std-ref">SendResultMessage</span></a> or <a class="reference internal" href="#send-result-message-with-links"><span class="std std-ref">SendResultMessageWithLinks</span></a> should be called every time a failure is identified. If the Check evaluates a condition at the simulation level, it may be best to log only one result message each time the Check runs. On the other hand, if the Check evaluates a condition at the platform level, it might log a result for every platform that fails the Check, possibly resulting in many lines of detailed messages for a single check in the Scenario Analyzer Results pane.</p>
+<p>Keep in mind that a Check will not appear in the Results pane at all - even if it has been selected and run - unless the Check calls one of these utilities. For example, a Check that calls SendResultMessage every time it identifies a failure but neglects to send a message if a scenario passes the Check (i.e., has no failures) will be absent from the Results pane whenever the Check has been passed. See <a class="reference internal" href="scenario_analyzer_add_checks_tutorial.html#adding-checks-using-the-afsim-scripting-language"><span class="std std-ref">the portion of the tutorial</span></a> that deals with defining a Check completely in AFSIM script for an example of the suggested method of reporting passes and failures.</p>
+<section id="void-sendresultmessage-string-suite-string-severity-string-check-string-detail">
+<span id="send-result-message"></span><h3>void <strong>SendResultMessage</strong>(string suite, string severity, string check, string detail)<a class="headerlink" href="#void-sendresultmessage-string-suite-string-severity-string-check-string-detail" title="Permalink to this headline">¶</a></h3>
+<p>Causes a result to be added to the Check Results tree in the Scenario Analyzer Results pane.</p>
+<ul class="simple">
+<li><p><strong>suite</strong> should be similar to the name of the file in which the    Check is defined, since the Scenario Analyzer Checks pane uses file    names to determine suite names.</p></li>
+<li><p><strong>severity</strong> should be ‘WARNING’ or ‘ERROR’ in the case of a failure    or ‘PASS’ if the entire scenario has passed the Check.    (<a class="reference internal" href="#send-pass-message"><span class="std std-ref">SendPassMessage</span></a>    may also be used to report passes.)</p></li>
+<li><p><strong>check</strong> represents the name of the Check as it will be displayed in    the Results pane. It should match the Check’s script name in the    suite file, but with spaces replacing underscores.</p></li>
+<li><p><strong>detail</strong> should include whatever information will help an analyst    to identify and fix the issue that caused the Check to fail.</p></li>
+</ul>
+<p>See below for an example call to this utility and the corresponding Check Result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ScenarioAnalyzerUtils</span><span class="o">.</span><span class="n">SendResultMessage</span><span class="p">(</span>
+   <span class="s2">&quot;Core&quot;</span><span class="p">,</span>
+   <span class="s2">&quot;Declared commander should be in that command chain&quot;</span><span class="p">,</span>
+   <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span>
+   <span class="s2">&quot;Platform e identifies b as its commander in command chain THIRD, but b is not in that command chain.&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<img alt="../../_images/35_results_of_send_result_msg.png" src="../../_images/35_results_of_send_result_msg.png" />
+</section>
+<section id="void-sendresultmessagewithlinks-string-suite-string-severity-string-check-string-detail-array-string-linkedlocationtypes-array-string-linkedlocationnames">
+<span id="send-result-message-with-links"></span><h3>void <strong>SendResultMessageWithLinks</strong>(string suite, string severity, string check, string detail, Array&lt;string&gt; linkedLocationTypes, Array&lt;string&gt; linkedLocationNames)<a class="headerlink" href="#void-sendresultmessagewithlinks-string-suite-string-severity-string-check-string-detail-array-string-linkedlocationtypes-array-string-linkedlocationnames" title="Permalink to this headline">¶</a></h3>
+<p>Causes a result to be added to the Check Results tree in the Scenario Analyzer Results pane with hyperlinks from the detail message to relevant locations in the scenario files.</p>
+<p>This utility takes advantage of Wizard’s capabilities for navigating AFSIM project files to allow those defining new Checks to associate a Check result with relevant ‘locations’ in the scenario files. Right clicking on a result’s detail message will bring up a context menu of hyperlinked locations.</p>
+<p>A location is identified by a ‘type’ and a ‘name.’ The types of all locations for which a Check author wants to add links must appear in the <code class="docutils literal notranslate"><span class="pre">linkedLocationTypes</span></code> array, while the names of all locations must appear in the parallel <code class="docutils literal notranslate"><span class="pre">linkedLocationNames</span></code> array. The following types will result in working links: <code class="docutils literal notranslate"><span class="pre">'platform'</span></code> (<em>not</em> <code class="docutils literal notranslate"><span class="pre">'platforms'</span></code>), <code class="docutils literal notranslate"><span class="pre">'sensors'</span></code>, <code class="docutils literal notranslate"><span class="pre">'processors'</span></code>, <code class="docutils literal notranslate"><span class="pre">'weapons'</span></code>, and <code class="docutils literal notranslate"><span class="pre">'comms'</span></code>. A location’s name must be the result of calling <code class="docutils literal notranslate"><span class="pre">Name()</span></code> on the object in AFSIM script, or <code class="docutils literal notranslate"><span class="pre">GetName()</span></code> in C++.</p>
+<p>See below for an example call to this utility and the corresponding Check Result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">sensor</span> <span class="n">fails</span> <span class="n">the</span> <span class="n">Check</span> <span class="k">if</span> <span class="n">it</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">linked</span> <span class="n">to</span> <span class="nb">any</span> <span class="n">WsfTrackProcessor</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">linkedTrackProcs</span><span class="o">.</span><span class="n">Size</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">linkedTrackMgrs</span><span class="o">.</span><span class="n">Size</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="n">checkPassed</span> <span class="o">=</span> <span class="n">false</span><span class="p">;</span>
+
+   <span class="n">Array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">fileLocationTypes</span> <span class="o">=</span> <span class="n">Array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">();</span>
+   <span class="n">Array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">fileLocationNames</span> <span class="o">=</span> <span class="n">Array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">();</span>
+
+   <span class="n">fileLocationTypes</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="s2">&quot;platform&quot;</span><span class="p">);</span>
+   <span class="n">fileLocationNames</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">Name</span><span class="p">());</span>
+
+   <span class="n">fileLocationTypes</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="s2">&quot;sensors&quot;</span><span class="p">);</span>
+   <span class="n">fileLocationNames</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="n">sensor</span><span class="o">.</span><span class="n">Name</span><span class="p">());</span>
+
+   <span class="n">string</span> <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Sensor &quot;</span> <span class="o">+</span> <span class="n">sensor</span><span class="o">.</span><span class="n">Name</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; on platform &quot;</span> <span class="o">+</span> <span class="n">platform</span><span class="o">.</span><span class="n">Name</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; is not linked directly or indirectly to a track processor&quot;</span><span class="p">;</span>
+   <span class="n">ScenarioAnalyzerUtils</span><span class="o">.</span><span class="n">SendResultMessageWithLinks</span><span class="p">(</span><span class="n">suite</span><span class="p">,</span> <span class="n">check</span><span class="p">,</span> <span class="n">severity</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">fileLocationTypes</span><span class="p">,</span> <span class="n">fileLocationNames</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<img alt="../../_images/37_results_send_result_msg_links.png" src="../../_images/37_results_send_result_msg_links.png" />
+</section>
+<section id="void-sendpassmessage-string-suite-string-check">
+<span id="send-pass-message"></span><h3>void <strong>SendPassMessage</strong>(string suite, string check)<a class="headerlink" href="#void-sendpassmessage-string-suite-string-check" title="Permalink to this headline">¶</a></h3>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">SendPassMessage</span></code> does the equivalent of calling <code class="docutils literal notranslate"><span class="pre">SendResultMessage</span></code> with a <code class="docutils literal notranslate"><span class="pre">severity</span></code> value of ‘PASS’ and a <code class="docutils literal notranslate"><span class="pre">detail</span></code> value of ‘Scenario passed this check.’ (For passing checks, the detail message is not displayed.)</p>
+</section>
+<section id="void-sendsessionnotemessage-string-sessionnote-string-detail">
+<span id="send-session-note-message"></span><h3>void <strong>SendSessionNoteMessage</strong>(string sessionNote, string detail)<a class="headerlink" href="#void-sendsessionnotemessage-string-sessionnote-string-detail" title="Permalink to this headline">¶</a></h3>
+<p>Causes a Session Note result with a name of <code class="docutils literal notranslate"><span class="pre">sessionNote</span></code> and a detailed message of <code class="docutils literal notranslate"><span class="pre">detail</span></code> in the Scenario Analyzer Results pane below the Check Results tree.</p>
+</section>
+</section>
+<section id="utilities-for-navigating-command-chains">
+<h2>Utilities for Navigating Command Chains<a class="headerlink" href="#utilities-for-navigating-command-chains" title="Permalink to this headline">¶</a></h2>
+<p>Other than <code class="docutils literal notranslate"><span class="pre">GetTopCommander</span></code>, the utilities for navigating command chains take an <code class="docutils literal notranslate"><span class="pre">origin</span></code> platform as the starting point and recursively search up or down one or all of origin’s command chains, looking for any platform that passes the script-defined check specified by the <code class="docutils literal notranslate"><span class="pre">checkName</span></code> argument. The utilities following this pattern return true if they encounter any platform that passes the check. <code class="docutils literal notranslate"><span class="pre">checkName</span></code> must be the name of an AFSIM script accessible in the global script context (at the simulation level) that takes one <code class="docutils literal notranslate"><span class="pre">WsfPlatform</span></code> as an argument and returns a Boolean value.</p>
+<section id="wsfplatform-gettopcommander-string-commandchain-wsfplatform-origin">
+<span id="get-top-commander"></span><h3>WsfPlatform <strong>GetTopCommander</strong>(string commandChain, WsfPlatform origin)<a class="headerlink" href="#wsfplatform-gettopcommander-string-commandchain-wsfplatform-origin" title="Permalink to this headline">¶</a></h3>
+<p>Returns the top-level commander (the platform whose commander == SELF) above <code class="docutils literal notranslate"><span class="pre">origin</span></code> on the specified command chain.</p>
+</section>
+<section id="bool-checkdownonecommandchain-wsfplatform-origin-string-checkname-string-commandchain">
+<span id="check-down-one-command-chain"></span><h3>bool <strong>CheckDownOneCommandChain</strong>(WsfPlatform origin, string checkName, string commandChain)<a class="headerlink" href="#bool-checkdownonecommandchain-wsfplatform-origin-string-checkname-string-commandchain" title="Permalink to this headline">¶</a></h3>
+<p>Returns true if the script specified by <code class="docutils literal notranslate"><span class="pre">checkName</span></code> returns true for <code class="docutils literal notranslate"><span class="pre">origin</span></code> or for any platform subordinate to origin on the command chain with the name <code class="docutils literal notranslate"><span class="pre">commandChain</span></code>.</p>
+</section>
+<section id="bool-checkdownallcommandchains-wsfplatform-origin-string-checkname">
+<span id="check-down-all-command-chains"></span><h3>bool <strong>CheckDownAllCommandChains</strong>(WsfPlatform origin, string checkName)<a class="headerlink" href="#bool-checkdownallcommandchains-wsfplatform-origin-string-checkname" title="Permalink to this headline">¶</a></h3>
+<p>Returns true if the script specified by <code class="docutils literal notranslate"><span class="pre">checkName</span></code> returns true for <code class="docutils literal notranslate"><span class="pre">origin</span></code> or for any platform subordinate to origin on any command chain.</p>
+<p>This utility works by calling the script named <code class="docutils literal notranslate"><span class="pre">checkName</span></code> on origin, then on each of origin’s subordinates on every command chain to which origin belongs, and then on each of the subordinate’s subordinates on every command chain to which the subordinate belongs, and so on recursively. This utility may return true because a platform that has no command chains in common with origin passes the check. For example, using the command chain structure in the figure below, calling <code class="docutils literal notranslate"><span class="pre">CheckDownAllCommandChains</span></code> with platform <strong>a</strong> as the origin would call the specified check on <strong>a,</strong> and on <strong>a</strong>’s subordinates <strong>b</strong> and <strong>c</strong>. It will also call the check on <strong>b</strong>’s subordinates <strong>d</strong> and <strong>e.</strong> As a result, the utility will return true if platform <strong>e</strong> is the only platform for which the script specified by <strong>checkName</strong> returns true, even though platform <strong>e</strong> has no command chains in common with the origin platform <strong>a</strong>.</p>
+<img alt="../../_images/38_check_down_all_command_chains_ex.png" src="../../_images/38_check_down_all_command_chains_ex.png" />
+</section>
+<section id="bool-checkuponecommandchain-wsfplatform-origin-string-checkname-string-commandchain">
+<span id="check-up-one-command-chain"></span><h3>bool <strong>CheckUpOneCommandChain</strong>(WsfPlatform origin, string checkName, string commandChain)<a class="headerlink" href="#bool-checkuponecommandchain-wsfplatform-origin-string-checkname-string-commandchain" title="Permalink to this headline">¶</a></h3>
+<p>Returns true if the script specified by <code class="docutils literal notranslate"><span class="pre">checkName</span></code> returns true for <code class="docutils literal notranslate"><span class="pre">origin</span></code> or for any platform superior to origin on the command chain with the name <code class="docutils literal notranslate"><span class="pre">commandChain</span></code>.</p>
+</section>
+<section id="bool-checkupallcommandchains-wsfplatform-origin-string-checkname">
+<span id="check-up-all-command-chains"></span><h3>bool <strong>CheckUpAllCommandChains</strong>(WsfPlatform origin, string checkName)<a class="headerlink" href="#bool-checkupallcommandchains-wsfplatform-origin-string-checkname" title="Permalink to this headline">¶</a></h3>
+<p>Returns true if the script specified by <code class="docutils literal notranslate"><span class="pre">checkName</span></code> returns true for <code class="docutils literal notranslate"><span class="pre">origin</span></code> or for any platform superior to origin on any command chain. See <a class="reference internal" href="#check-down-all-command-chains"><span class="std std-ref">CheckDownAllCommandChains</span></a> for an explanation of how a utility examines all of a platform’s command chains.</p>
+</section>
+<section id="bool-checkfullcommandchain-wsfplatform-origin-string-checkname">
+<span id="check-full-command-chain"></span><h3>bool <strong>CheckFullCommandChain</strong>(WsfPlatform origin, string checkName)<a class="headerlink" href="#bool-checkfullcommandchain-wsfplatform-origin-string-checkname" title="Permalink to this headline">¶</a></h3>
+<p>Returns true if the script specified by <code class="docutils literal notranslate"><span class="pre">checkName</span></code> returns true for any platform in any command chain to which <code class="docutils literal notranslate"><span class="pre">origin</span></code> belongs. This utility works by identifying the top-level command in every command chain to which origin belongs (using <a class="reference internal" href="#get-top-commander"><span class="std std-ref">GetTopCommander</span></a>), and then calls the equivalent of <a class="reference internal" href="#check-down-one-command-chain"><span class="std std-ref">CheckDownOneCommandChain</span></a> for every top-level commander, using the name of the command chain shared by the commander and origin as the <code class="docutils literal notranslate"><span class="pre">commandChain</span></code> argument.</p>
+</section>
+</section>
+<section id="utilities-for-identifying-connected-platform-parts">
+<h2>Utilities for Identifying Connected Platform Parts<a class="headerlink" href="#utilities-for-identifying-connected-platform-parts" title="Permalink to this headline">¶</a></h2>
+<p>Each of the utilities in this category return an array of <code class="docutils literal notranslate"><span class="pre">WsfPlatformPart</span></code>s that are connected to the origin platform or platform part in a particular way. Each of the utilities also takes a string parameter <code class="docutils literal notranslate"><span class="pre">partType</span></code>: A connected platform part will only be included in the returned array if the platform part has a type that matches partType. Whether a platform part’s type matches is determined by calling <code class="docutils literal notranslate"><span class="pre">WsfObject::IsA_TypeOf(partType)</span></code>, which expects the part’s base class name rather than its script class name. For example, if a call to <code class="docutils literal notranslate"><span class="pre">LinkedAndReachablePlatformParts</span></code> should return all WsfTrackProcessors linked to WsfPlatformPart origin, partType must be <code class="docutils literal notranslate"><span class="pre">'WSF_TRACK_PROCESSOR'</span></code>, not <code class="docutils literal notranslate"><span class="pre">'WsfTrackProcessor'</span></code>.</p>
+<section id="array-wsfplatformpart-getplatformpartsdownonecommandchain-wsfplatform-origin-string-parttype-string-commandchain">
+<span id="get-platform-parts-down-one-command-chain"></span><h3>Array&lt;WsfPlatformPart&gt; <strong>GetPlatformPartsDownOneCommandChain</strong>(WsfPlatform origin, string partType, string commandChain)<a class="headerlink" href="#array-wsfplatformpart-getplatformpartsdownonecommandchain-wsfplatform-origin-string-parttype-string-commandchain" title="Permalink to this headline">¶</a></h3>
+<p>Returns an array of all platform parts with a type of <code class="docutils literal notranslate"><span class="pre">partType</span></code> located on <code class="docutils literal notranslate"><span class="pre">origin</span></code> or on platforms subordinate to origin on the specified command chain.</p>
+</section>
+<section id="array-wsfplatformpart-getplatformpartsdownallcommandchains-wsfplatform-origin-string-parttype">
+<span id="get-platform-parts-down-all-command-chains"></span><h3>Array&lt;WsfPlatformPart&gt; <strong>GetPlatformPartsDownAllCommandChains</strong>(WsfPlatform origin, string partType)<a class="headerlink" href="#array-wsfplatformpart-getplatformpartsdownallcommandchains-wsfplatform-origin-string-parttype" title="Permalink to this headline">¶</a></h3>
+<p>Returns an array of all platform parts with a type of <code class="docutils literal notranslate"><span class="pre">partType</span></code> located on <code class="docutils literal notranslate"><span class="pre">origin</span></code> or on platforms subordinate to origin on <em>any</em> command chain. This utility works by looking for matching platform parts on origin, then on each of origin’s subordinates on every command chain to which origin belongs, and then on each of the subordinate’s subordinates on every command chain to which the subordinate belongs, and so on recursively. As a result, some or all of the returns platform parts may be located on platforms to which origin does not belong. See <a class="reference internal" href="#check-down-all-command-chains"><span class="std std-ref">CheckDownAllCommandChains</span></a> for an explanation of how utilities examine all of a platform’s command chains.</p>
+</section>
+<section id="array-wsfplatformpart-internallylinkedplatformparts-wsfplatformpart-origin-string-parttype">
+<span id="internally-linked-platform-parts"></span><h3>Array&lt;WsfPlatformPart&gt; <strong>InternallyLinkedPlatformParts</strong>(WsfPlatformPart origin, string partType)<a class="headerlink" href="#array-wsfplatformpart-internallylinkedplatformparts-wsfplatformpart-origin-string-parttype" title="Permalink to this headline">¶</a></h3>
+<p>Returns an array of all platform parts with a type of <code class="docutils literal notranslate"><span class="pre">partType</span></code> that are connected to <code class="docutils literal notranslate"><span class="pre">origin</span></code> either directly (by an <code class="docutils literal notranslate"><span class="pre">internal_link</span></code> from origin to the other platform part) or indirectly. A platform part <code class="docutils literal notranslate"><span class="pre">otherPart</span></code> is indirectly linked to origin if origin has an <code class="docutils literal notranslate"><span class="pre">internal_link</span></code> to an intermediate platform part, which in turn has an internal link to otherPart. There may be any number of intermediate platform parts between origin and otherPart. Keep in mind that internal links are directed: otherPart is only linked to origin if all links between the two parts are pointing in the origin-&gt;otherPart direction.</p>
+</section>
+<section id="array-wsfplatformpart-linkedandreachableplatformparts-wsfplatformpart-origin-string-parttype">
+<span id="linked-and-reachable-platform-parts"></span><h3>Array&lt;WsfPlatformPart&gt; <strong>LinkedAndReachablePlatformParts</strong>(WsfPlatformPart origin, string partType)<a class="headerlink" href="#array-wsfplatformpart-linkedandreachableplatformparts-wsfplatformpart-origin-string-parttype" title="Permalink to this headline">¶</a></h3>
+<p>Returns an array of all platform parts with a type of <code class="docutils literal notranslate"><span class="pre">partType</span></code> that are connected to <code class="docutils literal notranslate"><span class="pre">origin</span></code> either by internal links on the same platform (i.e., those parts that would be returned by <a class="reference internal" href="#internally-linked-platform-parts"><span class="std std-ref">InternallyLinkedPlatformParts</span></a>) or by a network of internal links, external links, and compatible communication devices. The utility discovers external links by finding all script processors (including derived types such as track processors) and linked processors to which origin is connected by internal links. Then, the utility follows those external links to find the platforms to which the processor reports. An external link alone is not enough to make a part on one platform reachable by a part on the other. The external link must be associated with comms of type <code class="docutils literal notranslate"><span class="pre">WsfCommXmtrRcvr</span></code> or a derived type that are (1) on the same network, (2) able to transmit and receive appropriately for the direction of the external link, and (3) connected to destination platform parts by internal links in the right direction.</p>
+<p>The code block below contains an example of a WsfTrackProcessor on the <code class="docutils literal notranslate"><span class="pre">cmdr</span></code> platform that is linked and reachable from the WsfGeometricSensor on the <code class="docutils literal notranslate"><span class="pre">sub</span></code> platform. If the <code class="docutils literal notranslate"><span class="pre">report_to</span></code> statement or either of the <code class="docutils literal notranslate"><span class="pre">internal_link</span></code>s were missing, <code class="docutils literal notranslate"><span class="pre">track_proc</span></code> would no longer be linked and reachable from sensor1. Similarly, <code class="docutils literal notranslate"><span class="pre">comm1</span></code> and <code class="docutils literal notranslate"><span class="pre">comm2</span></code> were not on the same network, if <code class="docutils literal notranslate"><span class="pre">comm1</span></code> lacked the ability to transmit, or if <code class="docutils literal notranslate"><span class="pre">comm2</span></code> lacked the ability to receive, <code class="docutils literal notranslate"><span class="pre">track_proc</span></code> would not be linked and reachable from the sensor.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform</span> <span class="n">sub</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">commander</span> <span class="n">cmdr</span>
+   <span class="n">add</span> <span class="n">comm</span> <span class="n">comm1</span> <span class="n">WSF_COMM_XMTR</span>
+      <span class="n">network_name</span> <span class="n">local_net</span>
+   <span class="n">end_comm</span>
+
+   <span class="n">add_processor</span> <span class="n">linked_proc</span> <span class="n">WSF_LINKED_PROCESSOR</span>
+      <span class="n">report_to</span> <span class="n">commander</span> <span class="n">via</span> <span class="n">comm1</span>
+   <span class="n">end_processor</span>
+
+   <span class="n">add</span> <span class="n">sensor</span> <span class="n">sensor1</span> <span class="n">WSF_GEOMETRIC_SENSOR</span>
+      <span class="n">on</span>
+      <span class="n">frame_time</span> <span class="mi">1</span> <span class="n">s</span>
+      <span class="n">reports_range</span>
+      <span class="n">internal_link</span> <span class="n">linked_proc</span>
+   <span class="n">end_sensor</span>
+<span class="n">end_platform</span>
+
+<span class="n">platform</span> <span class="n">cmdr</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">commander</span> <span class="n">SELF</span>
+   <span class="n">add</span> <span class="n">comm</span> <span class="n">comm2</span> <span class="n">WSF_COMM_RCVR</span>
+      <span class="n">network_name</span> <span class="n">local_net</span>
+      <span class="n">internal_link</span> <span class="n">track_proc</span>
+   <span class="n">end_comm</span>
+
+   <span class="n">add</span> <span class="n">processor</span> <span class="n">track_proc</span> <span class="n">WSF_TRACK_PROCESSOR</span>
+      <span class="n">purge_interval</span> <span class="mi">60</span> <span class="n">s</span>
+   <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+<p>When following external links, the utility recursively searches for script processors and linked processors on each new platform discovered and also follows those links (as long as comms are correctly configured). This means that any number of intermediate platforms may appear between origin and its linked and reachable parts.</p>
+</section>
+<section id="array-wsfplatformpart-linkedandreachableplatformpartschooseprocs-wsfplatformpart-origin-string-parttype-array-string-processortypes-bool-followspecifiedprocs">
+<span id="linked-and-reachable-platform-parts-choose-procs"></span><h3>Array&lt;WsfPlatformPart&gt; <strong>LinkedAndReachablePlatformPartsChooseProcs</strong>(WsfPlatformPart origin, string partType, Array&lt;string&gt; processorTypes, bool followSpecifiedProcs)<a class="headerlink" href="#array-wsfplatformpart-linkedandreachableplatformpartschooseprocs-wsfplatformpart-origin-string-parttype-array-string-processortypes-bool-followspecifiedprocs" title="Permalink to this headline">¶</a></h3>
+<p>This utility is nearly identical to <a class="reference internal" href="#linked-and-reachable-platform-parts"><span class="std std-ref">LinkedAndReachablePlatformParts</span></a> with one important exception. While <code class="docutils literal notranslate"><span class="pre">LinkedAndReachablePlatformParts</span></code> follows all external links it encounters (as long as comms are configured correctly), <code class="docutils literal notranslate"><span class="pre">LinkedAndReachablePlatformPartsChooseProcs</span></code> allows the caller to specify a list of processor types representing either (1) the only types of processors whose external links should be followed when searching for linked and reachable platform parts or (2) the types of processors whose external links should be ignored. The Boolean argument <code class="docutils literal notranslate"><span class="pre">followSpecifiedProcs</span></code> determines whether external links belonging to the types listed in <code class="docutils literal notranslate"><span class="pre">processorTypes</span></code> should be followed or ignored. If <code class="docutils literal notranslate"><span class="pre">followSpecifiedProcs</span> <span class="pre">==</span> <span class="pre">true</span></code>, only processors of a type included in processorTypes will have their external links evaluated. If <code class="docutils literal notranslate"><span class="pre">followSpecifiedProcs</span> <span class="pre">==</span> <span class="pre">false</span></code>, all script or linked processors except those whose type is listed in processorTypes will have their external links evaluated.</p>
+<p>There is one important exception to this general rule for determining which external links will be followed: If the platform part initially passed in as <code class="docutils literal notranslate"><span class="pre">origin</span></code> has external links, those links will be followed even if origin’s type is one that would normally be ignored.</p>
+<p>For example, <a class="reference internal" href="scenario_analyzer_check_suites.html#track-processors-should-have-purge-interval-defined"><span class="std std-ref">one of the Checks in the Core suite</span></a> warns of pairs of track processors that report fused tracks to each other. The Check is designed to catch two track processors that report to each other through any intermediate linked processors or script processors <em>except</em> intermediate track processors. For the purposes of this Check, WsfTrackProcessor B in the diagram below is ‘linked and reachable’ from A, but WsfTrackProcessor C is not.</p>
+<p><strong>WsfTrackProcessor A WsfLinkedProcessor WsfTrackProcessor B WsfTrackProcessor C</strong></p>
+<p>Someone wanting to re-implement this Check in AFSIM script could discover all track processors linked and reachable from WsfTrackProcessor A according to the Check’s definition of ‘linked and reachable’ by passing an <code class="docutils literal notranslate"><span class="pre">Array&lt;string&gt;</span></code> with one item - <code class="docutils literal notranslate"><span class="pre">'WSF_TRACK_PROCESSOR'</span></code> - as the processorTypes argument and by passing <code class="docutils literal notranslate"><span class="pre">false</span></code> as the last argument. With WsfTrackProcessor A as origin, its external links would be followed, as would those belong to the WsfLinkedProcessor. However, WsfTrackProcessor B’s external links would not be followed, so the utility would correctly identify B, but not C, as ‘linked and reachable’ from A. <a class="reference internal" href="scenario_analyzer_add_checks_tutorial.html#scenario-analyzer-add-checks-tutorial"><span class="std std-ref">See the tutorial</span></a> for a full implementation of the Check in AFSIM script, which uses this utility.</p>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="scenario_analyzer_check_suites.html"><span class="doc">Previous: Descriptions of Included Checks</span></a></div>
+<div class="line"><a class="reference internal" href="scenario_analyzer_add_checks_tutorial.html"><span class="doc">Next: Adding New Scenario Analyzer Checks</span></a></div>
+</div>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/wkf_plugin/scenario_analyzer_utilities.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="scenario_analyzer_add_checks_tutorial.html" title="Adding New Scenario Analyzer Checks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="scenario_analyzer_check_suites.html" title="Descriptions of Included Checks"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+
+          <li class="nav-item nav-item-1"><a href="../wizard_reference_guide.html" >Wizard Reference Guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="wiz_scenario_analyzer.html" >Scenario Analyzer</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

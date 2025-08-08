@@ -1,0 +1,511 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Table Values
+============
+
+.. argtype:: table-value
+
+.. block:: table
+
+Some WSF commands process tables as input.
+When using tables, the command input is a defined table including the table variables and data.
+Table parameters and data values are parsed and processed based on the required WSF command input parameters (see: *<table-value>* in the command documentation).
+
+Commands process tables using the following syntax:
+
+.. parsed-literal::
+
+   *<command>* constant_ *<value>*
+   *<command>* regular_table_ ... end_regular_table
+   *<command>* irregular_table_ ... end_irregular_table
+   *<command>* interval_table_ ... end_interval_table
+   *<command>* curve_ ... end_curve
+   *<command>* file_ *<filename>*
+
+
+In this context, tables define a function using values at discrete sample points.  
+Depending on the table definition, sample points may be defined with zero to eight *independent variables* and may include one *dependent variable*.  
+When a given command accepts a table, the program supplies the name and units of each possible independent variable, and the name and units of the dependent variable.
+
+Independent variables represent functions as shown below:
+
+* y = c
+* y = f(x)
+* y = f(x, y)
+* y = f(x, y, z)
+* y = f(w, x, y, z)
+
+Dependent variables are the data values to be processed at each cross section or sample point in the table 
+as defined by the independent variable(s).  Dependent variables are required for each independent variable 
+or set of independent variables defined in order to properly fill all cross sections in the table.
+
+Tables may be defined as non-dimensional, single-dimensional, or multi-dimensional. 
+Examples of a `1-Dimensional Table`_, `2-Dimensional Table`_, and `3-Dimensional Table`_ are shown below.
+
+.. tip:: See :doc:`wkf_plugin/wiz_table_plotter` to visualize table data within Wizard.
+
+Table Commands
+--------------
+
+.. command:: constant <value>
+
+   The table being processed is non-dimensional, representing a *constant* function (i.e. *y = c*).  
+   
+   .. note:: See the `Constant Syntax`_ usage example below.
+
+.. command:: regular_table ... end_regular_table
+
+   With *regular* tables, all slices through the table must have the same number of breakpoints. This is efficient but
+   requires the same density of sample points across slices.
+
+   .. parsed-literal::
+
+      regular_table
+         # Specify the attributes of one to eight independent variables and values
+         independent_variable_ <name_1>
+           units_ <units_1>
+           [ precision_ <double|float> ]
+           [ extrapolate_ ]
+           [ num_points_ <n> ]
+           # value list specification (mutually exclusive options)
+           linear_equation_ from <iv1_1> to <iv1_n>
+           binary_data_file_ <file-name>
+           <iv1_1> <iv1_2> ... <iv_1_n>
+         end_independent_variable
+           .
+           . repeat as necessary (up to eight maximum independent variables)
+           .
+         # Specify the dependent variable attributes and values
+         dependent_variable_
+           units_ <units>
+           [ precision_ <double|float> ]
+           [ interpolation_ <linear|nearest> ]
+           save_as_rectangular_indexed_binary_file_ <file-name>
+           save_as_morton_indexed_binary_file_ <file-name>
+           # value list specification (mutually exclusive options)
+           binary_data_file_ <file-name>
+           <dv_1> <dv_2> ... <dv_n>
+         end_dependent_variable
+      end_regular_table
+
+   .. note:: See the `Regular Table`_ example below.
+
+.. command:: irregular_table ... end_irregular_table
+
+   An *irregular* table provides greater flexibility by removing the restriction that all slices through the table require the same number of break points.
+   The dependent variable values are assigned according to the number of independent variables defined to complete the cross sections of the table.
+   
+   .. parsed-literal::
+
+      irregular_table
+         # Specify the attributes of one to eight independent variables
+         independent_variable_ <name_1> units_ <units_1> { precision_ <precision_1> } { extrapolate_ }
+           .
+           . repeat as necessary (up to eight total independent variables)
+           .
+         # Specify the dependent variable attributes
+         dependent_variable_ units_ <units> { precision_ <precision> }
+         <dep_var_values>
+      end_irregular_table
+	  
+   .. note:: See the `Irregular Table`_ example below.
+   
+.. command:: interval_table ... end_interval_table
+
+   The *interval* table is similar to the irregular_table_, except interval tables provide no option for independent variable extrapolation.
+
+   .. parsed-literal::
+
+      interval_table
+         # Specify the attributes of one to eight independent variables
+         independent_variable_ <name_1> units_ <units_1> { precision_ <precision_1> }
+           .
+           . repeat as necessary (up to eight total independent variables)
+           .
+         # Specify the dependent variable attributes
+         dependent_variable_  units_ <units> { precision_ <precision> }
+         <dep_var_values>
+      end_interval_table
+
+.. command:: curve ... end_curve
+
+   A *curve* is a special form of a regular_table_ limited to specifying one independent variable.  
+
+   .. parsed-literal::
+
+      curve
+         independent_variable_ <name> units_ <units> { precision_ <precision> } { extrapolate_ }
+         dependent_variable_  units_ <units> { precision_ <precision> }
+         <ind_var_value_1> <dep_var_value_1>
+         <ind_var_value_2> <dep_var_value_2>
+           .
+           .
+           .
+         <ind_var_value_n> <dep_var_value_n>
+      end_curve
+	  
+   .. note:: See the `Curve Table`_ example below.
+
+.. command:: file <filename>
+
+   The *file* option is used to read in a file containing the table definition.  The table defined in the file must be 
+   constructed exactly as it would be defined inline within the program.
+   
+   .. note:: See the `File Reference Syntax`_ example below.
+
+   .. tip::
+      Consider using the *file* command when defining large tables.  Large tables may lead to long load times when defined inline and should be avoided.
+
+
+Table Subcommands
+-----------------
+
+When defining a table, common commands may be used to specify the data for both independent and dependent variables.
+
+.. command:: independent_variable <name> units <units> [precision <precision>] [extrapolate]
+
+   Specifies the name and units for an independent variable.  Optionally, precision and extrapolation may be added.  This command may be repeated up to eight times to define the independent variables present in the table.
+
+.. command:: dependent_variable units <units> precision <precision>
+
+   Specifies the units and optional precision of the dependent variable.
+
+.. command:: units <units>
+
+   Specifies the unit of measure for the given variable and must be a valid unit type for the variable defined. For
+   example:
+
+   * If a dependent variable is defined with a length-value then *<units>* must be one of the valid
+     :argtype:`\<length-units\> <length-units>`.
+
+   .. note:: The *units* subcommand is not used when the table is non-dimensional.
+
+.. command:: precision [double | float]
+
+   An optional subcommand that specifies the precision used to store values in memory. **double** is at least 64 bits and
+   **float** is at least 32 bits.
+
+   **Default:** double
+
+.. command:: interpolation [linear | nearest]
+
+   An optional subcommand that specifies whether table lookups should use multilinear interpolation of the data values, or the nearest value in the table.
+
+   * linear interpolation has an algorithmic complexity of O(2^N), where N is the number of independent variables in the table.
+   * nearest interpolation has a constant O(1) algorithmic complexity.
+
+   **Default:** linear
+
+.. command:: extrapolate
+
+   An optional subcommand used to indicate extrapolation will be performed if the value of the independent_variable_ is outside the 
+   limits of its definition.
+
+   **Default:** Extrapolation is **not** performed.
+
+   .. note:: This command is not valid with interval_table_.
+
+.. command:: num_points <positive-integer>
+
+   An optional subcommand used to specify the number of points that the variable list will have.
+
+   When specified, it is used to verify that the number of listed data points match, otherwise it is auto-deduced from the number of datapoints entered.
+
+   This must be specified whenever a formulaic equation subcommand is used, such as linear_equation_
+
+.. command:: linear_equation from <point_1> to <point_n>
+
+   An optional subcommand used to represent the independent variables values using a linear equation between \<point_1\> and \<point_n\> (inclusive) with num_points_ points.
+
+   This allows for the specification of a value range of equally spaced data points without consuming N memory.
+
+   If the units_ subcommand was not specified, then \<point_1\> and \<point_n\> are of the form <real> <unit-of-measure>, otherwise they are simply <real> values.
+
+   This subcommand replaces the need to specify individual points inline.
+
+   .. note::
+      This subcommand requires the num_points_ subcommand also be specified.
+
+.. command:: binary_data_file <file-name>
+
+   An optional subcommand that maps the specified file to a raw binary array of floats/doubles for use as a list of datapoints.
+
+   This will use an operating system call that allows a file to be mapped to memory without actually reading it into RAM. Individual pages will be read in from the file as they are needed.
+   See also https://en.wikipedia.org/wiki/Memory-mapped_file
+
+   This subcommand is intended to support big-data tables that would not reasonably fit into system memory, or that would take a long time to load from ascii text.
+
+   This sucommand replaces the need to specify the datapoints inline in ascii.
+
+   If the variable is of a unit of measurement type, then the units_ subcommand must be used.
+   Furthermore, since there won't be any value transformation performed on the binary data, the unit of measurement must be the standard type (e.g meters for length).
+   Even though this means theres only a single valid value for the units_ command, it is made required for the sake of expressive clarity/readability.
+
+   The format of a binary data file is as follows:
+
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | byte# | name      | description                                                                                         |
+   +=======+===========+=====================================================================================================+
+   | 0     | precision | = 0 if using doubles (8 byte precision).                                                            |
+   |       |           |                                                                                                     |
+   |       |           | = 1 if using floats (4 byte precision).                                                             |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 1     | min/max   | = 1 if min/max values in this header are valid                                                      |
+   |       | valid     |                                                                                                     |
+   |       |           | = 0 if min/max values in this header are invalid.                                                   |
+   |       |           |                                                                                                     |
+   |       |           | When invalid, any request to the table API for min/max values                                       |
+   |       |           | will require iterating over the entire table to compute them.                                       |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 2     | indexing  | = 0 if using rectangular indexing, which is the standard way that contigous arrays are indexed.     |
+   |       | format    | with a 3D table of IV sizes 3,5,7 rectangular indexing means Table[x][y][z] is array[x*5*7+y*7+z]   |
+   |       |           |                                                                                                     |
+   |       |           | = 1 if using morton code indexing.                                                                  |
+   |       |           |                                                                                                     |
+   |       |           | When creating a table file with an external program, it is recommend that you use rectangular       |
+   |       |           | indexing and then convert it to morton-indexing using save_as_morton_indexed_binary_file_           |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 3-7   | reserved  | reserved for future use, set reserved bytes to 0.                                                   |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 8-11  | min value | contains the minimum value in the table, if the min/max valid flag is 1.                            |
+   | or    |           | 4 bytes if precision flag is 1 for float precision.                                                 |
+   | 8-15  |           | 8 bytes if precision flag is 0 for double precision.                                                |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 12-15 | max value | contains the maximum value in the table, if the min/max valid flag is 1.                            |
+   | or    |           | 4 bytes if precision flag is 1 for float precision.                                                 |
+   | 16-23 |           | 8 bytes if precision flag is 0 for double precision.                                                |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+   | 16/24 | binary    | underlying binary array of either floats/doubles, based on the precision bit flag.                  |
+   | to end| array     |                                                                                                     |
+   +-------+-----------+-----------------------------------------------------------------------------------------------------+
+
+   If creating an external program to create a binary data file, an easy way to do it is by setting
+   the first 24 bytes to 0 followed by the raw double-precision binary array.
+
+   .. note::
+      unlike when specifing data points inline, there will be no value checking performed when using a binary file.
+      There currently exists no validation to ensure endianess/floating point representation is correct, it is on the user
+      to ensure the machine that the table was created on uses the same floating-point layout as the machine loading that table.
+
+.. command:: save_as_rectangular_indexed_binary_file <file-name>
+
+   Save the generated table to file, which can then be passed to the binary_data_file_ command.
+
+   For large tables, prefer save_as_morton_indexed_binary_file_ instead, which uses a more-performant indexing format to improve table lookups.
+
+.. command:: save_as_morton_indexed_binary_file <file-name>
+
+   Save the generated table to file, which can then be passed to the binary_data_file_ command
+
+   Using this format with large tables (over a few megabytes) will offer significant performance improvements
+   over rectangular indexed data, as it causes less chunks of data to be read from file.
+
+   Some benchmarking using a 1024x1024x1024 table showed lookups with morton-indexing was about 6.5x faster than rectangular indexing.
+
+   The generated file may contain sparse empty sections, which causes wasted space.
+   Therefore it is recommended that power of 2 dimensions be used. In scenarios where this cannot be avoided, prefer declaring the table
+   with IV's reverse sorted by the number of points in each IV to minimize the size of the created file, e.g 5x3 instead of 3x5.
+   For optimal compactness with no sparse sections, the dimension sizes (iv num_points) should be the same power of 2, with trailing sizes allowed to be half size.
+   e.g. tables sizes of 8x8, 8x4, 8x8x4, and 8x8x4x4 will have optimal compactness with no wasted space, while 4x8, 16x4, and 8x8x4x2 will have sparse empty sections.
+
+   For more information on morton indexing, see: https://en.wikipedia.org/wiki/Z-order_curve
+
+Examples
+--------
+
+Constant Syntax
+"""""""""""""""
+   
+   .. parsed-literal::
+   
+      fuel_table
+         mode CONSTANT_MODE
+         constant 4.0 kg/s
+      end_fuel_table
+	  
+Regular Table
+"""""""""""""
+ 
+   .. parsed-literal::
+
+      sample_alpha_mach_table_1 regular_table
+         independent_variable mach precision float
+             0.000 0.900 1.2
+         end_independent_variable
+         independent_variable alpha units deg
+            0.0 18.0 20.0
+         end_independent_variable
+         dependent_variable precision float
+            0.0 1.2 1.3 0.0 1.2 1.3 0.0 1.2 1.3
+         end_dependent_variable
+      end_regular_table
+ 
+Irregular Table
+"""""""""""""""
+ 
+   .. parsed-literal::
+ 
+      sample_alpha mach_table_2 irregular_table
+         independent_variable mach precision float
+         independent_variable alpha units deg
+         dependent_variable precision float
+         mach  0.000
+            alpha     -90.0   0.0    90.0
+            values    0.0     0.0    0.0
+         mach  30.000
+            alpha     -90.0   0.0    90.0
+            values    0.0     0.0    0.0
+      end_irregular_table
+
+Curve Table
+"""""""""""
+
+   .. parsed-literal::
+ 
+      curve
+         independent_variable time units sec
+         #dependent_variable
+           0.000 0.98395226 # T+0.3
+          69.700 0.98395226 # T+1:10 (70.00 - 0.3 = 69.70)      Begin ramp up to max power
+         134.900 1.00000000 # T+2:15.20 (135.20 - 0.3 = 134.90) Center engine cutoff (CECO)
+         134.901 0.79722178
+         161.330 0.79722178 # T+2:41.63 (161.63 - 0.3 = 161.33) Shutdown
+       end_curve
+
+File Reference Syntax
+"""""""""""""""""""""
+
+   .. parsed-literal::
+
+      maximum_roll_acceleration_mach_table
+         file data/pdotmax_mach_table.txt
+      end_maximum_roll_acceleration_mach_table
+
+
+   Where *maximum_roll_acceleration_mach_table* is a 1-dimensional table and the file *pdotmax_mach_table.txt* contains the following table definition:
+
+   .. parsed-literal::
+
+      # pdotmax_mach_table.txt
+
+      regular_table
+         independent_variable mach precision float
+            0.25 0.5 0.75 0.85 1.0 1.05 1.2 1.5 1.75 2.0 2.25
+         end_independent_variable
+
+         dependent_variable precision double
+            4.841 21.65 63.78 102.9 154.6 160.8 172.2 150.9 159.9 173.2 188.4
+         end_dependent_variable
+      end_regular_table
+
+1-Dimensional Table
+"""""""""""""""""""
+
+   .. parsed-literal::
+   
+      maximum_roll_acceleration_mach_table
+         regular_table
+            independent_variable mach precision float
+            0.25 0.5 0.75 0.85 1.0 1.05 1.2 1.5 1.75 2.0 2.25
+            end_independent_variable
+
+           dependent_variable precision double
+           4.841 21.65 63.78 102.9 154.6 160.8 172.2 150.9 159.9 173.2 188.4
+           end_dependent_variable
+         end_regular_table
+      end_maximum_roll_acceleration_mach_table
+
+2-Dimensional Table
+"""""""""""""""""""
+
+Consider this example of a 2-dimensional regular table consisting of two *independent* variables, 'mach' and 'alpha' each with 3 data entries.
+This requires the definition of nine *dependent* variables to properly complete the cross sections of the table.
+
+.. list-table::
+
+   * - 
+     - **alpha**\ :sub:`1` **= 0.0**
+     - **alpha**\ :sub:`2` **= 18.0**
+     - **alpha**\ :sub:`3` **= 20.0**
+   * - **mach**\ :sub:`1` **= 0.000**
+     - 0.0
+     - 1.2
+     - 1.3
+   * - **mach**\ :sub:`2` **= 0.900**
+     - 0.1
+     - 1.7
+     - 1.4
+   * - **mach**\ :sub:`3` **= 1.2**
+     - 0.2
+     - 1.5
+     - 1.6
+
+Note that the order of values listed in the dependent_variable depends on the order the independent_variables were specified, allowing the above table to be specified in two different ways:
+
+   .. parsed-literal::
+
+      sample_cL_alpha_mach_table
+         regular_table
+            independent_variable mach precision float
+               0.000 0.900 1.2
+            end_independent_variable
+            independent_variable alpha units deg
+               0.0 18.0 20.0
+            end_independent_variable
+
+            dependent_variable precision float
+               0.0 1.2 1.3 0.1 1.7 1.4 0.2 1.5 1.6
+            end_dependent_variable
+         end_regular_table
+      end_sample_cL_alpha_mach_table
+
+   .. parsed-literal::
+
+      sample_cL_alpha_mach_table
+         regular_table
+            independent_variable alpha units deg
+               0.0 18.0 20.0
+            end_independent_variable
+            independent_variable mach precision float
+               0.000 0.900 1.2
+            end_independent_variable
+
+            dependent_variable precision float
+               0.0 0.1 0.2 1.2 1.7 1.5 1.3 1.4 1.6
+            end_dependent_variable
+         end_regular_table
+      end_sample_cL_alpha_mach_table
+
+3-Dimensional Table
+"""""""""""""""""""
+
+   .. parsed-literal::
+   
+      sample_cL_angle_alpha_mach_table
+         regular_table
+            independent_variable mach precision float
+               0.000 0.900 1.2
+            end_independent_variable
+            independent_variable alpha units deg
+               0.0 18.0 20.0
+            end_independent_variable
+            independent_variable angle units deg
+               -10.0 0.0 10.0
+            end_independent_variable
+			
+            dependent_variable precision float
+               -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+               -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+               -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+            end_dependent_variable
+         end_regular_table
+      end_sample_cL_angle_alpha_mach_table

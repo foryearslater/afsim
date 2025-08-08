@@ -1,0 +1,228 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+weapon
+------
+
+.. Navigation: :ref:`Predefined_Weapon_Types`
+
+Script Class: :class:`WsfWeapon`
+
+.. command:: weapon <name> <type> ... end_weapon
+    :block:
+
+    .. parsed-literal::
+
+     weapon <name> <type>
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+
+        **on** | **off**
+
+        update_interval_
+
+        launch_computer_ ...
+
+        quantity_ ...
+        maximum_quantity_ ...
+
+        firing_delay_ ...
+        firing_interval_ ...
+        salvo_interval_ ...
+        maximum_request_count_ ...
+
+        automatic_target_cueing_ ...
+        cue_to_predicted_intercept_ ...
+
+        unknown_target_range_ ...
+        unknown_target_altitude_ ...
+
+        reload_increment_ ...
+        reload_inventory_ ...
+        reload_threshold_ ...
+        reload_time_ ...
+        inhibit_while_reloading_ ...
+
+        weapon_effects_ ...
+     end_weapon
+
+.. attention::
+
+   Some weapon commands_ are not compatible with certain weapon models.
+   A warning specifying incompatible commands is provided in the documentation for affected models.
+   Avoid using script methods which access the parameters of incompatible commands.
+
+Overview
+========
+
+A weapon is an object whose purpose is to destroy or disrupt enemy platforms and systems. A bomb would be an example of a weapon whose intent is to destroy while a radar jammer would be an example of a weapon whose intent is to disrupt.
+
+Commands
+========
+
+.. command::  [ on | off ]
+
+   Defines the initial state of the weapon when introduced into the simulation.
+
+   **Default** 'on' for :model:`WSF_EXPLICIT_WEAPON`
+
+   **Default** 'off' for :model:`WSF_RF_JAMMER`
+
+.. command:: update_interval <time-reference>
+
+   Specifies the update interval for those weapon types that require it.
+
+   **Default** 0 sec.
+
+.. command:: launch_computer <type> ... end_launch_computer
+             launch_computer ... end_launch_computer
+
+   Specifies the launch computer for those weapon types that require it.
+
+   The first form must be given when a launch computer has yet to be defined on the weapon. '<type>' must be the name of a
+   user- or pre-defined :command:`launch_computer` types.
+
+   The second form must be used then a launch computer has already been instantiated on the weapon.
+
+.. command:: quantity <real-reference>
+
+   Specifies the number of rounds that are initially available.
+
+   **Default** 0.0
+
+.. command:: maximum_quantity <real-reference>
+
+   Specifies the maximum number of rounds that may exist on the weapon. This is used to constrain weapon reloading.
+
+   **Default** Infinite
+
+.. command:: firing_delay <random-time-reference>
+
+   This is only applicable to firing requests initiated by :method:`WsfWeapon.FireSalvo <WsfWeapon.FireSalvo>` or
+   :method:`WsfTaskManager.FireAt <WsfTaskManager.FireAt>`. It specifies the time that will elapse between the time the request is
+   issued and the time the first (or only) shot of the request is fired.  This may cause a weapon to be fired at a
+   nonexistent track (i.e., the target platform was removed from the simulation after the Fire command was issued), which
+   in turn makes the weapon have an erratic trajectory.
+
+   **Default** 0.0 sec
+
+.. command:: firing_interval <random-time-reference>
+
+   Specifies the amount of time that must elapse between when a weapon last completed a firing request and when it is next
+   fired.  This is different from salvo_interval_ in that this value specifies the minimum time delay that occurs
+   before another Fire() request can be prosecuted.
+
+   **Default** 0.0 sec
+
+.. command:: salvo_interval <random-time-reference>
+
+   This is only applicable to firing requests initiated by :method:`WsfWeapon.FireSalvo <WsfWeapon.FireSalvo>` or
+   :method:`WsfTaskManager.FireAt <WsfTaskManager.FireAt>`. It specifies the time amount of time that will elapse between rounds
+   in a multiple shot request. The times of each shot in a salvo will be:
+   * T<sub>1</sub> = T + firing_delay
+   * T<sub>2</sub> = T<sub>1</sub> + salvo_interval
+   * T<sub>N</sub> = T<sub>N-1</sub> + salvo_interval
+
+   **Default** 0.0 sec
+
+.. command:: maximum_request_count <integer-value>
+
+   Specifies the maximum number of salvo firing requests (:method:`WsfWeapon.FireSalvo <WsfWeapon.FireSalvo>` or
+   :method:`WsfTaskManager.FireAt <WsfTaskManager.FireAt>`) that may be active simultaneously.
+
+   **Default** 1
+
+.. command:: automatic_target_cueing <boolean-value>
+
+   This is only applicable to firing requests initiated by :method:`WsfWeapon.FireSalvo <WsfWeapon.FireSalvo>` or
+   :method:`WsfTaskManager.FireAt <WsfTaskManager.FireAt>`.  If 'true' and if the weapon supports cueing, the weapon will be cued
+   to the track specified on the request. If 'false' then the weapon will not be cued.
+
+   **Default** true
+
+.. command:: cue_to_predicted_intercept <boolean-value>
+
+   If automatic_target_cueing_ is true, specify if weapon should be cued to the track location (false) or the the
+   predicted intercept location (true).
+
+   **Default** false
+
+.. command:: unknown_target_range <length-reference>
+
+   Specifies the range to be used for deriving a target location if either a target track was not specified on the fire
+   request or if the target track was specified and did not contain enough information to derive a location.
+
+   If a location needs to be derived, it will be formed using
+
+   * The value of this command, and
+   * The value the unknown_target_altitude_ command, and
+   * Either the bearing from the supplied target track (if it is available) or the heading of the launching platform.
+
+   **Default** none
+
+.. command:: unknown_target_altitude <length-reference> [ agl | msl | relative ]
+
+   Specifies the altitude to be used when deriving a target location. This command only has an effect if
+   unknown_target_range_ is also specified.
+
+   **Default** 1 m agl
+
+.. command:: reload_increment <real-reference>
+
+   Specifies the amount of weapons inventory taken from an External Replenishment Magazine (ERM) added to the weapon when
+   a reload event occurs.
+
+   **Default** 0
+
+.. command:: reload_inventory <real-reference>
+
+   Specifies the amount of weapons inventory available from an External Replenishment Magazine (ERM), the finite source
+   for weapons reloading.
+
+   **Default** 0 and disables any reload capability
+
+.. command:: reload_threshold <real-reference>
+
+   Specifies the amount of weapons inventory at which a reload event is started.  Reload potential is evaluated only after
+   a successful weapon Fire().
+
+   **Default** 0
+
+.. command:: reload_time <random-time-reference>
+
+   Specifies the time elapsed from the start of a weapon reload until the reload completes.
+
+   **Default** 0 s
+
+.. command:: inhibit_while_reloading <boolean-value>
+
+   Indicates if firing is inhibited while reloading is in progress.  If this is false, firings will continue to take place
+   until the available quantity is 0.  If true, any request will be ignored.
+
+   If a salvo request is submitted (:method:`WsfWeapon.FireSalvo <WsfWeapon.FireSalvo>` or
+   :method:`WsfTaskManager.FireAt <WsfTaskManager.FireAt>`), each round in a salvo is processed independently. A partial salvo may
+   be aborted if:
+
+   * The value of this command is false and the reload_threshold_ is encountered during the salvo.
+   * The value of this command is true and the quantity remaining goes to zero before the salvo completes.
+
+   **Default** false
+
+.. command:: weapon_effects <string-reference>
+
+   Specifies the type of the weapon_effects to be used for determining weapon effectiveness. See the page on
+   :command:`weapon_effects` for more details.
+
+   .. note::
+      For :model:`WSF_EXPLICIT_WEAPON` it is customary to place the **weapon_effects** command in the definition
+      of the :command:`platform <platform.weapon_effects>`  that represents the launched weapon.
+
+

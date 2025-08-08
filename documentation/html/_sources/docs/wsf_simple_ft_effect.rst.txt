@@ -1,0 +1,131 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SIMPLE_FT_EFFECT
+--------------------
+
+.. model:: effect WSF_SIMPLE_FT_EFFECT
+
+    .. parsed-literal::
+        effect <effect-name> **WSF_SIMPLE_FT_EFFECT**
+           :command:`electronic_warfare_effect` Commands
+           :model:`WSF_PULSE_EFFECT` Commands
+           :model:`WSF_REPEATER_EFFECT` Commands
+           :model:`WSF_POWER_EFFECT` Commands
+           :model:`WSF_RADIUS_EFFECT` Commands
+           apply_electronic_protect_effects_ <boolean-value>
+           combine_multi_beam_counts_ <boolean-value>
+           jamming_pulse_density_ *<value>*
+           maximum_false_target_capacity_ *<value>*
+           number_of_false_targets_ *<value>*
+           percent_of_beamwidth_for_detection_ *<ratio-value>*
+           update_once_per_frame_ <boolean-value>
+           use_random_calculation_draw_ <boolean-value>
+        end_effect
+
+    This base effect type can be included in the :command:`electronic_attack` technique block as one
+    of the many available effects for a given technique. The commands listed below are the base-type commands that can be
+    specified in the effect block for this effect type.
+
+    This technique dynamically calculates the number of false targets that could be created within a radar's scan volume
+    given the current geometry, then compares this to the radar's false target capacity to determine if it is flooded or
+    not. If it is flooded the detection is blocked. If the number of false targets is hard set it is used instead of the
+    dynamically calculated number of false target. Rudimentary Electronic Protect techniques are applied as applicable.
+
+.. command:: apply_electronic_protect_effects  <boolean-value> 
+
+    Specifies whether or not :command:`electronic_protect` effects should be applied to the calculated number of false
+    targets.
+
+    Default: true
+
+.. command:: combine_multi_beam_counts  <boolean-value> 
+
+    Specifies whether or not radars with multiple beams should combine their false target counts for total
+    comparison. Once the number of false targets exceeds the maximum_false_target_capacity_ then subsequent beams
+    will not be calculated.
+
+    Default: true
+
+.. command:: jamming_pulse_density  <value> 
+
+    Specifies the pulse density of the jamming signal in range [0,1] to use for this radar type.  Mutually exclusive with
+    the number_of_false_targets_.
+
+    Default: 0.1
+
+.. command:: maximum_false_target_capacity  <value> 
+
+    Specifies the maximum number of false targets that this radar type is able to process before becoming flooded.
+
+    Default: 1000 unless a :command:`false_target_screener` is present on the radar sensor then the
+    :command:`false_target_screener.track_capacity` from it will be used.
+
+.. command:: number_of_false_targets  <value> 
+
+    Specifies the number of false targets that will be created for this radar type. Mutually exclusive with the
+    jamming_pulse_density_.
+
+    Default: 1000
+
+.. command:: percent_of_beamwidth_for_detection  <ratio-value> 
+
+    Specifies the percent of the radar beamwidth that a detection will occur for this radar type in the range [0,1].
+    For example a value of 0.5 means it takes a half a beamwidth of consecutive pulses to declare a detection, and a value
+    of 1.0 means it takes the full beamwidth.
+
+    Default: 1.0
+    
+
+.. command:: update_once_per_frame  <boolean-value> 
+
+    Specifies whether or not the false target counts for a radar sensor mode should be update more than once per
+    frame time.
+
+    Default: false
+
+.. command:: use_random_calculation_draw  <boolean-value> 
+
+    Specifies whether or not to use a random calculation draw to determine if a detection is blocked or not per the
+    following equation::
+
+        Blocked = UniformRandomDraw(0.0, 1.0) > TrackCapacity / NumberFalseTargets
+
+    Default: false
+    
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data 
+
+    Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this
+    technique for a given system type. Default data can be set up for system types not defined using the "default" string
+    as the system type.
+
+    .. parsed-literal::
+
+     system_type_data_ <system-type-name>
+        :model:`WSF_PULSE_EFFECT` Commands
+        :model:`WSF_POWER_EFFECT` Commands
+        :model:`WSF_REPEATER_EFFECT` Commands
+        :model:`WSF_RADIUS_EFFECT` Commands
+        apply_electronic_protect_effects_ <boolean-value>
+        combine_multi_beam_counts_ <boolean-value>
+        jamming_pulse_density_ *<value>*
+        maximum_false_target_capacity_ *<value>*
+        number_of_false_targets_ *<value>*
+        percent_of_beamwidth_for_detection_ *<ratio-value>*
+        update_once_per_frame_ <boolean-value>
+     end_system_type_data
+
+    <system-type-name> 
+        A string input of the system-type the following data applies to, valid values are
+        **[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will
+        be applied for the given system-type.
+   

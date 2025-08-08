@@ -1,0 +1,179 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Reference_Values:
+
+Reference Values
+----------------
+
+Overview
+========
+
+.. note::
+   The WSF :ref:`WSF_User_Input_Format.Pre-Processor` (introduced in AFSIM 1.9.0) provide a better and more general
+   way to accomplish what is provided by this capability. Please consider using it if possible.
+
+`Reference Values`_ is a feature added in :ref:`wsf_1.7.3` that provides a mechanism for the value of some WSF
+commands to be defined at run-time from the value of a :ref:`ScriptVariables`. The primary motivation for
+this feature is to support the situation where an an analyst may want to vary the value of one or more parameters from
+run-to-run (design of experiments). Prior to the implementation of this feature the analyst had to update the affected
+files with the desired values, run the application, update the files with the next values, run the application and so
+on. This was very error prone, especially if there were a large number of files. Another motivation is to be able to
+provide 'base types' that represent some nominal configuration, but to provide the ability to temporarily override the
+configuration without modifying the original definition (which may be in a shared storage area referenced by multiple
+users).
+
+The best way to demonstrate the use of reference values is through a simple example. One common simulation technique is
+to use a delay time to model the time that it takes to perform some function. In this example, an analyst has inserted
+a delay to simulate the time that it takes to assimilate information before it can act on it. Platforms of type
+COMMANDER receive track information from offboard sources, use it to update its *operating picture* (using
+:model:`WSF_TRACK_PROCESSOR`), and then act on the information (using :model:`WSF_TASK_PROCESSOR`). As defined below, there is a
+fixed 5 second 'assimilation' delay.
+
+.. parsed-literal::
+
+ platform_type COMMANDER WSF_PLATFORM
+    comm radio WSF_COMM_TRANSCEIVER
+       internal_link delay_proc
+    end_comm
+
+    processor delay_proc :model:`WSF_MESSAGE_PROCESSOR`
+       process
+          select type WSF_TRACK_MESSAGE end_select
+          select type WSF_TRACK_DROP_MESSAGE end_select
+          delay_time 5.0 sec
+          internal_link track_proc
+       end_process
+       default_process
+          internal_link task_proc
+       end_default_process
+    end_processor
+
+    processor track_proc :model:`WSF_TRACK_PROCESSOR`
+       ...
+    end_processor
+
+    processor task_proc :model:`WSF_TASK_PROCESSOR`
+       ...
+    end_processor
+ end_platform_type
+
+If platforms of this type were used in a simulation one would get a fixed 5 second delay between the time the track was
+received and the time when the task processor could make a decision. Now let us say we want to see what will happen if
+we vary the time to see what happens if the delay is 5, 10, 15 or 20 seconds. First, change the *delay_time 5.0 sec* to
+read::
+
+ delay_time /variable PROCESSING_TIME /default 5.0 sec
+
+Then, in the master input file (e.g., master.txt) add the following commands::
+
+ script_variables
+    double PROCESSING_TIME = 0.0;
+ end_script_variables
+
+ on_initialize
+    PROCESSING_TIME = 5.0 * WsfSimulation.RunNumber();   // will take values of 5, 10, 15 and 20
+ end_on_initialize
+
+ initial_run_number 1
+ final_run_number 4
+
+Better yet, put the above commands in a separate file (e.g., multi_run.txt) and run the simulation using the following
+command::
+
+ sage master.txt multi_run.txt
+
+The above example uses the :ref:`Monte_Carlo_Iteration` to run 4 iterations within one
+invocation of the executable. In more complex cases the user may want to create a file for each case (e.g.,
+case-<n>.txt) which contains a :ref:`ScriptVariables` block that contains the variable definitions for that case. This
+would work very well if the desired cases weren't a simple multi-dimensional matrix. Then each case would be run
+separately::
+
+ sage master.txt case-1.txt
+ sage master.txt case-2.txt
+  ...
+ sage maser.txt case-<n>.txt
+
+Maintaining a separate file for each case also makes it easier to see exactly which parameters were used for the case.
+
+Syntax
+======
+
+To describe the new syntax we will consider the :command:`processor.update_interval` command contained in :command:`processor`.
+Prior to the implementation of reference values it was defined as:
+
+ **update_interval** <time-value>
+
+With the implementation of reference values, the documentation now reads:
+
+ **update_interval** <time-reference>
+
+The value for commands that now accept reference values will appear as *<X-reference>* in the description. The
+value for commands that do not accept a reference value will appear as *<X-value>* in the description. In the
+reference section for <time-reference> one will see there are two possible formats. The first form is to be used when
+entering a fixed value:
+
+ <time-value>
+
+The second form is used to request that the value be assigned at run-time from a variable of the supplied name.
+
+ /variable *<variable-name>* /default <time-value>
+
+The clause '/default <time-value>' is optional. It indicates that if the variable specified by *<variable-name>*
+cannot be found then the supplied default will be used.
+
+Given the above, the following are valid forms for **update_interval**::
+
+ update_interval 1.0 sec
+ update_interval /variable THINKER_UPDATE_INTERVAL /default 1.0 sec
+ update_interval /variable THINKER_UPDATE_INTERVAL
+
+Resolving A Variable Reference
+==============================
+
+When a variable reference is used, the value of the command is determined (*resolved*) at run-time rather than when the
+command is read. In particular, it is resolved when the containing object (e.g., platform, mover, processor, sensor) is
+added to the running simulation. When attempting to resolve a reference, the software will start in the current script
+context and proceed upward looking for the variable of the supplied name. In **most** cases this means that it will
+first look for a script variable at the platform level, and then look at the global level. There are some exceptions
+that will be defined later.
+
+If the variable is successfully located, it is simply **copied** to the command value. Three very important things must
+be noted:
+
+* It is copied only once when it is resolved during simulation initialization. If the variable is subsequently changed
+  during the simulation, it will not affect the value of the command.
+* The value of the script variable must be in the internal units required by the command (the expected units are
+  documented in :ref:`argument_types.reference_values`. Time must be in seconds, length in meters, mass in kilograms, angles
+  in radians.
+* Normal validity checking of values is not performed. The user is expected to enter a valid value.
+
+If the variable could not be located then the default value specified by '/default' will be used if it was provided. If
+no default was provided then object initialization will fail with an error message and the simulation will be
+terminated.
+
+The values of resolved variable references will be written to the simulation log file as defined by :command:`log_file`.
+This will serve as a source for the user to check to see if the expected values were assigned to the
+commands.
+
+Exceptions in resolving variables
+=================================
+
+There are some exceptions to starting context for variable resolution.
+
+* The :command:`platform` commands :command:`platform.creation_time` and :command:`weapons_effects <platform>` always resolve from the
+  global level.
+* The :command:`mover` command :command:`_.route_mover.start_time` always resolves from the global level.
+* Commands that are defined by processors that derive from :model:`WSF_SCRIPT_PROCESSOR` start searching at the processor
+  level, and then proceed to the platform level and finally the global level. Note, however, commands are defined in the
+  parents of :model:`WSF_SCRIPT_PROCESSOR` (i.e., :command:`processor` and :ref:`Platform_Part_Commands` ) still
+  start at the platform level.
+

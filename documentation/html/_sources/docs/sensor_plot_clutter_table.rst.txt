@@ -1,0 +1,261 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Sensor_Plot_Clutter_Table:
+
+Sensor Plot Clutter Table
+-------------------------
+
+**Navigation:** :command:`sensor_plot` > **clutter_table**
+
+.. command:: clutter_table ... end_clutter_table
+   :block:
+
+   .. parsed-literal::
+
+      clutter_table_
+
+        :ref:`sensor_plot.Stub_Definition_Commands`
+
+         sensor_platform_type_ ...
+         target_platform_type_ ...
+
+         altitudes_
+            ...
+            ranges_   ...
+            bearings_ ...
+         end_altitudes
+
+         output_file_name_
+         output_object_name_
+         altitude_units_
+         range_units_
+         sensor_platform_name
+         sensor_platform_pitch_
+         senosr_platform_roll
+         sensor_platform_latitude_
+         sensor_platform_longitude_
+         sensor_platform_altitude_
+
+      end_clutter_table
+
+Overview
+========
+
+The clutter table function generates a definition of a :ref:`clutter_model.surface_clutter_table`. This table is meant to be used in WSF simulations, and it typically provides a significant speed increase over using the WSF :command:`clutter_model` directly.
+
+To create a file, the following process should be followed:
+
+* Define a platform type of the type specified by the command sensor_platform_type_ (Default: **SENSOR_PLATFORM_TYPE**), which contains the sensor to be used to detect the target.
+* Define a platform type of the type specified by the command target_platform_type_ (Default: **TARGET_PLATFORM_TYPE**)
+* Define the platform instances that contain the sensors that will attempt to detect the target.
+* Define the :command:`sensor_plot.clutter_table` input block with:
+
+  * Commands to define limits and spacing of the sample points in the altitudes_ block.  This at least includes ranges of altitudes_ and ranges_ at which target detection attempts are made, and clutter power is computed based on the resulting antenna pointings.  To make the table site-specific, also include a list of bearings_.
+  * Optional sensor_platform_yaw_, sensor_platform_pitch_ and sensor_platform_roll_ commands to specify the sensor platform's orientation, as this may affect clutter power.
+  * Output selection commands.
+
+Commands
+========
+
+.. command:: sensor_platform_type <string-value>
+
+   Specify the platform type upon which the sensor is placed.
+
+   **Default** SENSOR_PLATFORM_TYPE
+
+.. command:: target_platform_type <string-value>
+
+   Specify the platform type to be used to represent the target.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+   .. note::
+      Although all target characteristics are valid for clutter map generation, only this input (target_platform_type) is necessary, because the clutter computations are target independent.
+
+
+.. command:: altitudes from <length-value> to <length-value> by <length-value>
+
+   Specify the set of altitudes for which clutter values are sampled in the table.
+   From *minimum* to *maximum* by *delta*
+
+   .. note::
+      There should be at least two altitudes specified, that is:
+
+      *Number of altitudes* = (int)(<greatest-altitude> - <least-altitude>) / <delta-altitude> >= 2
+
+.. command:: ranges from <length-value> to <length-value> by <length-value>
+
+   Specify the set of ranges for which clutter values are sampled in the table.
+   From *minimum* to *maximum* by *delta*
+
+   .. note::
+      There should be at least two ranges specified, that is:
+
+      *Number of ranges* = (int)(<greatest-range> - <least-range>) / <delta-range> >= 2
+
+.. command:: bearings from <angle-value> to <angle-value> by <angle-value>
+
+   Specify the set of bearings for which clutter values are sampled in the table from minimum to maximum angle values by delta angle.
+
+   .. note::
+      This command is optional.  It is used when one desires to create a site-specific clutter table, in conjunction with :command:`terrain` and / or :command:`global_environment.land_cover`.  Currently the only clutter model that generates site-specific results is :ref:`clutter_model.alarm`.
+
+   .. note::
+      If specified, there should be at least two bearings specified, that is:
+
+      *Number of bearings* = (int)(<greatest-bearing> - <least-bearing>) / <delta-bearing> >= 2
+
+.. command:: output_file_name <string-value>
+
+   Specify the clutter table file name.
+
+   **Default** (The specified sensor's name)
+
+.. command:: output_object_name <string-value>
+
+   Specify the clutter table's name as it appears in the output file.
+
+   **Default** (The specified sensor's type)
+
+.. command:: altitude_units <length-unit>
+
+   Specify an alternate altitude unit type that will appear in the table.
+
+   **Default** meters
+
+.. command:: range_units <length-unit>
+
+   Specify an alternate range unit type that will appear in the table.
+
+   **Default** meters
+
+.. command:: sensor_platform_latitude <latitude-value>
+
+   Specify the latitude portion of the sensor platform's location.
+
+   **Default** 0.0n
+
+.. command:: sensor_platform_longitude <longitude-value>
+
+   Specify the longitude portion of the sensor platform's location.
+
+   **Default** 0.0w
+
+.. command:: sensor_platform_altitude <length-value>
+
+   Specify the altitude portion of the sensor platform's location.
+
+   **Default** 0.0 m
+
+.. command:: sensor_platform_yaw <angle-value>
+
+   Specify the sensor platform's yaw value.
+
+   **Default** 0.0 degrees
+
+.. command:: sensor_platform_pitch <angle-value>
+
+   Specify the sensor platform's pitch value.
+
+   **Default** 0.0 degrees
+
+.. command:: sensor_platform_roll <angle-value>
+
+   Specify the sensor platform's roll value.
+
+   **Default** 0.0 degrees
+
+
+Example
+=======
+
+**The following clutter_table block is used with target, sensor, sensor platform, and sensor platform instance
+definitions (not shown) to create a minimal site-specific clutter table:**
+
+::
+
+    clutter_table
+       output_file_name   clutter_table.dat
+
+       altitudes
+          from  0 m to 5000 m by 2500 m  // three altitudes
+          ranges
+             from 1 km to 11 km by 5 km  // three ranges
+          bearings
+             from -180 degrees to 180 degrees by 120 degrees // three bearings
+                                                            // -180 and 180 are the same
+       end_altitudes
+
+       sensor_platform_latitude 27.3112n
+       sensor_platform_longitude 56.2564e
+       sensor_platform_altitude 30 feet
+    end_clutter_table
+
+**The output file, clutter_table.dat, is the following:**
+
+::
+
+    clutter_model ACQ_RADAR WSF_SURFACE_CLUTTER_TABLE
+      clutters
+       altitude 0 m
+        bearing -180 degrees
+         range 1000 m  clutter -57.4728 dbw
+         range 6000 m  clutter -81.6989 dbw
+         range 11000 m  clutter -89.6059 dbw
+        bearing -60 degrees
+         range 1000 m  clutter -57.4727 dbw
+         range 6000 m  clutter -81.6989 dbw
+         range 11000 m  clutter -89.6059 dbw
+        bearing 60 degrees
+         range 1000 m  clutter -57.4727 dbw
+         range 6000 m  clutter -81.6989 dbw
+         range 11000 m  clutter -89.6059 dbw
+        bearing 180 degrees
+         range 1000 m  clutter -57.4728 dbw
+         range 6000 m  clutter -81.6989 dbw
+         range 11000 m  clutter -89.6059 dbw
+       altitude 2500 m
+        bearing -180 degrees
+         range 1000 m  clutter -144.731 dbw
+         range 6000 m  clutter -156.425 dbw
+         range 11000 m  clutter -151.809 dbw
+        bearing -60 degrees
+         range 1000 m  clutter -144.731 dbw
+         range 6000 m  clutter -156.24 dbw
+         range 11000 m  clutter -151.917 dbw
+        bearing 60 degrees
+         range 1000 m  clutter -144.731 dbw
+         range 6000 m  clutter -156.24 dbw
+         range 11000 m  clutter -151.917 dbw
+        bearing 180 degrees
+         range 1000 m  clutter -144.731 dbw
+         range 6000 m  clutter -156.425 dbw
+         range 11000 m  clutter -151.809 dbw
+       altitude 5000 m
+        bearing -180 degrees
+         range 1000 m  clutter -153.089 dbw
+         range 6000 m  clutter -158.778 dbw
+         range 11000 m  clutter -164.436 dbw
+        bearing -60 degrees
+         range 1000 m  clutter -153.089 dbw
+         range 6000 m  clutter -158.623 dbw
+         range 11000 m  clutter -164.436 dbw
+        bearing 60 degrees
+         range 1000 m  clutter -153.089 dbw
+         range 6000 m  clutter -158.623 dbw
+         range 11000 m  clutter -164.436 dbw
+        bearing 180 degrees
+         range 1000 m  clutter -153.089 dbw
+         range 6000 m  clutter -158.778 dbw
+         range 11000 m  clutter -164.436 dbw
+      end_clutters
+    end_clutter_model

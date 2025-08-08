@@ -1,0 +1,171 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SIX_DOF_FUEL
+----------------
+
+**Derives From:** :model:`WSF_FUEL`
+
+**Script Class:** :class:`WsfSixDOF_Fuel`
+
+.. model:: fuel WSF_SIX_DOF_FUEL
+   
+.. parsed-literal::
+
+   fuel <name> :model:`WSF_SIX_DOF_FUEL`
+      ... :ref:`Platform_Part_Commands` ...
+	  
+      initial_quantity_ ...
+      reserve_quantity_ ...
+      bingo_quantity_ ...
+	  
+      on_bingo_ ... end_on_bingo
+      on_empty_ ... end_on_empty
+      on_refuel_ ... end_on_refuel
+      on_reserve_ ... end_on_reserve
+	  
+      `Un-Supported Commands`_
+	  
+   end_fuel
+
+Overview
+========
+
+:model:`WSF_SIX_DOF_FUEL` (derived from :model:`WSF_FUEL`) implements a fuel object that consumes fuel at a rate determined
+by a :model:`WSF_SIX_DOF_MOVER`. A :model:`WSF_SIX_DOF_MOVER` must reside on the :model:`WSF_PLATFORM` for 
+:model:`WSF_SIX_DOF_FUEL` to function.
+
+.. warning:: Be sure to only use WSF_SIX_DOF_FUEL for platforms that include a WSF_SIX_DOF_MOVER.
+             If it is used on a platform that lacks a WSF_SIX_DOF_MOVER, WSF_SIX_DOF_FUEL will throw an exception. 
+
+See :class:`WsfSixDOF_Fuel` for script methods.
+
+Note that :model:`WSF_SIX_DOF_MOVER` provides its own set of commands to define its fuel system as well as its own script
+methods (:class:`WsfSixDOF_Mover`) to get/set fuel system conditions. :model:`WSF_SIX_DOF_FUEL` serves to provide a common 
+fuel object and common script methods that are similar to other WSF_FUEL-based objects.
+
+See :command:`fuel` for additional information about fuel objects in AFSIM.
+
+Commands
+========
+
+.. command:: initial_quantity <mass-value>
+   
+   Defines the initial quantity of fuel to be loaded on the vehicle. :model:`WSF_SIX_DOF_FUEL` will interact with
+   :model:`WSF_SIX_DOF_MOVER` to set the initial fuel. Fuel will be added to internal tanks first, keeping the 
+   percentage filled for each tank in sync. For example, if the initial_quantity was 75% of the total internal
+   fuel capacity, each internal fuel tank would be filled to 75% and no external tanks would be filled.
+   
+   **Default** 0 kg
+
+.. command:: reserve_quantity <mass-value>
+   
+   Defines the threshold such that when the quantity of fuel remaining falls below this value, the platform is
+   considered to be operating on reserves. If an on_reserve_ block is defined, it will be executed when this 
+   state is reached.
+   
+   Note that this has nothing to do with FAA or ICAO reserve fuel requirements, which are based on additional
+   fuel to get to an alternate landing site if unable to land at intended landing site. For simple day VFR, 
+   the reserve fuel must be enough to cruise for 30 minutes. At night, this is increased to 45 minutes. Rules
+   for IFR and commercial flights are more complicated, but the basic idea is to ensure enough fuel to get to
+   an alternate landing site with additional fuel to hold at that location before landing.
+   
+   However, since the **reserve_quantity** is simply an arbitrary value, users can use this for whatever
+   purpose they chose. For example, it could be used as a **Joker** fuel state, to augment the **Bingo** fuel
+   state (below). (The Joker fuel state is typically defined as Bingo plus additional fuel to perform
+   certain mission-specific actions.)
+   
+   **Default** 0 kg
+
+.. command:: bingo_quantity <mass-value>
+   
+   Defines the threshold such that when the quantity of fuel remaining falls below this value, the platform is
+   considered to have reached a BINGO state. If an on_bingo_ block is defined, it will be executed when this 
+   state is reached.
+   
+   **Default** 0 kg
+
+Un-Supported Commands
+=====================
+
+Since :model:`WSF_SIX_DOF_FUEL` interfaces with :model:`WSF_SIX_DOF_MOVER`, it provides a more detailed and realistic
+fuel system than many other derived classes of :model:`WSF_FUEL`. As a result, some commands and methods provided
+by :model:`WSF_FUEL` (and :class:`WsfFuel`) are not supported (and cannot be supported), since those commands
+and/or script methods are inappropriate.
+
+For example, the command **consumption_rate** in :model:`WSF_FUEL` is inappropriate, since a single value cannot
+be specified. In :model:`WSF_SIX_DOF_MOVER`, fuel consumption is typically dynamically dependent upon the types of
+engines and the throttle settings as well as the speed/Mach and altitude of the :model:`WSF_PLATFORM`. Hence, a
+single value is not appropriate.
+
+:model:`WSF_SIX_DOF_FUEL` does **not** support the following fuel commands:
+
+.. command:: maximum_quantity <mass-flow-value>
+   
+   The fuel capacity is determined by fuel tank definitions in a :model:`WSF_SIX_DOF_MOVER`. If **maximum_quantity**
+   is specified, it will be ignored and :model:`WSF_SIX_DOF_FUEL` will output a warning.
+
+.. command:: mode <mode-name>
+   
+   :model:`WSF_SIX_DOF_FUEL` and :model:`WSF_SIX_DOF_MOVER` do not use a fuel mode. If **mode** is specified, it 
+   will be ignored and :model:`WSF_SIX_DOF_FUEL` will output a warning.
+
+.. command:: consumption_rate <mass-flow-value>
+   
+   Fuel consumption rate is not a single/constant value for a :model:`WSF_SIX_DOF_MOVER`. If **consumption_rate**
+   is specified, it will be ignored and :model:`WSF_SIX_DOF_FUEL` will output a warning.
+
+Script Interface
+================
+
+Like :model:`WSF_FUEL`, :model:`WSF_SIX_DOF_FUEL` supports the following script blocks. Each of these scripts predefine the following
+variables:
+
+* :class:`WsfSixDOF_Fuel` this; // This fuel object
+* :class:`WsfPlatform` PLATFORM; // The platform containing this fuel object
+* double TIME_NOW; // The current simulation time
+
+.. command:: on_bingo ... <script-definition> ... end_on_bingo
+   
+   Defines a script to be executed when the quantity of fuel remaining falls below the threshold defined by
+   bingo_quantity_.
+
+.. command:: on_empty ... <script-definition> ... end_on_empty
+   
+   Defines a script to be executed when all fuel has been expended.
+
+.. command:: on_reserve ... <script-definition> ... end_on_reserve
+   
+   Defines a script to be executed when the quantity of fuel remaining falls below the threshold defined by
+   reserve_quantity_.
+
+.. command:: on_refuel ... <script-definition> ... end_on_refuel
+   
+   Defines a script to be executed when a refueling operation has been completed.
+
+:model:`WSF_SIX_DOF_FUEL` also supports additional script methods. See :class:`WsfSixDOF_Fuel` for more information.
+
+
+Common Usage
+============
+   
+The most common approach to using :model:`WSF_SIX_DOF_FUEL` is to define a fuel block within a platform type block. The following example
+shows setting an initial loadout of 15,000 lbs of fuel with a bingo of 4,000 lbs:
+
+.. parsed-literal::
+
+ platform_type ...
+    fuel WSF_SIX_DOF_FUEL
+         initial_quantity  15000 lbs
+         bingo_quantity     4000 lbs
+    end_fuel
+ end_platform_type
+

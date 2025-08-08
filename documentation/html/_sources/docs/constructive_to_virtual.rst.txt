@@ -1,0 +1,291 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Constructive to Virtual
+-----------------------
+
+What must be done to change a constructive WSF simulation and have it run real time (virtual)?
+================================================================================================
+
+The following steps outline what must be changed in the WSF input files.
+
+**1) Add the command "realtime".**
+
+The "realtime" command will have the simulation run at wall clock speed.
+
+**2) Configure the dis_interface block for the tcp/ip parameters.**
+
+The command "dis_interface... end_dis_interface" block sets up the parameters required to run WSF over DIS. An example of a multicast interface::
+
+ dis_interface
+    exercise                  1
+    site                      25
+    application               44
+    multicast                 224.2.25.55 192.168.10.32 # Multicast Address / The ethernet device on my PC to use
+    #broadcast                192.168.10.255 # Broadcast Example
+    port                      3225
+ end_dis_interface
+
+**3) Configure the dis_interface block for the sides.**
+
+Map the force side to whatever the side subcommand uses in the scenario files. Example::
+
+ dis_interface
+   #force     <side>   <dis-force-id>
+    force blue    1  	# default value if side is not specified
+    force red     2 	# default value if side is not specified
+    force green   3 	# default value if side is not specified
+    ## OR ##
+    force united_states 1
+    force canada        2
+ end_dis_interface
+
+**4) Map the platform_types to DIS Enumerations in the dis_interface block.**
+
+Entity type Enumerations of 00:00:00:00:00:00:00 will be sent out if a platform_type is not mapped. Example::
+
+ dis_interface
+    #entity_type   <platform_type> <dis-entity-type>
+    #munition_type <platform_type> <dis-entity-type> # same as entity_type
+    entity_type 	F-15E 	   1:2:225:1:5:5:0
+    entity_type 	F-18E 	   1:2:225:1:9:10:0
+ end_dis_interface
+
+**5) Map the entity_id manually or automatically in the dis_interface block:**
+
+Automatic example::
+
+ dis_interface
+    start_entity        10 # dis entity id starts at 10 {25:44:10 and up for site:application:entity_id}
+ end_dis_interface
+
+Manual example::
+
+ dis_interface
+    #entity_id <platform_name> <entity-number>
+    entity_id   hornet-1        101 # example: makes a dis entity id of {25:44:101}
+    entity_id   raptor-1        102
+    entity_id   tank-1          103
+ end_dis_interface
+
+**6) Do this step ONLY if dis emission PDUs must be mapped:**
+
+In most cases, the emitter_type just needs to be mapped.
+
+::
+
+ dis_interface
+    #emitter_type 	<sensor/jammer-type> <dis-emitter-name-enum>
+    #emitter_function 	<sensor/jammer-type> <dis-emitter-function-enum>
+    #beam_type <sensor/jammer-type> <sensor/jammer-mode-name> <sensor/jammer-beam-number>
+    <dis-beam-parameter-index-value>
+    #beam_function <sensor/jammer-type> <sensor/jammer-mode-name> <sensor/jammer-beam-number>
+    <dis-beam-function-enum-value>
+    emitter_type 	EW_RADAR_TYPE  		11
+    emitter_type 	TTR_RADAR_TYPE 		12
+    emitter_type 	ACQ_RADAR_TYPE		13
+
+    emitter_function 	EW_RADAR_TYPE   		2
+    #sets the function to "2" for the EW_RADAR emitter function (see the dis spec for correct value)
+
+    beam_type   	EW_RADAR_TYPE   		* * 11
+    #defaults the beam parameter index to 11 for all undefined modes and undefined beam numbers.
+
+    beam_type   	EW_RADAR_TYPE   		* 2 12
+    #sets the beam parameter index to 12 for all undefined mode names except when beam number 2 is defined.
+
+    beam_type   	EW_RADAR_TYPE   		* 3 13
+    #sets the beam parameter index to 13 for all undefined mode names except when beam number 3 is defined.
+
+    beam_function  	EW_RADAR_TYPE   		* 2 22
+    #sets the beam enum function to 22 for beam number 2 (see the dis spec for the value)
+
+    beam_type   	TTR_RADAR_TYPE  		TRACK * 30002
+    #sets the beam parameter index to 30002 when in TRACK mode for all beam numbers
+
+    beam_function   	TTR_RADAR_TYPE  		TRACK * 7
+    #sets the function to 7 if in TRACK mode for all beams. (see the dis spec for the value)
+ end_dis_interface
+
+**7) Ensure the usage of static addressing for communications devices, where appropriate.**
+
+Communications devices often use dynamic addressing (not explicitly providing an address to a comm) in the
+constructive simulation use case. If any other simulation is using a network that is also used by local communication
+devices (including by omitting any input in the case of the default network, or sharing a common network by using the
+local:master or local:slave, amongst others), then these comms must be given static addresses in order to ensure correct
+and consistent application of comms addresses across all simulations.
+
+Examples of comm definitions in the constructive use case, prior to necessary changes.
+
+Case 1 - String network name usage::
+
+   comm datalink WSF_COMM_TRANSCEIVER
+      network_name blue_net
+   end_comm
+
+   comm datalink_2 WSF_COMM_TRANSCEIVER
+      network_name blue_net
+   end_comm
+
+Case 2 - Command-chain usage::
+
+   comm blue_comm WSF_COMM_TRANSCEIVER
+      network_name <local:master>
+   end_comm
+
+Case 3 - Default network usage::
+
+   comm generic_comm WSF_COMM_TRANSCEIVER
+      #uses the 'default' network
+   end_comm
+
+Case 4 - Network address usage::
+
+   comm red_comm WSF_COMM_TRANSCEIVER
+      network_address 192.168.1.1/24
+   end_comm
+
+Examples of necessary conversions, assuming externally defined comms using the same network.
+
+Case 1 - String network name usage::
+
+   comm datalink WSF_COMM_TRANSCEIVER
+      address 192.168.1.1/24
+   end_comm
+
+   comm datalink_2 WSF_COMM_TRANSCEIVER
+      address 192.168.1.2/24
+   end_comm
+
+Case 2 - Command-chain usage::
+
+   network master:<commander-platform-name> WSF_COMM_NETWORK_MESH
+      network_address 192.168.1.0/24
+   end_network
+
+   comm blue_comm WSF_COMM_TRANSCEIVER
+      address 192.168.1.123/24
+   end_comm
+
+Case 3 - Default network usage - (Note that the default network is always 0.1.0.0/16)::
+
+   comm generic_comm WSF_COMM_TRANSCEIVER
+      address 0.1.22.127/16
+   end_comm
+
+Case 4 - Network address usage::
+
+   comm red_comm WSF_COMM_TRANSCEIVER
+      address 192.168.1.1/24
+   end_comm
+
+For more details in regard to why this is necessary, see :doc:`analyst_ocd/communications_primer`.
+
+DIS Specific Questions and Answers
+==================================
+
+* **What must be done to stay within the DIS spec? Other simulations don't understand some PDUs that WSF is sending out.**
+
+The following subcommands in the dis_interface block can be added to force DIS compliance::
+
+ dis_interface
+    maximum_beam_entries        10 # Limit number of beams
+    maximum_track_jam_entries   10 # Limit track/jam entries to the DIS spec
+    suppress_non_standard_data  true
+ end_dis_interface
+
+* **How can I see what is being mapped easily?**
+
+Add "log_created_entities" to the dis_interface block. A list of platform_types and dis enumerations will be displayed in the console window at runtime.
+
+::
+
+ dis_interface
+    log_created_entities
+ end_dis_interface
+
+* **I have several platforms at the same lat/lon. How can I make it so platform X is the priority to get hit with an external weapon?**
+
+The target_priority command will add bias to the simulation to the priority target when a DIS detonate PDU is received. Here is an example of making all the SAM_FC_RADAR platforms be the highest priority target::
+
+ dis_interface
+    target_priority SAM_FC_RADAR 1000 #This makes the SAM_FC_RADAR types have a huge bias to be killed.
+ end_dis_interface
+
+* **How can I make a platform not send any DIS information out to other simulations?**
+
+Use the private command::
+
+ dis_interface
+    #private [ name <name> | type <type> | all ]
+    private type SITE_COMMANDER
+    private name target-52
+ end_dis_interface
+
+* **Can WSF ignore an application that is running? We have 10 simulations running and WSF does not need to interface with application 55.**
+
+Yes, use the subcommand "filter_out_by_site_and_app
+
+::
+
+ dis_interface
+    filter_out_by_site_and_app
+       ignore_site 25
+       ignore_application 55
+    end_filter_out_by_site_and_app
+ end_dis_interface
+
+* **The simulation is not starting after I enter the command to run WSF.**
+
+This means none of the other sims are sending out a "start" PDU. To start WSF without a "start" PDU::
+
+ dis_interface
+    autostart                    # Comment this out if someone sends out a start PDU.
+ end_dis_interface
+
+* **I keep getting unknown platform warnings. What is this about?**
+
+Every external platform that WSF receives must have a platform_type defined along with a DIS enumeration value.  When WSF receives a platform over DIS, WSF automatically creates (instantiates) the platform internally and acts upon it.  Unknown (not mapped) platforms received over DIS are created internally but will have default values (i.e.,
+extreme signature values) defined for them.  First, make a platform_type and assign a signature to it.  Second, add entity_type and an enumeration mapping just like it was an internal body.
+
+* **If WSF receives an entity with 00:00:00:00:00:00:00 or any other enumeration that is not mapped, can it be mapped to something specific?**
+
+Yes, use the subcommand unknown_platform_type::
+
+ dis_interface
+    unknown_platform_type   <platform_type>
+ end_dis_interface
+
+* **I changed a setting in a dis_interface block and the WSF simulation did not change! What is wrong?**
+
+Another dis_interface block most likely is being read in AFTER the dis_interface block you edited. Keep in mind that the last command read in will overwrite your setting.  To see what files have been read in (and the order in which they were read in), look at the log file (typically located under the subdirectory named "output").
+
+* **How easy is it to add the above real-time commands?**
+
+In this example, the command to run a simulation constructively is "run mysim.txt". First, create a realtime.txt file (the filename can be of your choosing). Sample contents of a realtime.txt file::
+
+ realtime
+ dis_interface
+    exercise                    1
+    site                        25
+    application                 44
+    multicast                   224.2.25.55 192.168.10.32
+    port                        3225
+    suppress_comm_data
+    maximum_track_jam_entries   10
+    autostart
+    force united_states         1
+    force canada                2
+    log_created_entities
+ end_dis_interface
+ include dis_map.txt # This file would have all of your dis enumeration mappings...
+
+Now, type the command "run mysim.txt realtime.txt" and the constructive WSF simulation will run in real time.

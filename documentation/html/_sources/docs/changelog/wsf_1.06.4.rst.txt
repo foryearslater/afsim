@@ -1,0 +1,125 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.4:
+
+WSF 1.6.4 - 06 Jan 2010
+-----------------------
+
+General
+=======
+
+* This version now includes support for the Spectral Optical Sensing Model (SOSM). See :command:`sosm_interface` for more
+  information.
+
+Corrections
+===========
+
+* **(CR 7127)** Fixed problem where :model:`route movers <WSF_AIR_MOVER>` were unable to turn and climb at the same time.
+
+* **(CR 7132)** Corrected a problem in the 'strip' mode of :model:`WSF_SAR_SENSOR` where the time needed to form the
+  synthetic aperture for a given resolution was not being properly computed. This caused the integrated pulse count to be
+  incorrect which resulted in an incorrect signal level.
+
+* **(CR 7132)** Corrected a problem in :model:`WSF_SAR_SENSOR` where the approximate pixel count of the object in the
+  image went to zero if the angle subtended by the resolution cell was very small.
+  
+  .. note::
+
+      One of the by products of this change is that the approximate pixel count is now computed using the
+      azimuth and range resolution. Formerly it treated the pixel as a square having the dimension of the azimuth resolution.
+      If you want the former behavior you must ensure that transmitter pulse_width and the receiver bandwidth are not set, or
+      you must ensure they have correct values.
+
+* **(CR 7138)** Added :command:`weapon commands <weapon.unknown_target_range>` to allow the definition of a target range and
+  altitude to be used for a firing request if either a target track was not supplied or it was supplied but did not
+  contain enough information to derive a location.
+
+* **(CR 7141)** Fixed a problem where the initial hand-off track to a weapon was not being marked as fusible, which
+  caused subsequent uplinked updates to the track to not be assimilated. This was not a problem if
+  :model:`WSF_WEAPON_TRACK_PROCESSOR` was being used on the weapon platform to define the current target, but it was a problem
+  if one wanted to perform more complex processing on the weapon using :model:`WSF_TRACK_PROCESSOR` and :model:`WSF_TASK_PROCESSOR`.
+
+* **(CR 7150)** The tracks produced by image processors (such as :model:`WSF_IMAGE_PROCESSOR`) will now include
+  information about the source sensor which can be queried with the :class:`WsfTrack` methods :method:`WsfTrack.SensorName`,
+  :method:`WsfTrack.SensorType` and :method:`WsfTrack.SensorMode`. Also added a :method:`WsfTrack.PixelCount` method to query the
+  approximate number of pixels of the object in the image.
+
+  .. note::
+
+      This modification removed the :ref:`WsfTrack aux_data variables <WsfTrack.Auxiliary_Data_Methods>`
+      SENSOR_NAME_ID and PIXEL_COUNT as they are now directly available using the methods described above.
+
+* **(CR 7159)** The scripts that invoke the various WSF programs were modified so they will work when WSF is
+  installed in a path whose name contains embedded spaces.
+
+  .. note::
+
+      This modification only enables programs to be executed when installed in a path whose name contains
+      embedded spaces. It does not address the issue where WSF commands that accept file names (such as 'file_path' or
+      'include') do not accept file names that contain embedded spaces. In general, it is highly recommended that WSF be
+      installed in a path that does not contain embedded spaces in the name.
+
+* **(CR 7179)** Fixed an issue with the comm multi-access protocol when using any of the random access protocols
+  such as csma, csmacd, ethernet, or random_access_protocol. Messages would be queued up, but wouldn't be sent in a
+  timely fashion.
+
+* **(CR 7184)** Corrected several issues related to the handling of weapon detonation against locations and not
+  entities. This mostly affected distributed simulations where J11 messages were being used to supply target location and
+  the shooter, weapon and target all resided in different processes.
+
+* Fixed an issue where a :model:`WSF_RADAR_SENSOR` with a :command:`false_target_screener` was not
+  properly removing the false target jammer from its interaction and causing an abort of the application.
+
+* Fixed an issue where the :command:`false_target_screener` was not properly rejecting false-target
+  blips. The logic and input has been modified and deprecated for rejection of false-targets in the screener.
+
+* Fixed an issue with the :command:`false_target` distribution inputs for azimuth and range extents.
+
+* Fixed an issue where the :model:`WSF_FALSE_TARGET_EFFECT`
+  :model:`jamming_pulse_density <WSF_FALSE_TARGET_EFFECT>` command was not properly overriding the
+  :command:`false_target` :command:`false_target.quantity` command.
+
+* Fixed problem in :method:`MATH.Roll() <Math.Roll>` where the upper limit could never be returned.
+
+Enhancements
+============
+
+* Added a :model:`clutter attenuation <WSF_RADAR_SENSOR>` and
+  :model:`MTI <WSF_RADAR_SENSOR>` processing function to :model:`WSF_RADAR_SENSOR`.
+
+* Modified the :model:`WSF_PULSE_SUPPRESS_EFFECT` to suppress / allow a percentage of false-target blips for the
+  :command:`electronic_attack` :model:`WSF_FALSE_TARGET_EFFECT`.
+
+* Added support for the DIS DirectedEnergyFire and EntityDamageStatus PDUs.
+
+* Modified the :command:`horizontal_map` function to not require the target_region /
+  end_target_region tags around the region definition commands. This makes the syntax compatible with the
+  :command:`vertical_map` function.
+
+* Added the :command:`horizontal_map.target_yaw` command to :command:`horizontal_map`
+  function. This enables the sensor-to-target view to be held constant. This is useful for certain types
+  of plots involving infrared sensors.
+
+* Added :model:`WSF_JAMMER_RADIUS_EFFECT` :command:`electronic_attack` techniques that modifies the jammer
+  power levels into the sensor's receiver based on the target (protected-entity) position wrt to the jammer transmitter's
+  position to the sensor's receiver system.
+
+* Added the ability to access the current run number during MonteCarlo executions with the RunNumber( ) method in
+  :class:`WsfSimulation`.
+
+* Added the ability to query a string with the Contains( ) method in :class:`string`.
+
+* **(CR 7117)** Updated :model:`WSF_ESM_SENSOR` to allow the definition frequency-dependent azimuth, elevation and range
+  error sigmas.
+
+* If a weapon is retargeted in flight, the weapon effects now act on the current target instead of the original
+  target.

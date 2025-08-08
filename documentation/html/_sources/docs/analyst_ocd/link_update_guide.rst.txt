@@ -1,0 +1,51 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Link_Update_Guide:
+
+Link Update Guide
+-----------------
+
+.. contents:: Table of Contents
+   :local:
+   :depth: 2
+
+Overview
+========
+
+The purpose of this guide is to provide a brief summary of the updates that have been made to the :command:`_.External_Link_Commands.external_link` command as part of AFSIM 2.4.0, and to help the user convert existing scenario input files to the new input format.
+
+General Notes
+=============
+
+The external link commands have changed to conform to the requirements of the new communication framework in AFSIM. Previously, it was sufficient to simply specify the target platform for a communication. The fidelity of the new communications framework demands that a specific comm be designated as the recipient of any communication. Since platforms may contain any number of comm objects associated with them, it is no longer sufficient to simply provide the platform for any communication-specific task in AFSIM. Thus this update is required to ensure there are no invalid assumptions made in the selection of a comm sender or receiver during the simulation run-time.
+
+As with all communications within AFSIM, external links are predicated by the notion that a communication link exists between the sender and receiver of the message. If such a link (or system of links) does not exist, this command will fail.
+
+Warning About Existing Input
+============================
+
+Be warned that some formats of the external link command are still valid after this update. For example, providing a command such as *report_to commander via datalink* remains a valid command AFTER this update. However, **these commands do not do the same thing!** The previous version would send a message, when required, to the commander platform, from the 'datalink' comm, to the first receiver with a communication path from the sending comm. In the new version, the same thing happens EXCEPT that it will ONLY transmit to a receiver with the same name as the sender comm, in this case, 'datalink'. If such a comm isn't found on the receiver, a message won't be sent at all. Thus, the behavior of this command prior to 2.4.0 and post-2.4.0 is very different, even though the syntax is exactly the same. Be very mindful of this when updating scenarios using the new external link commands.
+
+Legacy Command Chain Usage
+==========================
+
+In previous versions, analysts conventionally designed their scenarios using one network to send messages up the chain of command, and another network to send messages down the chain of command. Usually these were called something akin to 'cmdr_net' and 'sub_net'. With the new comms framework, this structure isn't necessary or required, but may still be used. If so, be aware that the external link commands are always from the perspective of the sender, such that any command sending to the commander should be sent via cmdr_net, but will be received on the sub_net by the recipient. E.g. *report_to commander via cmdr_net to sub_net*. It is the opposite when going down the chain, e.g. *report_to subordinates via sub_net to cmdr_net* is the appropriate input. Messages amongst peers would be valid on either net, and would not require the "to" command if they are all of the same platform type, e.g. *report_to peers via sub_net*, as platforms of the same type typically have the same named comms available between them.
+
+Legacy WsfGroup Usage
+=====================
+
+:command:`Groups<group>` can continue to be used as a target for external linkage. However, instead of platforms, external link commands now only use comm objects in a group as a target. Platforms, and any other objects within a WsfGroup that are not comm objects, will be ignored.
+
+Address Usage
+=============
+
+While external linkage may now use addresses as targets, this is not an option unless the user gives a specific address for a particular target or network. Objects without a static address assignment are dynamically assigned an address. Very subtle changes in simulation input may change this address assignment, so do NOT attempt to find the address of an object in one simulation run, and modify input to use the value in any subsequent runs. No guarantees are provided to dynamic addresses between any two simulation runs.

@@ -1,0 +1,330 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+missile_wez_parameters
+----------------------
+
+Overview
+========
+
+The :command:`missile_wez_parameters` block provides a way for the user to circumvent the need for a more complex launch computer.
+If a launch computer is defined on the processor's owning platform, the :command:`missile_wez_parameters` commands have no effect.
+
+The missile_wez_parameters block specifies the parameters used in WEZ calculations for the Air Combat WEZ Lines in the :doc:`Air Combat Visualization<wkf_plugin/wk_air_combat_visualization>` Plugin. These parameters are also used when invoking WEZ script methods such as ExpectedWezRangeAgainstTarget and ExpectedWezRangeByTarget
+
+Required subcommands within the :command:`missile_wez_parameters` block are explained in `Required Commands`_.
+Any other commands specified by the user are optional and simply override default values. These commands are explained in `Optional Commands`_
+
+.. command:: missile_wez_parameters ... end_missile_wez_parameters
+    :block:
+
+    .. parsed-literal::
+
+     missile_wez_parameters
+        // `Required Commands`_
+        side_ ...
+        type_ ...
+        // `Optional Commands`_
+        avg_speed_ ...
+        max_time_of_flight_ ...
+        max_off_boresight_angle_ ...
+        min_time_of_flight_ ...
+        nominal_pk_ ...
+        head_on_pk_reduction_ ...
+        broadside_pk_reduction_ ...
+     end_missile_wez_parameters
+
+Required Commands
+=================
+
+.. command:: side [red ; blue]
+
+   Specifies the side for which the WEZ parameters apply. The available options are 'red' and 'blue'.
+
+.. command:: type [mrm ; srm]
+
+   Specifies the missile type for which the WEZ parameters apply. The available options are 'mrm' (medium-range missile) and 'srm' (short-range missile).
+
+   The combination of the `side`_ and `type`_ commands determines the default WEZ parameters.
+   These can be overwritten with the `Optional Commands`_. 
+
+   For example:
+
+   ::
+
+      # A medium-range missile of side blue will have the default WEZ parameters, except for the average speed. 
+      missile_wez_parameters
+         side        blue
+         type        mrm
+         avg_speed   600 m/s
+      end_missile_wez_parameters
+
+Optional Commands
+=================
+
+Any additional parameters that are explicitly set will override the respective parameters from the predefined set.
+
+Missile WEZ parameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. command:: avg_speed <speed-value>
+
+   The average missile speed that will be used in the WEZ calculations.
+
+   **Default:**  550 m/s
+
+.. command:: max_time_of_flight <time-value>
+
+   The missile's maximum time of flight that will be used in the WEZ calculations.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 120 seconds
+        - 100 seconds
+      * - srm
+        - 20  seconds
+        - 18  seconds
+
+.. command:: max_off_boresight_angle <angle-value>
+
+   The maximum angle off the nose from the launching aircraft to the target.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 80 degrees
+        - 100 degrees
+      * - srm
+        - 120 degrees
+        - 132 degrees
+
+.. command:: min_time_of_flight <time-value>
+
+   The missile's minimum time of flight that will be used in the WEZ calculations.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 3.5 seconds
+        - 4.5 seconds
+      * - srm
+        - 1.5 seconds
+        - 1.5 seconds
+
+Probability-of-Kill Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A combination of `nominal_pk`_, `head_on_pk_reduction`_, and `broadside_pk_reduction`_ determines the overall probability of kill. See the equation below:
+
+.. math::
+   :label: pk
+
+   Pk = Pk_n (1.0 - f_h \frac{\theta}{\pi}) (1.0 - f_b \sin{\theta})
+
+where:
+
+   - :math:`Pk` is the overall probability of kill,
+   - :math:`Pk_n` is defined by `nominal_pk`_
+   - :math:`f_h` is defined by `head_on_pk_reduction`_
+   - :math:`f_b` is defined by `broadside_pk_reduction`_
+   - :math:`\theta` is the angle off boresight
+
+.. command:: nominal_pk <real>
+
+   The nominal probability of kill used in equation :eq:`pk` above.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 0.80
+        - 0.75
+      * - srm
+        - 0.95
+        - 0.90
+
+.. command:: head_on_pk_reduction <real>
+
+   A reduction factor that accounts for head-on effects. This number must be between 0.0 and 1.0. See equation :eq:`pk` above for usage.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 0.0
+        - 0.3
+      * - srm
+        - 0.0
+        - 0.3
+
+.. command:: broadside_pk_reduction <real>
+
+   A reduction factor that accounts for broadside effects. This number must be between 0.0 and 1.0. See equation :eq:`pk` above for usage.
+
+   **Defaults:** dependent on `side`_ and `type`_. See the table below. See also `Missile WEZ Defaults`_.
+
+   .. list-table::
+      :align: left
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - blue
+        - red
+      * - mrm
+        - 0.2
+        - 0.3
+      * - srm
+        - 0.2
+        - 0.2
+
+Missile WEZ Defaults
+====================
+
+The default WEZ parameters for each combination of `side`_ and `type`_ are shown in tables below.
+If only `side`_ and `type`_ are specified, all default values will be used.
+Any other command that is explicitly specified will override the default value for that particular side/type.
+
+Blue Medium Range Missiles
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :align: left
+   :header-rows: 1
+
+   * - Parameter Name
+     - Default Value
+   * - `avg_speed`_
+     - 550 m/s
+   * - `max_time_of_flight`_
+     - 120 seconds
+   * - `max_off_boresight_angle`_
+     - 80 degrees
+   * - `min_time_of_flight`_
+     - 3.5 seconds
+   * - `nominal_pk`_
+     - 0.80
+   * - `head_on_pk_reduction`_
+     - 0.0
+   * - `broadside_pk_reduction`_
+     - 0.2
+
+
+Blue Short Range Missiles
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :align: left
+   :header-rows: 1
+
+   * - Parameter Name
+     - Default Value
+   * - `avg_speed`_
+     - 550 m/s
+   * - `max_time_of_flight`_
+     - 20 seconds
+   * - `max_off_boresight_angle`_
+     - 120 degrees
+   * - `min_time_of_flight`_
+     - 1.5 seconds
+   * - `nominal_pk`_
+     - 0.95
+   * - `head_on_pk_reduction`_
+     - 0.0
+   * - `broadside_pk_reduction`_
+     - 0.2
+
+Red Medium Range Missiles
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :align: left
+   :header-rows: 1
+
+   * - Parameter Name
+     - Default Value
+   * - `avg_speed`_
+     - 550 m/s
+   * - `max_time_of_flight`_
+     - 100 seconds
+   * - `max_off_boresight_angle`_
+     - 100 degrees
+   * - `min_time_of_flight`_
+     - 4.5 seconds
+   * - `nominal_pk`_
+     - 0.75
+   * - `head_on_pk_reduction`_
+     - 0.3
+   * - `broadside_pk_reduction`_
+     - 0.3
+
+Red Short Range Missiles
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :align: left
+   :header-rows: 1
+
+   * - Parameter Name
+     - Default Value
+   * - `avg_speed`_
+     - 550 m/s
+   * - `max_time_of_flight`_
+     - 18 seconds
+   * - `max_off_boresight_angle`_
+     - 132 degrees
+   * - `min_time_of_flight`_
+     - 1.5 seconds
+   * - `nominal_pk`_
+     - 0.90
+   * - `head_on_pk_reduction`_
+     - 0.3
+   * - `broadside_pk_reduction`_
+     - 0.2

@@ -1,0 +1,488 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_LINK16_COMPUTER
+===================
+
+.. contents::
+   :local:
+
+.. model:: processor WSF_LINK16_COMPUTER
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_LINK16_COMPUTER`
+      ... :command:`processor` Commands ...
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`External_Link_Commands` ...
+
+      c2_ ...
+      callsign_ ...
+      comm_ ...
+      ignore_surveillance_ ...
+      output_dis_ ...
+      output_wsf_ ...
+
+      decimal_track_number_ ...
+      track_number_ ...
+      octal_track_number_ ...
+
+      iff_color_mapping_ ...
+      end_iff_color_mapping
+
+      # `Message Processors`_
+
+      message_processor_ <name> <type>
+         ...
+      end_message_processor
+      edit message_processor_ <name>
+         ...
+      end_message_processor
+      delete <name>
+
+   end_processor
+
+Overview
+--------
+
+:model:`WSF_LINK16_COMPUTER` is a processor that handles sending and receiving Link16 - Tadil-J messages.  Tadil-J messages can be sent to another platform in the simulation, or to another application over DIS.  By default, this processor only receives messages.  To send messages, message processors must be added to the :model:`WSF_LINK16_COMPUTER`.
+
+To be functional, the Link-16 Computer must be used in conjunction with a :model:`WSF_JTIDS_TERMINAL`
+
+Commands
+--------
+
+.. command:: c2 <boolean-value>
+
+   Specifies if the platform is a C-2 platform.  This is used to populate some Tadil-J fields.
+
+.. command:: callsign <callsign>
+
+   Specifies the platform's callsign used to populate some Tadil-J fields.
+
+.. command:: comm <comm-name>
+
+   Specifies the name of the :model:`WSF_JTIDS_TERMINAL` which is used to communicate.
+
+.. command:: ignore_surveillance <boolean-value>
+
+   Specifies if this processor should process J3 series messages as a :class:`WsfTrack`, populating the track manager.
+
+   **Default:** true
+
+.. command:: output_dis <boolean-value>
+
+   Determines if the messages sent using this processor are also sent over DIS.
+
+   **Default:** no
+
+.. command:: output_wsf <boolean-value>
+
+   Determines if the messages sent using this processor are sent to other WSF platforms.  Setting this to **no** will reduce overhead of Link-16 if DIS output is the primary objective.
+
+   **Default:** yes
+
+.. command:: decimal_track_number <integer-value>
+
+   Specifies the *Source Track Number* for messages sent using this processor.  Must be in the range (0, 32767).
+
+.. command:: track_number <octal-integer-value>
+.. command:: octal_track_number <octal-integer-value>
+
+   Specifies the *Source Track Number* for messages sent using this processor using an octal-integer.  Must be in the range (00, 077777).
+
+.. command:: iff_color_mapping ... end_iff_color_mapping
+
+   Defines the mapping of identity types to colors. The identity type must one of the following: *pending, unknown, assumed_friend, friend, neutral, suspect, hostile, undefined*.
+
+.. parsed-literal::
+
+   iff_mapping
+      hostile red
+   end_iff_mapping
+
+.. command:: message_processor <name> <type>
+
+   Adds a message processor to the Link-16 computer.
+
+      **<type>**
+         One of PPLI_, SURVEILLANCE_, WEAPONS_COORDINATION_, NETWORK_ENABLED_WEAPON_, SYSTEM_STATUS_, SCRIPTED_
+
+Message Processors
+------------------
+
+To configure the Link-16 computer to send messages, message processors must be added.  Message processors are like a WSF :command:`processor` which is contained inside the Link-16 computer.  Variants of the message_processor_ command can be used to add, remove, or modify message processors.  As mentioned before, a :model:`WSF_JTIDS_TERMINAL` must be set up on the platform to use the Link-16 computer.  For each message processor, a distinct :ref:`WSF_JTIDS_TERMINAL.Slot_Group_Commands` must be configured.
+
+.. parsed-literal::
+
+   message_processor ...
+     command_chain_ ...
+     send_interval_ ...
+
+     script void on_send_X_Y(WsfTadilJX_YI aMessage)
+        ... script commands ...
+     end_script
+
+     # Slot Parameters
+
+     network_ ...
+     npg_ ...
+     slot_number_ ...
+
+     msec_ ...
+     tsec_ ...
+
+   end_message_processor
+
+.. command:: command_chain <command-chain-name>
+
+   **When using a JTIDS Terminal**
+      This command specifies which command chain is used to receive and send messages for this message processor.  Each message processor must specify a command chain.  In turn, each command chain must be linked to a distinct :ref:`WSF_JTIDS_TERMINAL.Slot_Group_Commands` on the :model:`WSF_JTIDS_TERMINAL`.  This defines a mapping between the slot group and the messages which are sent and received over the slot group.  This command is required for each message processor.
+
+   **When using a different comm device**
+      This command specifies the command chain used to receive and send messages.  This command may be safely ignored if DIS output is the primary concern.
+
+.. command:: send_interval <time-value>
+
+.. command:: send_interval rrn  <rrn-number>
+
+   This command specifies the rate at which to send messages.  If a *<time-value>* is specified, it is the interval between each sent message.  *rrn <rrn-number>* can be used to set the send interval based on a standard recurrence rate number.
+
+   .. table::
+      :align: left
+
+      +-----+---------------+
+      | rrn | interval      |
+      +=====+===============+
+      |  1  | 384 seconds   |
+      +-----+---------------+
+      |  2  | 192 seconds   |
+      +-----+---------------+
+      |  3  | 96 seconds    |
+      +-----+---------------+
+      |  4  | 48 seconds    |
+      +-----+---------------+
+      |  5  | 24 seconds    |
+      +-----+---------------+
+      |  6  | 12 seconds    |
+      +-----+---------------+
+      |  7  | 6 seconds     |
+      +-----+---------------+
+      |  8  | 3 seconds     |
+      +-----+---------------+
+      |  9  | 1.5 seconds   |
+      +-----+---------------+
+      | 10  | 0.75 seconds  |
+      +-----+---------------+
+      | 11  | 0.375 seconds |
+      +-----+---------------+
+
+.. command:: script void on_send_X_Y(WsfTadilJX_YI aMessage) ... end_script
+
+   If a script in this format is defined, it will be executed whenever this message processor sends a message.  The primary use for this is to customize the message before it is sent by changing field values.  This example sets the 'flight-leader' field in each sent message::
+
+      script void on_send_2_2(WsfTadilJ2_2I aMessage)
+        aMessage.IsFlightLeader(true);
+      end_script
+
+.. important:: The following Slot Parameter commands: network_, npg_, slot_number_, msec_, and tsec_ are only used to fill header information in outgoing JTIDS DIS PDU's when *NOT* using a :model:`WSF_JTIDS_TERMINAL`.
+
+.. command:: network <integer-value>
+
+   The JTIDS network number in the range [0, 127].
+
+   **Default:** 0
+
+   .. note::
+
+      This value is only referenced when *NOT* using a WSF_JTIDS_TERMINAL, and is only used to fill header information in outgoing JTIDS PDU's.
+
+.. command:: npg <integer-value>
+
+   The network participation in the range [0, 512].
+
+   **Default:** 0
+
+   .. note::
+
+      This value is only referenced when *NOT* using a WSF_JTIDS_TERMINAL, and is only used to fill header information in outgoing JTIDS PDU's.
+
+.. command:: slot_number <integer-value>
+
+   The slot number packed into the JTIDS header.  This value may usually be ignored.
+
+   **Default:** 0
+
+   .. note::
+
+      This value is only referenced when *NOT* using a WSF_JTIDS_TERMINAL, and is only used to fill header
+      information in outgoing JTIDS PDU's.
+
+.. command:: msec <integer-value>
+
+   The JTIDS MSEC value in the range [0, 127].
+
+   **Default:** 0
+
+   .. note::
+
+      This value is only referenced when *NOT* using a WSF_JTIDS_TERMINAL, and is only used to fill header
+      information in outgoing JTIDS PDU's.
+
+.. command:: tsec <integer-value>
+
+   The JTIDS TSEC value in the range [0, 127].
+
+   **Default:** 0
+
+   .. note::
+
+      This value is only referenced when *NOT* using a WSF_JTIDS_TERMINAL, and is only used to fill header
+      information in outgoing JTIDS PDU's.
+
+PPLI
+""""
+
+.. begin:: PPLI
+
+.. parsed-literal::
+
+   message_processor <name> PPLI
+     ... `Message Processors`_ ...
+
+     environment_ ...
+     land_or_point_ ...
+   end_message_processor
+
+The Precise Participant Location and Identification (PPLI) message processor type adds the capability to send PPLI messages for the local platform.
+
+.. command:: environment  [air | surface | subsurface | land]
+
+   Used to explicitly specify what type of PPLI to send. If unspecified, the platform's mover will be used to determine the message type to send.
+
+   .. table::
+      :align: left
+
+      +------------+------------------------------+-------------------------------+
+      | Category   | Message type to send         | Default value when using      |
+      +============+==============================+===============================+
+      | air        | J2.2 - :ref:`WsfTadilJ2_2I`  | :model:`WSF_AIR_MOVER`        |
+      +------------+------------------------------+-------------------------------+
+      | surface    | J2.3 - :ref:`WsfTadilJ2_3I`  | :model:`WSF_SURFACE_MOVER`    |
+      +------------+------------------------------+-------------------------------+
+      | subsurface | J2.4 - :ref:`WsfTadilJ2_4I`  | :model:`WSF_SUBSURFACE_MOVER` |
+      +------------+------------------------------+-------------------------------+
+      | land       | J2.5 - :ref:`WsfTadilJ2_5I`  | :model:`WSF_GROUND_MOVER`     |
+      +------------+------------------------------+-------------------------------+
+
+.. command:: land_or_point  [point | land]
+
+   Used to explicitly specify what type of land PPLI to send when the environment_ command was not set and the platform's mover is being used to determine the message type to send.
+
+   .. table::
+      :align: left
+
+      +------------+------------------------------+-------------------------------+
+      | Category   | Message type to send         | Default value when using      |
+      +============+==============================+===============================+
+      | point      | J2.5 - :ref:`WsfTadilJ2_5I`  | :model:`WSF_GROUND_MOVER`     |
+      +------------+------------------------------+-------------------------------+
+      | land       | J2.6 - :ref:`WsfTadilJ2_6I`  |                               |
+      +------------+------------------------------+-------------------------------+
+
+.. end::
+
+SURVEILLANCE
+""""""""""""
+
+.. begin:: SURVEILLANCE
+
+.. parsed-literal::
+
+   message_processor *<name>* SURVEILLANCE
+     ... `Message Processors`_ ...
+
+     environment_ ...
+     ignore_reporting_responsibility_ ...
+     maximum_send_interval_ ...
+     send_non_sensor_reports_ ...
+     suppress_dead_targets_ ...
+     suppress_domain_ ..
+     suppress_sensor_ ...
+     track_number_range_ ...
+   end_message_processor
+
+The SURVEILLANCE message processor adds the capability to send J.3 series messages for surveillance tracks.  The specific message type is determined by the spatial domain of the track.
+
+.. note::
+   send_interval_ defaults to .25 second for this message processor.
+
+.. command:: environment [air | surface | subsurface | land | space]
+
+   Specifies the spatial domain to use when selecting message type to send for a track.  This value is only used when the spatial domain of a track is unknown.  See :ref:`sensor_track_information_reporting_commands` in :command:`sensor` for more information on spatial domains.
+
+.. table::
+   :align: left
+
+   +----------------+-----------------------------+
+   | Spatial domain | Message type to send        |
+   +================+=============================+
+   | air            | J3.2 - :ref:`WsfTadilJ3_2I` |
+   +----------------+-----------------------------+
+   | surface        | J3.3 - :ref:`WsfTadilJ3_3I` |
+   +----------------+-----------------------------+
+   | subsurface     | J3.4 - :ref:`WsfTadilJ3_4I` |
+   +----------------+-----------------------------+
+   | land           | J3.5 - :ref:`WsfTadilJ3_5I` |
+   +----------------+-----------------------------+
+   | space          | J3.6 - :ref:`WsfTadilJ3_6I` |
+   +----------------+-----------------------------+
+
+.. command:: ignore_reporting_responsibility <boolean-value>
+
+   If true, reporting responsibility rules for tracks are ignored.
+
+   **Default:** false
+
+.. command:: maximum_send_interval <time-value>
+
+   Specifies the interval to queue unmodified tracks to send.  Modified tracks are queued immediately.
+
+   .. note::
+      The actual send rate is limited by **send_interval**
+
+.. command:: send_non_sensor_reports <boolean-value>
+
+   Specifies whether non-sensor (fused) tracks or raw sensor tracks in the master track list should be sent.
+
+   **Default** true ("raw", sensor tracks will NOT be reported)
+
+.. command:: suppress_dead_targets <boolean-value>
+
+   If true, suppresses the sending of J3 messages for platforms that are fully damaged or no longer in the simulation.
+
+   **Default:** true
+
+.. command:: suppress_domain [air | surface | subsurface | land | space]
+
+   If specified, tracks from the given domain will not be sent over Link-16.
+
+.. command:: suppress_sensor <string-value>
+
+   If specified, reports from the named sensor will not be sent over Link-16.
+
+   .. note::
+         This input is only valid if send_non_sensor_reports_ is *false*.
+
+.. command:: track_number_range <first-track-number> <last-track-number>
+
+   Specifies the range of track numbers used when sending surveillance tracks.  Track numbers are formatted *XXOOO* where X is 0-7 or A-Z and O is 0-7.
+
+.. end::
+
+WEAPONS_COORDINATION
+""""""""""""""""""""
+
+The WEAPONS_COORDINATION message processor is for use with the J9 interface.
+
+.. parsed-literal::
+
+   message_processor *<name>* WEAPONS_COORDINATION
+     ... `Message Processors`_ ...
+   end_message_processor
+
+NETWORK_ENABLED_WEAPON
+""""""""""""""""""""""
+
+The NETWORK_ENABLED_WEAPON message processor is for use with the J11 interface.  J11 Messages are sent through one of these parts if one exists, allowing the user to configure the slot parameters.
+
+.. parsed-literal::
+
+   message_processor *<name>* NETWORK_ENABLED_WEAPON
+     ... `Message Processors`_ ...
+   end_message_processor
+
+SYSTEM_STATUS
+"""""""""""""
+
+.. begin:: SYSTEM_STATUS
+
+.. parsed-literal::
+
+   message_processor *<name>* SYSTEM_STATUS
+     ... `Message Processors`_ ...
+
+     report_weapon_quantity_1_ ...
+     report_weapon_quantity_2_ ...
+     report_weapon_quantity_3_ ...
+   end_message_processor
+
+The SYSTEM_STATUS message processor type adds the capability to send the J.13 series messages.
+
+.. table::
+   :align: left
+
+   +------------+-------------------------------+-------------------------------+
+   | Category   | Message type to send          | Default value when using      |
+   +============+===============================+===============================+
+   | air        | J13.2 - :ref:`WsfTadilJ13_2I` | :model:`WSF_AIR_MOVER`        |
+   +------------+-------------------------------+-------------------------------+
+   | surface    | J13.3 - :ref:`WsfTadilJ13_3I` | :model:`WSF_SURFACE_MOVER`    |
+   +------------+-------------------------------+-------------------------------+
+   | subsurface | J13.4 - :ref:`WsfTadilJ13_4I` | :model:`WSF_SUBSURFACE_MOVER` |
+   +------------+-------------------------------+-------------------------------+
+   | land       | J13.5 - :ref:`WsfTadilJ13_5I` | :model:`WSF_GROUND_MOVER`     |
+   +------------+-------------------------------+-------------------------------+
+
+.. command :: report_weapon_quantity_1 <weapon-name> <integer-value>
+.. command :: report_weapon_quantity_2 <weapon-name> <integer-value>
+.. command :: report_weapon_quantity_3 <weapon-name> <integer-value>
+
+   These commands are used to set the number of stores and the store type fields in the C2 word of the J13.2 message. The <weapon-name> must match a weapon on the platform in order to find the current quantity. The <integer-value> represents the store type.
+
+.. end::
+
+SCRIPTED
+""""""""
+
+The SCRIPTED message processor does nothing by default, but provides a way to process Tadil-J messages.  Messages can be sent via script by this message processor as well.
+
+.. parsed-literal::
+
+   message_processor <name> SURVEILLANCE
+     ... `Message Processors`_ ...
+     script void on_message_X_Y(WsfTadilJX_YI aMessage)
+        ... script commands ...
+     end_script
+   end_message_processor
+
+.. command:: script void on_message_X_Y(WsfTadilJX_YI aMessage) ... end_script
+
+   Defines a script which is executed whenever a specific message type is received.  X and Y are replaced with the Tadil-J message numbers to be processed.  This example would print all received air-PPLI messages, and send out a PPLI message.
+
+   .. parsed-literal::
+
+    script void on_message_2_2(WsfTadilJ2_2I aMessage)
+       aMessage.Print();
+       WsfTadilJ2_2I msg = WsfTadilJ2_2I();
+       msg.Altitude(PLATFORM.Altitude());
+       WsfTadilJ2_2E1 ext1 = msg.AddExtension1();
+       ext1.Latitude(PLATFORM.Latitude());
+       ext1.Longitude(PLATFORM.Longitude());
+       SendJMessage(msg);
+    end_script
+
+**See Also**
+
+* :ref:`WsfTadilJ`
+* :model:`WSF_JTIDS_TERMINAL`
+
+.. NonExportable

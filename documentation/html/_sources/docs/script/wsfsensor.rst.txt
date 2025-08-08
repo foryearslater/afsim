@@ -1,0 +1,266 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSensor
+---------
+
+.. class:: WsfSensor inherits WsfArticulatedPart
+
+Static Methods
+==============
+
+.. method:: static bool IsA_TypeOf(string aDerivedType, string aBaseType)
+
+   Returns true if the sensor type specified by **aDerivedType** inherits from the sensor type specified by **aBaseType** (compare to :method:`WsfObject.IsA_TypeOf(aBaseType) <WsfObject.IsA_TypeOf>`, which determines if a specific object inherits from **aBaseType**).
+
+   This method can be used when one only knows the type of the sensor (as a string) and does not have a reference to the actual sensor.
+
+Methods
+=======
+
+.. method:: bool TurnOff()
+
+   Turns the sensor off and returns true if successful.
+
+.. method:: bool TurnOn()
+
+   Turns the sensor on and returns true if successful.
+
+.. method:: int ModeCount()
+
+   Returns the number of modes.
+
+.. method:: int LaserCode()
+
+   Returns the value of Laser Code this sensor will track or designate.  (This value will remain ignored by many sensor
+   types.)
+
+.. method:: void SetLaserCode(int aValue)
+
+   Sets the value of Laser Code this sensor will track or designate.  (This value will remain ignored by many sensor
+   types.)
+
+.. method:: string ModeName(int aModeIndex)
+
+   Returns the name of the mode located at the provided index.
+
+.. method:: string CurrentMode()
+
+   Returns the name of the current mode.
+
+   .. note::
+      This method is not valid for sensors that support simultaneous operation of multiple modes as defined by the :command:`sensor.selection_mode` command in the sensor.Calling this method on such a sensor will return the string "<multi_select>".
+
+.. method:: void SelectMode(string aMode)
+
+   Selects the specified mode and makes it the current mode.
+
+.. method:: void DeselectMode(string aMode)
+
+   Deselects the specified mode iff the sensor is a multiple_select sensor with multiple modes currently selected.
+
+   .. note::
+
+      This method is and does not operate (i.e. is not valid) for single select mode sensors or on a multi-select sensor with only one mode selected.
+
+.. method:: int BeamCount()
+
+   Returns the number of beams defined for the current sensor mode.
+
+   .. note::
+      If the sensor does not support beams, this method will return 0.
+
+.. method:: int BeamCount(int aModeIndex)
+
+   Returns the number of beams defined the mode of the given index.
+
+   .. note::
+      If the sensor does not support beams or the mode index is out-of-bounds, this method will return 0.
+
+.. method:: int BeamCount(string aMode)
+
+   Returns the number of beams defined the mode of the given name.
+
+   .. note::
+
+      If the sensor does not support beams or the mode of the given name is not defined, this method will return 0.
+
+.. method:: double FrameTime()
+
+   Return the frame time of the currently selected sensor mode.
+
+.. method:: WsfFieldOfView FOV()
+
+   Return the :class:`WsfFieldOfView` associated with the sensor's first defined receiver antenna for the current sensor mode.
+   
+   .. note::   
+      If no field of view exists, this method will abort.
+
+.. method:: WsfFieldOfView FOV(int aIndex)
+
+   Return the :class:`WsfFieldOfView` associated with the receiver's antenna on the sensor for the specified receiver index on the currently selected sensor mode.
+
+   .. note::   
+      If no field of view exists for the specified receiver, this method will abort.
+
+.. method:: WsfFieldOfView FOV(int aModeIndex, int aIndex)
+
+   Return the :class:`WsfFieldOfView` associated with the receiver's antenna on the sensor for the specified receiver index and sensor mode.
+
+   .. note::   
+      If no field of view exists for the specified mode and receiver, this method will abort.
+
+.. method:: double FOV_MinimumAzimuth()
+.. method:: double FOV_MaximumAzimuth()
+.. method:: double FOV_MinimumElevation()
+.. method:: double FOV_MaximumElevation()
+
+   Returns the requested value from the definition of 'field of view' for the current mode as defined by :command:`_.antenna_commands.azimuth_field_of_view` and :command:`_.antenna_commands.elevation_field_of_view`.
+
+   .. note::
+      For multi-beam radars, this value will represent the largest extent from all beams.
+
+   .. note::
+      These methods are only valid when using the default :ref:`rectangular field of view<field_of_view_commands.rectangular>`; otherwise, utilize :method:`WsfSensor.FOV`.
+      
+.. method:: double FOV_MinimumRange()
+.. method:: double FOV_MaximumRange()
+
+   Returns the requested value from the definition of :command:`_.antenna_commands.minimum_range` and :command:`_.antenna_commands.maximum_range`.
+
+   .. note::
+      For multi-beam radars, this value will represent the largest extent from all beams.
+   
+.. method:: void SetFOV(WsfFieldOfView aFOV)
+
+   Sets the field of view on all the sensor's active receivers.
+
+.. method:: void SetFOV(WsfFieldOfView aFOV, int aReceiverNumber)
+
+   Sets the field of view on the specified receiver.
+
+   .. note::
+      The receiver upon which the field of view is set is accessed by the one parameter :method:`WsfSensor.Rcvr` method.
+
+.. method:: void SetFOV(WsfFieldOfView aFOV, int aModeNumber, int aReceiverNumber)
+
+   Sets the field of view on the specified receiver with the given mode number.
+   
+   .. note::
+      The receiver upon which the field of view is set is accessed by the two parameter :method:`WsfSensor.Rcvr` method.
+
+.. method:: void SetFOV_Azimuth(double aMinimumAzimuth, double aMaximumAzimuth)
+.. method:: void SetFOV_Elevation(double aMinimumElevation, double aMaximumElevation)
+
+   Sets the azimuth or elevation field of view for the sensor's active receivers.  If a sensor has more than one active receiver, these methods will modify each one.
+
+   .. note::
+      These methods are only valid when the active receivers use the default :ref:`rectangular field of view<field_of_view_commands.rectangular>`; otherwise, utilize :method:`WsfSensor.SetFOV`.
+
+.. method:: void SetFOV_Range(double aMinimumRange, double aMaximumRange)
+
+   Sets range limits associated with the field of view such that targets are not detected outside those limits.  If a sensor has more than one active receiver, this method will modify each one.
+   
+   .. note:: Calling this method has the same effect as providing the antenna :command:`_.antenna_commands.minimum_range` and :command:`_.antenna_commands.maximum_range` commands.
+
+
+.. method:: bool CanScanInAzimuth()
+.. method:: bool CanScanInElevation()
+
+   Returns true if the current mode can scan in the requested direction, as defined by the :command:`_.antenna_commands.scan_mode` command.
+
+   .. note::
+      For multi-beam radars, the return value will be true if any beam can scan in the requested direction.
+
+.. method:: double ScanMinimumAzimuth()
+.. method:: double ScanMaximumAzimuth()
+.. method:: double ScanMinimumElevation()
+.. method:: double ScanMaximumElevation()
+
+   Returns the requested value from the definition of the 'scan volume' for the current mode as defined by :command:`_.antenna_commands.azimuth_scan_limits` and :command:`_.antenna_commands.elevation_scan_limits`.
+
+   .. note::
+      The return value will be zero if the :command:`_.antenna_commands.scan_mode` do not indicate that scanning is allowed in the requested direction.
+
+   .. note::
+      For multibeam radars, this value will represent the largest extent from all beams.
+
+.. method:: bool WithinFieldOfView(WsfGeoPoint aPoint)
+
+   Returns true if the specified point is within the range and field of view limits of the current mode of the sensor. If the sensor is cued, the range and field of view are with respect to the cue.
+
+.. method:: int ActiveTrackCount()
+
+   Returns the current number of objects the sensor is tracking.
+
+.. method:: int MaximumTrackCount()
+
+   Returns the maximum number of objects the sensor can track.
+
+.. method:: double TrackQuality()
+            double TrackQuality(string aMode)
+            double TrackQuality(int aModeIndex)
+
+   Returns the track quality associated with a sensor mode. The first form returns the quality for the current sensor mode, while the remaining two return the quality for the mode corresponding to the specified name or index. 
+   
+   .. note::
+      These methods return -1.0 when the mode does not exist, and 0.5 if the mode exists but the track quality was not otherwise defined.
+
+.. method:: int MaximumRequestCount(string aMode)
+            int MaximumRequestCount()
+
+   Returns the maximum number of track requests. The first form returns the count for the specified mode while the second form returns the sum of the counts for all modes.
+
+.. method:: int ActiveRequestCount(string aMode)
+            int ActiveRequestCount()
+
+   Returns the current number of active track requests. The first form returns the count for the specified mode while the second form returns the sum of the counts for all modes.
+
+.. method:: bool HaveRequestFor(WsfTrackId aTrackId)
+
+   Returns 'true' if a StartTracking request is active for the specified track ID.
+
+.. method:: bool StartTracking(WsfTrack aTrack, string aMode)
+
+   Starts (or continues) tracking the given track using the specified sensor mode.  Returns true if successful.
+
+.. method:: bool StopTracking(WsfTrackId aTrackId)
+
+   Stops tracking the track with the given track id.  Returns true if successful.
+
+.. method:: WsfEM_Xmtr Xmtr(int aIndex)
+            WsfEM_Xmtr Xmtr(int aModeIndex, int aIndex)
+
+   Returns the transmitter object on the sensor at the specified index or mode index and index if supplied.
+
+   .. note::
+      Check the returned transmitter for validity before using.
+
+.. method:: int XmtrCount()
+            int XmtrCount(int aModeIndex)
+
+   Returns the transmitter count on the sensor for all modes or at the mode index if supplied.
+
+.. method:: WsfEM_Rcvr Rcvr(int aIndex)
+            WsfEM_Rcvr Rcvr(int aModeIndex, int aIndex)
+
+   Returns the receiver object on the sensor at the specified index or mode index and index if supplied.
+
+   .. note::
+      Check the returned receiver for validity before using.
+
+.. method:: int RcvrCount()
+            int RcvrCount(int aModeIndex)
+
+   Returns the receiver count on the sensor for all modes or at the mode index if supplied.
+
+
+.. include:: _wsfsensor.wsf_mil.txt

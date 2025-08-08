@@ -1,0 +1,441 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Simulation_Control_Commands:
+
+Simulation Control Commands
+---------------------------
+
+.. note::
+
+   For **Monte Carlo** run commands, refer to :ref:`Monte_Carlo_Iteration`.
+
+.. parsed-literal::
+
+    clock_rate_ ...
+    :command:`dis_interface` ... **end_dis_interface**
+    delta_universal_time_ ...
+    delta_atomic_time_ ...
+    end_time_ ...
+    enumerate_ ...
+    frame_rate_ ...
+    frame_time_ ...
+    minimum_mover_timestep_ ...
+    on_platform_injection_ ...
+    platform_availability_
+    quantitative_track_quality_
+    random_seed_ ...
+    random_seeds_ ... **end_random_seeds**
+    random_seed_time_
+    randomize_radar_frequencies_
+    realtime_
+    simulation_name_ ...
+    start_date_ ...
+    start_time_ ...
+    start_time_now_
+    start_epoch_ ...
+    timing_method_ ...
+    use_constant_required_pd_ ...
+    use_default_radar_frequencies_ ...
+
+    // `Multi-Threading Commands`_
+    multi_thread_
+    multi_threading_ ...
+    number_of_threads_ ...
+    multi_thread_update_interval_ ...
+    multi_thread_update_rate_ ...
+    platform_update_multiplier_ ...
+    sensor_update_multiplier_ ...
+    sensor_update_break_time_ ...
+    process_priority_ ...
+
+
+.. command:: clock_rate <time-value>
+
+   Specify the number of simulation seconds for each second of wall clock time for a `real-time <realtime>`_ simulation.
+
+   **Default:** 1.0 seconds (1 simulation second for each wall clock second.)
+
+.. command:: delta_universal_time <time-value>
+
+   Specify the difference between universal time (UT1, defined by the earth's rotation), and Coordinated Universal Time
+   (UTC, defined with a fixed offset to atomic clocks).
+
+   **Default:** 0.0 second
+
+   .. note:: By convention, the absolute value of delta_universal_time_ should not exceed 0.9 seconds.
+
+.. command:: delta_atomic_time <positive-integer>
+
+   Specify the fixed offset in integer seconds between atomic time (TAI) and Coordinated Universal Time (UTC).
+   This is equivalent to the cumulative number of leap seconds inserted into the calendar until the start_epoch_.
+
+   **Default:** 32
+
+.. command:: end_time <time-value>
+
+   Specify the end time of the simulation.
+
+   **Default:** 1 minute
+
+.. command:: enumerate <list-name> to [ <filename> | STDOUT ]
+
+   This command 'enumerates' (or lists) the registered type names of the specified list to the indicated file.
+   *<list-name>* must be one of **platform_types**, **sensor_types**, **processor_types**,
+   **comm_types** or **dictionary**. The format of the resulting file is a header line identifying the list followed by
+   one line for each type where the line contains a unique number that represents the string followed by the actual
+   string, enclosed in single quotes.
+
+   This is mostly useful for interfacing with other simulations that may need to know the names of the various types of
+   objects and perhaps the internal numeric value that is equivalent to the string.
+
+   .. note::
+
+      In order to be effective, these commands should typically occur as the last commands in the input
+      stream.
+
+.. command:: frame_rate <frequency-value>
+
+   Specify the frame rate for the frame-stepped simulation executive. Either this command or frame_time_ can be used
+   to define the length of time allocated for each frame.
+
+   .. note::
+     This command is only valid when used in conjunction with frame-stepped simulations (e.g., Using
+     mission -rt).  Use of this command with event-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 4 hz
+
+.. command:: frame_time <time-value>
+
+   Specify the frame time for the frame-stepped simulation executive.  Either this command or frame_rate_ can be
+   used to define the length of time allocated for each frame.
+
+   .. note::
+      This command is only valid when used in conjunction with frame-stepped simulations (e.g., Using
+      mission -rt).  Use of this command with event-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 250 ms
+
+.. command:: minimum_mover_timestep <time-value>
+
+   This is applicable only for event-stepped simulations. The value specifies the minimum amount of time that must elapse
+   between two successive position updates for a given platform. During the course of a simulation, requests are made to
+   platforms to update their position to the current simulation time. A position update for a given platform will be
+   ignored if the elapsed time since the last position update is less than the value specified by this command.
+
+   A value greater than zero represents a compromise between accuracy and computational efficiency. The default value of
+   0.050 seconds for real-time simulations is representative of the typical 20 Hertz update rate found in many real-time
+   simulations.
+
+   **Default:** 0 seconds for non-real-time simulations and 0.050 seconds (20 Hz) for real-time simulations.
+
+.. command:: on_platform_injection (\ :class:`WsfPlatform` aPlatform) ... end_script
+
+   Defines a script allowing the user to prevent or delay the injection of a platform.  This script is executed prior to
+   adding any platform to the simulation.  **true** should be returned to continue adding the platform normally.
+   **false** should be returned to prevent the platform from being injected.  :method:`WsfPlatform.SetCreationTime` may be
+   used in this script to delay the creation of the platform.
+
+.. command:: platform_availability
+
+   .. parsed-literal::
+
+    platform_availability
+
+       // Probabilistic constraints
+
+       name *<platform-name>* availability *<probability-of-being-available>*
+       type *<platform-type>* availability *<probability-of-being-available>*
+       category *<category-name>* availability *<probability-of-being-available>*
+       default availability *<probability-of-being-available>*
+
+       // Geographic constraints
+
+       exclusion_zone *<zone-name>*
+       inclusion_zone *<zone-name>*
+    end_platform_availability
+
+   This command is used to specify the availability of platforms when added during simulation initialization (i.e., it
+   does not apply to platforms added after simulation initialization). One can define probabilistic constraints based on
+   platform name or type or can define geographic constraints based on exclusion or inclusion within :command:`zones <zone>`.
+
+   Probabilistic constraints define the probability that a specifically named platform, all platforms of a specific type
+   or platforms that are members of selected categories are eligible to be added to the simulation.  A
+   *<probability-of-being-available>* of 0 indicates the platform will not be added to the simulation while a value of 1
+   indicates the platform will be eligible to be added to the simulation, subject to the geographic constraints described
+   below.  For intermediate values, a uniform random number in the range (0, 1) will be drawn. If the random number is
+   greater than the *<probability-of-being-available>*, the platform will not be added to the simulation.
+
+   The determination of the *<probability-of-being-available>* value for a given platform is determined using the
+   following rules. Once a value has been determined, all subsequent rules are skipped.
+
+   #. If the name of the platform matches any **name** entry, use the *<probability-of-being-available>* from that entry.
+   #. For each type in a platform's type-hierarchy (in newest-to-oldest order), if the type matches any **type** entry, use
+      the *<probability-of-being-available>* from that entry.
+   #. For each category of which the platform is a member (in first-to-last order), if the category matches any
+      **category** entry, use the *<probability-of-being-available>* from that entry.
+   #. Use the *<probability-of-being-available>* from the **Default:** entry if it has been defined.
+   #. Use the default value of 1.0.
+
+   Once a platform has been selected by the probabilistic constraints, geographic constraints are applied. Geographic
+   constraints are implemented using the **exclusion_zone** and **inclusion_zone** commands. If one or more
+   **exclusion_zone** commands are present, a platform will not be added to the simulation if its initial location is
+   within any of the specified zones. If one or more **inclusion_zone** commands are present, a platform will be added to
+   the simulation only if its initial location is within one of the specified zones. Note that if geographic constraints
+   are used, only one form or the other (exclusion or inclusion) can be used.
+
+   .. note::
+      Geographic constraints are not applied to space platforms.
+
+
+.. command:: quantitative_track_quality <boolean-value>
+
+   Specify whether track quality is to be computed based on quantitative simulation parameters, such as sensor measurement
+   errors and target behavior models.  If disabled, only the input :command:`sensor_mode.track_quality` information is
+   used, and for a given sensor's tracks, it generally does not change during the course of the simulation.
+
+   **Default:** *disabled*
+
+.. command:: random_seed <positive-integer>
+
+   Specify the random seed for the simulation. This command should typically be used when you want to run a single
+   iteration with a particular random seed.  For running multiple runs within a single execution of the program, consider
+   the use of the :command:`generate_random_seeds` command documented in :ref:`Monte_Carlo_Iteration`
+   or the random_seeds_ defined below.
+
+.. command:: random_seeds
+
+   .. parsed-literal::
+
+    random_seeds
+      *<random-seed-1>*
+      ...
+      *<random-seed-n>*
+    end_random_seeds
+
+   Specifies the random seeds for each run of :ref:`Monte_Carlo_Iteration` collection of runs. This command
+   implicitly defines :command:`initial_run_number` to be 1 and :command:`final_run_number`
+   to the number of seeds entered. The values of :command:`initial_run_number` and
+   :command:`final_run_number` may be subsequently redefined and will be limited by the number of
+   entries in the list. If an empty list is provided then only a single iteration will be run using the random seed
+   defined by random_seed_ (or the default random seed if not specified).
+
+.. command:: random_seed_time
+
+   Use the clock to set the random seed for this run.   This command should typically be used when you want to run a
+   single iteration where the seed is not determined beforehand.
+
+.. command:: randomize_radar_frequencies <boolean-value>
+
+   Forces the initial frequency to use at simulation startup to be chosen randomly for :model:`WSF_RADAR_SENSOR` sensor types
+   with :model:`alternate_frequency <WSF_RADAR_SENSOR>`,
+   :model:`frequency_channels <WSF_RADAR_SENSOR>` or :model:`frequency_list <WSF_RADAR_SENSOR>`
+   defined.
+
+   **Default:** false
+
+.. command:: realtime
+             non-realtime
+
+   Specify if the simulation is to run in real-time or non-real-time mode.
+
+   If **realtime** is selected, the simulation clock will advance in step with the real time (i.e., wall clock time).
+   clock_rate_ command can be used to specify the rate at which time the simulation clock moves relative to the wall
+   clock.
+
+   If **non-realtime** is selected, the simulation clock will advance as fast as possible using the time-advancement
+   scheme of the underlying simulation. For event-stepped simulations, time will advance when events are dispatched. For
+   frame-stepped simulations, time will advance upon frame completion.
+
+   **Default:** **non-realtime** for event-stepped simulations and **realtime** for frame-stepped simulations.
+
+.. command:: timing_method <method>
+
+   Set the underlying timing method used when running real time.
+   <method> may be **Default:**, **performance_counter**, **system_time**, or **tick_count**.
+
+   These correspond to an operating system call WSF uses to keep track of time.  These are currently silently ignored on
+   non-Windows operating systems.
+
+   On Windows, **Default:** is equivalent to **performance_counter**.
+
+.. command:: simulation_name <string>
+   
+   Specify a name to identify the simulation within Warlock and Mystic.
+
+.. command:: start_date <month> <day-of-month> <year>
+
+   Specify the date that corresponds to the start of the simulation clock.
+
+   .. note::
+      Either this command, along with start_time_ start_time_now_, or start_epoch_, should
+      be specified when using satellite objects.
+
+   .. note::
+      The month is expressed in a three-character format as follows:
+
+      jan feb mar apr may jun jul aug sep oct nov dec
+
+      **Default:** jun 1 2003
+
+.. command:: start_time <hh:mm:ss>
+
+   Specify the time of day, referenced to UT midnight and using a 24-hour clock, that corresponds to the start of the
+   simulation clock.
+
+   .. note::
+      Either this command, along with start_date_, or start_epoch_, should be specified when
+      using satellite objects
+
+   **Default:** 12:00:00
+
+.. command:: start_time_now
+
+   Specify that the simulation start time will be synchronized to the system clock time.
+
+   .. note::
+      This feature is useful primarily for real-time simulations.
+
+.. command:: start_epoch <epoch-value>
+
+   Specify the epoch that corresponds to the start of the simulation clock.
+
+   .. note::
+      Either this command, start_time_now_, or start_date_ and start_time_ should be
+      specified when using satellite objects.
+
+   **Default:** 2003152.5
+
+.. command:: use_constant_required_pd <boolean-value>
+
+   This command is applicable only to sensors which implement probabilistic detectors (e.g., the optional Marcum-Swerling
+   detection in :model:`WSF_RADAR_SENSOR`). For each detection attempt, the simulation will determine the required probability
+   of detection (required Pd) that is necessary to declare a successful detection. If the value of this command is
+   **false** (the default), the required Pd will be determined randomly. If the value is **true** then the required Pd
+   will be the value of the :command:`sensor_mode.required_pd` from the definition in the sensor mode (default of 0.5).
+
+   The command provides the ability to easily switch between probabilistic and non-probabilistic detection behavior.
+
+   **Default:** false
+
+.. command:: use_default_radar_frequencies <boolean-value>
+
+   Force the use of the :command:`_.transmitter.frequency` for :model:`WSF_RADAR_SENSOR` with
+   :model:`alternate_frequency <WSF_RADAR_SENSOR>`,
+   :model:`frequency_channels <WSF_RADAR_SENSOR>` or :model:`frequency_list <WSF_RADAR_SENSOR>`
+   defined instead of selecting from these lists.
+
+   **Default:** false
+
+Multi-Threading Commands
+========================
+
+This capability allows the user to enable multi-threading behavior in event-stepped or framed-stepped simulations.
+Currently, only mover and sensor updates take advantage of this capability.  The simulation uses a thread pool, sized
+based on user input, to perform updates on movers and sensors identified as thread safe.  Non thread-safe mover updates
+continue to be performed by the main thread.  This feature, used in conjunction with DIS interface and LOS manager
+interface multi-threading, can improve performance of large frame-step simulations.  For small simulations, the use of
+multi-threading will cause longer run (wall clock) times.
+
+.. note::
+
+   This capability is best used in simulations involving many sensor interactions that is
+   being run in with the realtime_ command/mode.
+
+.. command:: multi_thread
+
+   This is an alias for 'multi_threading_ on'.
+
+.. command:: multi_threading <boolean-value>
+
+   Specifies whether to use multi-threading capabilities or not in an event-stepped or framed-step simulation. See the
+   `Multi-Threading Commands`_ opening message in this section for more information on multi-threading capabilities.
+
+   **Default:** false
+
+.. command:: number_of_threads <positive-integer>
+
+   Specify the number of worker threads when multi-threading is enabled.
+
+   **Default:** 4
+
+.. command:: multi_thread_update_interval <time-value>
+
+   Specify the multi-threading update time for the event-stepped simulation executive. Either this command or
+   multi_thread_update_rate_ can be used to define the length of time allocated for each threading update cycle.
+   This time is multiplied by a base rate for the individual platform and sensor updates via the
+   platform_update_multiplier_ and sensor_update_multiplier_, respectively.
+
+   .. note::
+      This command is only valid when used in conjunction with event-stepped simulations.  Use of this
+      command with frame-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 1.0 seconds
+
+.. command:: multi_thread_update_rate <frequency-value>
+
+   Specify the multi-threading update rate for the event-stepped simulation executive. Either this command or
+   multi_thread_update_interval_ can be used to define the length of time allocated for each threading update cycle.
+   This time is divided by a base rate for the individual platform and sensor updates via the
+   platform_update_multiplier_ and sensor_update_multiplier_, respectively.
+
+   .. note::
+      This command is only valid when used in conjunction with event-stepped simulations. Use of this
+      command with frame-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 1.0 Hz
+
+.. command:: platform_update_multiplier <positive-integer>
+
+   Specify the platform update time multiplier in an event-stepped simulation executive that is multi-threaded. This
+   multiplier effectively increases the multi_thread_update_interval_ in which thread updates are performed on the
+   platforms by integer values.
+
+   .. note::
+      This command is only valid when used in conjunction with event-stepped simulations.  Use of this
+      command with frame-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 1
+
+.. command:: sensor_update_multiplier <positive-integer>
+
+   Specify the sensor update time multiplier in a event-stepped simulation executive that is multi-threaded. This
+   multiplier effectively increases the multi_thread_update_interval_ in which thread updates are performed on the
+   sensors by integer values.
+
+   .. note::
+      This command is only valid when used in conjunction with event-stepped simulations.  Use of this
+      command with frame-stepped simulations is invalid and will generate an input error.
+
+   **Default:** 1
+
+.. command:: sensor_update_break_time <time-value>
+
+   Specify the sensor thread update break time in a realtime_ executive that is multi-threaded. This time will
+   cause the sensor updates to end when the thread runtime is equal to or greater than this value.
+
+   .. note::
+      This command is only valid when used in conjunction with real-time simulations.
+
+   **Default:** 0.5 seconds
+
+.. command:: process_priority <string>
+
+   Specify the Windows OS process priority for realtime_ operation of simulation.
+
+   Valid Values { low | normal | above_normal | high | realtime }
+
+   .. warning::
+      Setting above normal may cause some modern processors to momentarily freeze or hang.
+
+   **Default:** normal
+
+.. include:: _simulation_control_commands.wsf_mil.txt

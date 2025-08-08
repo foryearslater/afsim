@@ -1,0 +1,1158 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SixDOF Pilot Manager and Control Inputs &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SixDOF Flight Control System Definition" href="six_dof_flight_control_system.html" />
+    <link rel="prev" title="SixDOF Aerodynamics Data" href="six_dof_aerodynamics_data.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_flight_control_system.html" title="SixDOF Flight Control System Definition"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_aerodynamics_data.html" title="SixDOF Aerodynamics Data"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sixdof-pilot-manager-and-control-inputs">
+<span id="sixdof-control-inputs-label"></span><h1>SixDOF Pilot Manager and Control Inputs<a class="headerlink" href="#sixdof-pilot-manager-and-control-inputs" title="Permalink to this headline">¶</a></h1>
+<p>Each SixDOF object may include one or more pilot objects (simple or augmented manual pilot, synthetic pilot) to provide inputs to the flight control system. A pilot manager may contain/control one or more pilot objects, although only one will be active at any point in time. The flight control system gets its input from the “active pilot”. The control inputs and configuration of pilot objects are defined through the <a class="reference internal" href="#pilot_manager">pilot_manager</a> block.</p>
+<dl class="command">
+<dt id="pilot_manager">
+pilot_manager … end_pilot_manager<a class="headerlink" href="#pilot_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The pilot_manager block defines control inputs, pilot objects, active pilot, and the common autopilot support file.</p>
+<blockquote>
+<div><pre class="literal-block">pilot_manager
+
+   // RB6-Only Control Inputs
+   <a class="reference internal" href="#control_inputs">control_inputs</a> ... end_control_inputs
+
+   // Pilot Objects (at least one pilot object should be defined)
+
+   // Only one manual pilot may be defined
+   <a class="reference internal" href="#manual_pilot_simple_controls">manual_pilot_simple_controls</a> ... end_manual_pilot_simple_controls
+   <a class="reference internal" href="#manual_pilot_augmented_controls">manual_pilot_augmented_controls</a> ... end_manual_pilot_augmented_controls
+   <a class="reference internal" href="#manual_pilot_augmented_stability">manual_pilot_augmented_stability</a> ... end_manual_pilot_augmented_stability
+
+   <a class="reference internal" href="#synthetic_pilot">synthetic_pilot</a> ... end_synthetic_pilot
+
+   // Set one of the pilot objects to serve as the active pilot
+   <a class="reference internal" href="#active_pilot">active_pilot</a> ...
+
+   // Provide an autopilot support file for all common controller (autopilot) objects
+   <a class="reference internal" href="#common_autopilot_support_file">common_autopilot_support_file</a> ...
+
+end_pilot_manager</pre>
+</div></blockquote>
+<section id="rb6-control-data">
+<h2>RB6 Control Data<a class="headerlink" href="#rb6-control-data" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="control_inputs">
+control_inputs … end_control_inputs<a class="headerlink" href="#control_inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The control_inputs block defines the named control inputs of the vehicle as well as matching control inputs with “standard controls”, which are used with control augmentation systems, autopilots, and guidance systems.</p>
+<blockquote>
+<div><pre class="literal-block">control_inputs
+
+   // List of control_names to define control inputs
+   <a class="reference internal" href="#control_name">control_name</a> ...
+   <a class="reference internal" href="#control_name">control_name</a> ...
+   ...
+   <a class="reference internal" href="#control_name">control_name</a> ...
+
+   <a class="reference internal" href="#std_stick_back">std_stick_back</a> ...
+   <a class="reference internal" href="#std_stick_right">std_stick_right</a> ...
+   <a class="reference internal" href="#std_rudder_right">std_rudder_right</a> ...
+   <a class="reference internal" href="#std_throttle_mil">std_throttle_mil</a> ...
+   <a class="reference internal" href="#std_throttle_ab">std_throttle_ab</a> ...
+   <a class="reference internal" href="#std_thrust_reverser">std_thrust_reverser</a> ...
+   <a class="reference internal" href="#std_thrust_vectoring_yaw">std_thrust_vectoring_yaw</a> ...
+   <a class="reference internal" href="#std_thrust_vectoring_pitch">std_thrust_vectoring_pitch</a> ...
+   <a class="reference internal" href="#std_thrust_vectoring_roll">std_thrust_vectoring_roll</a> ...
+   <a class="reference internal" href="#std_speed_brakes_out">std_speed_brakes_out</a> ...
+   <a class="reference internal" href="#std_spoilers_out">std_spoilers_out</a> ...
+   <a class="reference internal" href="#std_flaps_down">std_flaps_down</a> ...
+   <a class="reference internal" href="#std_landing_gear_down">std_landing_gear_down</a> ...
+   <a class="reference internal" href="#std_nose_wheel_steering">std_nose_wheel_steering</a> ...
+   <a class="reference internal" href="#std_nws_steering">std_nws_steering</a> ...
+   <a class="reference internal" href="#std_nws_enabled">std_nws_enabled</a> ...
+   <a class="reference internal" href="#std_wheel_brake_left">std_wheel_brake_left</a> ...
+   <a class="reference internal" href="#std_wheel_brake_right">std_wheel_brake_right</a> ...
+
+end_control_inputs</pre>
+</div></blockquote>
+<dl class="command">
+<dt id="control_name">
+control_name<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#control_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The primary purpose of the controls provider is to provide the multiple control_input feeds needed by the
+<a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a>. Each control input represents the positioning and movement of various controls
+in the cockpit or control signals within autopilots and guidance systems. Control inputs are defined by
+the <a class="reference internal" href="#control_name">control_name</a> command. The name must be unique within a given <a class="reference internal" href="p6dof_object_type.html#p6dof_object_type" title="p6dof_object_type"><span class="xref wsf wsf-command">p6dof_object_type</span></a>. The
+<a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a> will “connect” to control inputs via these control names. Typically, multiple
+<a class="reference internal" href="#control_name">control_name</a> commands will be defined for each <a class="reference internal" href="#pilot_manager">pilot_manager</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The key concept is that each <strong>control_input</strong> in <a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a> should be “connected” to a
+<strong>control_name</strong> in <a class="reference internal" href="p6dof_control_inputs.html#control_inputs" title="control_inputs"><span class="xref wsf wsf-command">control_inputs</span></a>.</p>
+<p>The names must match exactly and are case-sensitive.</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_stick_back">
+std_stick_back<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_stick_back" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard stick back command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_stick_right">
+std_stick_right<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_stick_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard stick right command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_rudder_right">
+std_rudder_right<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_rudder_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard rudder right to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_throttle_mil">
+std_throttle_mil<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_throttle_mil" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard throttle mil command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_throttle_ab">
+std_throttle_ab<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_throttle_ab" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard throttle ab command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_thrust_reverser">
+std_thrust_reverser<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_thrust_reverser" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard thrust reverser back command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_thrust_vectoring_yaw">
+std_thrust_vectoring_yaw<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_thrust_vectoring_yaw" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard thrust vectoring yaw command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_thrust_vectoring_pitch">
+std_thrust_vectoring_pitch<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_thrust_vectoring_pitch" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard thrust vectoring pitch command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_thrust_vectoring_roll">
+std_thrust_vectoring_roll<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_thrust_vectoring_roll" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard thrust vectoring roll command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_speed_brakes_out">
+std_speed_brakes_out<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_speed_brakes_out" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard speed brakes command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_spoilers_out">
+std_spoilers_out<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_spoilers_out" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard spoilers command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_flaps_down">
+std_flaps_down<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_flaps_down" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard flaps command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_landing_gear_down">
+std_landing_gear_down<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_landing_gear_down" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard landing gear command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_nose_wheel_steering">
+std_nose_wheel_steering<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_nose_wheel_steering" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard low-gain nose wheel steering back command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_nws_steering">
+std_nws_steering<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_nws_steering" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard high-gain nose wheel steering command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_nws_enabled">
+std_nws_enabled<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_nws_enabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard NWS enabled command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_wheel_brake_left">
+std_wheel_brake_left<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_wheel_brake_left" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard wheel brake left command to the control input name.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="std_wheel_brake_right">
+std_wheel_brake_right<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#std_wheel_brake_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides a mapping from the standard wheel brake right command to the control input name.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="command">
+<dt id="manual_pilot_simple_controls">
+manual_pilot_simple_controls … end_manual_pilot_simple_controls<a class="headerlink" href="#manual_pilot_simple_controls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The <a class="reference internal" href="#manual_pilot_simple_controls">manual_pilot_simple_controls</a> provides control inputs for the flight control system that are only modified by
+simple control mapping tables.</p>
+<blockquote>
+<div><pre class="literal-block">manual_pilot_simple_controls
+
+   <a class="reference internal" href="#pitch_control_mapping_table">pitch_control_mapping_table</a> ...
+   <a class="reference internal" href="#roll_control_mapping_table">roll_control_mapping_table</a> ...
+   <a class="reference internal" href="#yaw_control_mapping_table">yaw_control_mapping_table</a> ...
+
+   <a class="reference internal" href="#pitch_trim_factor">pitch_trim_factor</a> ...
+   <a class="reference internal" href="#roll_trim_factor">roll_trim_factor</a> ...
+   <a class="reference internal" href="#yaw_trim_factor">yaw_trim_factor</a> ...
+
+   <a class="reference internal" href="#simple_yaw_damper">simple_yaw_damper</a> ...
+
+end_manual_pilot_simple_controls</pre>
+</div></blockquote>
+<dl class="command">
+<dt id="manual_pilot_augmented_controls">
+manual_pilot_augmented_controls … end_manual_pilot_augmented_controls<a class="headerlink" href="#manual_pilot_augmented_controls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The <a class="reference internal" href="#manual_pilot_augmented_controls">manual_pilot_augmented_controls</a> uses a control augmentation system (CAS) to generate control inputs for the flight
+control system. The CAS uses a common controller (autopilot) to generate inputs based on manual control inputs. Manual
+inputs for the control stick (right and back) are modified by mapping tables and a <a class="reference internal" href="#pitch_control_augmentation_factor_g">pitch_control_augmentation_factor_g</a>
+and <a class="reference internal" href="#roll_control_augmentation_factor_dps">roll_control_augmentation_factor_dps</a> to generate pitch g-load and roll rate commands (respectively), which are fed
+to the CAS, which provides signals that serve as inputs to the flight control system. The CAS will strive to keep the
+aircraft flying within its current limits settings. This allows the pilot to pull full stick back, for example, without
+concern for causing a stall – the AP will keep the aircraft below the max alpha angle, preventing a stall.</p>
+<p>Note that the CAS-relevant autopilot channels should be tuned for best results. For bank-to-turn vehicles, this is
+comprised of alpha (for g-load), beta (for controlled sideslip), and roll rate. For yaw-to-turn vehicles, this will
+consist of alpha and beta (in this case, for lateral g-load). Manual roll control is disabled in yaw-to-turn CAS,
+instead deferring to the autopilot’s selected roll damper control mode (null control, zero-roll-rate, or
+zero-bank-angle).</p>
+<p>As a temporary measure, yaw augmentation control is informed by the pitch augmentation setting. For bank-to-turn
+vehicles, the maximum beta command (in degrees) is set equal to the maximum pitch g command. For example, if
+<a class="reference internal" href="#pitch_control_augmentation_factor_g">pitch_control_augmentation_factor_g</a> is set to 6 for a vehicle, a 100% stick-back command will translate to a 6g pull,
+and a 100% right rudder command will translate to a 6 degree sideslip. For yaw-to-turn vehicles, the same right rudder
+command will result in a 6g pull to the right-hand side. In future releases, these will likely be separated into
+different values, both in script and in Mover Creator.</p>
+<blockquote>
+<div><pre class="literal-block">manual_pilot_augmented_controls
+
+   <a class="reference internal" href="#autopilot_config">autopilot_config</a> (CAS Settings) ...
+
+   <a class="reference internal" href="#pitch_control_mapping_table">pitch_control_mapping_table</a> ...
+   <a class="reference internal" href="#roll_control_mapping_table">roll_control_mapping_table</a> ...
+   <a class="reference internal" href="#yaw_control_mapping_table">yaw_control_mapping_table</a> ...
+
+   <a class="reference internal" href="#pitch_control_augmentation_factor_g">pitch_control_augmentation_factor_g</a> ...
+   <a class="reference internal" href="#yaw_control_augmentation_factor_g">yaw_control_augmentation_factor_g</a> ...
+   <a class="reference internal" href="#yaw_control_augmentation_factor_deg">yaw_control_augmentation_factor_deg</a> ...
+   <a class="reference internal" href="#roll_control_augmentation_factor_dps">roll_control_augmentation_factor_dps</a> ...
+
+   <a class="reference internal" href="#pitch_trim_factor">pitch_trim_factor</a> ...
+   <a class="reference internal" href="#roll_trim_factor">roll_trim_factor</a> ...
+   <a class="reference internal" href="#yaw_trim_factor">yaw_trim_factor</a> ...
+
+end_manual_pilot_augmented_controls</pre>
+</div></blockquote>
+<dl class="command">
+<dt id="manual_pilot_augmented_stability">
+manual_pilot_augmented_stability … end_manual_pilot_augmented_stability<a class="headerlink" href="#manual_pilot_augmented_stability" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The <a class="reference internal" href="#manual_pilot_augmented_stability">manual_pilot_augmented_stability</a> uses a stability augmentation system (SAS) to generate control inputs for the
+flight control system. The SAS uses a common controller (autopilot) to generate inputs based on manual control inputs.
+Manual inputs for the control stick (right and back) and rudder are mixed with stabilizing autopilot inputs, requesting
+zeroed rotation rates. SAS commands have an input ceiling of 25%, with the remainder provided by the manual flight
+control inputs. For example, while the vehicle is at a stable roll position, the average input of the roll SAS should
+sit around 0%, and the pilot is free to contribute as much stick-right as she likes. If she opts to pull hard to the
+right, the roll SAS will attempt to resist the new rolling action, possibly with a 100% stick-left command. This
+contribution will be limited to 25% stick-left, leaving the pilot limited to 75% stick-right.</p>
+<p>Because SAS is designed to work against a pilot, it is less broadly useful than CAS, but can still be worthwhile. CAS
+will be the preferable option for airframes which tend toward instability through parts (or all) of their flight
+envelope, like flying wings (unstable in yaw) or agile fighters (unstable or neutrally stable in pitch). Where SAS may
+be most useful is in flying larger, more stable aircraft, particularly those which are further along in their life
+cycle, and whose flight control systems may not be as accurately modeled by a CAS-style system.</p>
+<p>Note that the SAS-relevant autopilot channels should be tuned for best results. Unlike CAS, which adds an autopilot
+layer between the stick and the flight controls, SAS can be thought of as being applied on top of the direct stick
+input. The relevant channels for all vehicles, then, will be pitch rate, yaw rate, and roll rate.</p>
+<blockquote>
+<div><pre class="literal-block">manual_pilot_augmented_stability
+
+   <a class="reference internal" href="#autopilot_config">autopilot_config</a> (SAS Settings) ...
+
+   <a class="reference internal" href="#pitch_control_mapping_table">pitch_control_mapping_table</a> ...
+   <a class="reference internal" href="#roll_control_mapping_table">roll_control_mapping_table</a> ...
+   <a class="reference internal" href="#yaw_control_mapping_table">yaw_control_mapping_table</a> ...
+
+   <a class="reference internal" href="#roll_stability_augmentation">roll_stability_augmentation</a> ...
+   <a class="reference internal" href="#pitch_stability_augmentation">pitch_stability_augmentation</a> ...
+   <a class="reference internal" href="#yaw_stability_augmentation">yaw_stability_augmentation</a> ...
+
+   <a class="reference internal" href="#pitch_trim_factor">pitch_trim_factor</a> ...
+   <a class="reference internal" href="#roll_trim_factor">roll_trim_factor</a> ...
+   <a class="reference internal" href="#yaw_trim_factor">yaw_trim_factor</a> ...
+
+end_manual_pilot_augmented_stability</pre>
+</div></blockquote>
+<hr class="docutils" />
+<dl class="command">
+<dt id="synthetic_pilot">
+synthetic_pilot … end_synthetic_pilot<a class="headerlink" href="#synthetic_pilot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The <a class="reference internal" href="#synthetic_pilot">synthetic_pilot</a> includes a common controller (autopilot) as well as support for direct control input via script.</p>
+<blockquote>
+<div><pre class="literal-block">synthetic_pilot
+
+   <a class="reference internal" href="#autopilot_config">autopilot_config</a> (Autopilot/Controller Settings) ...
+
+   <a class="reference internal" href="#pitch_control_mapping_table">pitch_control_mapping_table</a> ...
+   <a class="reference internal" href="#roll_control_mapping_table">roll_control_mapping_table</a> ...
+   <a class="reference internal" href="#yaw_control_mapping_table">yaw_control_mapping_table</a> ...
+
+   <a class="reference internal" href="#pitch_trim_factor">pitch_trim_factor</a> ...
+   <a class="reference internal" href="#roll_trim_factor">roll_trim_factor</a> ...
+   <a class="reference internal" href="#yaw_trim_factor">yaw_trim_factor</a> ...
+
+end_synthetic_pilot</pre>
+</div></blockquote>
+<hr class="docutils" />
+<dl class="command">
+<dt id="inherit_controls">
+inherit_controls<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#inherit_controls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This must be set inside a pilot definition block. When enabled, this flag directs a pilot object to use the control
+data used by the vehicle’s parent. This is used to allow subobjects to draw controls from their parent vehicle. This
+can be used in series.</p>
+<dl class="command">
+<dt id="active_pilot">
+active_pilot<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#active_pilot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This sets the active pilot. The string must be one of the following: manual_pilot_simple_controls,
+manual_pilot_augmented_controls, synthetic_pilot, hardware_autopilot_bank_to_turn, hardware_autopilot_skid_to_turn,
+guidance_autopilot_bank_to_turn, or guidance_autopilot_skid_to_turn.</p>
+<dl class="command">
+<dt id="common_autopilot_support_file">
+common_autopilot_support_file<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#common_autopilot_support_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines the path/filename of the common_autopilot_support_file that provides configuration data for all common
+controllers (autopilots).</p>
+<p>The <a class="reference internal" href="#common_autopilot_support_file">common_autopilot_support_file</a> contains several tables (cl_max_mach_table, cl_min_mach_table, alpha_max_mach_table,
+alpha_min_mach_table, alpha_versus_mach_cl_table, stick_zero_moment_mach_alpha_table, and
+effective_CL_versus_mach_alpha_table). These tables are used by the common controller (autopilot) to help predict
+response and calculate feed-forward.</p>
+<p>It is not practical to create this file manually, but a “helper” tool is provided to generate the file by running
+the “GenerateSecondaryAeroFile.txt” in the six_dof demos directory.</p>
+<p>To create the file, begin by editing the file, changing the included model file path and the MOVER_TYPE to the
+desired model. Next, run the scenario to generate the “autopilot_support_tables.txt” file. Copy the
+autopilot_support_tables.txt file to model’s folder/directory.</p>
+<hr class="docutils" />
+<dl class="command">
+<dt id="pitch_control_mapping_table">
+pitch_control_mapping_table .. end_pitch_control_mapping_table<a class="headerlink" href="#pitch_control_mapping_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a mapping table, adjusting normalized control values between “raw” control input and “mapped” or
+“adjusted” control input. It is used to provide greater control sensitivity near the zero position of controls,
+preventing manual controls from becoming overly responsive/sensitive.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pitch_control_mapping_table</span>
+  <span class="o">-</span><span class="mf">1.00</span>    <span class="o">-</span><span class="mf">1.00</span>
+  <span class="o">-</span><span class="mf">0.90</span>    <span class="o">-</span><span class="mf">0.75</span>
+  <span class="o">-</span><span class="mf">0.75</span>    <span class="o">-</span><span class="mf">0.45</span>
+  <span class="o">-</span><span class="mf">0.50</span>    <span class="o">-</span><span class="mf">0.15</span>
+  <span class="o">-</span><span class="mf">0.25</span>    <span class="o">-</span><span class="mf">0.05</span>
+   <span class="mf">0.00</span>     <span class="mf">0.00</span>
+   <span class="mf">0.25</span>     <span class="mf">0.05</span>
+   <span class="mf">0.50</span>     <span class="mf">0.15</span>
+   <span class="mf">0.75</span>     <span class="mf">0.45</span>
+   <span class="mf">0.90</span>     <span class="mf">0.75</span>
+   <span class="mf">1.00</span>     <span class="mf">1.00</span>
+<span class="n">end_pitch_control_mapping_table</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="command">
+<dt id="roll_control_mapping_table">
+roll_control_mapping_table .. end_roll_control_mapping_table<a class="headerlink" href="#roll_control_mapping_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a mapping table, adjusting normalized control values between “raw” control input and “mapped” or “adjusted”
+control input. It is used to provide greater control sensitivity near the zero position of controls, preventing manual
+controls from becoming overly responsive/sensitive.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">roll_control_mapping_table</span>
+  <span class="o">-</span><span class="mf">1.00</span>    <span class="o">-</span><span class="mf">1.00</span>
+  <span class="o">-</span><span class="mf">0.90</span>    <span class="o">-</span><span class="mf">0.75</span>
+  <span class="o">-</span><span class="mf">0.75</span>    <span class="o">-</span><span class="mf">0.45</span>
+  <span class="o">-</span><span class="mf">0.50</span>    <span class="o">-</span><span class="mf">0.15</span>
+  <span class="o">-</span><span class="mf">0.25</span>    <span class="o">-</span><span class="mf">0.05</span>
+   <span class="mf">0.00</span>     <span class="mf">0.00</span>
+   <span class="mf">0.25</span>     <span class="mf">0.05</span>
+   <span class="mf">0.50</span>     <span class="mf">0.15</span>
+   <span class="mf">0.75</span>     <span class="mf">0.45</span>
+   <span class="mf">0.90</span>     <span class="mf">0.75</span>
+   <span class="mf">1.00</span>     <span class="mf">1.00</span>
+<span class="n">end_roll_control_mapping_table</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="command">
+<dt id="yaw_control_mapping_table">
+yaw_control_mapping_table .. end_yaw_control_mapping_table<a class="headerlink" href="#yaw_control_mapping_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a mapping table, adjusting normalized control values between “raw” control input and “mapped” or “adjusted”
+control input. It is used to provide greater control sensitivity near the zero position of controls, preventing manual
+controls from becoming overly responsive/sensitive.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">yaw_control_mapping_table</span>
+  <span class="o">-</span><span class="mf">1.00</span>    <span class="o">-</span><span class="mf">1.00</span>
+  <span class="o">-</span><span class="mf">0.90</span>    <span class="o">-</span><span class="mf">0.75</span>
+  <span class="o">-</span><span class="mf">0.75</span>    <span class="o">-</span><span class="mf">0.45</span>
+  <span class="o">-</span><span class="mf">0.50</span>    <span class="o">-</span><span class="mf">0.15</span>
+  <span class="o">-</span><span class="mf">0.25</span>    <span class="o">-</span><span class="mf">0.05</span>
+   <span class="mf">0.00</span>     <span class="mf">0.00</span>
+   <span class="mf">0.25</span>     <span class="mf">0.05</span>
+   <span class="mf">0.50</span>     <span class="mf">0.15</span>
+   <span class="mf">0.75</span>     <span class="mf">0.45</span>
+   <span class="mf">0.90</span>     <span class="mf">0.75</span>
+   <span class="mf">1.00</span>     <span class="mf">1.00</span>
+<span class="n">end_yaw_control_mapping_table</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="command">
+<dt id="pitch_trim_factor">
+pitch_trim_factor<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_trim_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.</p>
+<dl class="command">
+<dt id="roll_trim_factor">
+roll_trim_factor<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#roll_trim_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.</p>
+<dl class="command">
+<dt id="yaw_trim_factor">
+yaw_trim_factor<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#yaw_trim_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.</p>
+<hr class="docutils" />
+<dl class="command">
+<dt id="pitch_control_augmentation_factor_g">
+pitch_control_augmentation_factor_g<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_control_augmentation_factor_g" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for the normalized pitch input, mapping the input to g-load. A value of 8, for example, results
+in a command of 8 gees when full stick back is input.</p>
+<dl class="command">
+<dt id="yaw_control_augmentation_factor_g">
+yaw_control_augmentation_factor_g<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#yaw_control_augmentation_factor_g" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for the normalized skid-to-turn yaw input, mapping the input to lateral g-load. A value of 8, for example, results
+in a command of 8 gees rightward when full stick right is input.</p>
+<dl class="command">
+<dt id="yaw_control_augmentation_factor_deg">
+yaw_control_augmentation_factor_deg<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#yaw_control_augmentation_factor_deg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for the normalized bank-to-turn yaw input, mapping the input to sideslip angle. A value of 10, for example, results
+in a command of 10 degrees rightward slip when full stick right is input.</p>
+<dl class="command">
+<dt id="roll_control_augmentation_factor_dps">
+roll_control_augmentation_factor_dps<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#roll_control_augmentation_factor_dps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This defines a multiplier for the normalized roll input, mapping the input to roll rate. A value of 180, for example, results
+in a command of 180 deg/sec when full stick right is input.</p>
+<hr class="docutils" />
+<dl class="command">
+<dt id="roll_stability_augmentation">
+roll_stability_augmentation<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#roll_stability_augmentation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>When enabled, this enables stability augmentation on the roll axis for manually controlled vehicles.</p>
+<dl class="command">
+<dt id="pitch_stability_augmentation">
+pitch_stability_augmentation<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#pitch_stability_augmentation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>When enabled, this enables stability augmentation on the pitch axis for manually controlled vehicles.</p>
+<dl class="command">
+<dt id="yaw_stability_augmentation">
+yaw_stability_augmentation<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#yaw_stability_augmentation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>When enabled, this enables stability augmentation on the yaw axis for manually controlled vehicles.</p>
+<hr class="docutils" />
+<dl class="command">
+<dt id="simple_yaw_damper">
+simple_yaw_damper<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#simple_yaw_damper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>If true, a very “simple” (but not realistic) yaw damper action will be used to zero any sideslip (beta), making the RB6 more like a 5DOF. This will negate any sideslip, and so should only be used for bank-to-turn objects such as fixed-wing aircraft.</p>
+<p>This command has a similar effect to <a class="reference internal" href="#use_simple_yaw_damper">use_simple_yaw_damper</a> but is used on a <a class="reference internal" href="#manual_pilot_simple_controls">manual_pilot_simple_controls</a> which lacks
+an inherent autopilot. The simple yaw damper will automatically be disengaged when operating on the ground and re-engaged
+once the vehicle is airborne.</p>
+<hr class="docutils" />
+<dl class="command">
+<dt id="autopilot_config">
+autopilot_config … end_autopilot_config<a class="headerlink" href="#autopilot_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <strong>autopilot_config</strong> block is structured as follows:</p>
+<pre class="literal-block">autopilot_config
+
+  <a class="reference internal" href="#vertical_middle_loop_rate_factor">vertical_middle_loop_rate_factor</a> ...
+  <a class="reference internal" href="#vertical_outer_loop_rate_factor">vertical_outer_loop_rate_factor</a> ...
+  <a class="reference internal" href="#lateral_middle_loop_rate_factor">lateral_middle_loop_rate_factor</a> ...
+  <a class="reference internal" href="#lateral_outer_loop_rate_factor">lateral_outer_loop_rate_factor</a> ...
+  <a class="reference internal" href="#speed_middle_loop_rate_factor">speed_middle_loop_rate_factor</a> ...
+  <a class="reference internal" href="#speed_outer_loop_rate_factor">speed_outer_loop_rate_factor</a> ...
+
+  <a class="reference internal" href="#control_method">control_method</a> ...
+
+  <a class="reference internal" href="#use_legacy_beta">use_legacy_beta</a> ...
+
+  <a class="reference internal" href="#min_taxi_turn_radius">min_taxi_turn_radius</a> ...
+  <a class="reference internal" href="#use_simple_yaw_damper">use_simple_yaw_damper</a> ...
+
+  // <a class="reference internal" href="#pids">PIDs</a>
+  pid_group
+
+    pid_alpha ... end_pid_alpha
+    pid_delta_pitch ... end_pid_delta_pitch
+    pid_vert_speed ... end_pid_vert_speed
+    pid_pitch_angle ... end_pid_pitch_angle
+    pid_pitch_rate ... end_pid_pitch_rate
+    pid_flightpath_angle ... end_pid_flightpath_angle
+    pid_altitude ... end_pid_altitude
+    pid_beta ... end_pid_beta
+    pid_yaw_rate ... end_pid_yaw_rate
+    pid_yaw_heading ... end_pid_yaw_heading
+    pid_taxi_heading ... end_pid_taxi_heading
+    pid_roll_rate ... end_pid_roll_rate
+    pid_delta_roll ... end_pid_delta_roll
+    pid_bank_angle ... end_pid_bank_angle
+    pid_roll_heading ... end_pid_roll_heading
+    pid_forward_accel ... end_pid_forward_accel
+    pid_speed ... end_pid_speed
+    pid_taxi_forward_accel ... end_pid_taxi_forward_accel
+    pid_taxi_speed ... end_pid_taxi_speed
+    pid_taxi_yaw_rate ... end_pid_taxi_yaw_rate
+
+    // <a class="reference internal" href="#sixdof-limits-and-settings">SixDOF Limits and Settings</a>
+    limits_and_settings ... end_limits_and_settings
+
+  end_pid_group
+
+end_autopilot_config</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="vertical_middle_loop_rate_factor">
+vertical_middle_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#vertical_middle_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the vertical channel inner-loop activates before the vertical channel middle-loop activates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="vertical_outer_loop_rate_factor">
+vertical_outer_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#vertical_outer_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the vertical channel middle-loop activates before the vertical channel outer-loop activates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="lateral_middle_loop_rate_factor">
+lateral_middle_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#lateral_middle_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the lateral channel inner-loop activates before the lateral channel middle-loop activates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="lateral_outer_loop_rate_factor">
+lateral_outer_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#lateral_outer_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the lateral channel middle-loop activates before the lateral channel outer-loop activates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="speed_middle_loop_rate_factor">
+speed_middle_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#speed_middle_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the speed channel inner-loop activates before the speed channel middle-loop activates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="speed_outer_loop_rate_factor">
+speed_outer_loop_rate_factor<a class="reference internal" href="argumenttypes.html#integer-value" title="integer-value"><em> &lt;integer-value&gt;</em></a><a class="headerlink" href="#speed_outer_loop_rate_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies how many times the speed channel middle-loop activates before the speed channel outer-loop activates.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="command">
+<dt id="control_method">
+control_method<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#control_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>This sets the control method. There are two main methods – bank-to-turn and yaw-to-turn. Bank-to-turn involves
+banking/rolling in order to perform a turn, like a normal aircraft. Yaw-to-turn involves simply yawing to perform
+a turn – no rolling/banking is used. The command string should be one of the following:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>BANK_TO_TURN_NO_YAW (no yaw control)</p></li>
+<li><p>BANK_TO_TURN_WITH_YAW (allows yaw control)</p></li>
+<li><p>YAW_TO_TURN_NO_ROLL (no roll control)</p></li>
+<li><p>YAW_TO_TURN_ROLL_RATE (zeros-out any roll rate buildup)</p></li>
+<li><p>YAW_TO_TURN_ZERO_BANK (rolls to maintain a zero bank)</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="command">
+<dt id="use_legacy_beta">
+use_legacy_beta<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#use_legacy_beta" title="Permalink to this definition">¶</a></dt>
+<dd><p>This enables/disables the use of the legacy_beta flag. This should be set to false when the new/improved beta
+calculations are desired. For example, Mover Creator uses the new beta calculations, so data files created
+by Mover Creator always set the use_legacy_beta command to false.</p>
+<p>The new beta calcuations help avoid the need for negative PID values for beta-related control.</p>
+<p>The default value is true.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="command">
+<dt id="min_taxi_turn_radius">
+min_taxi_turn_radius<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#min_taxi_turn_radius" title="Permalink to this definition">¶</a></dt>
+<dd><p>The defines the minimum taxi turning radius that will be used by the autopilot when performing taxi ground operations.</p>
+<p>If undefined, the default turn radius is 50 feet (~15 meters).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="use_simple_yaw_damper">
+use_simple_yaw_damper<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#use_simple_yaw_damper" title="Permalink to this definition">¶</a></dt>
+<dd><p>If true, a very “simple” (but not realistic) yaw damper action will be used to zero any sideslip (beta), making the RB6 more like a 5DOF. This will negate any sideslip, and so should only be used for bank-to-turn objects such as fixed-wing aircraft.</p>
+<p>The <a class="reference internal" href="#use_simple_yaw_damper">use_simple_yaw_damper</a> is most often used to reduce the amount of autopilot tuning, especially to reduce/eliminate roll-yaw coupling effects.</p>
+<p>The simple yaw damper will automatically be disengaged when operating on the ground and re-engaged once the vehicle is airborne.</p>
+</dd></dl>
+
+<section id="pids">
+<h3>PIDs<a class="headerlink" href="#pids" title="Permalink to this headline">¶</a></h3>
+<p>The autopilot uses a collection of Proportional, Integral, Derivative (PID) controllers, which are control loop feedback
+mechanisms. The autopilot supports a total of 20 PIDs (alpha, delta_pitch, vert_speed, pitch_angle, pitch_rate,
+flightpath_angle, altitude, beta, yaw_rate, yaw_heading, taxi_heading, roll_rate, delta_roll, bank_angle, roll_heading,
+forward_accel, speed, taxi_forward_accel, taxi_speed, and taxi_yaw_rate). Four PIDs are only used for ground operations,
+so when these are not needed, this leaves a subtotal of 16 PIDs. However, many missiles (that use the yaw-to-turn
+<a class="reference internal" href="#control_method">control_method</a>) will only need the alpha and beta PIDs.</p>
+<p>During development of RB6 models in particular, the various PID control parameters must be set appropriately for proper control.
+Adjusting the PIDs is often referred to as “tuning” the PIDs or “tuning” the autopilot. Aircraft typically require
+that 16-20 PIDs be tuned, but missiles often require tuning for only 2 PIDs. As a result, it is typically significantly
+easier to “tune” a missile autopilot than an aircraft autopilot.</p>
+<p id="pid-block-label">PID blocks may contain any number of commands, including the following:</p>
+<blockquote>
+<div><pre class="literal-block">&lt;pid_name&gt;
+  <a class="reference internal" href="#update_interval">update_interval</a> ...
+  <a class="reference internal" href="#kp">kp</a> ...
+  <a class="reference internal" href="#ki">ki</a> ...
+  <a class="reference internal" href="#kd">kd</a> ...
+  <a class="reference internal" href="#max_error_accum">max_error_accum</a> ...
+  <a class="reference internal" href="#low_pass_alpha">low_pass_alpha</a> ...
+  <a class="reference internal" href="#ignore_large_error_accum">ignore_large_error_accum</a> ...
+  <a class="reference internal" href="#ignore_small_error_accum">ignore_small_error_accum</a> ...
+  <a class="reference internal" href="#kt_anti_windup_gain">kt_anti_windup_gain</a> ...
+
+  <a class="reference internal" href="#gain_table">gain_table</a> ... end_gain_table
+
+&lt;end_pid_name&gt;</pre>
+</div></blockquote>
+<dl class="command">
+<dt id="update_interval">
+update_interval<em> &lt;Time&gt;</em><a class="headerlink" href="#update_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the update rate of the PID. This is optional and, when defined, takes priority over the loop rate factors defined above. This limits the update rate from below and does not trigger a mover update.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="kp">
+kp<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#kp" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the proportional gain of the PID. When not defined, the gain will be zero.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="ki">
+ki<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#ki" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the integral gain of the PID. When not defined, the gain will be zero.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="kd">
+kd<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#kd" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the derivative gain of the PID. When not defined, the gain will be zero.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="max_error_accum">
+max_error_accum<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#max_error_accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>This limits the maximum integrated error accumulation to the specified value. If not defined, no limit will be used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="low_pass_alpha">
+low_pass_alpha<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#low_pass_alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the value for the low-pass filter alpha for the derivative gain.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="ignore_large_error_accum">
+ignore_large_error_accum<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#ignore_large_error_accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies that the PID will not accumulate integrated error if the current error value is greater than the
+specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="ignore_small_error_accum">
+ignore_small_error_accum<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#ignore_small_error_accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies that the PID will not accumulate integrated error if the current error value is less than the
+specified value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="kt_anti_windup_gain">
+kt_anti_windup_gain<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#kt_anti_windup_gain" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the Kt anti-windup gain of the PID. When not defined, the gain will be zero.</p>
+</dd></dl>
+
+</section>
+<section id="gain-table">
+<h3>Gain Table<a class="headerlink" href="#gain-table" title="Permalink to this headline">¶</a></h3>
+<p>Gain tables provide a means to have multiple sets of PID parameters that are interpolated for the current conditions.
+They utilize a <a class="reference internal" href="#control_value">control_value</a> which is based on dynamic pressure, giving the PIDs a means to be adjusted for different
+flight regime conditions.</p>
+<p>Each <a class="reference internal" href="#gain_table">gain_table</a> provides the same commands as a <a class="reference internal" href="#pid-block-label">PID_Block_Label</a>, but <strong>must</strong> include a <a class="reference internal" href="#control_value">control_value</a> command as
+well, as follows:</p>
+<dl class="command">
+<dt id="gain_table">
+gain_table … end_gain_table<a class="headerlink" href="#gain_table" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">gain_table
+  <a class="reference internal" href="#control_value">control_value</a> ...
+  <a class="reference internal" href="#kp">kp</a> ...
+  <a class="reference internal" href="#ki">ki</a> ...
+  <a class="reference internal" href="#kd">kd</a> ...
+  <a class="reference internal" href="#max_error_accum">max_error_accum</a> ...
+  <a class="reference internal" href="#low_pass_alpha">low_pass_alpha</a> ...
+  <a class="reference internal" href="#ignore_large_error_accum">ignore_large_error_accum</a> ...
+  <a class="reference internal" href="#ignore_small_error_accum">ignore_small_error_accum</a> ...
+  <a class="reference internal" href="#kt_anti_windup_gain">kt_anti_windup_gain</a> ...
+end_gain_table</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="control_value">
+control_value<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#control_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the “control value” for which the PID parameters are used. The value is specified in lbs/ft^2 of
+dynamic pressure. The PID will interpolate between the appropriate <a class="reference internal" href="#control_value">control_value</a> pairs based on the current
+dynamic pressure.</p>
+</dd></dl>
+
+</section>
+<section id="sixdof-limits-and-settings">
+<span id="sixdof-limits-and-settings-label"></span><h3>SixDOF Limits and Settings<a class="headerlink" href="#sixdof-limits-and-settings" title="Permalink to this headline">¶</a></h3>
+<p>Each PID block should contain the following:</p>
+<blockquote>
+<div><pre class="literal-block">limits_and_settings
+  <a class="reference internal" href="#afterburner_threshold">afterburner_threshold</a> ...
+  <a class="reference internal" href="#speedbrake_threshold">speedbrake_threshold</a> ...
+  <a class="reference internal" href="#pitch_gload_min">pitch_gload_min</a> ...
+  <a class="reference internal" href="#pitch_gload_max">pitch_gload_max</a> ...
+  <a class="reference internal" href="#alpha_min">alpha_min</a> ...
+  <a class="reference internal" href="#alpha_max">alpha_max</a> ...
+  <a class="reference internal" href="#pitch_rate_min">pitch_rate_min</a> ...
+  <a class="reference internal" href="#pitch_rate_max">pitch_rate_max</a> ...
+  <a class="reference internal" href="#vert_speed_min">vert_speed_min</a> ...
+  <a class="reference internal" href="#vert_speed_max">vert_speed_max</a> ...
+  <a class="reference internal" href="#yaw_gload_max">yaw_gload_max</a> ...
+  <a class="reference internal" href="#beta_max">beta_max</a> ...
+  <a class="reference internal" href="#yaw_rate_max">yaw_rate_max</a> ...
+  <a class="reference internal" href="#roll_rate_max">roll_rate_max</a> ...
+  <a class="reference internal" href="#bank_angle_max">bank_angle_max</a> ...
+  <a class="reference internal" href="#forward_accel_min">forward_accel_min</a> ...
+  <a class="reference internal" href="#forward_accel_max">forward_accel_max</a> ...
+  <a class="reference internal" href="#taxi_speed_max_fps">taxi_speed_max_fps</a> ...
+  <a class="reference internal" href="#taxi_yaw_rate_max">taxi_yaw_rate_max</a> ...
+  <a class="reference internal" href="#turn_roll_in_multiplier">turn_roll_in_multiplier</a> ...
+  <a class="reference internal" href="#route_allowable_angle_error">route_allowable_angle_error</a> ...
+end_limits_and_settings</pre>
+</div></blockquote>
+<dl class="command">
+<dt id="afterburner_threshold">
+afterburner_threshold<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#afterburner_threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the value above which afterburner will be used instead of limiting to military power.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="speedbrake_threshold">
+speedbrake_threshold<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#speedbrake_threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the value below which the speed brake will be used to help slow down.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="pitch_gload_min">
+pitch_gload_min<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_gload_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the minimum pitch g-load value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="pitch_gload_max">
+pitch_gload_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_gload_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum pitch g-load value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="alpha_min">
+alpha_min<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#alpha_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the minimum angle of attack (alpha) in degrees.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="alpha_max">
+alpha_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#alpha_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum angle of attack (alpha) in degrees.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="pitch_rate_min">
+pitch_rate_min<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_rate_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the minimum pitch rate in degrees/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="pitch_rate_max">
+pitch_rate_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#pitch_rate_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum pitch rate in degrees/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="vert_speed_min">
+vert_speed_min<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#vert_speed_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the minimum vertical speed in ft/minute.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="vert_speed_max">
+vert_speed_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#vert_speed_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum vertical speed in ft/minute.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="yaw_gload_max">
+yaw_gload_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#yaw_gload_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum yaw g-load.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="beta_max">
+beta_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#beta_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum sideslip angle (beta) in degrees.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="yaw_rate_max">
+yaw_rate_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#yaw_rate_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum yaw rate in degrees/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="roll_rate_max">
+roll_rate_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#roll_rate_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum roll rate in degrees/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="bank_angle_max">
+bank_angle_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#bank_angle_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum bank angle in degrees.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="forward_accel_min">
+forward_accel_min<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#forward_accel_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the minimum forward acceleration in g’s.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="forward_accel_max">
+forward_accel_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#forward_accel_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum forward acceleration in g’s.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="taxi_speed_max_fps">
+taxi_speed_max_fps<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#taxi_speed_max_fps" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum taxi speed in feet/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="taxi_yaw_rate_max">
+taxi_yaw_rate_max<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#taxi_yaw_rate_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the maximum taxi yaw rate in degrees/sec.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="turn_roll_in_multiplier">
+turn_roll_in_multiplier<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#turn_roll_in_multiplier" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a multiplier that can shorten (less than than 1) or extend (greater than 1)
+the time/distance used when turning when following a route (waypoints).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="route_allowable_angle_error">
+route_allowable_angle_error<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#route_allowable_angle_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the angular error that is tolerated when rolling-out on a turn
+when following a route (waypoints). A larger value will allow the vehicle to consider
+the turn to be complete and switch to route segment control rather than continuing
+to use turn control.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<p>Return to <a class="reference internal" href="six_dof_object_types.html"><span class="doc">six_dof_object_types</span></a>, <a class="reference internal" href="rigid_body_vehicle_type.html"><span class="doc">rigid_body_vehicle_type</span></a>, <a class="reference internal" href="point_mass_vehicle_type.html"><span class="doc">point_mass_vehicle_type</span></a></p>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/six_dof_control_inputs.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_flight_control_system.html" title="SixDOF Flight Control System Definition"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_aerodynamics_data.html" title="SixDOF Aerodynamics Data"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

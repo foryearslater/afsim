@@ -1,0 +1,100 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCovariance
+-------------
+
+.. class:: WsfCovariance inherits Object
+
+WsfCovariance encapsulates the ability to receive information from State and Measurement Covariance Matrices
+associated with particular target tracks.
+
+Methods
+=======
+
+.. method:: double MajorAxis()
+   
+   Returns the length of the major axis (in meters) of the associated error ellipse.
+
+   .. note::
+
+      In the deprecated form, the supplied track object is used to extract some data required for a
+      coordinate conversion. This should be the same track from which the covariance matrix was extracted.
+
+
+.. method:: double MinorAxis()
+   
+   Returns the length of the minor axis (in meters) of the associated error ellipse.
+   
+   .. note::
+
+      In the deprecated form, the supplied track object is used to extract some data required for a
+      coordinate conversion. This should be the same track from which the covariance matrix was extracted.
+
+
+.. method:: double Bearing()
+   
+   Returns the bearing (orientation) angle (in degrees) of the associated error ellipse.
+   
+   .. note::
+
+      In the deprecated form, the supplied track object is used to extract some data required for a
+      coordinate conversion. This should be the same track from which the covariance matrix was extracted.
+
+
+.. method:: double Trace()
+   
+   Returns the trace (sum of the main diagonal) of the particular covariance matrix.
+
+.. method:: Ellipsoid EllipsoidNED()
+
+   Return the ellipsoid corresponding to the NED (North/East/Down) frame of the covariance's stored location.  The returned Ellipsoid object can be used to render the ellipsoid with :class:`WsfDraw`.
+
+.. method:: WsfCovariance CovarianceAtTime(double aSimTime)
+   
+   Returns a new state covariance matrix that represents the state covariance matrix as of the last track update
+   propagated forward to the specified time. If the supplied time is less than the last update time of the track, the
+   state covariance from the last track update will be returned.
+   
+   .. note::
+
+      The return value will be invalid if sufficient information does not exist in the source object. It
+      should be tested with the :method:`WsfObject.IsValid` method prior to being used.
+
+   .. note::
+
+      In the deprecated form, the supplied track object is used to extract some data required for a
+      coordinate conversion. This should be the same track from which the covariance matrix was extracted.
+
+   Example::
+
+     WsfCovariance covAtLastUpdate = TRACK.StateCovariance();
+     WsfCovariance covNow          = covAtLastUpdate.CovarianceAtTime(TIME_NOW);
+     if (covNow.IsValid())
+     {
+        // OK to use...
+     }
+
+.. method:: Vec3 CenterLocation()
+
+   Returns the estimated location, in world coordinates (:ref:`WCS<WCS>`), of the center of the associated error ellipsoid.  In the case that no location is available, the returned vector will contain all zeros.
+   
+.. method:: int Rows()
+   
+   Returns the number of rows in the covariance matrix.
+
+.. method:: int Columns()
+   
+   Returns the number of columns in the covariance matrix.
+
+.. method:: double Element(int aRow, int aColumn)
+   
+   Returns a specific element from the covariance matrix.

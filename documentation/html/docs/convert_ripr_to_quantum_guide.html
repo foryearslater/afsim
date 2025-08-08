@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Convert RIPR To Quantum Guide &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Coordinate Systems" href="coordinate_systems.html" />
+    <link rel="prev" title="AFSIM Contact Information" href="contact_info.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="coordinate_systems.html" title="Coordinate Systems"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="contact_info.html" title="AFSIM Contact Information"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="convert-ripr-to-quantum-guide">
+<span id="id1"></span><h1>Convert RIPR To Quantum Guide<a class="headerlink" href="#convert-ripr-to-quantum-guide" title="Permalink to this headline">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>If you are converting an old scenario from WSF 1.7.5 or earlier up to WSF 1.8 or later there are likely several
+issues to be resolves with your RIPR agents.  Some issues are simple syntax enhancements and others require a little
+restructuring of your agent.  This guide will also help you convert your agents from using WSF_RIPR_PROCESSOR to the
+WSF_QUANTUM_TASKER_PROCESSOR.  We will not be making any enhancements, adding any features, or making changes to the
+WSF_RIPR_PROCESSOR from this point forward. We encourage you to migrate your agents to the Quantum Tasker.</p>
+</section>
+<section id="behavior-tree-changes">
+<h2>Behavior Tree Changes<a class="headerlink" href="#behavior-tree-changes" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Before WSF 1.8, the behavior tree was specific to only the RIPR processor, but now all processors that derive from
+the script processor can utilize behavior trees (this includes the WSF_QUANTUM_TASKER_PROCESSOR, WSF_SCRIPT_PROCESSOR,
+WSF_RIPR_PROCESSOR, &amp; WSF_TASK_PROCESSOR).  Because of this, and other related enhancements, you will have to make the
+following changes:</p>
+<ul class="simple">
+<li><p>When attaching behavior nodes to a tree, the syntax “behavior &lt;name&gt; end_behavior” is now just “behavior_node &lt;name&gt;”</p></li>
+<li><p>The “query_bid_type” script blocks are no longer valid in behaviors.  This is OK, most processors do not use jobs or
+bids anymore.</p></li>
+<li><p>The “PROCESSOR” script object in behaviors now refers to a WsfProcessor (script processor).  If your behavior is
+intended to exist on a tree on a special processor (like a WSF_QUANTUM_TASKER_PROCESSOR) and the behavior intends to
+utilize script methods on that processor script object, then the PROCESSOR variable must be cast to that processor
+type. E.G.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">((</span><span class="n">WsfQuantumTaskerProcessor</span><span class="p">)</span><span class="n">PROCESSOR</span><span class="p">)</span><span class="o">.</span><span class="n">TasksReceived</span><span class="p">();</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="introduction-of-the-perception-processor">
+<h2>Introduction of the Perception Processor<a class="headerlink" href="#introduction-of-the-perception-processor" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Before AFSIM 1.8 all friendly perception was actually truth data.  It was typical of agent behavior scripts to “cheat”
+and use real time truth data about friendly assets.  The <a class="reference internal" href="script/wsfperceptionprocessor.html#WsfPerceptionProcessor" title="WsfPerceptionProcessor"><span class="xref wsf wsf-class">WsfPerceptionProcessor</span></a> was introduced in AFSIM 1.8 and
+should be used when at all possible.  Asset status reporting is very similar to track reporting.  Please see
+<a class="reference internal" href="wsf_perception_processor.html#WSF_PERCEPTION_PROCESSOR" title="WSF_PERCEPTION_PROCESSOR"><span class="xref wsf wsf-model">WSF_PERCEPTION_PROCESSOR</span></a> for an example of setting one up.  When using a Quantum Tasker it is imperative
+to use a Perception Processor.</p>
+</div></blockquote>
+</section>
+<section id="use-quantum-tasker-instead-of-job-board">
+<h2>Use Quantum Tasker instead of Job Board<a class="headerlink" href="#use-quantum-tasker-instead-of-job-board" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>The job board feature resident on the WSF_RIPR_PROCESSOR was a way to perform “bottom up” job allocation.  If you are
+familiar with RIPR agents in AFSIM 1.7.5 or earlier then you have likely used this feature.  Copied immediately below
+is a simple example of job board use.  Notice how the commander adds jobs to its job board in its “on_update” script
+block.  The subordinate bids on jobs, so the script for evaluating possible platform-job pairings is located on the
+subordinate and thus this system is considered “bottom up”.  The subordinate also queries the commander for what job he
+has won, and this triggers the allocation algorithm on the commander (so it can run with the new bid data just
+provided).</p>
+<p><strong>Job Board Example using WSF_RIPR_PROCESSOR:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform</span> <span class="n">commander</span> <span class="n">WSF_PLATFORM</span>
+  <span class="o">//...</span><span class="n">other</span> <span class="n">stuff</span> <span class="p">(</span><span class="n">movers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">track</span> <span class="n">manager</span><span class="p">,</span> <span class="n">etc</span><span class="p">)</span><span class="o">...</span>
+  <span class="n">add</span> <span class="n">processor</span> <span class="n">ripr</span> <span class="o">**</span><span class="n">WSF_RIPR_PROCESSOR</span><span class="o">**</span>
+    <span class="n">update_interval</span>      <span class="mf">1.0</span> <span class="n">sec</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#ff0000&quot;</span><span class="o">&gt;</span><span class="n">on_update</span>
+      <span class="n">foreach</span> <span class="p">(</span><span class="n">WsfLocalTrack</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MasterTrackList</span><span class="p">())</span>
+      <span class="p">{</span>
+        <span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="o">=</span> <span class="n">PROCESSOR</span><span class="o">.</span><span class="n">GetJobByData</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">TargetName</span><span class="p">());</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">IsValid</span><span class="p">())</span> <span class="k">continue</span><span class="p">;</span>   <span class="o">//</span><span class="n">do</span> <span class="ow">not</span> <span class="n">add</span> <span class="n">job</span> <span class="n">again</span>
+        <span class="n">WsfRIPRJob</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">WsfRIPRJob</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">PROCESSOR</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">temp</span><span class="o">.</span><span class="n">SetData</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">TargetName</span><span class="p">());</span>
+        <span class="n">temp</span><span class="o">.</span><span class="n">SetData</span><span class="p">(</span><span class="s2">&quot;track&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">);</span>
+        <span class="n">PROCESSOR</span><span class="o">.</span><span class="n">AddJob</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="n">end_on_update</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+  <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+
+<span class="n">platform</span> <span class="n">subordinate</span> <span class="n">WSF_PLATFORM</span>
+  <span class="o">//...</span><span class="n">other</span> <span class="n">stuff</span> <span class="p">(</span><span class="n">movers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">track</span> <span class="n">manager</span><span class="p">,</span> <span class="n">etc</span><span class="p">)</span><span class="o">...</span>
+  <span class="n">commander</span> <span class="n">commander</span>
+  <span class="n">add</span> <span class="n">processor</span> <span class="n">ripr</span> <span class="o">**</span><span class="n">WSF_RIPR_PROCESSOR</span><span class="o">**</span>
+    <span class="n">update_interval</span>      <span class="mf">1.0</span> <span class="n">sec</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#00aa00&quot;</span><span class="o">&gt;</span><span class="n">query_bid_type</span>    <span class="n">target</span>
+      <span class="n">WsfTrack</span> <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">WsfTrack</span><span class="p">)</span><span class="n">JOB</span><span class="o">.</span><span class="n">GetData</span><span class="p">(</span><span class="s2">&quot;track&quot;</span><span class="p">);</span>
+      <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">SlantRangeTo</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
+    <span class="n">end_query_bid_type</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+    <span class="n">on_update</span>
+      <span class="n">WsfRIPRProcessor</span> <span class="n">commander</span> <span class="o">=</span> <span class="n">PROCESSOR</span><span class="o">.</span><span class="n">GetRIPRCommanderProcessor</span><span class="p">();</span>
+      <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#00aa00&quot;</span><span class="o">&gt;</span><span class="n">foreach</span> <span class="p">(</span><span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">commander</span><span class="o">.</span><span class="n">GetJobs</span><span class="p">())</span>
+      <span class="p">{</span>
+        <span class="n">double</span> <span class="n">bid</span> <span class="o">=</span> <span class="n">PROCESSOR</span><span class="o">.</span><span class="n">QueryBid</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
+        <span class="n">job</span><span class="o">.</span><span class="n">BidJob</span><span class="p">(</span><span class="n">PROCESSOR</span><span class="p">,</span> <span class="n">bid</span><span class="p">);</span>
+      <span class="p">}</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#0000aa&quot;</span><span class="o">&gt;</span><span class="n">WsfRIPRJob</span> <span class="n">myJob</span> <span class="o">=</span> <span class="n">commander</span><span class="o">.</span><span class="n">GetJobFor</span><span class="p">(</span><span class="n">TIME_NOW</span><span class="p">,</span> <span class="n">PROCESSOR</span><span class="p">);</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+      <span class="o">//</span><span class="n">do</span> <span class="n">something</span> <span class="k">with</span> <span class="n">job</span>
+    <span class="n">end_on_update</span>
+  <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+<p>An equivalent representation using the Quantum Tasker for top down task allocation is copied immediately below.  Notice
+the color coded sections for help in comparing.  Because this is a top-down task allocation system, you will notice an
+appropriate increase in script on the commander and a decrease on the subordinate.  When considering all the varied
+behaviors that subordinate agents typically use, a subordinate will still have a substantially greater quantity of
+script attached to them.</p>
+<p><strong>Task Example using WSF_QUANTUM_TASKER_PROCESSOR:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform</span> <span class="n">commander</span> <span class="n">WSF_PLATFORM</span>
+  <span class="o">//...</span><span class="n">other</span> <span class="n">stuff</span> <span class="p">(</span><span class="n">movers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">track</span> <span class="n">manager</span><span class="p">,</span> <span class="n">etc</span><span class="p">)</span><span class="o">...</span>
+  <span class="n">add</span> <span class="n">processor</span> <span class="n">quantum</span> <span class="o">**</span><span class="n">WSF_QUANTUM_TASKER_PROCESSOR</span><span class="o">**</span>
+    <span class="n">update_interval</span>      <span class="mf">1.0</span> <span class="n">sec</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#ff0000&quot;</span><span class="o">&gt;</span><span class="n">generator</span> <span class="n">custom</span> <span class="n">MyGenerator</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#00aa00&quot;</span><span class="o">&gt;</span><span class="n">evaluator</span> <span class="n">custom</span> <span class="n">MyEvaluator</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+    <span class="n">allocator</span> <span class="n">optimal_profit</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#ff0000&quot;</span><span class="o">&gt;</span><span class="n">script</span> <span class="n">Array</span><span class="o">&lt;</span><span class="n">WsfTask</span><span class="o">&gt;</span> <span class="n">MyGenerator</span> <span class="p">(</span><span class="n">Array</span><span class="o">&lt;</span><span class="n">WsfLocalTrack</span><span class="o">&gt;</span> <span class="n">TRACKS</span><span class="p">,</span>
+    <span class="n">Array</span><span class="o">&lt;</span><span class="n">WsfAssetPerception</span><span class="o">&gt;</span> <span class="n">ASSETS</span> <span class="p">)</span>
+      <span class="n">Array</span><span class="o">&lt;</span><span class="n">WsfTask</span><span class="o">&gt;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">Array</span><span class="o">&lt;</span><span class="n">WsfTask</span><span class="o">&gt;</span><span class="p">();</span>
+      <span class="n">foreach</span> <span class="p">(</span><span class="n">WsfLocalTrack</span> <span class="n">lt</span> <span class="ow">in</span> <span class="n">TRACKS</span><span class="p">)</span>
+      <span class="p">{</span>
+        <span class="n">WsfTask</span> <span class="n">task</span> <span class="o">=</span> <span class="n">WsfTask</span><span class="o">.</span><span class="n">Construct</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;WEAPON&quot;</span><span class="p">,</span> <span class="n">lt</span><span class="p">);</span>
+        <span class="n">tasks</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="n">task</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="n">tasks</span><span class="p">;</span>
+    <span class="n">end_script</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#00aa00&quot;</span><span class="o">&gt;</span><span class="n">script</span> <span class="n">double</span> <span class="n">MyEvaluator</span> <span class="p">(</span> <span class="n">WsfTask</span> <span class="n">TASK</span><span class="p">,</span> <span class="n">WsfAssetPerception</span> <span class="n">ASSET</span><span class="p">)</span>
+      <span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MasterTrackList</span><span class="p">()</span><span class="o">.</span><span class="n">FindTrack</span><span class="p">(</span><span class="n">TASK</span><span class="o">.</span><span class="n">TrackId</span><span class="p">());</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">TASK</span><span class="o">.</span><span class="n">TaskType</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;WEAPON&quot;</span> <span class="o">&amp;&amp;</span> <span class="n">track</span><span class="o">.</span><span class="n">IsValid</span><span class="p">())</span>
+      <span class="p">{</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">track</span><span class="o">.</span><span class="n">SlantRangeTo</span><span class="p">(</span><span class="n">ASSET</span><span class="o">.</span><span class="n">Location</span><span class="p">());</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">end_script</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+  <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+
+<span class="n">platform</span> <span class="n">subordinate</span> <span class="n">WSF_PLATFORM</span>
+  <span class="o">//...</span><span class="n">other</span> <span class="n">stuff</span> <span class="p">(</span><span class="n">movers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">track</span> <span class="n">manager</span><span class="p">,</span> <span class="n">etc</span><span class="p">)</span><span class="o">...</span>
+  <span class="n">commander</span> <span class="n">commander</span>
+  <span class="n">add</span> <span class="n">processor</span> <span class="n">quantum</span> <span class="o">**</span><span class="n">WSF_QUANTUM_TASKER_PROCESSOR</span><span class="o">**</span>
+    <span class="n">update_interval</span>      <span class="mf">1.0</span> <span class="n">sec</span>
+    <span class="n">on_update</span>
+      <span class="o">&lt;</span><span class="n">span</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;color:#0000aa&quot;</span><span class="o">&gt;</span><span class="n">WsfTaskList</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">PROCESSOR</span><span class="o">.</span><span class="n">TasksReceivedOfType</span><span class="p">(</span><span class="s2">&quot;WEAPON&quot;</span><span class="p">);</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+      <span class="o">//</span><span class="n">do</span> <span class="n">something</span> <span class="k">with</span> <span class="n">task</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">end_on_update</span>
+  <span class="n">end_processor</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/convert_ripr_to_quantum_guide.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="coordinate_systems.html" title="Coordinate Systems"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="contact_info.html" title="AFSIM Contact Information"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

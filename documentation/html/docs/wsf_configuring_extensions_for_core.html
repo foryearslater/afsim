@@ -1,0 +1,374 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF Build Instructions: For configuring extensions for core &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF Core" href="wsf_core.html" />
+    <link rel="prev" title="WSF_COMPOSITE_SENSOR" href="wsf_composite_sensor.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_core.html" title="WSF Core"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_composite_sensor.html" title="WSF_COMPOSITE_SENSOR"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-build-instructions-for-configuring-extensions-for-core">
+<h1>WSF Build Instructions: For configuring extensions for core<a class="headerlink" href="#wsf-build-instructions-for-configuring-extensions-for-core" title="Permalink to this headline">¶</a></h1>
+<p>The “Descriptions” section describe locations, as opposed to environment/cmake/other variables, and are used to help you
+understand where change and configuration are needed. A windows path referencing style is used below, however, a very
+similar structure will work for unix systems as well.</p>
+<p>Assumptions:</p>
+<ul class="simple">
+<li><p>WSF software is already installed on your machine.  If this is not the case, please see WSFInstallInstructions.rst.</p></li>
+</ul>
+<p>Descriptions:</p>
+<ul class="simple">
+<li><p>BUILD_DIRECTORY_ROOT: The top-level directory where all software is stored.</p></li>
+<li><p>WSF_CORE_ROOT_DIR : The location where WSF software is installed.  The top-level directory should be named Core.
+Core’s immediate subdirectories are wsf_core, wsf_package, dis, etc…</p></li>
+<li><p>EXTENSION_ROOT_DIR : The root location for your extension software.  All CMake, source, headers, etc… exist in 1+
+subdirectories underneath.  wsf_module and wsf_cmake_extension.cmake will reside here.</p></li>
+<li><p>EXTENSION_SUB_DIR : The directory name, where your extension software will be provided.  This directory is a
+sub-directory of EXTENSION_ROOT_DIR.  In the example below, this directory is simply named source.</p></li>
+<li><p>wsf_module : A file that will be required in order for your project to be included in WSF cmake processing. This file
+does not require any content within it, and will not process content within.</p></li>
+<li><p>wsf_cmake_extensions.cmake : A file that is required, and must be configured, in order for your project to be included
+in WSF cmake processing.</p></li>
+<li><p>EXTENSION_NAME : The name of your extension.  This information must be assigned by you inside
+wsf_cmake_extensions.cmake.</p></li>
+<li><p>EXTENSION_SOURCE_DIR : The location of your extension’s primary CMakeLists.txt file, relative from the location of
+wsf_cmake_extensions.cmake.  This information must be assigned by you inside wsf_cmake_extensions.cmake.</p></li>
+<li><p>CMAKE_BUILD_FILES_DIR : The location where CMake build files will be sent.</p></li>
+<li><p>WSF_PACKAGE_CMAKE_DIR : The location of the CMakeLists.txt file that lives in the wsf_package project.</p></li>
+<li><p>MY_EXTENSION_BUILD_FILES_DIR: The location of the resulting build files for your software.</p></li>
+</ul>
+<p>Checklist:</p>
+<ul class="simple">
+<li><p>Leverage CMake to generate build files for your current project/solution.</p></li>
+<li><p>Create EXTENSION_ROOT_DIR, and place it inside of WSF_CORE_ROOT_DIR.</p></li>
+<li><p>Create EXTENSION_SUB_DIR inside of EXTENSION_ROOT.</p></li>
+<li><p>Add all of your project software to EXTENSION_SUB_DIR, including CMake files.</p></li>
+<li><p>Add wsf_module to EXTENSION_ROOT_DIR.</p></li>
+<li><p>Add wsf_cmake_extensions.cmake to EXTENSION_ROOT.</p></li>
+<li><p>Provide the name of your extension, as a replacement for EXTENSION_NAME, inside wsf_cmake_extensions.cmake.</p></li>
+<li><p>Provide the location of your extension software’s primary CMakeLists.txt file, relative from the location of
+wsf_cmake_extensions.cmake, inside wsf_cmake_extensions.cmake.</p></li>
+<li><p>If you have an extension configured with a previous version of WSF:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>Compare the software that exists in your previous version of WSF to the software that exists in your new version of WSF.</p></li>
+<li><p>For each difference between the previous WSF and the newest WSF that requires change/update of your software, complete the necessary change(s)/update(s).</p></li>
+<li><p>If your new WSF software will be located in a different place than your previous WSF software, replace any absolute or relative directory path references to previous WSF software with appropriate path references to your new WSF software.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>If your software is not currently integrated with WSF</p></li>
+</ul>
+<blockquote>
+<div><ul>
+<li><p>Incorporate the contents of CMakeLists_Support.txt (available in the ExamplesSupport directory) into your primary CMakeLists.txt file.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>WSF will build the WSF libraries for you.</p>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Clear all conflicting CMake commands (i.e. configuration of output binary directory, output library directory, etc…)
+from your extension CMake files, so that they do not override WSF CMake configuration settings.</p></li>
+<li><p>Open a command prompt.</p></li>
+<li><p>Navigate to CMAKE_BUILD_FILES_DIR.</p></li>
+<li><p>Execute the following command (excluding quotes): “cmake WSF_PACKAGE_CMAKE_DIR” .</p></li>
+<li><p>Observe that CMake processing is complete.</p></li>
+<li><p>Inside the CMAKE_BUILD_FILES_DIR, observe that all of the appropriate build files have been generated, including those
+for your extension.</p></li>
+<li><p>Use your build tool (i.e. Visual Studio 2013) to open your desired solution (i.e. MyExtension.sln), and to identify
+your desired startup project.</p></li>
+<li><p>Choose a build configuration (i.e. Release), and successfully build your solution.</p></li>
+<li><p>Finished!</p></li>
+</ul>
+<p>Support:</p>
+<ul class="simple">
+<li><p>A wsf_module file that you can leverage is located inside Corewsf_coreExamplesSupport.  This file is ready for use
+as-is.</p></li>
+<li><p>A wsf_cmake_extensions.cmake file that you can leverage is located inside Corewsf_coreExamplesSupport.  This file
+requires your configuration.</p></li>
+<li><p>The CMakeLists.txt file is located inside Corewsf_coreExamplesSupport.  The contents of this file (i.e. via copy
+and paste, or via this file’s incorporation as a .cmake file) are ready for incorporation into your primary
+CMakeLists.txt file.</p></li>
+</ul>
+<p>Examples:</p>
+<p>1:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="n">working</span> <span class="n">example</span> <span class="n">can</span> <span class="n">be</span> <span class="n">located</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">WSF_CORE_ROOT_DIR</span>\<span class="n">Examples</span>\<span class="n">Integrate</span> <span class="n">directory</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Windows</span> <span class="n">example</span> <span class="n">of</span> <span class="n">what</span> <span class="n">the</span> <span class="n">resulting</span> <span class="n">directory</span> <span class="n">structure</span> <span class="n">should</span> <span class="n">look</span> <span class="n">like</span><span class="p">,</span> <span class="n">given</span> <span class="n">the</span> <span class="n">assumptions</span> <span class="n">stated</span> <span class="n">below</span><span class="p">:</span>
+<span class="n">Assumptions</span><span class="p">:</span>
+<span class="n">BUILD_DIRECTORY_ROOT</span> <span class="o">=</span> <span class="n">C</span><span class="p">:</span>\<span class="n">WSF</span>
+<span class="n">WSF_CORE_ROOT_DIR</span> <span class="o">=</span> <span class="n">C</span><span class="p">:</span>\<span class="n">WSF</span>\<span class="n">Core</span>
+<span class="n">EXTENSION_ROOT_DIR</span> <span class="o">=</span> <span class="n">C</span><span class="p">:</span>\<span class="n">MyExtension</span>
+<span class="n">EXTENSION_SUB_DIR</span> <span class="o">=</span> <span class="n">C</span><span class="p">:</span>\<span class="n">MyExtension</span>\<span class="n">source</span>
+<span class="n">EXTENSION_NAME</span> <span class="o">=</span> <span class="n">MyExtension</span>
+<span class="n">EXTENSION_SOURCE_DIR</span> <span class="o">=</span> <span class="n">C</span><span class="p">:</span>\<span class="n">MyExtension</span>\<span class="n">source</span> <span class="p">(</span><span class="n">note</span><span class="p">:</span> <span class="n">In</span> <span class="n">this</span> <span class="n">example</span><span class="p">,</span> <span class="n">this</span> <span class="n">value</span> <span class="ow">is</span> <span class="n">equivalent</span> <span class="n">to</span> <span class="n">EXTENSION_SUB_DIR</span><span class="p">,</span> <span class="n">but</span> <span class="n">this</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">have</span> <span class="n">to</span> <span class="n">be</span> <span class="n">the</span> <span class="n">case</span><span class="o">.</span>  <span class="n">The</span> <span class="n">source</span> <span class="n">can</span> <span class="n">located</span> <span class="n">elsewhere</span> <span class="n">within</span> <span class="n">the</span> <span class="n">extension</span> <span class="n">sub</span> <span class="n">directory</span><span class="o">.</span><span class="p">)</span>
+<span class="n">CMAKE_BUILD_FILES_DIR</span> <span class="p">:</span> <span class="n">C</span><span class="p">:</span>\<span class="n">WSF</span>\<span class="n">CMake_Build_Files</span>
+<span class="n">WSF_PACKAGE_CMAKE_DIR</span> <span class="p">:</span> <span class="n">C</span><span class="p">:</span>\<span class="n">WSF</span>\<span class="n">Core</span>\<span class="n">wsf_package</span>
+<span class="n">MY_EXTENSION_BUILD_FILES_DIR</span><span class="p">:</span> <span class="n">C</span><span class="p">:</span>\<span class="n">WSF</span>\<span class="n">CMake_Build_Files</span>\<span class="n">build_MyExtension</span>
+</pre></div>
+</div>
+<p>Directory structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span>
+   <span class="n">WSF</span>
+      <span class="n">Core</span>
+         <span class="o">...</span>
+         <span class="n">dis</span>
+         <span class="o">...</span>
+         <span class="n">wsf_core</span>
+         <span class="o">...</span>
+         <span class="n">wsf_package</span>
+            <span class="n">CMakeLists</span><span class="o">.</span><span class="n">txt</span>
+         <span class="o">...</span>
+      <span class="n">MyExtension</span>
+         <span class="n">source</span>
+            <span class="n">CMakeLists</span><span class="o">.</span><span class="n">txt</span>
+            <span class="o">*.</span><span class="n">hpp</span>
+            <span class="o">*.</span><span class="n">cpp</span>
+         <span class="n">wsf_module</span>
+         <span class="n">wsf_cmake_extension</span><span class="o">.</span><span class="n">cmake</span>
+      <span class="n">CMake_Build_Files</span>
+         <span class="n">build_MyExtension</span> <span class="p">(</span><span class="n">note</span><span class="p">:</span> <span class="n">this</span> <span class="n">directory</span> <span class="n">will</span> <span class="ow">not</span> <span class="n">exist</span> <span class="n">until</span> <span class="n">after</span> <span class="n">WSF</span> <span class="n">CMake</span> <span class="n">processing</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Associated content of wsf_cmake_extensions.cmake file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">Before</span> <span class="n">your</span> <span class="n">edits</span>
+<span class="c1"># configuration for automatic inclusion as a WSF extension</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">WSF_EXT_NAME</span> <span class="o">&lt;</span><span class="n">EXTENSION_NAME</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">WSF_EXT_SOURCE_PATH</span> <span class="o">&lt;</span><span class="n">EXTENSION_SOURCE_DIR</span><span class="o">&gt;</span><span class="p">)</span>
+
+<span class="o">--</span><span class="n">After</span> <span class="n">your</span> <span class="n">edits</span>
+<span class="c1"># configuration for automatic inclusion as a WSF extension</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">WSF_EXT_NAME</span> <span class="n">MyExtension</span><span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">WSF_EXT_SOURCE_PATH</span> <span class="n">source</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_configuring_extensions_for_core.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_core.html" title="WSF Core"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_composite_sensor.html" title="WSF_COMPOSITE_SENSOR"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

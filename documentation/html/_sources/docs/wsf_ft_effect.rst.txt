@@ -1,0 +1,89 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_FT_EFFECT
+-------------
+
+.. model:: effect WSF_FT_EFFECT
+   
+.. parsed-literal::
+
+   ...
+      effect <effect-name> WSF_FT_EFFECT
+         ... :ref:`WSF_PULSE_EFFECT Commands <WSF_PULSE_EFFECT.Commands>` ...
+         false_target_name_ <string-value>
+         jamming_pulse_density_ <real-value>
+         scan_rate_multiplier_ <real-value>
+         system_type_data_ <system-type-name> ... end_system_type_data
+      end_effect
+   ...
+
+Overview
+========
+
+This base effect type can be included in the :command:`electronic_protect` or
+:command:`electronic_attack` technique block as one of the many available effects for a given
+technique. The commands listed below are the base-type commands that can be specified in the effect block for this
+effect type.
+
+Commands
+========
+
+.. command:: false_target_name  <string-value> 
+   
+   Specifies the false-target name of the :command:`false_target` definition to be used by this effect.
+   
+.. note:: 
+   If not specified then automatic generation of false-targets will be done and default radar parameters will be
+   used in conjunction with the default_pulse_density to generate false-targets. The radar :command:`_.transmitter` is
+   required to have the :command:`_.transmitter.pulse_width` and
+   :command:`_.transmitter.pulse_repetition_interval` defined for automatic generation of false-targets.
+
+.. command:: jamming_pulse_density  <real-value> 
+
+.. command:: jamming_duty_cycle  <real-value> 
+   
+   Specifies the jammer pulse density in range [0,1] for generating false targets. This input will override the specified
+   :command:`false_target.quantity` if a false target name is input. This input is used to
+   calculate the number of false targets according to the following:
+   
+   :math:`NumberOfFalseTargets = (PRI/PW) * (ScanTime/PRI) * NumberPulsesIntegrated * jamming\_pulse\_density\,`
+   :math:`NumberOfPulsesIntegrated = MaximumOf(number\_of\_pulses\_integrated,  (AzBeamWidth/ScanRate)/PRI)\,`
+   
+   Default: 0.1
+
+.. command:: scan_rate_multiplier  <real-value> 
+   
+   Specifies the false target generation scan rate multiplier for regenerating false targets. This input will be
+   multiplied by the specified :command:`scan_rate <false_target.scan_rate>` if a false target name is input, else the scan rate of
+   the false targets is equal to the :command:`sensor_mode.frame_time` times the scan_rate_multiplier.
+   
+   Default: 1.0
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data 
+
+   Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this
+   technique for a given system type. Default data can be set up for system types not defined using the "default" string
+   as the system type.
+
+   .. parsed-literal::
+   
+      system_type_data_ *<system-type-name>*
+         ... :ref:`WSF_PULSE_EFFECT Commands <WSF_PULSE_EFFECT.Commands>` ...
+         false_target_name_ *<string-value>*
+         jamming_pulse_density_ *<real-value>*
+         scan_rate_multiplier_ *<real-value>*
+      end_system_type_data
+
+    <system-type-name>
+        A string input of the system-type the following data applies to, valid values are
+        **[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will
+        be applied for the given system-type.

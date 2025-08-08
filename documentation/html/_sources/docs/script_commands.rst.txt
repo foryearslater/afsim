@@ -1,0 +1,145 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Script_Commands:
+
+Script Commands
+---------------
+
+.. block:: _.script_commands
+
+.. command:: script_call_trace [ off | on ]
+
+   Controls whether a trace of script method calls will be written to standard output. This can be very useful for
+   debugging complex scripts. If enabled, a line indicating the time, platform, platform part name and script name is
+   written prior to calling the method. Upon return from the method another line is written which contains the function
+   return value.
+
+   This command can appear at the global level, inside a platform or inside a platform component. The default global value
+   is false. If this command is specified at the global level then it will apply to all platforms and their components for
+   which a value has not been explicitly defined. If this occurs at the platform level then it applies to the platform and
+   any component on the platform for which a value has not been explicitly defined.
+
+   .. note::
+      The resulting trace only includes scripts that are **directly** invoked from WSF. It does not
+      include scripts that are invoked by the scripts. This will probably be implemented in a future release.
+
+   .. note::
+      This can produce **a lot** of output (especially when used at the global level).
+
+.. command:: script_debug_writes [ off | on ]
+
+   Controls whether the script debug write statements write_d and writeln_d are executed. If enabled, write_d and
+   writeln_d statements are executed.
+
+   This command can appear at the global level, inside a platform or inside a platform component. The default global value
+   is false. If this command is specified at the global level then it will apply to all platforms and their components for
+   which a value has not been explicitly defined. If this occurs at the platform level then it applies to the platform and
+   any component on the platform for which a value has not been explicitly defined.
+
+   The "write_d" writes a line without a carriage return.
+   The "writeln_d" writes a line with a carriage return.
+
+   .. note::
+      The use of "write" and "writeln" are not affected by this command.
+
+.. command:: script_abort_on_null_references [ off | on ]
+
+   When a script method is called with an invalid object or argument, an error is printed to the screen.  When this option
+   is enabled, the application will also terminate immediately.  This command is only available in a global context.
+
+   **Default:** off
+
+.. command:: script_abort_on_assert [ off | on]
+
+   When a call to :method:`assert() <__BUILTIN__.assert>` in script fails, the application will usually abort.  Setting this option to
+   'off' will still print an error but will not abort the application.
+
+   **Default:** on
+
+.. command:: script ... end_script
+
+   Defines a script.
+
+.. command:: script_variables ... end_script_variables
+
+   Allows users to declare a set of variables that are accessible to scripts within a given context. For example, if the
+   script_variables_ command is used inside the platform command, then all scripts defined within that platform have
+   access to the variables that are defined. In addition, any scriptable platform parts can access their parents variables
+   by using the **extern** keyword.
+
+   The script_variables_ block accepts standard :command:`_.script_commands.script` variable declaration, definition and assignment commands
+   with the exception that definition and assignment cannot invoke functions or other scripts.
+
+  ::
+
+    platform_type MY_PLATFORM_TYPE WSF_PLATFORM
+       script_variables
+          int mMyInt = 9;
+          int mMyDouble = 1.23456;
+
+          Array<string> mMyArray = Array<string>();
+          mMyArray[0] = 'hello';
+          mMyArray[1] = 'world';
+
+          mMyDouble = -mMyDouble;
+          mMyInt = mMyDouble + 100;
+       end_script_variables
+
+       on_initialize
+          writeln("mMyInt=", mMyInt);    // The on_initialize script can access the mMyInt variable
+                                         // that was defined in current context (i.e., the platform).
+       end_on_initialize
+
+       processor script-processor-1 WSF_SCRIPT_PROCESSOR
+          on_initialize
+             extern int mMyInt;          // To access the mMyInt variable defined by the parent platform the
+                                         // script processor must first extern it.
+             writeln("mMyInt=", mMyInt);
+          end_on_initialize
+       end_processor
+
+       processor script-processor-2 WSF_SCRIPT_PROCESSOR
+          script_variables
+             int mMyInt = 12;            // If a child context (i.e., the script processor) defines a script variable
+                                         // with the same name as a variable in the parent's context (i.e., the platform)
+                                         // it creates its own copy that is independent of the parents.
+          end_script_variables
+
+          on_initialize
+             writeln("mMyInt=", mMyInt); // This will print 12.
+          end_on_initialize
+       end_processor
+    end_platform
+
+
+.. command:: script_interface ... end_script_interface
+
+   Configures the scripting system.
+   Multiple script_interface_ blocks may be provided. If the same subcommand is specified in multiple blocks then
+   the last value given will be used
+
+SUBCOMMANDS
+===========
+
+.. command:: debug
+
+   Tells the compiler to produce a source listing and any errors that may occur during compilation (by default debug
+   output is turned off).
+
+.. command:: no_debug
+
+   Tells the compiler not to produce the source and detailed error listing. The compiler will still display a simple
+   message if an error occurs during compilation.
+
+.. command:: script ... end_script
+
+   Defines a script that is callable by all platforms in the simulation.

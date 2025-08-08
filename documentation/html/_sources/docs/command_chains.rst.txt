@@ -1,0 +1,76 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Command_Chains:
+
+Command Chains
+--------------
+
+Explicit Command Chains
+=======================
+   
+   A chain of command can be used by decision making routines to determine to whom orders can be
+   issued and where reports should be sent. A command chain is constructed using the :command:`platform.commander`
+   and :command:`platform.command_chain` commands on individual platforms.
+
+   Command chains consist of commanders, subordinates, and peers.  Each command chain must have at least one commander
+   (even if that commander is yourself).  By building up layers of commanders using this input, a complex, multilayered
+   hierarchy can be created.
+
+   :command:`Comm<comm>` devices use command chains to send messages to recipients (see :ref:`external_links <External_Link_Commands>`).
+   In the case of a commander, this is a single recipient; whereas in the case of peers and subordinates, there
+   may be zero, one, or many recipients.
+
+   .. note::
+      A platform may be a member of more than one chain of command, but may only be a member of each command chain once.
+
+   Example::
+
+     In this example there are two command chains:  ATC and AIRLINERS.
+     On the AIRLINERS command chain, 737-1, 737-2 and 737-3 report to 737-cmd-1 who reports to joint-cmdr.
+     In addition, 737-3 has a dual role and reports directly to the joint-cmdr on the ATC command chain.
+     platform joint-cmdr COMMAND_POST
+       command_chain ATC SELF
+       command_chain AIRLINERS SELF
+     end_platform
+     platform 737-cmd-1 COMMAND_POST
+        command_chain AIRLINERS joint-cmdr
+        end_platform
+     platform 737-1 F-18
+        command_chain AIRLINERS 737-cmd-1
+        end_platform
+     platform 737-2 F-18
+        command_chain AIRLINERS 737-cmd-1
+        end_platform
+     platform 737-3 F-18
+        command_chain AIRLINERS 737-cmd-1
+        command_chain ATC joint-cmdr
+     end_platform
+
+Default Command Chain
+=====================
+
+   The default command chain can be constructed using the :command:`platform.commander` command, using the :command:`platform.command_chain`
+   command with a command chain name of "default", or implicitly constructed.  In the case where the default command chain is explicitly
+   constructed, its behavior is the same as other explicitly constructed command chains.
+   
+   An implicitly constructed default command chain occurs when an explicit command chain is specified but no default command chain is specified.
+   If a platform is a member of exactly one named (non-default) command chain, the platform will have the same commander on the default command chain.
+   If a platform is a member of more than one named command chain, the commander on the default command chain will be a commander from one of the
+   named command chains.  Which commander is chosen is not guaranteed and therefore, it is not recommended to use an implicitly constructed command
+   chain along with multiple named command chains. 
+   
+   .. note::
+      It is suggested to use named command chains over the implicitly constructed default command chain when a scenario consists of more than one command chain.
+
+   .. deprecated:: 2.9
+      Usage of an implicitly constructed default command chain is deprecated and will be unsupported in a future release, as this behavior leads to
+      ambiguity when multiple named command chains exist.

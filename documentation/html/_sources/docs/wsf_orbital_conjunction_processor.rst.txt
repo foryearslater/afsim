@@ -1,0 +1,172 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ORBITAL_CONJUNCTION_PROCESSOR
+---------------------------------
+
+.. model:: processor WSF_ORBITAL_CONJUNCTION_PROCESSOR
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+.. parsed-literal::
+
+   processor <name> WSF_ORBITAL_CONJUNCTION_PROCESSOR
+      ... :model:`WSF_SCRIPT_PROCESSOR Commands <WSF_SCRIPT_PROCESSOR>` ...
+
+      search_interval_ <time-value>
+      filter_cut_distance_ <length-value>
+      search_step_size_ <angle-value>
+      exclusion_factor_ <real-value>
+      default_variance_ <length-value>
+      default_object_size_ <length-value>
+      prediction_model_ <string>
+      primary_ <string> end_primary
+      debug_
+
+      script void on_conjunction_predicted_\ (Array<:class:`WsfOrbitalConjunctionReport`> aReports)
+         ...
+      end_script
+   end_processor
+
+Overview
+========
+
+:model:`WSF_ORBITAL_CONJUNCTION_PROCESSOR` monitors the 
+containing :class:`WsfPlatform`'s master track list and predicts over the
+search_interval_ if any of the tracked objects might suffer a conjunction with 
+one of the named primary_ objects. This processor inherits all the functionality
+of the  :model:`WSF_SCRIPT_PROCESSOR` and adds to it in the following ways. 
+
+At the end of each update of the processor the master track list of the owning 
+platform is examined with each track categorized between primary and secondary 
+objects. The generated list of primary_ tracks correspond to the spacecraft of 
+particular interest to the processor. The secondary tracks are any other 
+tracks in the space spatial domain in the owning platform's master track list.
+For each primary_ track, each other primary and secondary track is examined for 
+possible conjunctions. This prediction is made out to search_interval_ from 
+the time at which the update is performed.
+
+For each pair, a fast filter is used to quickly remove pairs of tracks that 
+cannot possibly suffer a conjunction using the geometry of the orbits. The cut 
+is performed by examining the periapsis and apoapsis of the two orbits. If the
+closest possible approach is larger than filter_cut_distance_, then the pair
+is ignored.
+
+Close approaches are predicted by taking a series of steps along the orbit
+and interpolating between the start and end of the step. This allows for
+relatively large steps to be taken, reducing the computational burden of this
+processor. The size of the steps is set by search_step_size_.
+
+For each pair, when a close approach is predicted, the processor will compute
+a number of quantities including, the maximum probability of conjunction, the
+time and miss distance of the point of closest approach, and the times that
+the two objects enter into the encounter region, defined to be the combined
+error ellipsoid, scaled by the exclusion_factor_.
+
+After all possible conjunctions are found, the processor will call the script
+defined on the processor named on_conjunction_predicted_, if it exists. The 
+arguments to this function will be a collection of :class:`WsfOrbitalConjunctionReport`
+objects containing the details of the possible conjunctions. These reports will
+be sorted so that the earlier conjunctions appear earlier in the :class:`Array\<T\>`.
+
+Commands
+========
+
+.. command:: search_interval <time-value>
+
+   Declares the time tracked objects will be predicted into the future to 
+   search for conjunctions. This search is performed anew during each update,
+   and this duration begins at the time of the update. The means that a
+   conjunction can be predicted during more than one update if this interval
+   is long enough.
+
+.. command:: filter_cut_distance <length-value>
+
+   Declares the distance used in the fast filter.
+
+   **Default:** 10 km.
+
+.. command:: search_step_size <angle-value>
+
+   Declares the step size used in prediction. As this angle is made larger, the
+   amount of computation needed by the processor is decreased, at the cost of
+   some additional error.
+
+   **Default:** 3 deg.
+
+.. command:: exclusion_factor <real-value>
+
+   Declares the size of the exclusion zone as the combined covariance ellipsoid
+   scaled by this factor.
+
+   **Default:** 8.0.
+
+.. command:: default_variance <length-value>
+
+   Declares a default position variance for cases where the track does not have 
+   state covariance data. In those cases, the covariance ellipsoid is taken to
+   be a sphere with this radius.
+
+   **Default:** 10.0 m.
+
+.. command:: default_object_size <length-value>
+
+   Declares an object size used in the computation of the conjunction
+   probability. The probability estimate is sensitive to the size of the object,
+   so reasonable values should be used.
+
+   **Default:** 1.0 m.
+
+.. command:: prediction_model <string>
+
+   Declares the prediction model used by the processor, which can be one of the
+   following:
+
+   **default**
+
+      Use the propagator as in the :model:`WSF_SPACE_MOVER`. This is the most
+      appropriate choice when tracking platforms with a 
+      :model:`WSF_SPACE_MOVER`. This is the default value.
+
+   **norad**
+
+      Use the propagator as in the :model:`WSF_NORAD_SPACE_MOVER`. This is the
+      most appropriate choice when tracking platforms with a 
+      :model:`WSF_NORAD_SPACE_MOVER`.
+
+      Note that this processor works on tracks, and so the predictions produced
+      will be slightly less accurate than if the processor used truth
+      information.
+
+.. command:: primary <string> ... end_primary
+
+   Declare a list of objects by name to be considered as primary objects.
+
+.. command:: debug
+
+   Turn on additional output concerning the operation of this processor.
+
+Script Interface
+================
+
+All of the methods defined in :class:`WsfProcessor` are available to
+scripts defined within this processor.
+
+.. command:: on_conjunction_predicted
+
+   .. parsed-literal::
+   
+      script void on_conjunction_predicted(Array<:class:`WsfOrbitalConjunctionReport`> aReports) ... end_script
+
+   This is an optional script that can be defined that allows one to react to
+   the discovery of a possible conjunction. If defined, this script is only
+   called if conjunctions are discovered, so the input Array will always have
+   at least one entry.

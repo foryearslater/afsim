@@ -1,0 +1,110 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SAM_LAUNCH_COMPUTER
+-----------------------
+
+.. model:: launch_computer WSF_SAM_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_SAM_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      ... `WSF_SAM_LAUNCH_COMPUTER Commands <Commands>`_ ..
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_SAM_LAUNCH_COMPUTER` implements a launch computer for a surface-to-air missile system, and tabulates the
+expected time to intercept for a missile fired at some down-range and altitude away from the shooter, assuming the
+target does not maneuver during missile flight.  Expected time of flight is obtained as an interpolated
+four-dimensional table lookup.  The independent value arrays (lateral offsets, altitudes, ranges, speeds) are provided
+prior to the intercept results (within the intercept_envelope_ block) obtained under the defined set of
+independent conditions.
+
+The :command:`weapon_tools` application assists with creation of launch computers of this type.
+(See :command:`SAM_LAUNCH_COMPUTER_GENERATOR`).
+
+.. block:: WSF_SAM_LAUNCH_COMPUTER
+
+Commands
+========
+
+.. command:: lateral_offsets <distance-values> end_lateral_offsets
+
+   Provides a listing of the lateral offsets used as the first independent variable (slowest-changing index) in the
+   intercept_envelope_ which follows.  Lateral offset is the horizontal distance with which the target would overfly
+   the launcher if the current track is maintained.  Values are to be provided in increasing order, and the effect is
+   assumed symmetrical about the launcher's line-of-sight axis.
+
+.. command:: altitudes <altitude-values> end_altitudes
+
+   Specifies the target altitudes used as the second independent variable in the intercept_envelope_ below.  May be
+   uneven but must be in increasing numerical order.
+
+.. command:: ranges <range-values> end_ranges
+
+   Specifies the ground ranges used as the third independent variable in the intercept_envelope_.  May be uneven but
+   must be in increasing numerical order.
+
+.. command:: speeds <speed-values> end_speeds
+
+   Specifies the target speeds used as the fourth independent variable in the intercept_envelope_.  May be uneven
+   but must be in increasing numerical order.
+
+.. command:: intercept_envelope  ... end_intercept_envelope
+
+   This block contains the data that defines the intercept envelope.  By convention, any unsuccessful intercept point may
+   be omitted from the tabulation, and a time-of-flight of -1.0 seconds (a miss) is assumed.  The five index values given
+   in the example below are printed out by the class weapon_tools generator, and are used to assure proper indexing when
+   the data is read in by the stream parser.
+
+   ::
+
+     intercept_envelope
+        # "intercept" intercept_index lateral_offset_index
+        #    lateral_offset_value altitude_index altitude_value
+        #    ground_range_index ground_range_value speed_index
+        #    speed_value time_of_flight_value
+        intercept 0 0 0 m 0 300 m 0 0 m 1 50 m/s 31.3536 sec
+        intercept 1 0 0 m 0 300 m 0 0 m 4 200 m/s 19.9911 sec
+        intercept 2 0 0 m 0 300 m 0 0 m 5 250 m/s 20.5551 sec
+        intercept 3 0 0 m 0 300 m 0 0 m 6 300 m/s 21.9581 sec
+        intercept 4 0 0 m 0 300 m 0 0 m 7 350 m/s 23.5001 sec          .
+        .
+        .
+        .
+     end_intercept_envelope
+
+.. command:: interpolation_test ... end_interpolation_test
+
+   For debug purposes only, and optional.  Inside this block one may place one or more 'lateral_offset <distance-value>',
+   'altitude <distance-value>', 'target_speed <speed_value>' and 'ground_range <distance_value>' specifications.  Each
+   time the keyword 'test' appears, the most recent value of (offset, altitude, speed, range) is saved off as a test
+   point, and stored into a test point array.  After the launch computer is initialized, each of these test points will be
+   evaluated, and the corresponding interpolated time-of-flight value will be printed to the screen.  The example given
+   below saves off three points for testing.
+
+   ::
+
+     interpolation_test
+        lateral_offset 4000 m
+        altitude       2000 m
+        ground_range  10000 m
+        target_speed    120 m/s
+                test
+        ground_range  20000 m
+                test
+        lateral_offset 2000 m
+                test
+     end_interpolation_test

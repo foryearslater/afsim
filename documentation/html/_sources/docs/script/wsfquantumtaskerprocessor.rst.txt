@@ -1,0 +1,137 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfQuantumTaskerProcessor
+-------------------------
+
+.. class:: WsfQuantumTaskerProcessor inherits WsfProcessor
+   :arrow:
+
++----------------+--------------------------------------------------------------------------------------------------------+
+|                | WsfQuantumTaskerProcessor                                                                              |
++================+========================================================================================================+
+| **Control**    |- :method:`CancelTask <WsfQuantumTaskerProcessor.CancelTask>`                                           |
+|                |                                                                                                        |
+| By assigner    |                                                                                                        |
++----------------+--------------------------------------------------------------------------------------------------------+
+| **Status**     |- :method:`SetTaskProgress <WsfQuantumTaskerProcessor.SetTaskProgress>`                                 |
+|                |- :method:`SetTaskComplete <WsfQuantumTaskerProcessor.SetTaskComplete>`                                 |
+| By assignee    |- :method:`RejectTask <WsfQuantumTaskerProcessor.RejectTask>`                                           |
++----------------+--------------------------------------------------------------------------------------------------------+
+| **Query**      |- :method:`AssignedTaskList <WsfQuantumTaskerProcessor.AssignedTaskList>`                               |
+|                |- :method:`AssignedTaskListOfType <WsfQuantumTaskerProcessor.AssignedTaskListOfType>`                   |
+|                |- :method:`AssignedTaskListForTarget <WsfQuantumTaskerProcessor.AssignedTaskListForTarget>`             |
+|                |- :method:`AssignedTaskListForResourceName <WsfQuantumTaskerProcessor.AssignedTaskListForResourceName>` |
+| By assigner    |- :method:`AssignedTaskListForResourceType <WsfQuantumTaskerProcessor.AssignedTaskListForResourceType>` |
++----------------+--------------------------------------------------------------------------------------------------------+
+| **Query**      |- :method:`ReceivedTaskList <WsfQuantumTaskerProcessor.ReceivedTaskList>`                               |
+|                |- :method:`ReceivedTaskListOfType <WsfQuantumTaskerProcessor.ReceivedTaskListOfType>`                   |
+|                |- :method:`ReceivedTaskListOfTypeForTarget <WsfQuantumTaskerProcessor.ReceivedTaskListOfTypeForTarget>` |
+|                |- :method:`ReceivedTaskListForTarget <WsfQuantumTaskerProcessor.ReceivedTaskListForTarget>`             |
+|                |- :method:`ReceivedTaskListForResourceName <WsfQuantumTaskerProcessor.ReceivedTaskListForResourceName>` |
+| By assignee    |- :method:`ReceivedTaskListForResourceType <WsfQuantumTaskerProcessor.ReceivedTaskListForResourceType>` |
++----------------+--------------------------------------------------------------------------------------------------------+
+| **Debug**      |- :method:`TasksConsidered <WsfQuantumTaskerProcessor.TasksConsidered>`                                 |
+|                |- :method:`AssetsConsidered <WsfQuantumTaskerProcessor.AssetsConsidered>`                               |
+|                |- :method:`ValuesConsidered <WsfQuantumTaskerProcessor.ValuesConsidered>`                               |
+|                |- :method:`AssetAssigneesFor <WsfQuantumTaskerProcessor.AssetAssigneesFor>`                             |
++----------------+--------------------------------------------------------------------------------------------------------+
+
+Task Control Methods
+====================
+
+.. method:: bool CancelTask(WsfTrackId aTrackId)
+
+   Called by the assigner to cancel any tasks this procoessor has assigned that match the given track ID. If the given track ID is null, then all tasks assigned by this processor are canceled.
+
+Task Status Methods
+===================
+
+.. method:: void SetTaskProgress(WsfTask aTask, string aSubStatus)
+
+   Called by the assignee to update the task assigner with a status message about progress.  The user provides sub-status as an input parameter; the status will be the default "IN_PROGRESS".
+
+.. method:: void SetTaskComplete(WsfTask aTask)
+.. method:: void SetTaskComplete(WsfTask aTask, string aSubStatus)
+
+   Called by the assignee to update the task assigner with a task complete message.  The status of the task complete message will be the default "COMPLETE".  The default value for sub-status is "SUCCESSFUL".  User can provide a sub-status; usual values: "SUCCESSFUL" or "UNSUCCESSFUL"
+
+.. method:: void RejectTask(WsfTask aTask)
+
+   Called by the assignee to reject the assigned task, sends a task reject/cancel message to the assigner.
+
+Task Query Methods for Sent Task Assignments
+============================================
+
+.. method:: WsfTaskList AssignedTaskList()
+
+   Returns a list of all tasks this processor has assigned.
+
+.. method:: WsfTaskList AssignedTaskListOfType(string aType)
+
+   Returns a list of tasks this processor has assigned for the given task type.
+
+.. note::
+
+   Task type is no longer equivalent with resource type.
+
+.. method:: WsfTaskList AssignedTaskListForTarget(WsfTrackId aTargetTrackId)
+
+   Returns a list of tasks this processor has assigned for the given target.
+
+.. method:: WsfTaskList AssignedTaskListForResourceName(string aResourceName)
+.. method:: WsfTaskList AssignedTaskListForResourceType(string aResourceType)
+
+   Returns a list of tasks this processor has for the given resource with the specific name or type. Type can be "weapon", "sensor", "jammer", or any other string (equivalent to passing in "none").
+
+Task Query Methods for Received Task Assignments
+================================================
+
+.. method:: WsfTaskList ReceivedTaskList()
+
+   Returns a list of all tasks that have been received.
+
+.. method:: WsfTaskList ReceivedTaskListOfType(string aType)
+
+   Returns a list of tasks that have been received for the given task type.
+
+.. note::
+
+   Task type is no longer equivalent with resource type.
+
+.. method:: WsfTaskList ReceivedTaskListOfTypeForTarget(string aType, WsfTrackId aTargetTrackId)
+
+   Returns a list of tasks that have been received for the given task type and given target.
+
+.. method:: WsfTaskList ReceivedTaskListForTarget(WsfTrackId aTargetTrackId)
+
+   Returns a list of tasks that have been received for the given target.
+
+.. method:: WsfTaskList ReceivedTaskListForResourceName(string aResourceName)
+.. method:: WsfTaskList ReceivedTaskListForResourceType(string aResourceType)
+
+   Returns a list of tasks that have been received for the given resource with the specific name or type. Type can be "weapon", "sensor", "jammer", or any other string (equivalent to passing in "none").
+
+Debug Methods
+=============
+
+.. method:: Array<WsfQuantumTask> TasksConsidered()
+.. method:: Array<WsfAssetPerception> AssetsConsidered()
+
+   Data returned by these methods are copies of information currently resident in the quantum matrix. This information is updated during the generation step of the quantum tasker processor.
+
+.. method:: Array<Array<double>> ValuesConsidered()
+
+   Data returned by this method is a copy of information currently resident in the quantum matrix. This information is updated during the evaluation step of the quantum tasker processor.
+
+.. method:: Array<WsfAssetPerception> AssetAssigneesFor(WsfQuantumTask aTask)
+
+   Returns copies of the asset perceptions allocated for the given task. This information is updated during the allocation step of the quantum tasker processor.

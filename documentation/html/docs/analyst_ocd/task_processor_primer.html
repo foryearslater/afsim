@@ -1,0 +1,474 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Task Processor Primer &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Tracking Primer" href="tracking_primer.html" />
+    <link rel="prev" title="Synthetic Aperture Radar (SAR) Image Formation Equations" href="synthetic_aperture_radar_equations.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="tracking_primer.html" title="Tracking Primer"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="synthetic_aperture_radar_equations.html" title="Synthetic Aperture Radar (SAR) Image Formation Equations"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="task-processor-primer">
+<h1>Task Processor Primer<a class="headerlink" href="#task-processor-primer" title="Permalink to this headline">¶</a></h1>
+<section id="task-processor">
+<h2>Task Processor<a class="headerlink" href="#task-processor" title="Permalink to this headline">¶</a></h2>
+<p>A Task Processor (<a class="reference internal" href="../wsf_task_processor.html#WSF_TASK_PROCESSOR" title="WSF_TASK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TASK_PROCESSOR</span></a>) is an WSF processor that provides the ability to examine data (tracks) in
+the track manager and act upon them.  The actions include</p>
+<ul class="simple">
+<li><p>Assignment of tasks to subordinates</p></li>
+<li><p>Activation or deactivation of sensors or jammers</p></li>
+<li><p>Firing of weapons</p></li>
+<li><p>Maneuvering the platform</p></li>
+</ul>
+<p>Every platform that can assign tasks or receive task assignments MUST have an instance of a WSF_TASK_PROCESSOR. The
+task processor uses the concept of a “finite state machine’ to control the actions to be performed.</p>
+<p>The task processor “listens” to the track manager to determine when a new track appears. The track may be from</p>
+<ul class="simple">
+<li><p>A track produced by a local sensor.</p></li>
+<li><p>A track received from an off-board source.</p></li>
+<li><p>A track embedded within a task assignment.</p></li>
+<li><p>A prebriefed track.</p></li>
+</ul>
+<p>When a new track appears, an evaluation event will be scheduled for the “start” state (i.e., the first “state” in the
+processor).  Subsequent evaluation events will be scheduled as dictated by the state machine.  Evaluation events for a
+given track will cease when BOTH of the following are true:</p>
+<ul class="simple">
+<li><p>No tasks have been received for the track.</p></li>
+<li><p>No tasks have been originated for the track.</p></li>
+</ul>
+<p>Each track executes in its own state machine.</p>
+</section>
+<section id="finite-state-machine">
+<h2>Finite State Machine<a class="headerlink" href="#finite-state-machine" title="Permalink to this headline">¶</a></h2>
+<p>A finite state machine consists of</p>
+<ul class="simple">
+<li><p>A finite number of “states,’ one of which is the “start state.’</p></li>
+<li><p>A set of “transition rules’ or “transition functions’ that define the conditions under which a state will change.</p></li>
+</ul>
+<p>A finite state machine typically can be represented by a state diagram consisting of</p>
+<ul class="simple">
+<li><p>“nodes,’ which represent states</p></li>
+<li><p>“arcs,’ which connect the nodes and represent transition rules.</p></li>
+</ul>
+<p>In WSF, a “state’ can represent just about anything</p>
+<ul class="simple">
+<li><p>Waiting for something to come in range.</p></li>
+<li><p>Waiting for a sensor to acquire.</p></li>
+<li><p>Waiting for a weapon to detonate.</p></li>
+</ul>
+<p>In the following example, a simple state diagram is shown that has nodes (labeled A through D) and arcs connecting the
+nodes that represent transition rules.</p>
+<img alt="../../_images/primer_state_machine.png" src="../../_images/primer_state_machine.png" />
+<p>State “A” is the starting point.  If the transition rules are met, it transitions to “B.”  If all transition rules are
+met, it eventually will transition to state “C” and then “D.”  At states “B” and “C” it can revert back to “A” if
+certain transition rules are not met.  An example of a radar system can be made with a state machine.  State “A” could
+be the search mode. State “B” could represent the initial acquisition mode. State “C” could represent the secondary
+acquisition mode.  State “D” could be the track mode.</p>
+</section>
+<section id="state-machine-input">
+<h2>State Machine Input<a class="headerlink" href="#state-machine-input" title="Permalink to this headline">¶</a></h2>
+<p>The following graphic shows how a state machine is defined within a task processor in WSF.</p>
+<img alt="../../_images/primer_state_makeup.png" src="../../_images/primer_state_makeup.png" />
+</section>
+<section id="predefined-variables-available-in-a-task-processor">
+<h2>Predefined Variables Available in a Task Processor<a class="headerlink" href="#predefined-variables-available-in-a-task-processor" title="Permalink to this headline">¶</a></h2>
+<p>The task processor has access to variables that are predefined to ease the creation of scripts as follows:</p>
+<ul>
+<li><div class="line-block">
+<div class="line"><strong>TRACK Variable</strong></div>
+<div class="line">The TRACK variable is of type <a class="reference internal" href="../script/wsflocaltrack.html#WsfLocalTrack" title="WsfLocalTrack"><span class="xref wsf wsf-class">WsfLocalTrack</span></a> and refers to the current track being evaluated.  Because
+WsfLocalTrack inherits from WsfTrack, all of the methods in type <a class="reference internal" href="../script/wsftrack.html#WsfTrack" title="WsfTrack"><span class="xref wsf wsf-class">WsfTrack</span></a> are also available.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><strong>PROCESSOR Variable</strong></div>
+<div class="line">The PROCESSOR variable (or “this’ which is deprecated) is of type WsfTaskManager and refers to the
+<a class="reference internal" href="../wsf_task_processor.html#WSF_TASK_PROCESSOR" title="WSF_TASK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TASK_PROCESSOR</span></a>. All methods of <a class="reference internal" href="../script/wsftaskmanager.html#WsfTaskManager" title="WsfTaskManager"><span class="xref wsf wsf-class">WsfTaskManager</span></a>, <a class="reference internal" href="../script/wsftaskprocessor.html#WsfTaskProcessor" title="WsfTaskProcessor"><span class="xref wsf wsf-class">WsfTaskProcessor</span></a>, <a class="reference internal" href="../script/wsfprocessor.html#WsfProcessor" title="WsfProcessor"><span class="xref wsf wsf-class">WsfProcessor</span></a>, <a class="reference internal" href="../script/wsfplatformpart.html#WsfPlatformPart" title="WsfPlatformPart"><span class="xref wsf wsf-class">WsfPlatformPart</span></a>
+and <a class="reference internal" href="../script/wsfobject.html#WsfObject" title="WsfObject"><span class="xref wsf wsf-class">WsfObject</span></a> are available to be used.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><strong>PLATFORM Variable</strong></div>
+<div class="line">The PLATFORM variable is of the type WsfPlatform and refers to the platform that contains the processor. All methods
+of <a class="reference internal" href="../script/wsfplatform.html#WsfPlatform" title="WsfPlatform"><span class="xref wsf wsf-class">WsfPlatform</span></a> and <a class="reference internal" href="../script/wsfobject.html#WsfObject" title="WsfObject"><span class="xref wsf wsf-class">WsfObject</span></a> are available to be used.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><strong>MESSAGE Variable</strong></div>
+<div class="line">The MESSAGE variable is of the WsfMessage type. All methods of <a class="reference internal" href="../script/wsfmessage.html#WsfMessage" title="WsfMessage"><span class="xref wsf wsf-class">WsfMessage</span></a> are available.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><strong>TIME_NOW Variable</strong></div>
+<div class="line">TIME_NOW is a simple “double’ variable that represents the number of seconds since the start of the simulation.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><strong>MATH Variable</strong></div>
+<div class="line">MATH allows the use of math functions. See <a class="reference internal" href="../script/math.html#Math" title="Math"><span class="xref wsf wsf-class">Math</span></a></div>
+</div>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>See :ref:`Common_Script_Interface` for variables available within other components.
+</pre></div>
+</div>
+</section>
+<section id="the-evaluation-process-of-a-state-machine">
+<h2>The Evaluation Process of a State Machine<a class="headerlink" href="#the-evaluation-process-of-a-state-machine" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><div class="line-block">
+<div class="line">Request a “thinker’ process</div>
+<div class="line">When a thinker becomes available, mark it as busy for the amount of time specified in the “time_to_evaluate” for the
+current state.</div>
+<div class="line-block">
+<div class="line">Simulates human or machine time needed to do something</div>
+<div class="line">Controlled by the “time_to_think’ value for the state being evaluated</div>
+<div class="line">Can be overloaded</div>
+<div class="line-block">
+<div class="line">If a thinker is not available (not busy thinking about another evaluation), the evaluation will be put on a “pending
+queue’</div>
+<div class="line">Will be processed by the next available thinker.</div>
+</div>
+<div class="line">WSF_TASK_PROCESSOR can be configured with multiple thinkers</div>
+<div class="line-block">
+<div class="line">Command: “number_of_servers &lt;n&gt;” (Default is 1)</div>
+</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">When the thinker hits the end of the evaluation time, execute the rules for the current state:</div>
+<div class="line">Set the reserved script variables</div>
+<div class="line-block">
+<div class="line">TRACK, PLATFORM, PROCESSOR, MESSAGE, TIME_NOW</div>
+</div>
+<div class="line">Execute the “next_state’ scripts in order of appearance</div>
+<div class="line-block">
+<div class="line">If none return true, remain in the current state.</div>
+<div class="line-block">
+<div class="line">Mark the thinker as “not-busy’</div>
+<div class="line">Schedule the next evaluation using “evaluation_interval’.</div>
+</div>
+<div class="line">If one returns true, transition to indicated state.</div>
+<div class="line-block">
+<div class="line">Execute the “on_exit’ script for the current state.</div>
+<div class="line">Execute the “on_entry’ script for the new state.</div>
+<div class="line">Set the “current state’ equal to the “new state’</div>
+<div class="line">Extend the thinker time by the “time_to_evaluate’ for the new state.</div>
+<div class="line">Wait for thinker to complete and evaluate the rules.</div>
+</div>
+</div>
+</div>
+</li>
+</ul>
+</section>
+<section id="assignment-and-execution">
+<h2>Assignment and Execution<a class="headerlink" href="#assignment-and-execution" title="Permalink to this headline">¶</a></h2>
+<p>A task manager can assign (or cancel) tasks to subordinates.  Some methods available within <a class="reference internal" href="../script/wsftaskmanager.html#WsfTaskManager" title="WsfTaskManager"><span class="xref wsf wsf-class">WsfTaskManager</span></a> to
+assign or cancel tasks are</p>
+<ul class="simple">
+<li><p>AssignTask (can also use FireAt, StartTracking and StartJamming for weapons)</p></li>
+<li><p>CancelTask</p></li>
+<li><p>TasksAssignedFor</p></li>
+<li><p>AssigneesForTask</p></li>
+</ul>
+<p>Task assign/cancel/status messages are communicated over the comm network (if not a local task), and are subject to
+loss (by range or jamming).  If the assignee of a task is killed, all tasks to the assignee will automatically be
+canceled on the assigner(s).</p>
+<p><strong>When a task assignment is received:</strong></p>
+<ul>
+<li><div class="line-block">
+<div class="line">It updates the track manager with the track that was supplied with the message.</div>
+<div class="line-block">
+<div class="line">Creates a “local track’ if it cannot be correlated to an existing track.</div>
+<div class="line">(Track IDs between assigner and assignee are not the same!)</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Increments the “lock count’ for the track</div>
+<div class="line-block">
+<div class="line">Prevents the local track from being purged while an assignment is active.</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Add to the received task list.</div>
+<div class="line-block">
+<div class="line">Will be reflected in the value returned by TasksReceivedFor.</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">If the assignee did not already “know’ about the target, a state machine will be created and started for the target.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">An immediate evaluation is requested, pending thinker availability.</div>
+<div class="line-block">
+<div class="line">No delay waiting for the next evaluation cycle.</div>
+</div>
+</div>
+</li>
+</ul>
+<p><strong>When a task cancel is received:</strong></p>
+<ul>
+<li><div class="line-block">
+<div class="line">Purges the entry from the received task list.</div>
+<div class="line-block">
+<div class="line">No longer reflected in the value returned by TasksReceivedFor.</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Sends a confirmation to the assigner.</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Invokes the “on_task_cancel’ script (if defined)</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Releases any sensor or weapon associated with the task</div>
+<div class="line-block">
+<div class="line">(Applicable only to FireAt, StartTracking and StartJamming tasks.)</div>
+</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line">Decrements the lock count on the local track.</div>
+<div class="line-block">
+<div class="line">Allows the local track to be purged if there are no other assignments and the track is older than the purge interval.</div>
+<div class="line">If the local track is purged</div>
+<div class="line-block">
+<div class="line">Destroys the state machine associated with the track.</div>
+<div class="line">Invokes the “on_track_drop’ script (if defined).</div>
+</div>
+</div>
+</div>
+</li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/task_processor_primer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="tracking_primer.html" title="Tracking Primer"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="synthetic_aperture_radar_equations.html" title="Synthetic Aperture Radar (SAR) Image Formation Equations"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,355 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfLaunchComputer
+-----------------
+
+.. class:: WsfLaunchComputer
+
+.. contents::
+   :local:
+
+The WsfLaunchComputer object provides support to :class:`WsfWeapon` to decide if a weapon can be launched, and if so,
+some of the conditions about the launch.
+
+Methods
+=======
+
+.. method:: bool CanIntercept(WsfTrack aTrack)
+.. method:: bool CanIntercept(WsfTrack aTrack, double aLaunchDelayTime)
+
+   Initiates a launch computer calculation to determine if an intercept can occur against the specified target.
+
+.. method:: bool HaveResultsFor(WsfTrackId aTrackId)
+
+   Returns whether the launch computer has computed a launch solution against the given track id.
+
+Data Validity Methods
+=====================
+
+.. method:: bool BurnTimeIsValid()
+
+   Returns whether a valid burn time was computed.
+
+.. method:: bool EndPointIsValid()
+
+   Returns whether a valid weapon end point has been computed.
+
+.. method:: bool EndTimeIsValid()
+
+   Returns whether a valid weapon end time has been computed.
+
+.. method:: bool InterceptPointIsValid()
+
+   Returns whether a valid intercept point has been computed.
+
+.. method:: bool InterceptTimeIsValid()
+
+   Returns whether a valid intercept time has been computed.
+
+.. method:: bool LauncherBearingIsValid()
+
+   Returns whether a valid bearing was computed.
+
+.. method:: bool LauncherElevationIsValid()
+
+   Returns whether a valid launcher elevation angle was computed.
+
+.. method:: bool LaunchTimeIsValid()
+
+   Returns whether a valid launch time has been computed.
+
+.. method:: bool LoftAngleIsValid()
+
+   Returns whether a valid loft angle was computed.
+
+.. method:: bool TargetImpactPointIsValid()
+
+   Returns whether a valid target impact point has been computed.
+
+.. method:: bool TargetImpactTimeIsValid()
+
+   Returns whether a valid target impact time has been computed.
+
+.. method:: bool TimeOfFlightIsValid()
+
+   Returns whether a valid time of flight has been computed.
+
+Data Retrieval Methods
+======================
+
+.. method:: double BurnTime()
+
+   Returns the computed burn time (seconds).
+
+.. method:: WsfGeoPoint InterceptPoint()
+
+   Returns the computed intercept point.
+
+.. method:: double InterceptTime()
+
+   Returns the simulation time at which intercept is expected to occur (seconds).
+
+.. method:: double LauncherBearing()
+
+   Returns the computed launcher bearing.
+
+.. method:: double LauncherElevation()
+
+   Returns the computed launcher elevation.
+
+.. method:: double LaunchTime()
+
+   Returns the simulation time at which launch should occur (seconds).
+
+.. method:: double LoftAngle()
+
+   Returns the computed loft angle (decimal degrees).
+
+.. method:: double TimeOfFlight()
+
+   Returns the computed time of flight (seconds).
+
+
+Additional Methods for :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER`
+=====================================================================
+
+Launch Window Computations
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Normally :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` will compute only the first available solution for surface-to-air
+intercepts. By enabling :method:`WsfLaunchComputer.ComputeLaunchWindows` before calling :method:`WsfLaunchComputer.CanIntercept`, the launch computer will
+determine the 'launch windows' or the ranges of times in which a launch can occur that will result in an intercept.
+
+Enabling launch window computation requires more processor time, so it should be used only when needed.
+
+.. note::
+
+      These methods only apply to surface-air-air intercept calculations.
+
+.. method:: void ComputeLaunchWindows()
+
+   Indicates launch windows should be computed on the next call to **CanIntercept**.
+
+   This is a 'single-shot' request. It is applicable only to the next call to **CanIntercept** and is cleared after the
+   call. The results should be captured immediately after the call the **CanIntercept** by using the methods below.
+
+.. method:: int LaunchWindowCount()
+
+   Returns the number of launch windows.
+
+.. method:: double FirstLaunchTime(int aIndex)
+
+   Returns the first launch time for the launch window with the specified index.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount()**-1 ]
+
+
+.. method:: double FirstInterceptTime(int aIndex)
+
+   Returns the predicted intercept time for a launch that occurs at **FirstLaunchTime(aIndex)**.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount()**-1 ]
+
+
+.. method:: WsfGeoPoint FirstInterceptPoint(int aIndex)
+
+   Returns the predicted intercept location for a launch that occurs at **FirstLaunchTime(aIndex)**.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount(**)-1 ]
+
+
+.. method:: double LastLaunchTime(int aIndex)
+
+   Returns the last possible launch time for the launch window with the specified index.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount()**-1 ]
+
+
+.. method:: double LastInterceptTime(int aIndex)
+
+   Returns the predicted intercept time for a launch that occurs at **LastLaunchTime(aIndex)**.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount()**-1 ]
+
+
+.. method:: WsfGeoPoint LastInterceptPoint(int aIndex)
+
+   Returns the predicted intercept location for a launch that occurs at **FirstLaunchTime(aIndex)**.
+
+   .. note::
+
+      **aIndex** must be in the range [ 0 .. **LaunchWindowCount()**-1 ]
+
+
+Target Methods
+^^^^^^^^^^^^^^
+
+These methods are valid only for surface-to-air intercept predictions. They refer to the incoming ballistic missile,
+not the interceptor.
+.. method:: double TargetApogeeTime()
+
+   Returns the simulation time at which the target is expected to reach apogee during its trajectory.
+
+.. method:: WsfGeoPoint TargetApogeePoint()
+
+   Returns the point at which the target is predicted to reach apogee during its trajectory.
+
+.. method:: double TargetImpactTime()
+
+   Returns the simulation time at which the target is expected to impact its target location.
+
+.. method:: WsfGeoPoint TargetImpactPoint()
+
+   Returns the point at which the target is predicted to impact.
+
+
+End Point Methods
+^^^^^^^^^^^^^^^^^
+
+These methods are valid only for surface-to-air intercept predictions. They return the estimated time and location at
+which the launched weapon (interceptor) would hit the surface of the Earth if it followed a ballistic trajectory and
+did not hit the intended target.
+
+.. note::
+
+   See the documentation for :command:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.compute_end_point` in
+   :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` for additional information prior to using this capability.
+
+.. method:: void ComputeEndPoint()
+
+   Specifies that the end time and point should be computed on the next call to **CanIntercept**.
+
+   This is a 'single-shot' request. It is applicable only to the next call to **CanIntercept** and is reset to the value
+   of the :command:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.compute_end_point` from :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER`
+   after the call. The results should be captured immediately after the call the **CanIntercept** by using the methods
+   below.
+
+.. method:: double EndTime()
+
+   Returns the estimated simulation time at which the weapon would hit the surface of the Earth. The value will be less
+   than or equal to zero if a value was not determined.
+
+.. method:: WsfGeoPoint EndPoint()
+
+   Returns the estimated point at which the weapon would hit the surface of the Earth. The results are valid only if
+   **EndTime()** returned a value greater than zero.
+
+   After launch, the data may be accessed from the the launched weapon platform as follows:
+
+   ::
+
+      WsfPlatform weapon = *<weapon-platform-reference>*;
+      WsfTrack track = weapon.MasterRawTrackList().Entry(0);
+      if (track.IsValid() &&
+          (track.AuxDataDouble("LC_END_TIME") > 0.0))
+      {
+         WsfGeoPoint endPoint = WsfGeoPoint.Construct(track.AuxDataDouble("LC_END_LAT"),
+                                                      track.AuxDataDouble("LC_END_LON"),
+                                                      track.AuxDataDouble("LC_END_ALT"));
+         writeln("  EndTime=", track.AuxDataDouble("LC_END_TIME"), " EndPoint=", endPoint);
+      }
+
+Other Methods
+^^^^^^^^^^^^^
+
+.. method:: double LateralTargetOffset(WsfTrack aTrack)
+
+   Returns the lateral offset in meters (cross range) between the launcher and predicted target trajectory. Another way of
+   looking at it is that this is the shortest ground range to the target along the predicted trajectory.
+
+   If this method is called after the target has passed by the launcher and the predicted trajectory for the target has
+   yet to be computed (i.e., there was no prior call to this method or ComputeIntercept) then the return value will
+   be the ground range to the current location of the target.
+
+   .. note::
+
+      This is valid only for surface-to-air engagements.
+
+
+
+Additional Methods for :model:`WSF_AIR_TO_AIR_LAUNCH_COMPUTER`
+==============================================================
+
+
+Internally, the :model:`WSF_AIR_TO_AIR_LAUNCH_COMPUTER` contains a reference to a precomputed six-dimensional table of
+expected missile engagement shot results.  For each combination of (shooter altitude, shooter speed, target altitude,
+target speed, target aspect (nose on = 0) and target lead angle) the table provides the expected (minimum range, min range
+time-of-flight, no escape range, no escape range time-of-flight, maximum range, maximum range time-of-flight) results.
+Be aware that some tabulated results may yield "no engagement possible," represented by all dependent variable equal to
+-1.0.  Also know that the precomputed predictions make simplifying assumptions on target motion; results in an actual
+engagement may vary from prediction.  Because of this variability, it is desirable to incorporate conservatism into
+missile launch logic.  This conservatism will typically be placed in user-defined scripts, and will often involve
+artificially increasing the minimum range distance, and/or artificially reducing the maximum range distance.  The
+script methods documented below provide the predicted results and allow the user to make whatever "trigger pull"
+decisions that are required.
+
+.. note::
+   The track must have valid WCS location and velocity.
+
+.. method:: Array<double> LookupResult(WsfTrack aTrack)
+
+   Returns an array with the expected engagement envelope ranges and times-of-flight:
+
+   ::
+
+      0 = Maximum Range (m)
+      1 = Maximum Range Time Of Flight (sec)
+      2 = No Escape Range (m)
+      3 = No Escape Range Time Of Flight (sec)
+      4 = Minimum Range (min)
+      5 = Minimum Range Time Of Flight (sec)
+
+
+
+Additional Methods for :model:`WSF_SCRIPT_LAUNCH_COMPUTER`
+==========================================================
+
+:model:`WSF_SCRIPT_LAUNCH_COMPUTER` allows the user to compute the intercept using the scripting language. As such, it must
+have the means to communicate its results. This is done using the methods defined below. Note that **SetInterceptTime**
+is required if a predicted intercept is to be reported. All other methods are optional.
+
+.. method:: void SetInterceptTime(double aInterceptTime)
+
+   Set the simulation time when the intercept has been predicted to occur.
+
+   .. note::
+
+      This method must be called if a predicted intercept is to be reported.
+
+
+.. method:: void SetInterceptPoint(WsfGeoPoint aInterceptPoint)
+
+   Set the location where the intercept has been predicted occur.
+
+   .. note::
+
+      This is not required, but a weapon system may desire to have this for orienting the weapon at launch.
+
+
+.. method:: void SetLaunchTime(double aLaunchTime)
+
+   Set the simulation time when the launch command should be issued.
+
+.. method:: void SetTimeOfFlight(double aTimeOfFlight)
+
+   Set the predicted time of flight (the predicted time of intercept minus the predicted time of launch).
+

@@ -1,0 +1,108 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.5.0:
+
+WSF 1.5.0 - 10-Dec-2008
+-----------------------
+
+Enhancements
+============
+
+These optional interfaces are not included in the standard unclassified release.
+
+* Added the mover **WSF_NEW_GUIDED_MOVER** and the processor **WSF_NEW_GUIDANCE_COMPUTER**. These are significant
+  enhancements to :model:`WSF_GUIDED_MOVER` and :model:`WSF_GUIDANCE_COMPUTER` respectively, and have many new capabilities that
+  allow them to model weapons that could not be modeled with the old capabilities. These are not yet documented, but are
+  being included to allow testing by a few users.
+
+  .. note::
+
+      For now WSF_GUIDED_MOVER and WSF_GUIDANCE_COMPUTER have synonyms of WSF_OLD_GUIDED_MOVER and
+      WSF_OLD_GUIDANCE_COMPUTER respectively. If you wish to continue to use the old capabilities you should change to use
+      the 'WSF_OLD\_' forms as the new forms will eventually be renamed to become the default versions.
+
+* Added the :command:`antenna_pattern steered_array_pattern <antenna_pattern>` antenna gain pattern
+  generator which provides increased fidelity in representing systems that utilize electronically steered arrays (ESA).
+
+* Added capability to :command:`sensor_plots's <sensor_plot>` :command:`antenna_plot` to to choose a pattern
+  by frequency and or polarization  via the :command:`antenna_plot.frequency` and
+  :command:`antenna_plot.polarization` inputs.
+
+* Added capability to :command:`sensor_plots's <sensor_plot>` :command:`antenna_plot` to handle
+  electronically steered antenna patterns via
+  :command:`antenna_plot.electronic_beam_steering`,
+  :command:`antenna_plot.electronic_beam_steering_loss_exponent`,
+  :command:`antenna_plot.azimuth_steering_angle`,
+  :command:`antenna_plot.elevation_steering_angle` inputs.
+
+* Added a coherent jamming power implementation to complement the noise jamming power implementation for
+  :model:`WSF_RF_JAMMER`. The coherent jamming power **will not** be used in the sensor signal-to-noise calculations since it
+  is coherent and is seen as signal (not noise) by the sensor. The coherency of the jamming power is determined by the
+  applied :command:`electronic_attack` effect that is applied to the sensor's receiver.
+
+* Added a pulse jamming power implementation to complement the noise and coherent jamming power implementation for
+  :model:`WSF_RF_JAMMER`. The pulse jamming power **will** be used in the sensor signal-to-noise calculations since it is
+  non-coherent and is seen as noise by the sensor. No output is provided currently to differentiate between pulse jamming
+  power and noise jamming power, as they are summed together in the :command:`event_output` log.
+
+* **(CR 6020)** Added the :command:`WSF_RADAR_SENSOR.post_lockon_detection_threshold_adjustment` and
+  :command:`WSF_RADAR_SENSOR.post_lockon_adjustment_delay_time` to :model:`WSF_RADAR_SENSOR` for compatibility with SUPPRESSOR's
+  POST-LOCKON-THRESHOLD and POST-LOCKON-S/N-DELAY commands.
+
+* Added :class:`WsfDraw` script class allowing users to insert drawing commands in the DIS output stream.
+
+* Added the :command:`dis_interface.suppress_non_standard_data` command to the :command:`dis_interface`.
+
+* Added :model:`WSF_RPJ_EFFECT`, which is a Random Pulse Jamming (RPJ) effect extension to the
+  :command:`Electronic Attack (EA) <electronic_attack>` capabilities.
+
+* Added :model:`WSF_PULSE_SUPPRESS_EFFECT`, which is a pulse suppression effect extension to the
+  :command:`Electronic Protect (EP) <electronic_protect>` capabilities.
+
+* Added the :command:`WSF_WEAPON_TRACK_PROCESSOR.uplink_required` command to :model:`WSF_WEAPON_TRACK_PROCESSOR` to indicate
+  if an uplink is always required for the weapon.
+
+* Added the **guide_to_truth** command to :model:`WSF_GUIDANCE_COMPUTER <WSF_GUIDANCE_COMPUTER>` and
+  :model:`WSF_STRAIGHT_LINE_MOVER <WSF_STRAIGHT_LINE_MOVER>` to allow a weapon to guide reasonably when the
+  source of the guidance information is of very low fidelity.
+
+* Added script string methods StartsWith(string) and EndsWith(string). Each return a boolean allowing a string to be
+  tested against a beginning or ending substring.
+
+Corrections
+===========
+
+* **(CR 6019)** Corrected a problem where, under certain rarely occurring conditions, the azimuth beam pointing
+  angle was being corrupted if the angle exceeded the maximum azimuth slewing limit.
+
+* **(CR 6021)** Corrected a problem where the beam pointing angle for tracking sensors was slightly off. Incorrect
+  pointing could cause a loss of a couple of dB if the beam was very narrow which might cause failed detections at long
+  ranges.
+
+* **(CR 6041)** Corrected a problem where the SENSOR_DETECTION_CHANGED events for a given sensor/target pair were
+  not toggling between detecting and not detecting as they should. The transition to not detecting was not being caught
+  if the sensor was tracking the target at that time.
+
+* **(CR 6044)** Corrected a problem where some SENSOR_TRACK_INITIATED events from event_output contained strange
+  data. The problem was traced to :model:`WSF_IMAGE_PROCESSOR` during its processing of a SAR image. The calls that produced
+  the messages were removed because they really were not pertinent and could cause other problems. Alternative ways of
+  conveying the data will be evaluated when the image processing framework is updated in the future.
+
+* **(CR 6075)** - Corrected a problem where the atmospheric attenuation for a 1-way path should have been 1/2 (in db
+  terms) of the 2-way path involving the same two objects. The error was small a short ranges, but became more apparent
+  at longer ranges (about 10% at 250 km)
+
+* Corrected a problem where a program would quit unexpectedly when reading an invalid IR10T.
+  An error message now provides a clue to origin of the problem.
+
+* Corrected a problem where IR10T tables were required to be 0-360&deg; in azimuth.  Now
+  0-180&deg; azimuth tables are correctly handled as symmetric.

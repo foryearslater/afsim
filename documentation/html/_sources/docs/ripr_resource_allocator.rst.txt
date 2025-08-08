@@ -1,0 +1,200 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _RIPR_Resource_Allocator:
+
+RIPR Resource Allocator
+-----------------------
+
+Can RIPR be used for decision making in an EW simulation?
+=========================================================
+
+Electronic Warfare (EW) can be a complex arena to play in, and :ref:`RIPR` can help.  A RIPR agent can exist on any kind
+of platform and it can perform any kind of platform task.  A task to be performed might be as simple as flying towards
+a point, or maybe even firing a weapon.  A common application of the RIPR framework is to make a regular platform into
+a RIPR agent by adding a RIPR processor to it.  The RIPR processor can control the platform's maneuvering and weapons
+in order to move towards the right locations and engage the right targets.  A platform's weapons might include
+missiles, bombs, or in this case: various EW jamming emitters.  A RIPR agent can act in conjunction with other other
+RIPR agents (often through a commander) or it can act solo.  Much of the communication between RIPR agents is in the
+form of job bidding and job allocation; this is described in more detail below. RIPR agents can retrieve data from any
+aspect of the platform and can control any aspect of the platform.  It is typical to make your RIPR agent control some
+kind of weapon targeting.
+
+Here is an example of a simple platform structure of a RIPR agent:
+
+.. image:: ./images/ripr_component_interaction.jpg
+
+In a EW jamming simulation, it is reasonable to have a :ref:`RIPR` agent control the jamming weapons and perhaps leave the
+maneuvering to a pre-established route.
+
+So what is the EW decision making that needs to be done?
+========================================================
+
+A player in a EW jamming simulation commonly needs to answer the question "which targets or threats should I be
+jamming?".  The decisions to jam some threats and ignore others are important and can determine mission success or
+failure.  The decisions are made difficult when you have many jamming emitters at your disposal and many targets that
+likely need to be jammed.  The decisions are also dynamic, and might need to be changed as the threat environment
+changes or as the player's status changes.  This situation has just become a dynamic resource allocation problem, a
+trading game, where a player should attempt to optimize his effectiveness over a period of time.
+
+How can a RIPR agent make these kinds of decisions?
+===================================================
+
+One feature of :ref:`RIPR` is highly tuned to this kind of problem:  The :ref:`Job_Board`.  In order to use a tool such as
+the Job Board to solve a typical dynamic resource allocation problem, we need to define the problem in terms of Job
+Board components.  The key components behind the Job Board tool are jobs, bidders, and bids.  Jobs are tasks to be
+done, bidders represent some manifestation (perhaps a platform, or even a weapon) that can perform the job, and bids
+represent an ability to perform said jobs, a measure of effectiveness or capability.  A job is known in WSF script as
+a :class:`WsfRIPRJob`.  Lets break down the EW decision making into these three components; we'll use the example AIJAM
+agent along the way.
+
+**Jobs -** The tasks to be performed in this case are simply jamming of various targets or threats.  Typical ways to
+get targets to jam is to read tracks from the track manager.  The track manager might contain tracks received from
+sensors, received from the network, or it might even contain pre-briefed tracks (representing intel you might have of
+the targets).  You can simply create a "jamming" job from a track like this:
+
+::
+
+  on_update
+    foreach (WsfTrack track in PLATFORM.MasterTrackList())
+    {
+      if (this is a track you want to jam)  //pseudo code
+      {
+        if (job does not already exists for track)  //pseudo code
+        {
+          WsfRIPRJob newJob = WsfRIPRJob.Create( PROCESSOR, "jam type", "job description", 1.0, 1);
+          newJob.SetData("target name", track.TargetName());
+          AddJob(newJob);  //adds the new job to this platforms job board
+        }
+      }
+    }
+    ...
+  end_on_update
+
+Now a jamming job exists on that :ref:`RIPR` agent's Job Board for each track that platform has awareness of.  Anybody can
+bid on and perform these jobs: subordinates, or even the agent himself.  Typically a commander platform creates and
+owns jobs on it's Job Board and the subordinates will be making bids to him and they will be tasked with performing the
+jobs.
+
+**Bids -** Commanders need to know how well their subordinates can do jobs so that they can effectively distribute the
+tasks to the proper agents to perform them.  A bid represents an agent's capability to perform a job.  Typically, a
+subordinate agent will query for his commander's jobs and selectively make bids on them.  He should only bid on job
+types he understands, and he should only bid on jobs he can perform.  Here is an example of a subordinate looking for a
+jamming task and bidding on it:
+
+::
+
+  query_bid
+    if (JOB.Name()=="jam type")
+    {
+      return CalculateEffectivenessAgainst( JOB.GetData("target name") );  //pseudo code
+    }
+    return 0.0;
+  end_query_bid
+
+  on_update
+    foreach (WsfRIPRJob job in GetRIPRCommanderProcessor().GetJobs())
+    {
+      double bid = QueryBid(job);  //this calls the agents own "query_bid" script block
+      job.BidJob(bid);           //here the bid is made on the job
+    }
+    ...
+  end_on_update
+
+*NOTE -* So up this point we have an agent creating jobs to jam threats, and we have an agent bidding on those jobs.
+The bidding we have exampled here is a gross oversimplification, because a platform might not just have one bid for a
+particular threat.  A platform usually has multiple jammer emitters, and each emitter has multiple beams that can be
+utilized, and each beam might be modulated (a few spots for each beam) so as to hit different threats at different
+times.  We will cover the more complex case of multiple bids further down.  For now, in this simple example, a platform
+will provide one bid for each job and will only win (or be tasked with) one job to perform.
+
+**Performing a Job -** As an agent makes bids on jobs it is communicating to the commander "this is my status, and how
+well I can perform the various tasks you might give to me".  After this communication, the bidding, takes place the
+agent can then ask its commander "what do you want me to do now, what is my task?".  If it receives a job to perform,
+it should act on it.  Here is an example of retrieving your task and doing something with it:
+
+::
+
+  script void DoJob(WsfRIPRJob aJob)
+    if (aJob.IsValid() && aJob.Name()=="jam type")
+    {
+      if (not already jamming the target)  //pseudo-code
+      {
+        WsfWeapon jammer = PLATFORM.Weapon("jammer name");
+        WsfTrack  target = GetTrack(aJob.GetData("target name"));
+        jammer.StartJamming(frequency, bandwidth, target);
+      }
+    }
+  end_script
+
+  on_update
+    ...
+    WsfRIPRJob job = GetRIPRCommanderProcessor().GetJobFor(TIME_NOW, PROCESSOR);
+    DoJob( job );
+    //you might also need some script to stop jamming any previous targets
+  end_on_update
+
+*NOTE -* Before this script block, the platform has already bid on his commander's various jobs.  Now he queries for a
+job, and might receive a job to perform.
+
+But a jamming platform usually jams many things at once!!!
+==========================================================
+
+This is fine, :ref:`RIPR` can accommodate.  In the simple examples above, the platform was making one bid on each job.
+His bid represented his total capability to perform the job as a platform.  The example script also showed the platform
+only receiving one job to perform.  How does an agent win multiple jobs and perform them?  He can do this by using the
+multi-channel RIPR feature.
+
+**Multi-Channel bidding -** If a platform can perform multiple jobs in parallel, then he should bid on jobs & win jobs
+in parallel.  One example of such an agent is an ground-based air-defense tracking radar.  The tracking radar is
+sophisticated enough to keep quality track reports on several potential threats.  How many threats he can keep track of
+is a function of his radar.  If his radar can handle three targets at once, then this platform should be providing
+three separate bids for each "track target" job.  Each bid represents a "slot" on the radar and that "slot" on the
+radar provides it's bids through its own channel.  For example:
+
+::
+
+  script_variables
+    array<string> channels = array<string>();
+  end_script_variables
+
+  on_init
+    channels.PushBack("track target");  //slot 1 of radar
+    channels.PushBack("track target");  //slot 2 of radar
+    channels.PushBack("track target");  //slot 3 of radar
+    SetNumJobChannels(channels.Size());
+  end_on_init
+
+  on_update
+    foreach (WsfRIPRJob job in GetRIPRCommanderProcessor().GetJobs()) //bid on any relevant jobs from commander
+    {
+      // 'index' is also the platform's channel index
+      for (int index=0; index < GetNumJobChannels(); index=index+1)   //bid through channels
+      {
+        string type = channels.Get(index);
+        if (type == job.Name())                                       //a way to see if channel is appropriate for job
+        {
+          double bid = QueryBid(job);    //this calls the agents own "query_bid" script block
+          job.BidJob(bid, index); //here the bid is made on the job, for channel 'index'
+        }
+      }
+    }
+    for (int index=0; index < GetNumJobChannels(); index=index+1)
+    {
+      WsfRIPRJob job = cmdr.GetJobFor(TIME_NOW, PROCESSOR, index);
+      DoJob(job, index);
+    }
+    ...
+  end_on_update
+
+You might ask yourself "why are the channels looped over twice?".  The answer is because you want to make sure every
+possible bid has been made before you ask the commander who wins the job.  So each job is given a bid from each
+channel, and THEN you can ask what job each channel might have won (maybe no jobs).

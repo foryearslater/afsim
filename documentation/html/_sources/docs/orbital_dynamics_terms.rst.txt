@@ -1,0 +1,224 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _orbital_dynamics_terms:
+
+.. include:: orbital_dynamics_terms.txt
+
+Orbital Dynamics Terms
+**********************
+
+.. _orbital_dynamics_terms.earth_monopole:
+
+Earth Monopole
+""""""""""""""
+
+.. parsed-literal::
+
+   term_ earth_monopole
+      wgs84_
+      egm96_
+      gravitational_parameter_ <real-value>
+   end_term
+
+This term represents the standard Keplerian two-body gravitational field of
+the Earth. Users can specify the gravitational parameter with one of the
+following commands. If no selection is made the EGM96 value will be used.
+
+.. command:: wgs84
+
+   Use the WGS84 gravitational parameter.
+
+.. command:: egm96
+
+   Use the EGM96 gravitational parameter. This is selected by default.
+
+.. command:: gravitational_parameter <real-value>
+
+   Specify the gravitational parameter in SI units.
+
+.. _orbital_dynamics_terms.earth_j2:
+
+Earth J2 Perturbation
+"""""""""""""""""""""
+
+.. parsed-literal::
+
+   term_ earth_j2
+      wgs84_
+      egm96_
+      gravitational_parameter_ <real-value>
+      j2_ <real-value>
+      mean_radius_ <length-value>
+   end_term
+
+This term represents the perturbation due to the oblateness of the Earth. Users
+can specify the gravitational parameter, the strength of the J2 term, and the
+mean radius, though each of these has a sensible default value.
+
+.. command:: wgs84
+
+   Use the WGS84 gravitational parameter.
+
+.. command:: egm96
+
+   Use the EGM96 gravitational parameter. This is selected by default.
+
+.. command:: gravitational_parameter <real-value>
+
+   Specify the gravitational parameter in SI units.
+
+.. command:: j2 <real-value>
+
+   Specify the strength of the J2 perturbation. The default value is
+   0.0010826267 (see Vallado, Fundamentals of Astrodynamics and Applications, 4th Edition).
+
+.. command:: mean_radius <length-value>
+
+   Specify the mean radius of the Earth in meters. The default value is
+   6371 km.
+
+.. _orbital_dynamics_terms.moon_monopole:
+
+Moon Monopole
+"""""""""""""
+
+.. parsed-literal::
+
+   term_ moon_monopole
+      gravitational_parameter_ <real-value>
+      interpolation_interval_ <time-value>
+   end_term
+
+This term represents the monopole gravitational field of the Moon. Computing
+the position of the Moon can be costly, so this dynamical term uses
+interpolation to reduce the frequency of lunar position queries. The cubic
+interpolation uses four locations with an equal time interval between them.
+
+.. command:: gravitational_parameter <real-value>
+
+   Specify the gravitational parameter in SI units. The default value is
+   4.9028e12.
+
+.. command:: interpolation_interval <time-value>
+
+   Specify the interpolation interval for the Moon's position. Set this to 0.0
+   to turn off interpolation. The default value is 600 seconds.
+
+.. _orbital_dynamics_terms.sun_monopole:
+
+Sun Monopole
+""""""""""""
+
+.. parsed-literal::
+
+   term_ sun_monopole
+      gravitational_parameter_ <real-value>
+   end_term
+
+This term represents the monopole gravitational field of the Sun.
+
+.. command:: gravitational_parameter <real-value>
+
+   Specify the gravitational parameter in SI units. The default value is
+   1.32712440018e20.
+
+.. _orbital_dynamics_terms.jupiter_monopole:
+
+Jupiter Monopole
+""""""""""""""""
+
+.. parsed-literal::
+
+   term_ jupiter_monopole
+      gravitational_parameter_ <real-value>
+   end_term
+
+This term represents the monopole gravitational field of Jupiter.
+
+.. command:: gravitational_parameter <real-value>
+
+   Specify the gravitational parameter in SI units. The default value is
+   1.267127678e17.
+
+.. _orbital_dynamics_terms.atmospheric_drag:
+
+Atmospheric Drag
+""""""""""""""""
+
+.. parsed-literal::
+
+   term_ atmospheric_drag
+      cross_sectional_area <area-value>
+      drag_coefficient <real-value>
+      atmosphere_model <atmosphere-model-name>
+   end_term
+
+This term represents drag on the platform because of the atmosphere of the
+Earth. The applied acceleration is in the direction opposite to the direction
+of the motion of the platform through the atmosphere, and has a magnitude
+equal to :math:`\frac{1}{2} \frac{C_D A}{m} \rho v^2`, where :math:`\rho` is the
+density of the atmosphere at the location of the platform, :math:`v` is the
+speed of the platform through the atmosphere, :math:`m` is the mass of the
+platform, :math:`A` is the cross-sectional area of the platform, and :math:`C_D`
+is the drag coefficient of the platform.
+
+.. command:: cross_sectional_area <area-value>
+
+   Specify the cross-sectional area to use when computing the drag.
+
+.. command:: drag_coefficient <real-value>
+
+   Specify the drag coefficient to use when computing the drag.
+
+.. command:: atmosphere_model <atmosphere-model-name>
+
+   Specify the name of the atmosphere model that will be used by this drag term.
+   For details on specifying atmosphere models for use with this term, please
+   see :doc:`atmosphere_model`.
+
+.. _orbital_dynamics_terms.scripted:
+
+Scripted
+""""""""
+
+.. parsed-literal::
+
+   term_ scripted
+      script_ <script-name>
+   end_term
+
+This term allows users to specify a dynamical effect on the platform using
+a script specified by the user.
+
+.. command:: script <script-name>
+
+   Specify the script function defined in the global context that computes an
+   acceleration. The script method provided should return a :class:`Vec3`
+   with the computed acceleration. The script method will be provided the
+   following arguments: the :class:`WsfIntegratingSpaceMover` experiencing this dynamical
+   term, the current mass of the platform, the time at which the script is
+   called as a :class:`Calendar`, the :class:`Vec3` ECI position
+   of the platform, and the :class:`Vec3` ECI velocity of the
+   platform.
+
+   .. warning:: Integrators call into the dynamics multiple times per step, and because there is overhead in calling into a script, this term will noticeably impact performance for the :model:`WSF_INTEGRATING_SPACE_MOVER`.
+
+   For example, the following script would reproduce the effect of the
+   :ref:`orbital_dynamics_terms.earth_monopole` term:
+
+   .. parsed-literal::
+
+      script Vec3 ScriptedEarthMonopole(:class:`WsfIntegratingSpaceMover` aMover, double aMass, :class:`Calendar` aTime, :class:`Vec3` aPosition, :class:`Vec3` aVelocity)
+         :class:`Vec3` acc = aPosition.Normal();
+         acc.Scale(-:class:`Earth`.GRAVITATIONAL_PARAMETER() / aPosition.MagnitudeSquared());
+         return acc;
+      end_script

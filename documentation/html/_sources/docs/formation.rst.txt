@@ -1,0 +1,100 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Formations
+----------
+
+.. command:: formation
+
+.. parsed-literal::
+
+   formation <name>
+      debug
+      detached
+      offset ...
+
+      [lead] formation ... end_formation
+      [lead] section ... end_section
+      [lead] unit ... end_unit
+   end_formation
+
+Overview
+========
+
+Formations provide the means to organize both logically and physically groups
+of platforms having a :model:`WSF_P6DOF_MOVER`, which can then be controlled
+as a group instead of individually. Formations can also be defined in script,
+see :class:`WsfFormation` and :class:`WsfFormationManager`. Formations can be
+given commands, see :class:`WsfFormationCommand`.
+
+A formation is a hierarchy: a formation may have sub-formations defined,
+which themselves have sub-formations ending ultimately at unit formations that
+have member platforms (see :doc:`unit`).
+
+Each formation has two identifiers, its *relative name* and its
+*qualified name*. The relative name is used to identify a formation relative to
+its parent, and is only unique among the set of sibling sub-formations. A
+qualified name is a concatenation (using '.') of the relative names of each
+formation of which it is a sub-formation. A qualified name can be used to
+uniquely identify a formation.
+
+For example, if a top-level formation with relative name 'yankee' has a
+sub-formation with relative name 'alpha', then the qualified name of that 
+subformation would be 'yankee.alpha'. If that formation then had a
+sub-formation 'one', that would have the qualified name 'yankee.alpha.one'.
+
+Formation Control
+"""""""""""""""""
+
+Each formation is either attached or detached from its parent formation.
+When a formation is attached, its members will keep station relative to its
+leader. The attached state is applied to each formation individually, so it is
+possible, for example, to have most of a formation attached and a single
+subformation detached.
+
+The attached state of a formation impacts both station keeping for the members
+of that formation, and the propagation of formation commands. Commands assigned
+to a formation will often lead to commands also being assigned to subformations
+of the assignee. However, most commands will not propagate to detached
+subformations (:class:`WsfFormationAttachCommand` is one notable exception).
+
+Controlling a formation is done by both assigning a :class:`WsfFormationCommand`
+to a formation, and by directing the behavior of formation leaders directly.
+When a formation leader is controlled directly
+(e.g., by issuing a :class:`WsfManeuver`), the members of any attached 
+subformations will keep station with the leader.
+
+.. _Formations.Common_Formation_Commands:
+
+.. include:: common_formation_commands.txt
+
+Sub-formation Commands
+======================
+
+.. command:: formation ... end_formation
+
+   Define a general sub-formation. This block is identical to the top-level 
+   input block.
+
+.. command:: section ... end_section
+
+   Define a section sub-formation. See :doc:`section`.
+
+.. command:: unit ... end_unit
+
+   Define a unit sub-formation. See :doc:`unit`.
+
+.. command:: lead
+
+   When prefixed before a sub-formation command, this indicates that the
+   following formation defined is the lead sub-formation of the enclosing parent
+   formation. Formation defined in input must have one (and only one) lead
+   sub-formation defined.

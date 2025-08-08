@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Target Recognition Commands &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Target Specification Commands" href="target_specification.html" />
+    <link rel="prev" title="SOSM target model table" href="target_model_sosm_table.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="target_specification.html" title="Target Specification Commands"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="target_model_sosm_table.html" title="SOSM target model table"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="target-recognition-commands">
+<span id="id1"></span><h1>Target Recognition Commands<a class="headerlink" href="#target-recognition-commands" title="Permalink to this headline">¶</a></h1>
+<pre class="literal-block"><a class="reference internal" href="#average_aspect_ratio">average_aspect_ratio</a> ...
+<a class="reference internal" href="#detection_scene_analysis_factor">detection_scene_analysis_factor</a> ...
+<a class="reference internal" href="#classification_scene_analysis_factor">classification_scene_analysis_factor</a> ...
+<a class="reference internal" href="#identification_scene_analysis_factor">identification_scene_analysis_factor</a> ...
+
+<a class="reference internal" href="#minimum_detection_pixel_count">minimum_detection_pixel_count</a> ...
+<a class="reference internal" href="#minimum_classification_pixel_count">minimum_classification_pixel_count</a> ...
+<a class="reference internal" href="#minimum_identification_pixel_count">minimum_identification_pixel_count</a> ...
+
+<a class="reference internal" href="#detection_delay_time">detection_delay_time</a> ...
+<a class="reference internal" href="#classification_delay_time">classification_delay_time</a> ...
+<a class="reference internal" href="#identification_delay_time">identification_delay_time</a> ...
+<a class="reference internal" href="#transition_coast_time">transition_coast_time</a> ...
+
+<a class="reference internal" href="#detection_coast_time">detection_coast_time</a> ...
+<a class="reference internal" href="#classification_coast_time">classification_coast_time</a> ...
+<a class="reference internal" href="#identification_coast_time">identification_coast_time</a> ...</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Target recognition is enabled in <a class="reference internal" href="wsf_image_processor.html#WSF_IMAGE_PROCESSOR" title="WSF_IMAGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_IMAGE_PROCESSOR</span></a> when the <a class="reference internal" href="wsf_image_processor.html#WSF_IMAGE_PROCESSOR.target_recognition" title="target_recognition (WSF_IMAGE_PROCESSOR)"><span class="xref wsf wsf-command">target_recognition</span></a>
+flag is set to true. In this mode, the processor attempts to detect, classify, and/or identify all ‘objects’ (platforms)
+in the currently evaluated image. These decisions are based on the number of pixels an object’s platform occupies, using
+the following Johnson’s Criteria equations:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>An object is declared <strong>DETECTED</strong> when the following criteria are met:</dt><dd><ol class="arabic simple">
+<li><p>The object occupies the number of pixels specified in <a class="reference internal" href="#minimum_detection_pixel_count">minimum_detection_pixel_count</a>.</p></li>
+<li><p>The object passes the Johnson criteria for ‘detection’.</p></li>
+<li><p>The object has met these two criteria for the minimum time specified by <a class="reference internal" href="#detection_delay_time">detection_delay_time</a>.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>An object is declared <strong>CLASSIFIED</strong> when the following criteria are met:</dt><dd><ol class="arabic simple">
+<li><p>The object has passed the <strong>DETECTED</strong> state.</p></li>
+<li><p>The object occupies the minimum number of pixels specified by <a class="reference internal" href="#minimum_classification_pixel_count">minimum_classification_pixel_count</a>.</p></li>
+<li><p>The object passes the Johnson criteria for ‘classification’.</p></li>
+<li><p>The object has met the latter two criteria for the minimum time specified by <a class="reference internal" href="#classification_delay_time">classification_delay_time</a>.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>An object is declared <strong>IDENTIFIED</strong> when the following criteria are met:</dt><dd><ol class="arabic simple">
+<li><p>The object has passed the <strong>CLASSIFIED</strong> state.</p></li>
+<li><p>The object occupies the minimum number of pixels specified by <a class="reference internal" href="#minimum_identification_pixel_count">minimum_identification_pixel_count</a>.</p></li>
+<li><p>The object passes the Johnson criteria for ‘identification’.</p></li>
+<li><p>The object has met the latter two criteria for at least the time specified by <a class="reference internal" href="#identification_delay_time">identification_delay_time</a>.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+</ul>
+<p>When an object is declared <strong>DETECTED</strong>, a track is emitted over the internal link(s) that
+represents the object. The track will continue to be updated and emitted as long as updates are received from the
+imaging sensor. The following additional information is included in the track to indicate the current state:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 34%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>State</p></th>
+<th class="head"><p>AuxDataDouble(“CLASSIFIED”)</p></th>
+<th class="head"><p>AuxDataDouble(“IDENTIFIED”)</p></th>
+<th class="head"><p>Type()</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DETECTED</p></td>
+<td><p>-1</p></td>
+<td><p>-1</p></td>
+<td><p>“UNKNOWN”</p></td>
+</tr>
+<tr class="row-odd"><td><p>CLASSIFIED</p></td>
+<td><p>&lt;time&gt;</p></td>
+<td><p>-1</p></td>
+<td><p>&lt;platform-type&gt;</p></td>
+</tr>
+<tr class="row-even"><td><p>IDENTIFIED</p></td>
+<td><p>&lt;time&gt;</p></td>
+<td><p>&lt;time&gt;</p></td>
+<td><p>&lt;platform-type&gt;</p></td>
+</tr>
+</tbody>
+</table>
+<p>The aux_data variables <strong>CLASSIFIED</strong> and <strong>IDENTIFIED</strong> represent the most recent time the object was categorized
+in that state, with a value of -1 representing ‘not in that state’.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the current implementation, once an object reaches a given state, it will never be reset to a lower
+state. It is the user’s responsibility to check the data and determine if the information is usable.</p>
+</div>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="_.target_recognition_commands.average_aspect_ratio">
+<span id="target_recognition_commands.average_aspect_ratio"></span><span id="average_aspect_ratio"></span>average_aspect_ratio<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.average_aspect_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the average aspect ratio used when converting the raw pixel count from the pseudo-image into a number of line
+pairs. If <em>AR</em> is the average aspect ratio defined by this command, and <em>PC</em> is the raw pixel count from an object in the
+pseudo-image, the number of line pairs <em>LP</em> is defined to be:
+: <img class="math" src="../_images/math/d7b53729e7fda2b39bd6677887616a43ef7eac3d.png" alt="LP = \frac{\sqrt{PC / AR} } {2}\,"/></p>
+<p><strong>Default</strong> 4.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.detection_scene_analysis_factor">
+<span id="target_recognition_commands.detection_scene_analysis_factor"></span><span id="detection_scene_analysis_factor"></span>detection_scene_analysis_factor<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.detection_scene_analysis_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.classification_scene_analysis_factor">
+<span id="target_recognition_commands.classification_scene_analysis_factor"></span><span id="classification_scene_analysis_factor"></span>classification_scene_analysis_factor<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.classification_scene_analysis_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.identification_scene_analysis_factor">
+<span id="target_recognition_commands.identification_scene_analysis_factor"></span><span id="identification_scene_analysis_factor"></span>identification_scene_analysis_factor<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.identification_scene_analysis_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the ‘scene analysis factor’ (SAF) in the Johnson criteria equation for detection, classification, or
+identification, respectively.  The equation is:</p>
+<p><img class="math" src="../_images/math/210d8eb35388254832caade9a3265feedac48805.png" alt="P(LP)=(LP/SAF)^{2.7+0.7(LP/SAF)} \Big / 1+(LP/SAF)^{2.7+0.7(LP/SAF)}"/></p>
+<p>Where <em>LP</em> is the number of line pairs and <em>SAF</em> is the appropriate scene analysis function.</p>
+<p><strong>Defaults</strong> detection: 1.0, classification: 4.0, identification: 6.4</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.minimum_detection_pixel_count">
+<span id="target_recognition_commands.minimum_detection_pixel_count"></span><span id="minimum_detection_pixel_count"></span>minimum_detection_pixel_count<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.minimum_detection_pixel_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.minimum_classification_pixel_count">
+<span id="target_recognition_commands.minimum_classification_pixel_count"></span><span id="minimum_classification_pixel_count"></span>minimum_classification_pixel_count<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.minimum_classification_pixel_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.minimum_identification_pixel_count">
+<span id="target_recognition_commands.minimum_identification_pixel_count"></span><span id="minimum_identification_pixel_count"></span>minimum_identification_pixel_count<a class="reference internal" href="argumenttypes.html#real-reference" title="real-reference"><em> &lt;real-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.minimum_identification_pixel_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the minimum number of pixels an object must occupy in an image before it can possibly be detected,
+classified, or identified, respectively. An object must pass the pixel count test and Johnson criteria test for a given
+state.</p>
+<p><strong>Default</strong> 0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.detection_delay_time">
+<span id="target_recognition_commands.detection_delay_time"></span><span id="detection_delay_time"></span>detection_delay_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.detection_delay_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the amount of time in which an object must meet the ‘detection’ criteria until it is declared as <strong>DETECTED</strong>.
+During the delay time, detections that do not meet the ‘detection’ criteria will result in the state being reset back to
+<strong>UNDETECTED</strong> unless the <a class="reference internal" href="#transition_coast_time">transition_coast_time</a> is defined.</p>
+<p><strong>Default</strong> 0 seconds</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.classification_delay_time">
+<span id="target_recognition_commands.classification_delay_time"></span><span id="classification_delay_time"></span>classification_delay_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.classification_delay_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the amount of time in which an object must meet the ‘classification’ criteria until it is declared as
+<strong>CLASSIFIED</strong>. During the delay time, detections that do not meet the ‘classification’ criteria will result in the
+state being reset back to <strong>DETECTED</strong> or <strong>UNDETECTED</strong> (depending on the quality of the failed detections) unless the
+<a class="reference internal" href="#transition_coast_time">transition_coast_time</a> is defined.</p>
+<p><strong>Default</strong> 0 seconds</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.identification_delay_time">
+<span id="target_recognition_commands.identification_delay_time"></span><span id="identification_delay_time"></span>identification_delay_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.identification_delay_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the amount of time in which an object must meet the ‘identification’ criteria until it is declared as
+<strong>IDENTIFIED</strong>. During the delay time, detections that do not meet the ‘identification’ criteria will result in the
+state being reset back to <strong>CLASSIFIED</strong>, <strong>DETECTED</strong>, or <strong>UNDETECTED</strong> (depending on the quality of the failed
+detections) unless the <a class="reference internal" href="#transition_coast_time">transition_coast_time</a> is defined.</p>
+<p><strong>Default</strong> 0 seconds</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.transition_coast_time">
+<span id="target_recognition_commands.transition_coast_time"></span><span id="transition_coast_time"></span>transition_coast_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.transition_coast_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the amount of time the object can ‘coast’ without receiving an ‘acceptable detection’ while in a transition
+period between states (as defined by <a class="reference internal" href="#detection_delay_time">detection_delay_time</a>, <a class="reference internal" href="#classification_delay_time">classification_delay_time</a>, and <a class="reference internal" href="#identification_delay_time">identification_delay_time</a>).
+An ‘acceptable detection’ is one that at least meets the detection criteria for the destination state.</p>
+<p><strong>Default</strong> 0 seconds</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.detection_coast_time">
+<span id="target_recognition_commands.detection_coast_time"></span><span id="detection_coast_time"></span>detection_coast_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.detection_coast_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.classification_coast_time">
+<span id="target_recognition_commands.classification_coast_time"></span><span id="classification_coast_time"></span>classification_coast_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.classification_coast_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="_.target_recognition_commands.identification_coast_time">
+<span id="target_recognition_commands.identification_coast_time"></span><span id="identification_coast_time"></span>identification_coast_time<a class="reference internal" href="argumenttypes.html#time-reference" title="time-reference"><em> &lt;time-reference&gt;</em></a><a class="headerlink" href="#_.target_recognition_commands.identification_coast_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the amount of time an object can remain in a state without receiving a detection that does not meet the Johnson
+criteria for that state.</p>
+<p><strong>Default</strong> 0 seconds</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is currently an investigative capability and does not affect the produced track.</p>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/target_recognition_commands.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="target_specification.html" title="Target Specification Commands"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="target_model_sosm_table.html" title="SOSM target model table"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

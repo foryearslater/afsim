@@ -1,0 +1,177 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WEAPON_HIT:
+
+WEAPON_HIT
+----------
+
+:command:`event_output` for **WEAPON_HIT** and **WEAPON_MISSED** differ only in the **event** field.
+
+Format
+======
+
+.. include:: ../print_we_termination.txt
+
+.. include:: ../print_we_player_data.txt
+
+.. parsed-literal::
+
+ <time> <event>
+ |PRINT_WE_PLAYER_DATA|
+ |PRINT_WE_TERMINATION|
+
+Breakdown
+=========
+
+<time>
+    current simulation time
+<event>
+    WEAPON_HIT or WEAPON_MISSED
+    | *Player data consisting of:* <firing platform id> *or* <weapon platform id> *or* <UNKNOWN>
+    engagement info
+<target platform name> *or* <NO-TARGET>
+    target platform info
+<weapon platform id> *or* IMPLICIT (<weapon system id>)
+    weapon platform info
+Engagement: <sn>
+    engagement serial number
+Start Time: <time>
+    time engagement started
+*Weapon Termination data consisting of:* if pK Drawn > 0: Launch Pk: <Pk> *otherwise* Intercept Pk: <Pk>
+    Pk info                                                                     |
+Pk Degrade: <Pk degrade>
+    Pk degrade factor
+Pk: <Pk constraint>
+    Pk used to determine weapon miss or kill (either Launch Pk or Intercept Pk)
+Pk Drawn: <Pk Drawn>
+    Pk drawn for target hit assessment
+<blank> *or* <CEP>
+    value for Circular Error Probable (CEP)
+*one of:*
+    | UNKNOWN_TARGET Damage_Factor: 0
+    | INTENDED_TARGET Damage_Factor: <damage factor>
+    | INCIDENTAL_TARGET Damage_Factor: <damage factor>
+    | INTENDED_TARGET Damage_Factor: <damage factor>
+
+        Either there is partial or complete agreement that the target is missing,
+        what the desired target is, or that the current target is not the 'desired'
+        target
+
+*one of:*
+    | Result: MISSED
+    | Result: DAMAGED
+    | Result: KILLED
+    | Result: UNKNOWN
+
+        effect of weapon on intended target
+
+if extended result, one of:
+ | Target_proximity
+ | AGL limit encountered
+ | MSL limit encountered
+ | Minimum speed encountered
+ | Commanded termination
+ | Maximum time-of-flight exceeded
+ | Coast time exceeded
+
+*If a valid weapon is loaded (i.e., Implicit Engagement):*
+    **Shooter Present**
+        | Launch: LLA: <lat> <lon> <alt> m
+        | Heading: <heading>
+        | Pitch: <pitch> deg
+        | Roll: <roll> deg
+        | Speed: <vel_mag> m/s * <x axis> <y axis> <z axis>
+        | Acceleration: <acc_mag> m/s2 * <x axis> <y axis> <z axis>
+
+    **Target Present**
+        | Target: LLA: <lat> <lon> <alt> m
+        | Heading: <heading>
+        | Pitch: <pitch> deg
+        | Roll: <roll> deg
+        | Speed: <vel_mag> m/s * <x axis> <y axis> <z axis>
+        | Acceleration: <acc_mag> m/s2 * <x axis> <y axis> <z axis>
+
+    **Shooter and Target Present**
+        | Truth: Slant_Range: <range> m Ground_Range: <range> m
+        | Down_Range: <range> m Cross_Range: <Range> m
+        | Relative_Alt: <weapon to target offset> m
+
+*else (i.e., Explicit Engagement):*
+    **Target Present**
+        | Target: LLA: <lat> <lon> <alt> m
+        | Heading: <heading>
+        | Pitch: <pitch> deg
+        | Roll: <roll> deg
+        | Speed: <vel_mag> m/s * <x axis> <y axis> <z axis>
+        | Acceleration: <acc_mag> m/s2 * <x axis> <y axis> <z axis>
+
+    **Weapon Present**
+        | Weapon: LLA: <lat> <lon> <alt> m
+        | Heading: <heading>
+        | Pitch: <pitch> deg
+        | Roll: <roll> deg
+        | Speed: <vel_mag> m/s * <x axis> <y axis> <z axis>
+        | Acceleration: <acc_mag> m/s2 * <x axis> <y axis> <z axis>
+
+    **Target and Weapon Present**
+        Miss_Distance: <distance> m
+            relative geometry - miss distance
+        Weapon_Loc_ECS: [ <ECS_x> <ECS_y> <ECS_z> ] m
+            weapon location in ECS coordinates
+        Weapon_Vel_ECS: <impact_speed> m/s * [ <ECS_x> <ECS_y> <ECS_z> ]
+            weapon velocity along ECS coordinates
+
+
+How it Appears in Output
+========================
+
+*WEAPON_HIT*
+
+::
+
+ 1433.12142 WEAPON_HIT sam-tel-n-1 strike-12 sam-tel-n-1_sam_4 Engagement: 6 Start_Time: 1319.97142 \
+  Intercept_Pk: 0.3 Pk_Degrade: 1 Pk: 0.3 Pk_Drawn: 0.233329 INTENDED_TARGET Damage_Factor: 1 Result: KILLED \
+  Extended_Result: Target_proximity \
+  Target: LLA: 36:59:26.39n 114:50:58.73w 9144 m Heading: 194.208 deg Pitch: -0.000 deg Roll: 0.000 deg \
+   Speed: 257.222 m/s * [ -0.969 -0.245 0.000 ] Acceleration: 0.000 m/s2 * [ -0.000 0.000 0.000 ] \
+  weapon: LLA: 36:59:26.38n 114:50:58.71w 9145.4636 m Heading: 29.404 deg Pitch: -5.185 deg Roll: 0.000 deg \
+   Speed: 480.074 m/s * [ 0.868 0.489 0.090 ] Acceleration: 76.511 m/s2 * [ -0.517 0.556 -0.651 ] \
+  Miss_Distance: 1.57525 m \
+  Weapon_Loc_ECS: [ 0.0060425 -0.582442 -1.46361 ] m \
+  Weapon_Vel_ECS: 730.75 m/s * [ -0.983394 -0.1715 0.0593712 ]
+
+*WEAPON_MISSED*
+
+::
+
+ 1409.86108 WEAPON_MISSED sam-tel-n-1 strike-23 sam-tel-n-1_sam_1 Engagement: 3 Start_Time: 1293.81108 \
+  Intercept_Pk: 0.3 Pk_Degrade: 1 Pk: 0.3 Pk_Drawn: 0.317335 INTENDED_TARGET Damage_Factor: 0 Result: MISSED \
+  Extended_Result: Target_proximity \
+  Target: LLA: 36:58:50.62n 115:29:11.80w 9144 m Heading: 162.556 deg Pitch: -0.000 deg Roll: 0.000 deg \
+   Speed: 257.222 m/s * [ -0.954 0.300 0.000 ] Acceleration: 0.000 m/s2 * [ -0.000 0.000 0.000 ] \
+  weapon: LLA: 36:58:50.62n 115:29:11.82w 9145.2198 m Heading: 328.141 deg Pitch: -5.763 deg Roll: 0.000 deg \
+   Speed: 462.510 m/s * [ 0.845 -0.525 0.100 ] Acceleration: 84.006 m/s2 * [ 0.111 0.688 0.717 ] \
+  Miss_Distance: 1.29594 m \
+  Weapon_Loc_ECS: [ -0.0022277 0.437617 -1.21982 ] m \
+  Weapon_Vel_ECS: 713.694 m/s * [ -0.984886 0.160515 0.0650741 ]
+
+
+How to Show Event Messages
+==========================
+
+.. parsed-literal::
+
+  :command:`event_output`
+     file replay.evt              # write event messages to file "replay.evt"
+     enable WEAPON_HIT
+     enable WEAPON_MISSED
+  end_event_output

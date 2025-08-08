@@ -1,0 +1,66 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Script_Right_Arrow_Operator:
+
+Script Right Arrow Operator
+---------------------------
+
+Overview
+========
+
+The right arrow operator (->) operator is used in script to access user-defined variables (defined with
+:ref:`ScriptVariables`) or call user-defined scripts.  Any script object which allows addition of scripts like
+:class:`WsfPlatform` and :class:`struct` may use the right arrow operator.
+
+Example
+=======
+
+For additional examples using the -> operator, see :class:`script_struct`
+
+::
+
+ platform myplatform1 WSF_PLATFORM
+    script_variables
+       double x = 2.2;
+       WsfGeoPoint p = WsfGeoPoint.Construct("0n 0e");
+    end_script_variables
+    script void a_method(int param1)
+       writeln("Called a_method ", param1);
+    end_script
+ end_platform
+
+ platform myplatform2 WSF_PLATFORM
+    execute at_time 1 s absolute
+
+    # Access existing variables on myplatform1
+
+    WsfPlatform myplatform1 = WsfSimulation.FindPlatform("myplatform1");
+    writeln("X = ", myplatform1->x);
+    writeln("p = ", myplatform1->p);
+
+    # Add new variables
+    myplatform1->y = 3.3;
+    PLATFORM->z = 4.4;
+
+    # Call a method
+    myplatform1->a_method(5);
+
+    end_execute
+ end_platform
+
+Notes
+=====
+
+Attribute access using '->' is not verified at initialization like using '.'.  A runtime error will
+display when trying to access a variable or script that doesn't exist.  See has_attr and has_script in :class:`BUILTIN <__BUILTIN__>`.
+
+Only user-defined scripts may be called, use the '.' operator to call methods provided by built-in types.

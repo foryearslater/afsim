@@ -1,0 +1,332 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfGuidanceComputer
+-------------------
+
+.. class:: WsfGuidanceComputer inherits WsfProcessor
+
+.. contents::
+   :local:
+
+Overview
+========
+
+WsfGuidanceComputer provides methods that can be used to dynamically alter the behavior of :model:`WSF_GUIDANCE_COMPUTER`.
+
+General Methods
+===============
+
+.. method:: void EjectStage()
+            void EjectStage(double aPreSeparationCoastTime, double aPreIgnitionCoastTime)
+
+   The first form informs the mover to stop the engines on the current stage and enter the post-burn coast phase of the stage.
+   If not the final stage, a staging event will occur at the completion of the pre-separation coast. The next stage (if defined)
+   will be activated and the engines will ignite at the completion of the pre-ignition coast. This is the same as calling
+   :method:`EjectStage(-1, -1) <WsfGuidanceComputer.EjectStage>`.
+   
+   The second form allows the caller to override the :command:`WSF_GUIDED_MOVER.pre_separation_coast_time` of the current stage
+   and the :command:`WSF_GUIDED_MOVER.pre_ignition_coast_time` of the following stage (if defined). If the value of an argument
+   is less than zero then its corresponding value in the mover will not be changed.
+   
+.. method:: void SelectPhase(string aPhaseName)
+   
+   Immediately terminates the current phase and initiates the specified phase. The :command:`WSF_GUIDANCE_COMPUTER.on_exit`
+   script block in the current phase is executed, then the :command:`WSF_GUIDANCE_COMPUTER.on_entry` script block is executed
+   in the selected phase.
+
+.. method:: string Phase()
+
+   Returns the current :command:`phase<WSF_GUIDANCE_COMPUTER.phase>`.
+
+.. method:: void StopEngines()
+   
+   This is the same as calling :method:`EjectStage() <WsfGuidanceComputer.EjectStage>`.
+
+Setting Values of Phase Commands
+================================
+
+These method provide the ability to redefine the value of the command values for a phase. They exactly parallel the equivalent
+commands in :model:`WSF_GUIDANCE_COMPUTER`.
+
+Notes About Method Arguments and Return Values
+++++++++++++++++++++++++++++++++++++++++++++++
+
+Each of these methods has two forms:
+
+* The first form does not include a phase name and affects the value only for the current phase, e.g.:
+
+  .. parsed-literal::
+  
+     SetProportionalNavigationGain(4.0);
+        
+  This form is effective ONLY when called directly or indirectly from the :command:`WSF_GUIDANCE_COMPUTER.on_entry` or
+  :command:`WSF_GUIDANCE_COMPUTER.on_update` script of the phase to be changed.
+  
+  .. note::
+  
+     Calling the single argument form from within the :command:`WSF_GUIDANCE_COMPUTER.on_exit` script block will have
+     no affect as it alters the phase that is being left.
+     
+* The second form has a phase name as the first argument and affects the value only for specified phase, e.g.:
+
+  .. parsed-literal::
+   
+     SetProportionalNavigationGain("TERMINAL", 5.0);
+        
+  These can be used in any script within the processor.
+     
+The return value indicates if the call was successful or false if it failed for some reason.
+
+General Subcommands
++++++++++++++++++++
+
+.. method:: bool SetGuidanceDelay(double aValue)
+            bool SetGuidanceDelay(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.guidance_delay` (in seconds).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+  
+Aimpoint Selection Subcommands
+++++++++++++++++++++++++++++++
+
+.. method:: bool SetGuidanceTarget(string aValue)
+            bool SetGuidanceTarget(string aPhaseName, string aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.guidance_target` ("truth", "perception", "predicted_intercept", "default").
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetAllowRouteFollowing(bool aValue)
+            bool SetAllowRouteFollowing(string aPhaseName, bool aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.allow_route_following` (true or false).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetAimpointAltitudeOffset(double aValue)
+            bool SetAimpointAltitudeOffset(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.aimpoint_altitude_offset` (meters).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetAimpointAzimuthOffset(double aValue, string aDirection)
+            bool SetAimpointAzimuthOffset(string aPhaseName, double aValue, string aDirection)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.aimpoint_azimuth_offset` (degrees). aDirection must be "left", "right" or "either".
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetAimpointRangeOffset(double aValue)
+            bool SetAimpointRangeOffset(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.aimpoint_range_offset` (meters).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetAimpointEvaluationInterval(double aValue)
+            bool SetAimpointEvaluationInterval(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.aimpoint_evaluation_interval` (seconds).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+Navigation Subcommands
+++++++++++++++++++++++
+
+.. method:: bool SetProportionalNavigationGain(double aValue)
+            bool SetProportionalNavigationGain(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_gain` (unitless).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetProportionalNavigationLimitAngle(double aValue)
+            bool SetProportionalNavigationLimitAngle(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_limit_angle` (degrees).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetProportionalNavigationMethod(double aValue)
+            bool SetProportionalNavigationMethod(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_method` ("pure" or "augmented").
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetVelocityPursuitGain(double aValue)
+            bool SetVelocityPursuitGain(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.velocity_pursuit_gain` (unitless).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+Trajectory Shaping Subcommands
+++++++++++++++++++++++++++++++
+
+.. method:: bool SetGeeBias(double aValue)
+            bool SetGeeBias(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.g_bias` (unitless).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetLateralGeeBias(double aValue)
+            bool SetLateralGeeBias(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.lateral_g_bias` (unitless).
+    
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool ClearCommandedAltitude()
+            bool ClearCommandedAltitude(string aPhaseName)
+   
+   Clears the :command:`WSF_GUIDANCE_COMPUTER.commanded_altitude`.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool ClearCommandedSpeed()
+            bool ClearCommandedSpeed(string aPhaseName)
+   
+   Clears the :command:`WSF_GUIDANCE_COMPUTER.commanded_speed` or :command:`WSF_GUIDANCE_COMPUTER.commanded_mach`.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool ClearCommandedFlightPathAngle()
+            bool ClearCommandedFlightPathAngle(string aPhaseName)
+   
+   Clears the :command:`WSF_GUIDANCE_COMPUTER.commanded_flight_path_angle`.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool ClearCommandedThrottle()
+            bool ClearCommandedThrottle(string aPhaseName)
+   
+   Clears the :command:`WSF_GUIDANCE_COMPUTER.commanded_throttle` (resumes the default throttle control in the mover).
+    
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedAltitude(double aValue)
+            bool SetCommandedAltitude(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_altitude` (meters above mean sea level).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedAltitudeAGL(double aValue)
+            bool SetCommandedAltitudeAGL(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_altitude` (meters above ground level).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedAzimuthOffset(double aValue)
+            bool SetCommandedAzimuthOffset(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_azimuth_offset` (degrees).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedFlightPathAngle(double aValue)
+            bool SetCommandedFlightPathAngle(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_flight_path_angle` (degrees).
+   Use :method:`ClearCommandedFlightPathAngle() <WsfGuidanceComputer.ClearCommandedFlightPathAngle>` to disable the
+   commanded flight path angle.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedMach(double aValue)
+            bool SetCommandedMach(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_mach` (unitless Mach number).
+   Use :method:`ClearCommandedSpeed() <WsfGuidanceComputer.ClearCommandedSpeed>` to disable the commanded speed.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedSpeed(double aValue)
+            bool SetCommandedSpeed(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_speed` (meters/second).
+   Use :method:`ClearCommandedSpeed() <WsfGuidanceComputer.ClearCommandedSpeed>` to disable the commanded speed.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetCommandedThrottle(double aValue)
+            bool SetCommandedThrottle(string aPhaseName, double aValue)
+   
+   Set the value of :command:`WSF_GUIDANCE_COMPUTER.commanded_throttle` in the range [0..1].
+   
+   A value of 0 effectively stops the engines. The engines should be restarted by calling
+   :method:`ClearCommandedThrottle() <WsfGuidanceComputer.ClearCommandedThrottle>`.
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+  
+Limiting Subcommands
+++++++++++++++++++++
+
+.. method:: bool SetMaximumCommandedGees(double aValue)
+            bool SetMaximumCommandedGees(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.maximum_commanded_g` (G's: i.e.: a value of 1.0 is 1 g).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetMaximumAscentRate(double aValue)
+            bool SetMaximumAscentRate(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.maximum_ascent_rate` (meters/second).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetMaximumDescentRate(double aValue)
+            bool SetMaximumDescentRate(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.maximum_descent_rate` (meters/second).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetMaximumPitchAngle(double aValue)
+            bool SetMaximumPitchAngle(string aPhaseName, double aValue)
+   
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.maximum_pitch_angle` (degrees).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+.. method:: bool SetPitchChangeGain(double aValue)
+            bool SetPitchChangeGain(string aPhaseName, double aValue)
+            
+   Sets the value of :command:`WSF_GUIDANCE_COMPUTER.pitch_change_gain` (unitless).
+   
+   .. note:: See `Notes About Method Arguments and Return Values`_.
+
+Examples
+========
+
+Script Example Within a WSF_GUIDANCE_COMPUTER::
+
+  phase BOOST2
+    on_entry
+       WsfTrack targetTrack = PLATFORM.CurrentTargetTrack();
+       double targetRelativeHeading = PLATFORM.RelativeHeadingOf(targetTrack);
+       double targetSlantRange = PLATFORM.SlantRangeTo(targetTrack);
+       if ((targetRelativeHeading < 15) && (targetSlantRange <= 1000))
+       {
+          SelectPhase("TERMINAL");
+       }
+    end_on_entry
+    max_commanded_g 7 g
+    commanded_flight_path_angle 20 deg
+    next_phase GLIDE when phase_time > 14 sec
+  end_phase

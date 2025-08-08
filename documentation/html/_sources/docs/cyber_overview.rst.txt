@@ -1,0 +1,456 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _cyber_overview:
+
+Cyber Overview
+--------------
+
+Cyberwarfare has been defined as "actions by a nation-state to penetrate another nation's computers or networks
+for the purposes of causing damage or disruption". AFSIM implements cyberwarfare by providing the means for one
+platform called the attacker to disrupt the functioning of another platform called the victim.
+
+The Cyber Engagement Lifecycle
+==============================
+
+Abstractly, a cyber engagement has a lifecycle that is defined by six phases. Following is a description of each
+phase along with a description of what might be occurring in real-life as well as what might occur in the simulated
+model environment.
+
+* Target Phase
+
+  * Real world: Target(s) determined via OPE and intel.
+  * Whoever has a plausible "way in" or an exploitable weakness. This can be a combination of:
+
+    * Class of platforms
+    * Single platform (by name)
+
+* Scan Phase
+
+  * Real world: Something akin to a Nessus or 'nmap' scan to list or confirm vulnerabilities on victim.
+  * This phase is optional, with accompanying visuals/sounds in the simulation and effects of the scan
+    (E.G., two-way RF comm.)
+  * Optional probability that victim will detect the interrogation and block the exploit.
+  * Optional response from the victim indicating if vulnerability is present or not.
+
+* Deliver Phase
+
+  * Real world: RF in the air or bits on the wire.
+  * Delivery of exploit and payload ... or trigger something pre-planted (remotely, timed, or logic bomb.)
+  * Accompanying visualization and/or sound in simulation.
+
+* Exploit Phase
+
+  * Real world: Privilege escalation, buffer overflow, use unexpected input/formatting -
+    make the system act in the attacker's interests.
+  * Probability employment succeeds: high fidelity engineering details are abstracted into probabilities...
+    agnostic to real packets/formats.
+  * Optional probability attacker immediately has confidence in employment success or failure.
+  * Optional probability target immediately knows of attack (via IDS, astute operator, etc.)
+
+* Effect Phase
+
+  * Real world: The payload.
+  * Inject and execute attacker's malicious logic on victim and report success or failure of employment back
+    to attacker, if applicable.
+  * Effects include intended, unintended, direct, and indirect (second, third, n-ary order effects.)
+  * Analyst can provide suite of unintended/indirect effects with associated probabilities.
+
+* React Phase
+
+  * Real world: The response actions by both attacker and victim as appropriate based on their perceptions.
+  * Attacker's response to the employment and unintended side effects.
+  * Victim's reaction to the attack.
+  * Optional probability that victim becomes immune to this capability in the future.
+
+AFSIM Model of a Cyber Engagement
+=================================
+
+Cyber warfare in real life involves exploiting vulnerabilities in software and hardware to disrupt the operation
+of a system. AFSIM does not explicitly model what actually is required to exploit a vulnerability or the details of the
+resulting disruption, but instead utilizes three major object types and script support to model the effects of an attack:
+
+**cyber_effect**
+  cyber_effect objects provide the AFSIM functions that model the effects of some real-life attack.
+  For instance, some real-life attack on a sensor might be simulated by simply marking the sensor non-operational,
+  thus preventing it from detecting targets and reporting tracks.
+
+  AFSIM includes a number of predefined effects (such as disabling comm, sensor and weapon systems), but it also
+  allows the user to create effects using :model:`WSF_CYBER_SCRIPT_EFFECT`. With :model:`WSF_CYBER_SCRIPT_EFFECT`
+  the user defines the script methods 'Attack()' and 'Recover()' that implements the simulated model of an attack,
+  and recovery from the attack.
+
+**cyber_attack**
+  :command:`cyber_attack` objects provide the a list of one or more cyber_effect types that
+  define the effect(s) of the attack on the victim. In addition to that it also contains:
+
+  * The default victim responses should the victim not have a defined response to the attack.
+  * A set of values governing how random numbers used in the engagement process are drawn.
+
+**cyber_protect**
+  :command:`cyber_protect` objects define a victim platform's response to a cyber attack. **EVERY** platform
+  in a simulation has either an explicitly or implicitly defined :command:`cyber_protect` object because every
+  platform is potentially vulnerable to a cyber attack.
+
+  A :command:`cyber_protect` object contains a set of attack responses. Each attack response provides:
+
+  * The name of the :command:`cyber_attack` type to which the response applies.
+
+  * The probabilities that define the likelihood of occurrence of events in the cyber lifecycle.
+
+    * Probability the victim will detect a scan.
+    * Probability the attack will be successful.
+    * Probability the attacker will immediately know if the attack has succeeded or failed.
+    * Probability the victim will detect an attack has occurred.
+    * Probability the victim will be able to attribute source of the attack to the attacker
+    * Probability the victim will be immune to this attack type in the future.
+
+  * Delay times for things that occur over a period of time:
+
+    * The time it takes to detect it has been attacked.
+    * The time it takes to recover from an attack once it has detected the attack.
+
+  * Optional script definitions the analyst can supply to implement additional detail.
+
+**script commands and classes**
+  * Script methods are provided in :ref:`WsfPlatform <wsfplatform.cyber_methods>` to initiate and query attacks and scans.
+  * An object of class :class:`WsfCyberEngagement` is provided as an argument to the cyber script observers,
+    script methods in :command:`cyber_protect`, and :model:`WSF_CYBER_SCRIPT_EFFECT`. It provides information
+    about the engagement to the script method.
+
+In addition to the actual model, AFSIM also provides:
+
+* :command:`event_output`, :command:`csv_event_output` and :command:`observer` extensions that allow
+  information to be captured about the events of cyber engagements.
+
+  * :ref:`CYBER_ATTACK_INITIATED`
+  * :ref:`CYBER_ATTACK_SUCCEEDED`
+  * :ref:`CYBER_ATTACK_FAILED`
+  * :ref:`CYBER_ATTACK_DETECTED`
+  * :ref:`CYBER_ATTACK_ATTRIBUTED`
+  * :ref:`CYBER_SCAN_INITIATED`
+  * :ref:`CYBER_SCAN_SUCCEEDED`
+  * :ref:`CYBER_SCAN_FAILED`
+  * :ref:`CYBER_SCAN_DETECTED`
+  * :ref:`CYBER_SCAN_ATTRIBUTED`
+  * :ref:`CYBER_TRIGGER_EVALUATION`
+  * :ref:`CYBER_TRIGGER_EXECUTION`
+
+* The ability to have additional information written to the :command:`dis_interface` :command:`dis_interface.record` or :command:`event_pipe` file that allow visualization of cyber engagements with visual applications.
+
+Details of the Cyber Engagement Model
+=====================================
+
+This section describes in detail the process used to model the cyber engagement lifecycle.
+
+Target Phase
+^^^^^^^^^^^^
+
+The targeting node will utilize a :model:`WSF_TASK_PROCESSOR`, :model:`WSF_QUANTUM_TASKER_PROCESSOR`
+or some other processor to select the victim and attack type.
+
+Scan Phase
+^^^^^^^^^^
+
+This is an optional step. Using a target select in the previous step, the attacker will invoke the
+:method:`WsfPlatform.CyberScan` script. The logic on the victim is as follows:
+
+#. Schedule an event to occur at the completion of the :command:`cyber_attack.scan_delay_time` from the
+   :command:`cyber_attack` type.
+#. Invoke the :ref:`CyberScanInitiated <CYBER_SCAN_INITIATED>` observer callbacks.
+#. Issue :class:`WsfDraw` commands to record visualization data.
+
+At the completion of the :command:`cyber_attack.scan_delay_time` that simulates the scan duration:
+
+#. Locate the applicable :command:`cyber_protect.attack_response` in the :command:`cyber_protect` object on the victim.
+#. If the user has defined :command:`cyber_protect.IsVulnerable` in the :command:`cyber_protect` object on the victim,
+   it is executed at this time. If the victim is not vulnerable, make the scan as 'failed' and proceed to step 5.
+#. If the victim has declared itself to be immune to the attack based on its reaction to a previous attack
+   (see the processing for the evaluation of 'future_immunity' in 'React Phase'), mark the scan as 'failed'
+   and proceed to step 5
+#. Determine if the victim would detect the scan by performing the probabilistic evaluation for 'scan_detection'
+   (see :ref:`cyber_overview.probabilistic_evaluations` below)
+
+   #. If the draw is less than or equal to the threshold the scan was detected by the victim
+      and it will be invulnerable to a future attack of the same type.
+
+      #. Mark the scan as 'failed'.
+      #. Invoke the :command:`cyber_protect.OnScanDetection` script if one is provided in the attack response.
+	  #. Invoke the :ref:`CyberScanDetected <CYBER_SCAN_DETECTED>` observer callbacks.
+
+   #. If the draw is greater than the threshold then the scan was not detected by the victim and it
+      will be potentially vulnerable to a future attack of the same type.
+
+      #. Mark the scan as 'succeeded'
+      #. Determine if the victim would attribute the scan by performing the probabilistic evaluation for 'scan_attribution'
+         #. Invoke the :ref:`CyberScanAttributed <CYBER_SCAN_ATTRIBUTED>` observer callbacks.
+
+#. Issue :class:`WsfDraw` commands to record visualization data.
+#. Invoke the :ref:`CyberScanSucceeded <CYBER_SCAN_SUCCEEDED>` or :ref:`CyberScanFailed <CYBER_SCAN_FAILED>`
+   observer callback based on the status determined in the previous steps.
+
+Deliver Phase
+^^^^^^^^^^^^^
+
+Simulate the delivery of the exploit to the victim. The attacker invokes the :method:`WsfPlatform.CyberAttack` script
+method specifying the intended victim and the attack to be used as determined in the 'Target Phase'.
+
+In real life the delivery would entail some communication (wired or wireless) between the attacker and the victim,
+although some attacks could be embedded in the circuitry. The cyber engagement model does not make use of the
+AFSIM communication model because it would be difficult to modify existing scenarios to utilize explicit
+communication, and little would be gathered from requiring it.
+
+#. Schedule an event to occur at the completion of the :command:`cyber_attack.delivery_delay_time` from the
+   :command:`cyber_attack` type.
+#. Invoke the :ref:`CyberAttackInitiated <CYBER_ATTACK_SUCCEEDED>` observer callbacks.
+#. Issue :class:`WsfDraw` commands to record visualization data.
+
+At the completion of the :command:`cyber_attack.delivery_delay_time` control is passed to the 'Exploit' phase.
+
+.. note::
+   In a future release documentation will be added here to describe the processing that will allow for delivery
+   to fail due to operating conditions (could be probabilistic, could be geometric, etc.) At the current time
+   delivery will always occur and processing will immediately resume with the 'Exploit' phase.
+
+Exploit Phase
+^^^^^^^^^^^^^
+
+Determine if the victim is vulnerable to the requested attack.
+
+#. Locate the applicable :command:`cyber_protect.attack_response` in the :command:`cyber_protect` object on the victim.
+#. If the user has defined :command:`cyber_protect.IsVulnerable` in the :command:`cyber_protect` object on the victim,
+   it is executed at this time. If the victim is not vulnerable, make the attack as 'failed' and proceed to step 6.
+#. If the victim has declared itself to be immune to the attack based on its reaction to a previous attack
+   (see the processing for the evaluation of 'future_immunity' in 'React Phase'), mark the attack as 'failed'
+   and proceed to step 6 (no status is reported back to the attacker.)
+#. Determine if the attack is successful by performing a probabilistic evaluation of 'attack_success'
+   (see :ref:`cyber_overview.probabilistic_evaluations` below)
+
+   #. If the draw is less than or equal to the threshold the attack is consider to be successful.
+   #. If the draw is greater than the threshold then the attack is unsuccessful.
+
+#. Determine if the attacker will immediately receive notification of the attack status by performing a
+   probabilistic evaluation of 'status_report'
+   (see :ref:`cyber_overview.probabilistic_evaluations` below)
+
+   #. If the draw is less than or equal to the threshold the true status of the attack is reported back to the
+      attacker. Report the status back to the caller.
+   #. If the draw is greater than the threshold the attacker will not know the status of the attack.
+
+#. Issue :class:`WsfDraw` commands to record visualization data.
+#. Invoke the :ref:`CyberAttackSucceeded <CYBER_ATTACK_SUCCEEDED>` or :ref:`CyberAttackFailed <CYBER_ATTACK_FAILED>`
+   observer callback based on the status determined in the previous steps.
+#. If the attack was marked as 'failed', stop further execution of the cyber lifecycle.
+
+Effect Phase
+^^^^^^^^^^^^
+
+The 'Exploit' step has declared the victim to be vulnerable. For each :command:`cyber_attack.effect` in the
+:command:`cyber_attack` object that represents the incoming attack, invoke the 'Attack' method to cause the
+simulated effect (e.g.: disable sensors, etc.)
+
+React Phase
+^^^^^^^^^^^
+
+Determine if the victim could detect and react to the attack. Using the attack response determined in the
+'Exploit Phase'.
+
+#. Determine if the victim could detect the attack by performing a probabilistic evaluation of 'attack_detection'
+   (see :ref:`cyber_overview.probabilistic_evaluations` below)
+
+   #. If the draw is less than or equal to the threshold the attack is considered detectable by the victim.
+      #. Determine if the victim could attribute the attack by performing a probabilistic evaluation of 'attack_attribution'
+   #. If the draw is greater than the threshold then the attack is considered undetectable by the victim
+      and it is unable to notice or recover from the attack.
+
+#. Issue :class:`WsfDraw` commands to record visualization data.
+#. Invoke the :ref:`CyberAttackSucceeded <CYBER_ATTACK_SUCCEEDED>` observer callback.
+
+The follow steps will occur if the attack is considered detectable by the victim:
+
+#. Simulate the time it takes for the victim to recognize it is being attacked (i.e.: schedule an event for
+   the current simulation time plus the :command:`cyber_protect.attack_detection_delay_time` from the attack response.)
+#. At the completion of the :command:`cyber_protect.attack_detection_delay_time`
+
+   #. Invoke any :command:`cyber_protect.OnAttackDetection` script defined in the attack response.
+      This would allow the victim to do things like inform others of the attack.
+   #. Simulate the time it takes for the victim to recover from the attack (i.e: schedule an event for the
+      current simulation time plus the :command:`cyber_protect.attack_recovery_delay_time` from the
+      attack response.)
+   #. Issue :class:`WsfDraw` commands to record visualization data.
+   #. Invoke the :ref:`CyberAttackDetected <CYBER_ATTACK_DETECTED>` observer callback.
+   #. If the attack was considered attributed, invoke the :ref:`CyberAttackAttributed <CYBER_ATTACK_ATTRIBUTED>` observer callback.
+
+#. At the completion of the :command:`cyber_protect.attack_recovery_delay_time`:
+
+   #. Invoke any :command:`cyber_protect.OnAttackRecovery` script defined in the attack response.
+      This lets the victim take any custom action that cannot be performed in the subsequent step.
+   #. If the 'restore' command was present in the attack response iterate over each 'cyber_effect' that was
+      part of the attack and invoke its 'Recover()' method.
+   #. Determine if the victim is immune to future attacks of the same type by performing a probabilistic evaluation
+      of 'future_immunity' (see :ref:`cyber_overview.probabilistic_evaluations` below)
+
+      #. If the draw is less than or equal to the threshold the victim will be immune to future attacks of the
+         same type.
+      #. If the draw is greater than the threshold the victim will continue to be vulnerable to future attacks
+         of the same type.
+
+   #. Issue :class:`WsfDraw` commands to record visualization data.
+   #. Invoke the :ref:`CyberAttackRecovery <CYBER_ATTACK_RECOVERY>` observer callback.
+
+Embedded Attacks
+================
+
+Embedded attacks represent attacks that lie dormant in the host systems hardware or software and are
+triggered internally (i.e.: they are not delivered from an external source). Such attacks may be modeled
+by using a :command:`cyber_trigger` that periodically checks for conditions that would initiate such an
+attack. Any logic cable of being written currently in the AFSIM script language can be utilized to
+describe the conditions favorable for the launch of a potential embedded attack via the :command:`cyber_trigger`,
+and when these conditions are met, a defined attack may be launched against a target that models the
+embedded attack characteristics.
+
+Platform Response Selection
+===========================
+
+A platform's response to a cyber scan or attack is defined by its :command:`cyber_protect` object. When a scan or
+attack is attempted, AFSIM must determine what response in the :command:`cyber_protect` object should be used.
+Assume the following definitions:
+
+.. parsed-literal::
+
+   cyber_attack AT_1 WSF_CYBER_ATTACK
+      ...
+   end_cyber_attack
+
+   cyber_attack AT_2 WSF_CYBER_ATTACK
+      ...
+   end_cyber_attack
+
+   cyber_attack AT_3 WSF_CYBER_ATTACK
+      ...
+   end_cyber_attack
+
+   # An attack type that inherits from another attack type.
+   cyber_attack AT_4 AT_2
+      ...
+   end_cyber_attack
+
+   cyber_protect PT_1 WSF_CYBER_PROTECT
+      attack_response AT_1
+         ...
+      end_attack_response
+      attack_response AT_2
+         ...
+      end_attack_response
+   end_cyber_protect
+
+   cyber_protect PT_2 WSF_CYBER_PROTECT
+      attack_response AT_2
+         ...
+      end_attack_response
+      default_attack
+         ...
+      end_default_attack
+   end_cyber_protect
+
+If a cyber attack or scan is attempted using a :command:`cyber_attack` type '<T>', the algorithm executed on the
+intended victim platform for determining the response is:
+
+1. Attempt to locate the :command:`cyber_protect.attack_response` with the name '<T>'.
+2. If step 1 fails, for each :command:`cyber_attack` type that '<T>' inherits from, attempt to locate the
+   :command:`cyber_protect.attack_response` whose name matches the inherited type.
+3. If steps 1 and 2 fail attempt to locate the :command:`cyber_protect.attack_response` entry named 'default'.
+4. If steps 1, 2 and 3 fail use an internal response dynamically created from the default
+   response values in the :command:`cyber_attack` type '<T>'.
+
+The following table defines the selected response on each protect type to each of the attacks. The cyber_attack types
+are in the top row and the cyber_protect types are in the left column. The intersection is the selected attack
+response along with the rule number in parenthesis that selected the response:
+
++----------------+-------------+-------------+--------------+-------------+
+|                | AT_1        | AT_2        | AT_3         | AT_4        |
++================+=============+=============+==============+=============+
+| PT_1           | AT_1 (1)    | AT_2 (1)    | internal (4) | AT_2 (2)    |
++----------------+-------------+-------------+--------------+-------------+
+| PT_2           | default (3) | AT_2 (1)    | default (3)  | AT_2 (2)    |
++----------------+-------------+-------------+--------------+-------------+
+
+The responses selected using rule 1 are obvious because they are exact matches, but the others may benefit
+from further explanation:
+
+* For those selected using rule 2: neither PT_1 or PT_2 have a response for AT_4, but they do have a
+  response for AT_2. Because AT_4 inherits from AT_2 the response for AT_2 will be selected.
+
+* For those selected using rule 3: PT_2 does not have a response for AT_1 or AT_3 but it does have a
+  default response that will be used.
+
+* For those selected using rule 4: PT_1 does not have response for AT_3 and it does not have a default
+  response, so it will use the dynamically created response using the default response values from AT_3.
+
+.. _cyber_overview.probabilistic_evaluations:
+
+Probabilistic Evaluations
+=========================
+
+There are five different probabilistic evaluations that can occur during a cyber engagement. Associated
+with each evaluation is a probability threshold and a frequency at which random numbers are to be drawn.
+The following table shows the source of the threshold and draw frequency for each evaluation type.
+
+==================   =================================  ===============================
+Evaluation Type         Threshold Command                    Draw Frequency Command
+==================   =================================  ===============================
+scan_detection       probability_of_scan_detection      scan_detection_draw_frequency
+scan_attribution     probability_of_scan_attribution    scan_attribution_draw_frequency
+attack_success       probability_of_attack_success      attack_success_draw_frequency
+status_report        probability_of_status_report       status_report_draw_frequency
+attack_detection     probability_of_attack_detection    attack_detection_draw_frequency
+attack_attribution   probability_of_attack_attribution  attack_attribution_draw_frequency
+future_immunity      probability_of_future_immunity     future_immunity_draw_frequency
+==================   =================================  ===============================
+
+All evaluations are performed using the same algorithm. As an example, consider the evaluation of
+'attack_success':
+
+* Determine the 'attack_success' threshold:
+
+  * Use the value of :command:`cyber_protect.probability_of_attack_success` from the current attack
+    response in the victims :command:`cyber_protect` object.
+  * If the previous value was not defined, use the value of :command:`cyber_attack.probability_of_attack_success`
+    from the current :command:`cyber_attack` object (or it's default value).
+
+* Determine the random draw according to the :command:`cyber_attack.attack_success_draw_frequency` command
+  from the current :command:`cyber_attack` object.
+
+  * If the frequency is 'always', perform a draw and return it.
+  * If the frequency is 'once_per_simulation':
+
+    * If this is the first time the attack is used, perform a draw and store.
+    * Return the stored draw associated with this attack type.
+
+  * If the frequency is 'once_per_target':
+
+    * If this is the first time this attack type is used against the current target, perform a draw and store.
+    * Return the stored draw associated with this attack type.
+
+  * If the frequency is 'interval_per_simulation':
+
+    * If this is the first time this attack type has been used, or if the time since it was last used exceeds
+      the specified time interval, perform a draw and store.
+    * Return the stored draw associated with this attack type.
+
+  * If the frequency is 'interval_per_target':
+
+    * If this is the first time this attack type has been used against this target, or if the time since it was
+      last used against this target exceeds the specified time interval, perform a draw and store.
+    * Return the stored draw associated with this target and attack type.
+
+The same algorithm is employed for the other evaluations by simply replacing 'attack_success' with the
+appropriate evaluation name.

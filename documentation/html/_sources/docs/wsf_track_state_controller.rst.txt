@@ -1,0 +1,155 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TRACK_STATE_CONTROLLER
+--------------------------
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+.. model:: processor WSF_TRACK_STATE_CONTROLLER
+
+    .. parsed-literal::
+
+     processor <name> :model:`WSF_TRACK_STATE_CONTROLLER`
+
+       ... :model:`WSF_SCRIPT_PROCESSOR` ...
+
+       // `State Machine Commands`_
+
+       show_state_evaluations_
+       show_state_transitions_
+       state_ *<state-name>*
+          ... state definition ...
+       end_state
+
+        // `Thinker Commands`_
+
+       number_of_servers_ ...
+
+        // `Track State Controller Commands`_
+
+       evaluate_candidate_tracks_ ...
+       evaluation_interval_ ...
+       time_to_evaluate_ ...
+
+       # `Script Interface`_
+
+       :command:`on_initialize` ... end_on_initialize
+       :command:`on_initialize2` ... end_on_initialize2
+       :command:`on_update` ... end_on_update
+       :command:`_.script_commands.script_variables` ... end_script_variables
+       :command:`_.script_commands.script` ... end_script
+       .. Other Script Commands ...
+
+       on_track_drop_
+         ...
+       end_on_track_drop
+
+     end_processor
+
+Overview
+========
+
+:model:`WSF_TRACK_STATE_CONTROLLER` is a facility that allows the user to categorize tracks using the concept of a finite
+state machine. The user defines a set of transition rules that define the conditions under which a transition can occur from
+one state to another. The transition rules are defined using the :ref:`WSF scripting language <script>`.  Each track
+maintains its own state in the machine.
+
+State Machine Commands
+======================
+
+.. command:: show_state_evaluations
+   
+   Indicates that information about state evaluations should be written to standard output. This essentially shows the
+   true or false status of the evaluation of each next_state block.
+
+.. command:: show_state_transitions
+   
+   Indicates that information about state transitions should be written to standard output.
+
+.. command:: state <state-name>
+   
+   Defines a state in a state machine with the name <state-name>.::
+
+    state <state-name>
+      on_entry
+         ... <script-commands> ...
+      end_on_entry
+      on_exit
+         ... <script-commands> ...
+      end_on_exit
+      next_state <next-state-name-1>
+         ... <script-commands> ...
+      end_next_state
+      next_state <next-state-name-n>
+         ... <script-commands> ...
+      end_next_state
+    end_state
+
+Thinker Commands
+================
+
+.. command:: number_of_servers
+   
+   Specifies the maximum number of evaluations that can occur simultaneously. See `Method of Operation`_ below.
+   
+   Default: 1
+
+Track State Controller Commands
+===============================
+
+.. command:: evaluate_candidate_tracks <boolean>
+   
+   Indicates if 'candidate tracks' are to be evaluated. A candidate track is one that has been received but has not yet
+   been determined to be 'stable' as defined by the filter.
+   
+   Default: false
+
+.. command:: evaluation_interval <state-name> <time-value>
+   
+   Specifies how often a track in the indicated state should be (re)evaluated.
+
+.. command:: time_to_evaluate <state-name> <time-value>
+   
+   Specifies how long it takes to perform an evaluation of track in the indicated state. This simulates how long it takes
+   to "think' or perform an evaluation in a logical sense.
+   
+   Default: 0.01 seconds
+
+Script Interface
+================
+
+:model:`WSF_TRACK_STATE_CONTROLLER` utilizes the capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`,
+and provides the following additional capabilities:
+
+.. command:: on_track_drop ... end_on_track_drop
+.. command:: void on_track_drop ... end_script
+   
+   This is invoked whenever a processor is informed of a track drop by the track manager. The implicitly defined script
+   variable **TRACK** (of type :class:`WsfLocalTrack`) represents the last known state of the track that is being dropped.
+
+Method of Operation
+===================
+
+Each track, when it is first discovered, is initially put into the first state as defined in the input file after the
+time_to_evaluate_ interval has elapsed. From that point on it will continue to evaluate the transition rules for
+whatever state it is currently in and will transition to new states as the rules allow. When a transition occurs, the
+on_exit script for the current state will be executed (if it is defined) and the on_entry script for the new state will
+be executed (if it is defined). The first time the state is entered the time_to_evaluate_ interval is applied.
+This serves as a thinking delay on state entry.
+
+Each track is (re)evaluated at the interval defined by the state in which the track currently exists. The logical time
+that it takes to perform the evaluation is defined by the time_to_evaluate for that state. The controller can perform
+up to number_of_servers evaluations at a time. When it comes time to evaluate a state for a given track, it is
+determined if a server is available to perform the evaluation. If a server is available, it is marked busy for the
+time_to_evaluate and will perform the actual rule evaluation at the completion of the interval (thus simulating the
+thinking process) and schedule the next evaluation. If a server is not available then it is put on a pending queue for
+evaluation by the next server that becomes available.

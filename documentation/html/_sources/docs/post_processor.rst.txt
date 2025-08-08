@@ -1,0 +1,443 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _post_processor:
+
+post_processor
+==============
+
+.. contents::
+   :local:
+
+Overview
+--------
+
+The Post Processor creates formatted reports from raw data that is output from AFSIM, based off given configuration files. The report types are:
+
+- :ref:`post_processor.communication_report`
+- :ref:`post_processor.detection_report`
+- :ref:`post_processor.eclipse_report`
+- :ref:`post_processor.engagement_report`
+- :ref:`post_processor.trajectory_report`
+- :ref:`post_processor.dsv_output`
+
+Each report has modifiable options in a configuration file to filter and alter the format of the given data. Certain options apply to all reports (See `Configuration Options`_ below).
+
+Configuration Options
+---------------------
+
+.. block:: post_processor
+
+The following options apply to all reports unless otherwise stated:
+
+.. command:: report [communication | detection | eclipse | engagement | dsv | trajectory]
+
+   Specifies the type of report that is being generated.
+
+.. command:: report_name <string>
+
+   Specifies the name of the report. If the folder(s) or file(s) already exist then it will be overwritten. The run number is automatically inserted at the end of the filename, but can be inserted manually also using the %d tag. The date and time tags, %D and %T may also be used to aid in file management.
+
+   **Example**: report_name example_report
+
+   .. note:: Quotation marks are required for values that contain spaces.
+
+.. command:: data_file  [<file_name>]
+
+   Specifies the name of the file where the input file(s) are located. To process Monte-Carlo files insert the run number tag %d in the file name.
+
+   **Example**: data_file ../input/example_%d.csv
+
+   .. note:: Quotation marks are required for values that contain spaces.
+
+.. command:: output_directory [<folder_name>]
+
+   Specifies the name of the folder where the output files will be generated. If the folder & files already exist then it will be overwritten. The run number is automatically inserted at the end of the filename, but can be inserted manually also using the %d tag. The date and time tags, %D and %T may also be used to aid in file management.
+
+   **Example**: output_directory output/run_%d/
+
+   .. note:: Quotation marks are required for values that contain spaces.
+
+.. command:: monte_carlo_start <integer-value>
+
+   Specifies the starting run number.
+
+   **Default** 1
+
+.. command:: monte_carlo_end <integer-value>
+
+   Specifies the ending run number.
+
+   **Default** All consecutive runs in ascending order of the %d.
+
+.. command:: single_output_file <boolean-value>
+
+   Specifies if all formatted run data should be output to a single file. (Currently not implemented)
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** true
+
+.. command:: write_header_information <boolean-value>
+
+   Specifies if headers should be output to the report(s).
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** true
+
+.. command:: delimiter [comma | column | semicolon | space | tab]
+
+   Specifies the delimiter that separates the values.
+
+   **Default** comma
+
+.. command:: length_units [feet | meters]
+
+   Specifies the unit of measurement for distances. (Currently not implemented)
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** meters
+
+.. command:: angle_units [radians | degrees]
+
+   Specifies the unit of measurement for angles. (Currently not implemented)
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** degrees
+
+.. command:: track_number_options [numerical | jtids]
+
+   Specifies the track number format options. (Currently not implemented)
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** numerical
+
+.. command:: start_time <real> <time-units>
+
+   Specifies the start time of the desired data.
+
+   **Default** 0
+
+.. command:: end_time <real> <time-units>
+
+   Specifies the end time of the desired data.
+
+   **Default** std::numeric_limits<double>::max()
+
+.. command:: lat_lon_format d[:m[:s]][.#]
+
+   Specifies the format and number of decimal places for displaying latitude and longitude values.
+
+   Default: d:m:s.2
+
+.. command:: time_format [[h:]m:]s[.#]
+
+   Specifies the format and number of decimal places for displaying time values.
+
+   **Default** s.5
+
+.. command:: precision <double-value>
+
+   Specifies the precision of double values.
+
+   .. note::
+      Not applicable for DSV output.
+
+   **Default** 2
+
+.. end::
+
+.. _post_processor.communication_report:
+
+Communication Report
+--------------------
+
+.. block:: post_processor.communication
+
+Report of how and how often platforms communicate to other platforms.
+
+.. important:: At least one of the following events must be enabled for the communication report to generate data: 
+
+   .. hlist::
+	  :columns: 2	  
+
+	  * :ref:`docs/event/message_events:MESSAGE_DISCARDED`
+	  * :ref:`docs/event/message_events:MESSAGE_UPDATED`
+	  * :ref:`docs/event/message_events:MESSAGE_QUEUED`
+	  * :ref:`docs/event/message_events:MESSAGE_TRANSMITTED`
+	  * :ref:`docs/event/message_events:MESSAGE_RECEIVED`
+
+.. command:: report_type [traffic_counts | connectivity]
+
+   Specifies the subreport type. (See also: :ref:`post_processor.communication_subreports`)
+
+   **Default** traffic_counts
+
+.. command:: transmitters ... end_transmitters
+
+   Specifies the transmitters whose data will be collected.
+
+   **Default** all
+
+.. command:: receivers ... end_receivers
+
+   Specifies the receivers whose data will be collected.
+
+   **Default** all
+
+.. command:: networks ... end_networks
+
+   Specifies the networks whose data will be collected.
+
+   **Default** all
+
+.. _post_processor.communication_subreports:
+
+Subreports
+^^^^^^^^^^
+
+Traffic Counts
+**************
+
+Outputs the number of messages generated, transmitted, completed to receivers, and purged/deleted per platform or network.
+
+.. command:: options ... end_options
+
+   Specifies other options that applies to the traffic count subreport.
+
+   Accepted options:
+
+   .. parsed-literal::
+
+    options
+       platforms | networks | time_interval
+    end_options
+
+.. command:: interval <real> <time-units>
+
+   Specifies the interval of time desired per data set.
+
+   **Default** 1 second
+
+   **Example**: interval 60 seconds : gives data between 0-60 seconds, then 60-120 seconds, and so on.
+
+Connectivity
+************
+
+Currently not implemented
+
+.. _post_processor.detection_report:
+
+Detection Report
+----------------
+
+.. block:: post_processor.detection
+
+.. important:: At least one of the following events must be enabled for the detection report to generate data: 
+	  
+   * :ref:`docs/event/sensor_events:SENSOR_DETECTION_ATTEMPT`
+   * :ref:`docs/event/sensor_events:SENSOR_DETECTION_CHANGED`
+
+.. command:: report_type [total_detections | first_detections | access]
+
+   Specifies the subreport type. (See also: :ref:`post_processor.detection_subreports`)
+
+.. command:: detected_platforms ... end_detected_platforms
+
+   Specifies the detected platforms whose data will be collected.
+
+   **Default** all
+
+.. command:: detecting_platforms ... end_detecting_platforms
+
+   Specifies the detecting platforms whose data will be collected.
+
+   **Default** all
+
+.. _post_processor.detection_subreports:
+
+Subreports
+^^^^^^^^^^
+
+Total Detections
+****************
+
+Outputs the number of detections made by each of the given platforms. This subreport has no other options.
+
+First detections
+****************
+
+Outputs the first detection from one platform to another.
+
+.. command:: options ... end_options
+
+   Specifies other options that applies to the first detections subreport.
+
+   Accepted options:
+
+   .. parsed-literal::
+
+    options
+       platform_type_of_detected_platform
+       side_indicator
+       altitude_of_detected_platform
+       azimuth_angle
+       elevation_angle
+    end_options
+
+.. end::
+
+Access
+******
+
+Provides the start time, end time, and the duration of platforms' visibility to each other.
+
+.. _post_processor.eclipse_report:
+
+Eclipse Report
+-----------------
+
+.. block:: post_processor.eclipse
+
+Eclipse report provides the start time, end time, and the duration that platforms are within the Earth's shadow.
+
+.. important:: At least one of the following events must be enabled for the eclipse report to generate data: 
+
+   * :ref:`ECLIPSE_ENTRY`
+   * :ref:`ECLIPSE_EXIT`
+
+.. note::
+   Results do not take into account the effect of the oblate Earth or motion of the Earth during a single orbit of a platform.
+
+.. command:: platforms ... end_platforms
+
+   Specifies the platforms whose data will be collected.
+
+   **Default** all
+   
+.. _post_processor.engagement_report:
+
+Engagement Report
+-----------------
+
+.. block:: post_processor.engagement
+
+.. important:: At least one of the following events must be enabled for the engagement report to generate data:
+
+   .. hlist::
+      :columns: 3
+
+      * :ref:`docs/event/platform_events:PLATFORM_ADDED`
+      * :ref:`docs/event/weapon_fired:WEAPON_FIRED`
+      * :ref:`docs/event/weapon_fire_aborted:WEAPON_FIRE_ABORTED`
+      * :ref:`docs/event/weapon_reload_started:WEAPON_RELOAD_STARTED`
+      * :ref:`docs/event/weapon_reload_ended:WEAPON_RELOAD_ENDED`
+      * :ref:`docs/event/local_track_events:LOCAL_TRACK_DROPPED`
+      * :ref:`docs/event/local_track_events:LOCAL_TRACK_INITIATED`
+      * :ref:`docs/event/local_track_events:LOCAL_TRACK_UPDATED`
+      * :ref:`docs/event/sensor_events:SENSOR_REQUEST_CANCELED`
+      * :ref:`docs/event/sensor_events:SENSOR_REQUEST_INITIATED`
+      * :ref:`docs/event/sensor_events:SENSOR_REQUEST_UPDATED`
+      * :ref:`docs/event/sensor_track_events:SENSOR_TRACK_COASTED`
+      * :ref:`docs/event/sensor_track_events:SENSOR_TRACK_DROPPED`
+      * :ref:`docs/event/sensor_track_events:SENSOR_TRACK_INITIATED`
+
+
+.. command:: report_type [total_detections | first_detections]
+
+   Specifies the subreport type. (See also: :ref:`post_processor.detection_subreports`)
+
+.. command:: acting_platforms ... end_acting_platforms
+
+   Specifies the acting platforms whose data will be collected.
+
+   **Default** all
+
+.. command:: against_platforms ... end_against_platforms
+
+   Specifies the target platforms whose data will be collected.
+
+   **Default** all
+
+.. command:: types_of_actions ... end_types_of_actions
+
+   Specifies the detecting platforms whose data will be collected.
+
+   **Default** all
+
+.. command:: types_of_weapons ... end_types_of_weapons
+
+   Specifies the types of weapons whose data will be collected. (Currently not implemented)
+
+   **Default** all
+
+.. _post_processor.engagement_subreports:
+
+Subreports
+^^^^^^^^^^
+
+Track Event History
+*******************
+
+Outputs the number of detections made by each of the given platforms.
+
+Weapon Expenditures
+*******************
+
+.. command:: options ... end_options
+
+   Specifies other options that applies to the weapon expenditures subreport. (Currently not implemented)
+
+.. end::
+
+.. _post_processor.trajectory_report:
+
+Trajectory Report
+-----------------
+
+.. block:: post_processor.trajectory
+
+TODO
+
+.. end::
+
+.. _post_processor.dsv_output:
+
+DSV (Delimited Separated Value) Output
+--------------------------------------
+
+.. block:: post_processor.dsv
+
+This report generates multiple delimited separated value (DSV) output files as specified below. Any files not listed below or not mapped in the post_processor will be output into a file matching the event name in the header of the input file.
+
+::
+
+  # Example input file
+  report DSV
+  report_name sample_demo_%D
+  data_file sample_demo_%d.csv
+  output_directory .
+  delimiter comma
+  lat_lon_format d:m:s.2
+  time_format s.5
+
+.. include:: dsv_output_files.txt
+
+.. end::

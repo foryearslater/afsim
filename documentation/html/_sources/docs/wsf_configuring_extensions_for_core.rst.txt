@@ -1,0 +1,144 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF Build Instructions: For configuring extensions for core
+-----------------------------------------------------------
+
+The "Descriptions" section describe locations, as opposed to environment/cmake/other variables, and are used to help you
+understand where change and configuration are needed. A windows path referencing style is used below, however, a very
+similar structure will work for unix systems as well.
+
+
+Assumptions:
+
+* WSF software is already installed on your machine.  If this is not the case, please see WSFInstallInstructions.rst.
+
+Descriptions:
+
+* BUILD_DIRECTORY_ROOT: The top-level directory where all software is stored.
+* WSF_CORE_ROOT_DIR : The location where WSF software is installed.  The top-level directory should be named Core.
+  Core's immediate subdirectories are wsf_core, wsf_package, dis, etc...
+* EXTENSION_ROOT_DIR : The root location for your extension software.  All CMake, source, headers, etc... exist in 1+
+  subdirectories underneath.  wsf_module and wsf_cmake_extension.cmake will reside here.
+* EXTENSION_SUB_DIR : The directory name, where your extension software will be provided.  This directory is a
+  sub-directory of EXTENSION_ROOT_DIR.  In the example below, this directory is simply named source.
+* wsf_module : A file that will be required in order for your project to be included in WSF cmake processing. This file
+  does not require any content within it, and will not process content within.
+* wsf_cmake_extensions.cmake : A file that is required, and must be configured, in order for your project to be included
+  in WSF cmake processing.
+* EXTENSION_NAME : The name of your extension.  This information must be assigned by you inside
+  wsf_cmake_extensions.cmake.
+* EXTENSION_SOURCE_DIR : The location of your extension's primary CMakeLists.txt file, relative from the location of
+  wsf_cmake_extensions.cmake.  This information must be assigned by you inside wsf_cmake_extensions.cmake.
+* CMAKE_BUILD_FILES_DIR : The location where CMake build files will be sent.
+* WSF_PACKAGE_CMAKE_DIR : The location of the CMakeLists.txt file that lives in the wsf_package project.
+* MY_EXTENSION_BUILD_FILES_DIR: The location of the resulting build files for your software.
+
+Checklist:
+
+* Leverage CMake to generate build files for your current project/solution.
+* Create EXTENSION_ROOT_DIR, and place it inside of WSF_CORE_ROOT_DIR.
+* Create EXTENSION_SUB_DIR inside of EXTENSION_ROOT.
+* Add all of your project software to EXTENSION_SUB_DIR, including CMake files.
+* Add wsf_module to EXTENSION_ROOT_DIR.
+* Add wsf_cmake_extensions.cmake to EXTENSION_ROOT.
+* Provide the name of your extension, as a replacement for EXTENSION_NAME, inside wsf_cmake_extensions.cmake.
+* Provide the location of your extension software's primary CMakeLists.txt file, relative from the location of
+  wsf_cmake_extensions.cmake, inside wsf_cmake_extensions.cmake.
+* If you have an extension configured with a previous version of WSF:
+
+ * Compare the software that exists in your previous version of WSF to the software that exists in your new version of WSF.
+ * For each difference between the previous WSF and the newest WSF that requires change/update of your software, complete the necessary change(s)/update(s).
+ * If your new WSF software will be located in a different place than your previous WSF software, replace any absolute or relative directory path references to previous WSF software with appropriate path references to your new WSF software.
+
+* If your software is not currently integrated with WSF
+
+ * Incorporate the contents of CMakeLists_Support.txt (available in the Examples\Support directory) into your primary CMakeLists.txt file.
+
+   .. note:: WSF will build the WSF libraries for you.
+
+* Clear all conflicting CMake commands (i.e. configuration of output binary directory, output library directory, etc...)
+  from your extension CMake files, so that they do not override WSF CMake configuration settings.
+* Open a command prompt.
+* Navigate to CMAKE_BUILD_FILES_DIR.
+* Execute the following command (excluding quotes): "cmake WSF_PACKAGE_CMAKE_DIR" .
+* Observe that CMake processing is complete.
+* Inside the CMAKE_BUILD_FILES_DIR, observe that all of the appropriate build files have been generated, including those
+  for your extension.
+* Use your build tool (i.e. Visual Studio 2013) to open your desired solution (i.e. MyExtension.sln), and to identify
+  your desired startup project.
+* Choose a build configuration (i.e. Release), and successfully build your solution.
+* Finished!
+
+Support:
+
+* A wsf_module file that you can leverage is located inside Core\wsf_core\Examples\Support.  This file is ready for use
+  as-is.
+* A wsf_cmake_extensions.cmake file that you can leverage is located inside Core\wsf_core\Examples\Support.  This file
+  requires your configuration.
+* The CMakeLists.txt file is located inside Core\wsf_core\Examples\Support.  The contents of this file (i.e. via copy
+  and paste, or via this file's incorporation as a .cmake file) are ready for incorporation into your primary
+  CMakeLists.txt file.
+
+Examples:
+
+1::
+
+   A working example can be located in the WSF_CORE_ROOT_DIR\Examples\Integrate directory.
+
+2::
+
+   Windows example of what the resulting directory structure should look like, given the assumptions stated below:
+   Assumptions: 
+   BUILD_DIRECTORY_ROOT = C:\WSF
+   WSF_CORE_ROOT_DIR = C:\WSF\Core
+   EXTENSION_ROOT_DIR = C:\MyExtension
+   EXTENSION_SUB_DIR = C:\MyExtension\source
+   EXTENSION_NAME = MyExtension
+   EXTENSION_SOURCE_DIR = C:\MyExtension\source (note: In this example, this value is equivalent to EXTENSION_SUB_DIR, but this does not have to be the case.  The source can located elsewhere within the extension sub directory.)
+   CMAKE_BUILD_FILES_DIR : C:\WSF\CMake_Build_Files
+   WSF_PACKAGE_CMAKE_DIR : C:\WSF\Core\wsf_package
+   MY_EXTENSION_BUILD_FILES_DIR: C:\WSF\CMake_Build_Files\build_MyExtension
+
+Directory structure::
+
+   C
+      WSF
+         Core
+            ...
+            dis
+            ...
+            wsf_core
+            ...
+            wsf_package
+               CMakeLists.txt
+            ...
+         MyExtension
+            source
+               CMakeLists.txt
+               *.hpp
+               *.cpp
+            wsf_module
+            wsf_cmake_extension.cmake
+         CMake_Build_Files
+            build_MyExtension (note: this directory will not exist until after WSF CMake processing)
+
+Associated content of wsf_cmake_extensions.cmake file::
+
+   --Before your edits
+   # configuration for automatic inclusion as a WSF extension
+   set(WSF_EXT_NAME <EXTENSION_NAME>)
+   set(WSF_EXT_SOURCE_PATH <EXTENSION_SOURCE_DIR>)
+
+   --After your edits
+   # configuration for automatic inclusion as a WSF extension
+   set(WSF_EXT_NAME MyExtension)
+   set(WSF_EXT_SOURCE_PATH source)

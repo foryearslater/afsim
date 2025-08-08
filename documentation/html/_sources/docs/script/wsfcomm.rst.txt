@@ -1,0 +1,166 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfComm
+-------
+
+.. class:: WsfComm inherits WsfArticulatedPart
+
+.. note:: The comm framework does not initialize until all platforms have initialized in the simulation. Most comm script methods are invalid during :command:`on_initialize`, but are available during :command:`on_initialize2`.
+
+Static Methods
+==============
+
+.. method:: static bool IsA_TypeOf(string aDerivedType, string aBaseType)
+
+   Returns true if the comm type specified by **aDerivedType** inherits from the comm type specified by **aBaseType** (compare to :method:`WsfObject.IsA_TypeOf(aBaseType) <WsfObject.IsA_TypeOf>` which determines if a specific object inherits from **aBaseType**).
+
+.. method:: static WsfComm GetComm(WsfAddress aAddress)
+
+   Queries the network manager for a managed comm in the simulation that resolves to the provided address. If successful, a valid reference to a WsfComm object is returned.
+
+Methods
+=======
+
+.. method:: bool TurnOff()
+
+   Turns the comm device off and returns true if successful.
+
+.. method:: bool TurnOn()
+
+   Turns the comm device on and returns true if successful.
+
+.. method:: void SendMessage(WsfMessage aMessage, WsfComm aComm)
+            void SendMessage(WsfMessage aMessage, string aPlatformName, string aCommName)
+            void SendMessage(WsfMessage aMessage, WsfAddress aAddress)
+
+   Attempt to send the provided message to a recipient comm. The recipient may be specified either via reference, both a platform and comm name, or via address.
+
+.. method:: void SendMessageToCommander(string aCommandChainName, WsfMessage aMessage)
+            void SendMessageToCommander(WsfMessage aMessage)
+
+   Send a message to the commander. If not specifying the command chain, the default chain is used. Since comms typically requires a specific comm device to send to, this will send the message from all comms devices available to the sender. This method will be deprecated in the next release.
+
+.. method:: void SendMessageToPeers(string aCmdChainName, WsfMessage aMessage)
+
+   Attempt to send the provided message to each of the peers on the specified command chain. Since comms typically requires a specific comm device to send to, this will send the message from all comms devices available to the sender. This method will be deprecated in the next release.
+
+.. method:: void SendMessageToSubordinates(string aCmdChainName, WsfMessage aMessage)
+
+   Attempt to send the provided message to each of the subordinates on the specified command chain. Since comms typically requires a specific comm device to send to, this will send the message from all comms devices available to the sender. This method will be deprecated in the next release.
+
+Connection Management Methods
+=============================
+
+.. method:: string NetworkName()
+
+   Returns the string name of the network that this comm is a member.
+
+.. method:: WsfAddress GetAddress()
+
+   Returns the address associated with this comm object.
+
+.. method:: WsfCommRouter GetRouter()
+
+   Returns the router object this comm interface is currently assigned to.
+
+.. method:: bool IsConnectedTo(WsfAddress aAddress)
+
+   Returns true if a connection exists between this comm and the comm specified by the Address. This method queries the truth data provided by the network manager.
+
+.. method:: bool IsConnectedTo(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Returns true if a connection exists between the provided comms. This method queries the truth data provided by the network manager.
+
+.. method:: bool PathExistsTo(WsfAddress aAddress)
+
+   Returns true if a path actually exists in simulation truth to the specified comm from the called comm.
+
+.. method:: bool PathExistsTo(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Returns true if a path actually exists in simulation truth between the specified comms.
+
+.. method:: bool IsConnectionEnabled(WsfAddress aAddress)
+
+   Returns true if a connection exists between this comm and the specified comm, and that connection is set to be
+   enabled. This is based on perfect simulation state data.
+
+.. method:: bool IsConnectionEnabled(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Returns true if a connection exists between the comms provided, and that connection is set to be enabled. This is based on perfect simulation state data.
+
+.. method:: bool EnableConnection(WsfAddress aAddress)
+
+   Enables a connection between this comm and the specified comm. Returns true if the connection was found and enabled. This method is applicable to network truth data.
+
+.. method:: bool EnableConnection(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Enables a connection between the two specified comms. Returns true if the connection was found and enabled. This method is applicable to network truth data.
+
+.. method:: bool DisableConnection(WsfAddress aAddress)
+
+   Disables a connection between this comm and the specified comm. Returns true if the connection was found and disabled. This method is applicable to network truth data.
+
+.. method:: bool DisableConnection(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Disables a connection between the comms provided. Returns true if the connection was found and disabled. This method is applicable to network truth data.
+
+.. method:: bool AddConnection(WsfAddress aAddress)
+
+   Adds a connection to truth via the network manager from this comm to the specified comm. Returns true if the connection was added successfully.
+
+.. method:: bool AddConnection(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Adds a connection to truth via the network manager between the specified comms. Returns true if the connection was added successfully.
+
+.. method:: bool RemoveConnection(WsfAddress aAddress)
+
+   Removes a connection from truth via the network manager from this comm to the specified comm. Returns true if the connection was removed successfully.
+
+.. method:: bool RemoveConnection(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+
+   Removes a connection from truth via the network manager between the specified comms. Returns true if the connection was removed successfully.
+
+.. method:: bool CanSendTo(WsfComm aRcvr)
+
+   Determines if the calling comm interface can communicate with the specified receiver. This check is model specific, such that this determination is based on the implementation of the comm doing the call.
+   For example, a standard comm may only check if the receiver can receive messages and is of the same type, where a radio based model may check for range and line of sight. Note that this call does not consider the network state or connectivity.
+
+   Return true if the comms can communicate, false otherwise.
+
+.. method:: WsfEM_Xmtr Xmtr(int aIndex)
+
+   Returns the transmitter object on the comm at the specified index if supplied.
+
+   .. note::
+      Check the returned transmitter for validity before using.
+
+.. method:: WsfEM_Rcvr Rcvr(int aIndex)
+
+   Returns the receiver object on the comm at the specified index if supplied.
+
+   .. note::
+      Check the returned receiver for validity before using.
+
+.. method:: int XmtrCount()
+
+   Returns the transmitter count on the comm.
+
+.. method:: int RcvrCount()
+
+   Returns the receiver count on the comm.
+   
+.. method:: WsfCommMedium GetMedium()
+
+   Gets the medium object associated with this comm.
+
+
+.. include:: _wsfcomm.wsf_mil.txt

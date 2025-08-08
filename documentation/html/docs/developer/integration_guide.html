@@ -1,0 +1,951 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Integration Guide &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Marking Guide" href="marking_guide.html" />
+    <link rel="prev" title="Documentation Linking" href="documentation_linking.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="marking_guide.html" title="Marking Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="documentation_linking.html" title="Documentation Linking"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="integration-guide">
+<h1>Integration Guide<a class="headerlink" href="#integration-guide" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id3">Introduction</a></p></li>
+<li><p><a class="reference internal" href="#overview" id="id4">Overview</a></p>
+<ul>
+<li><p><a class="reference internal" href="#core-executables" id="id5">Core Executables</a></p></li>
+<li><p><a class="reference internal" href="#core-architecture" id="id6">Core Architecture</a></p></li>
+<li><p><a class="reference internal" href="#component-based-architecture" id="id7">Component Based Architecture</a></p>
+<ul>
+<li><p><a class="reference internal" href="#cba-implementations" id="id8">CBA Implementations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#platform-cba-implementation" id="id9">Platform CBA Implementation</a></p></li>
+<li><p><a class="reference internal" href="#example-component-implementation" id="id10">Example Component Implementation</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#plug-in-management" id="id11">Plug-In Management</a></p></li>
+<li><p><a class="reference internal" href="#extensions-and-extension-types" id="id12">Extensions and Extension Types</a></p>
+<ul>
+<li><p><a class="reference internal" href="#application-extensions" id="id13">Application Extensions</a></p></li>
+<li><p><a class="reference internal" href="#scenario-extensions" id="id14">Scenario Extensions</a></p></li>
+<li><p><a class="reference internal" href="#simulation-extensions" id="id15">Simulation Extensions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#afsim-build-system" id="id16">AFSIM Build System</a></p>
+<ul>
+<li><p><a class="reference internal" href="#optional-projects" id="id17">Optional Projects</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#integration-methods" id="id18">Integration Methods</a></p>
+<ul>
+<li><p><a class="reference internal" href="#direct" id="id19">Direct</a></p></li>
+<li><p><a class="reference internal" href="#project" id="id20">Project</a></p>
+<ul>
+<li><p><a class="reference internal" href="#directory-structure" id="id21">Directory Structure</a></p></li>
+<li><p><a class="reference internal" href="#cmake-configuration-setup" id="id22">CMake Configuration Setup</a></p></li>
+<li><p><a class="reference internal" href="#source-configuration-setup" id="id23">Source Configuration Setup</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#plug-in" id="id24">Plug-In</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id25">CMake Configuration Setup</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id26">Source Configuration Setup</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#additional-integration-items-and-requirements" id="id27">Additional Integration Items and Requirements</a></p>
+<ul>
+<li><p><a class="reference internal" href="#coding-standards" id="id28">Coding Standards</a></p></li>
+<li><p><a class="reference internal" href="#cmake" id="id29">CMake</a></p></li>
+<li><p><a class="reference internal" href="#grammar" id="id30">Grammar</a></p></li>
+<li><p><a class="reference internal" href="#documentation" id="id31">Documentation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sphinx" id="id32">Sphinx</a></p></li>
+<li><p><a class="reference internal" href="#doxygen" id="id33">Doxygen</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#build" id="id34">Build</a></p></li>
+<li><p><a class="reference internal" href="#tests" id="id35">Tests</a></p>
+<ul>
+<li><p><a class="reference internal" href="#unit" id="id36">Unit</a></p></li>
+<li><p><a class="reference internal" href="#system-integration" id="id37">System, Integration</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#terminology" id="id38">Terminology</a></p></li>
+</ul>
+</div>
+<section id="introduction">
+<h2><a class="toc-backref" href="#id3">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This document describes a limited number of methods in which to extend and integrate new capabilities into the AFSIM. Multiple methods are allowed and described, as well as, requirements to allow introduction of an integration into a shareable resource within the AFSIM community standards and guidelines.</p>
+</section>
+<section id="overview">
+<h2><a class="toc-backref" href="#id4">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<section id="core-executables">
+<h3><a class="toc-backref" href="#id5">Core Executables</a><a class="headerlink" href="#core-executables" title="Permalink to this headline">¶</a></h3>
+<p>AFSIM-based executables generally consist of a single AFSIM “Application”. This application maintains script types, extension and plug-in manager and application configuration data. The application is composed of one or more scenarios that own type factories and lists, user input, and scripts. The scenario is composed of one or more simulations, depending on the application. The simulation contains the type instances, interfaces (e.g. DIS, XIO, observer, terrain) and run-time data to include event management and threading.</p>
+<img alt="../../_images/AFSIM_Application.png" src="../../_images/AFSIM_Application.png" />
+</section>
+<section id="core-architecture">
+<h3><a class="toc-backref" href="#id6">Core Architecture</a><a class="headerlink" href="#core-architecture" title="Permalink to this headline">¶</a></h3>
+<p>AFSIM’s object-oriented C++ based architecture provides an extensible and modular architecture to allow for inclusion of many additional capabilities to be easily integrated. AFSIM allows new component models (e.g. sensors, communications, movers, etc.), as well as completely new component types to be inserted and utilized in the framework. Extensions and plug-ins are the primary mechanisms by which the framework is extended to integrate new platform component models, new and extended platform capabilities, and new and extended simulation services.   The plug-in capability is a form of extension that allows one to add capabilities without re-compiling the core AFSIM code. Use of plug-ins allows for easier distribution of extended capabilities and provide the ability to choose which extended capabilities to use for a given analysis. The following figure shows AFSIM primary framework components and services that are provided and may be extended.</p>
+<img alt="../../_images/AFSIM_Architecture.png" src="../../_images/AFSIM_Architecture.png" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Doxygen software documentation is provided with the AFSIM release and may be built by developers via the <a class="reference internal" href="#doxygen">Doxygen</a> instructions.</p>
+</div>
+</section>
+<section id="component-based-architecture">
+<h3><a class="toc-backref" href="#id7">Component Based Architecture</a><a class="headerlink" href="#component-based-architecture" title="Permalink to this headline">¶</a></h3>
+<p>AFSIM’s core architecture is a Component Based Architecture (CBA) allowing for many capabilities to be included via components and managed through component lists. This CBA is provided through C++’s Object-Oriented principles of encapsulation, inheritance, templating and polymorphism coupled with components list as further described below.</p>
+<p>AFSIM’s CBA allows for components and component lists at multiple levels in the framework, to include the application, scenario, simulation and platform with some inclusion into other areas such as subsystems. At the simulation and platform level component types are accessed by name or role. This access enables component type addition or removal from the simulations and platforms in a common manner through the component lists.</p>
+<img alt="../../_images/AFSIM_CBA.png" src="../../_images/AFSIM_CBA.png" />
+<p>The component (i.e. <em>WsfComponent</em>) is the basic element that is derived from the hierarchy when creating new types or type templates for specialization. The base WsfComponent does not contain any member variables, so any functions require implementations in derived classes through the Wsf&lt;type-name&gt;Component.</p>
+<img alt="../../_images/wsf_component_hierachy.png" src="../../_images/wsf_component_hierachy.png" />
+<p>The WsfComponent defines the following “primary” framework methods, many of which are pure virtual requiring implementation by a derived class: <em>CloneComponent</em>, <em>ProcessInput</em>, <em>PreInput</em>, <em>PreInitialize</em>, <em>Initialize</em>, <em>Initialize2</em>, <em>&lt;Get/Set&gt;ComponentName</em>, <em>&lt;Get/Set&gt;ComponentRole</em>, <em>InitializationOrder</em>, <em>QueryInterface</em> and <em>GetComponentInitializationOrder</em>.</p>
+<p>The <em>QueryInterfaceMethod</em> is a required virtual function that allows for roles to be queried and requires <em>GetComponentRoles</em> to also be defined. Roles generally define services or other types on simulation component lists. Roles generally define types on platform components list e.g. sensors, comms, movers, processors, etc. Furthermore, component role enumerations are defined for each component and part type at a global and sometimes local level to support FindComponentByRole functionality in the component lists. Each project that requires additional roles adds to the global component roles enumerations within its own project. This addition of roles in a global context does require de-confliction amongst the multiple projects adding roles in a global context.</p>
+<p>Component lists, along with type enumerations, provide methods to maintain and manage components. The WsfComponentList defines the following framework methods, many of which are pure virtual requiring implementation by the derived class.</p>
+<img alt="../../_images/wsf_component_list.png" src="../../_images/wsf_component_list.png" />
+<p>Primary methods are available to allow for adding/deleting components, iterating components in the list, finding components by name or role and callbacks related to added/deleted.</p>
+<section id="cba-implementations">
+<h4><a class="toc-backref" href="#id8">CBA Implementations</a><a class="headerlink" href="#cba-implementations" title="Permalink to this headline">¶</a></h4>
+<section id="platform-cba-implementation">
+<h5><a class="toc-backref" href="#id9">Platform CBA Implementation</a><a class="headerlink" href="#platform-cba-implementation" title="Permalink to this headline">¶</a></h5>
+<blockquote>
+<div><p>The WsfPlatform (a.k.a platform) is a component itself and has an attached component lists to allow for inclusion of components to include sensors, comm, processors, movers, etc. via attached to the platform.</p>
+<img alt="../../_images/wsf_platform_component_hierachy.png" src="../../_images/wsf_platform_component_hierachy.png" />
+<p>WsfPlatform derives from WsfComponent (Template class), WsfComponentList (Template class) and WsfObject/WsfUniqueId classes. This derivation allows for direct access to WsfComponentList functions and the ability for a Platform to be a component of another platform, implementing a composition design pattern.</p>
+</div></blockquote>
+</section>
+<section id="example-component-implementation">
+<h5><a class="toc-backref" href="#id10">Example Component Implementation</a><a class="headerlink" href="#example-component-implementation" title="Permalink to this headline">¶</a></h5>
+<blockquote>
+<div><p>WsfSensor inherits WsfComponent through WsfPlatformPart which provides Member Variables and Implements Component-Related Virtual Functions in WsfSensor. Implementation is Similar for WsfProcessor, WsfComm WsfMover, etc.</p>
+<img alt="../../_images/wsf_sensor_component_example.png" src="../../_images/wsf_sensor_component_example.png" />
+<p>Declarations:</p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">WSF_DECLARE_COMPONENT_ROLE_TYPE</span><span class="p">(</span><span class="n">WsfSensor</span><span class="p">,</span> <span class="n">cWSF_COMPONENT_SENSOR</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Functions:</p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">WsfComponent</span><span class="o">*</span> <span class="nf">CloneComponent</span><span class="p">()</span>
+<span class="n">WsfStringId</span> <span class="n">GetComponentName</span><span class="p">()</span>
+<span class="k">virtual</span> <span class="kt">void</span><span class="o">*</span> <span class="n">QueryInterface</span><span class="p">(</span><span class="kt">int</span> <span class="n">aRole</span><span class="p">);</span>
+<span class="k">virtual</span> <span class="k">const</span> <span class="kt">int</span><span class="o">*</span> <span class="nf">GetComponentRoles</span><span class="p">();</span>
+<span class="n">PreInitialize</span><span class="p">(...),</span> <span class="n">Initialize</span><span class="p">(...),</span> <span class="n">Initialize2</span><span class="p">(...)</span> <span class="n">and</span> <span class="n">ProcessInput</span><span class="p">(...)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Example Sensor Role Implementation:</p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// ================================================================================================</span>
+<span class="k">const</span> <span class="kt">int</span><span class="o">*</span> <span class="n">WsfSensor</span><span class="o">::</span><span class="n">GetComponentRoles</span><span class="p">()</span> <span class="k">const</span>
+<span class="p">{</span>
+   <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">roles</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">cWSF_COMPONENT_SENSOR</span><span class="p">,</span> <span class="n">cWSF_COMPONENT_ARTICULATED_PART</span><span class="p">,</span> <span class="n">cWSF_COMPONENT_PLATFORM_PART</span><span class="p">,</span>
+                                <span class="n">cWSF_COMPONENT_NULL</span>
+                              <span class="p">};</span>
+   <span class="k">return</span> <span class="n">roles</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// ================================================================================================</span>
+<span class="kt">void</span><span class="o">*</span> <span class="n">WsfSensor</span><span class="o">::</span><span class="n">QueryInterface</span><span class="p">(</span><span class="kt">int</span> <span class="n">aRole</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">aRole</span> <span class="o">==</span> <span class="n">cWSF_COMPONENT_SENSOR</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">aRole</span> <span class="o">==</span> <span class="n">cWSF_COMPONENT_ARTICULATED_PART</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="n">WsfArticulatedPart</span><span class="o">*</span><span class="p">)</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">aRole</span> <span class="o">==</span> <span class="n">cWSF_COMPONENT_PLATFORM_PART</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="n">WsfPlatformPart</span><span class="o">*</span><span class="p">)</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+   <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="plug-in-management">
+<h3><a class="toc-backref" href="#id11">Plug-In Management</a><a class="headerlink" href="#plug-in-management" title="Permalink to this headline">¶</a></h3>
+<p>AFSIM’s plug-in system allows customization through dynamically loaded plug-ins, which provides similar level of flexibility as source code modifications. The use of plug-ins eliminates the need to distribute framework source code and updated core executables or libraries. Furthermore, plug-ins are easy to share, load and unload by the end user.</p>
+<p>The AFSIM plug-in management offers the ability to version with major and minor descriptors, searches path defined by WSF_PLUGIN_PATH environment variable or uses <em>../&lt;application&gt;_plugin</em> or <em>../wsf_plugins</em> directory . Plug-in management also performs OS, compiler check and build type on the plug-in before registering it to ensure compatibility.</p>
+</section>
+<section id="extensions-and-extension-types">
+<h3><a class="toc-backref" href="#id12">Extensions and Extension Types</a><a class="headerlink" href="#extensions-and-extension-types" title="Permalink to this headline">¶</a></h3>
+<p>Extensions for application, scenario, and simulations provide the flexibility to extend capability at each of these levels.</p>
+<section id="application-extensions">
+<h4><a class="toc-backref" href="#id13">Application Extensions</a><a class="headerlink" href="#application-extensions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Are extensions to the application singleton or instance and are owned by the application.</p></li>
+<li><p>Modify or represent the optional capabilities of the application.</p></li>
+<li><p>Maintain script types and plug-in management.</p></li>
+<li><p>May be used to add functionality to a scenario or simulations.</p></li>
+</ul>
+</section>
+<section id="scenario-extensions">
+<h4><a class="toc-backref" href="#id14">Scenario Extensions</a><a class="headerlink" href="#scenario-extensions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Are extensions to the scenario and are owned by the scenario</p></li>
+<li><p>Own type factories and lists, user input, and scripts</p></li>
+<li><p>Allow input to be read, i.e. ProcessInput(…) implementation.</p></li>
+</ul>
+</section>
+<section id="simulation-extensions">
+<h4><a class="toc-backref" href="#id15">Simulation Extensions</a><a class="headerlink" href="#simulation-extensions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Are extensions to the simulation and are owned by the simulation.</p></li>
+<li><p>Provide specific capabilities, e.g. interfaces, output, observers and other services.</p></li>
+</ul>
+</section>
+</section>
+<section id="afsim-build-system">
+<h3><a class="toc-backref" href="#id16">AFSIM Build System</a><a class="headerlink" href="#afsim-build-system" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference internal" href="build_instructions.html"><span class="doc">Building WSF Applications</span></a> for more information on AFSIM’s build system using CMake.</p>
+<section id="optional-projects">
+<h4><a class="toc-backref" href="#id17">Optional Projects</a><a class="headerlink" href="#optional-projects" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="build_instructions.html"><span class="doc">Building WSF Applications</span></a> outlines the setup and necessary files to create an optional AFSIM project and have the top-level CMakeLists.txt file include the project. Additional the <a class="reference internal" href="#integration-methods">Integration Methods</a> section outlines the different files and settings within these files necessary to include the project into the AFSIM build system in the proper integration method chosen by the developer.</p>
+</section>
+</section>
+</section>
+<section id="integration-methods">
+<h2><a class="toc-backref" href="#id18">Integration Methods</a><a class="headerlink" href="#integration-methods" title="Permalink to this headline">¶</a></h2>
+<p>Three integration methods are provided for in AFSIM for any extensions or models, direct, project and plug-in. Each of these methods allow for:</p>
+<ul class="simple">
+<li><p>one or more extension types to be integrated.</p></li>
+<li><p>varying integration methods and inclusion.</p></li>
+<li><p>different delivery methods of the extension(s).</p></li>
+</ul>
+<p>These methods are further defined below as to their method, implementation, delivery and any other unique aspects.</p>
+<section id="direct">
+<h3><a class="toc-backref" href="#id19">Direct</a><a class="headerlink" href="#direct" title="Permalink to this headline">¶</a></h3>
+<p>Direct integration uses an existing project or plug-in to extend the capability via a new type definition or additional extension type addition. Generally, extensions already exist in the project and this method is used for adding in additional model type definitions or further extending an existing extension.</p>
+<p>As a primary example is the addition of a new type or additional base type into an existing framework project. In this case the new type would be added to a new or existing type list through the projects interface, similar to:</p>
+</section>
+<section id="project">
+<h3><a class="toc-backref" href="#id20">Project</a><a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h3>
+<p>Project method is one of the most common methods for extending the capabilities in AFSIM. This method may also be followed to integrate via plug-in method as described in the next section. This method involves creating an additional project that can be integrated into any of the extension types to extend AFSIM capabilities.</p>
+<section id="directory-structure">
+<h4><a class="toc-backref" href="#id21">Directory Structure</a><a class="headerlink" href="#directory-structure" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Project directory structure in AFSIM consists of multiple directories and files to support the addition of the project as an optional project in AFSIM build systems. Additionally there are necessary CMake configuration files for project inclusion int he the AFSIM build system that must be included.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_project</span>
+  <span class="o">|-</span> <span class="n">doc</span>
+  <span class="o">|-</span> <span class="n">grammar</span>
+  <span class="o">|-</span> <span class="n">source</span>
+      <span class="o">|-</span> <span class="n">CMakeLists</span><span class="o">.</span><span class="n">txt</span>
+      <span class="o">|-</span> <span class="o">&lt;</span><span class="n">header</span><span class="o">-</span><span class="n">files</span><span class="o">&gt;</span>
+      <span class="o">|-</span> <span class="o">&lt;</span><span class="n">source</span><span class="o">-</span><span class="n">files</span><span class="o">&gt;</span>
+  <span class="o">|-</span> <span class="n">test</span>
+  <span class="o">|-</span> <span class="n">test_</span><span class="o">&lt;</span><span class="n">application</span><span class="o">&gt;</span>
+  <span class="o">|-</span> <span class="n">CMakeLists</span><span class="o">.</span><span class="n">txt</span>
+  <span class="o">|-</span> <span class="n">wsf_cmake_extension</span><span class="o">.</span><span class="n">cmake</span>
+  <span class="o">|-</span> <span class="n">wsf_module</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="cmake-configuration-setup">
+<h4><a class="toc-backref" href="#id22">CMake Configuration Setup</a><a class="headerlink" href="#cmake-configuration-setup" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Addition, from the directory structure, there are four required files for a new project to be included into the AFSIM build system via CMake:</p>
+<ul class="simple">
+<li><p>wsf_module</p></li>
+<li><p>wsf_cmake_extension.cmake</p></li>
+<li><p>CMakeLists.txt</p></li>
+<li><p>source/CMakeLists.txt.</p></li>
+</ul>
+<dl>
+<dt><strong>wsf_module</strong></dt><dd><p>This file is used by the main CMakeLists.txt in the AFSIM swdev</p>
+</dd>
+<dt><strong>wsf_cmake_extension.cmake</strong></dt><dd><p>This file is required to tell the main AFSIM CMakeLists.txt that this project is an optional project and setup the extensions name, source path, build type and default include flag.</p>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="c"># configuration for automatic inclusion as a WSF extension</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_NAME</span> <span class="s">my_project</span><span class="p">)</span> <span class="c"># Required; Project name, match project name in main CMakeLists.txt</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_SOURCE_PATH</span> <span class="s">.</span><span class="p">)</span>   <span class="c"># Required; Path to the project main CMakeLists.txt</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_TYPE</span> <span class="s">lib</span><span class="p">)</span>        <span class="c"># Optional; default value: lib; available options: lib, plugin, exe</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_BUILD</span> <span class="s">TRUE</span><span class="p">)</span>      <span class="c"># Optional; default value: TRUE; available options: TRUE, FALSE</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>CMakeLists.txt</strong></dt><dd><p>This file is the main CMakeLists.txt file that is included and set in the wsf_cmake_extension.cmake file for the project. It is used to set the project name, add subdirectories within the project, include other required directories, add in necessary documentation and doxygen directories and install necessary project files not included in other CMake configuration files within the project.</p>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="c"># Project Configuration</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">wsf_my_project</span><span class="p">)</span>
+<span class="nb">cmake_minimum_required</span> <span class="p">(</span><span class="s">VERSION</span> <span class="s">3.2.3</span><span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span><span class="s">swdev_project</span><span class="p">)</span>
+
+<span class="nb">include_directories</span><span class="p">(</span><span class="s">include</span> <span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span> <span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/include</span><span class="p">)</span>
+<span class="nb">add_subdirectory</span><span class="p">(</span><span class="s">source</span><span class="p">)</span>
+<span class="nb">add_subdirectory</span><span class="p">(</span><span class="s">test</span><span class="p">)</span>
+
+<span class="c"># Add source directories to doxygen input</span>
+<span class="nb">add_wsf_doxygen_input</span><span class="p">(</span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="s">/source</span><span class="p">)</span>
+
+<span class="c"># Add project to Sphinx for documentation</span>
+<span class="nb">add_wsf_doc_input</span><span class="p">(</span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="p">)</span>
+
+<span class="nb">install_sources</span><span class="p">(</span><span class="s">source</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_sources_all_files</span><span class="p">(</span><span class="s">grammar</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_sources_all_files</span><span class="p">(</span><span class="s">doc</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_sources_all_files</span><span class="p">(</span><span class="s">data</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_sources_all_files</span><span class="p">(</span><span class="s">conversion</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_tests</span><span class="p">(</span><span class="s">test_mission</span> <span class="s">DESTINATION</span> <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_source_files</span><span class="p">(</span><span class="s">CMakeLists.txt</span>
+                     <span class="s">wsf_module</span>
+                     <span class="s">wsf_cmake_extension.cmake</span>
+                     <span class="s">wsf_plugins/</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">install_source_files</span><span class="p">(</span><span class="s">FILES</span> <span class="s">wsf_module</span> <span class="s">DESTINATION</span> <span class="o">${</span><span class="nv">INSTALL_SOURCE_ROOT</span><span class="o">}</span><span class="s">/wsf_plugins</span><span class="p">)</span>
+
+<span class="nb">if</span><span class="p">(</span><span class="s">WSF_INSTALL_DEMOS</span><span class="p">)</span>
+   <span class="c"># Demo directories included with this projects build</span>
+   <span class="nb">set</span><span class="p">(</span><span class="s">EXAMPLE_DEMO_DIRS</span>
+       <span class="s">example_demo</span>
+      <span class="p">)</span>
+   <span class="nb">install_wsf_demo</span><span class="p">(</span><span class="s2">&quot;${EXAMPLE_DEMO_DIRS}&quot;</span> <span class="o">${</span><span class="nv">WSF_DEMOS_ROOT</span><span class="o">}</span> <span class="s">demos</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>source/CMakeLists.txt</strong></dt><dd><p>This is the secondary CMake configuration file called from the projects main CMakelists.txt with the <em>add_subdirectory</em> command. It’s purpose is to glob for all source files, specify the grammar file, setup the project includes, libraries and link stuff and lastly the installation of source, demos and scenarios.</p>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span> <span class="p">(</span><span class="s">VERSION</span> <span class="s">3.2.3</span><span class="p">)</span>
+<span class="nb">include</span> <span class="p">(</span><span class="s">GenerateExportHeader</span><span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span><span class="s">swdev_project</span><span class="p">)</span>
+
+<span class="nb">FILE</span><span class="p">(</span><span class="s">GLOB</span> <span class="s">SRCS</span> <span class="s">*.cpp</span> <span class="s">*.hpp</span><span class="p">)</span>
+
+<span class="nb">wsf_grammar_file</span><span class="p">(</span><span class="s">SRCS</span> <span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}/../grammar/wsf_my_project.ag&quot;</span><span class="p">)</span>
+
+<span class="nb">add_library</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="o">${</span><span class="nv">SRCS</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">generate_export_header</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">target_include_directories</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span>
+                           <span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}&quot;</span>
+                           <span class="s2">&quot;${PROJECT_BINARY_DIR}/source&quot;</span><span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">wsf</span> <span class="s">util</span><span class="p">)</span>
+<span class="nb">swdev_warning_level</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">swdev_lib_install</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="source-configuration-setup">
+<h4><a class="toc-backref" href="#id23">Source Configuration Setup</a><a class="headerlink" href="#source-configuration-setup" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Registration function definition for WsfExampleExtension Application extension:</p>
+<blockquote>
+<div><p><strong>WsfExampleExtension.hpp</strong></p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifndef WSFEXAMPLEEXTENSION_HPP</span>
+<span class="cp">#define WSFEXAMPLEEXTENSION_HPP</span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;wsf_example_export.hpp&quot;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;WsfScenarioExtension.hpp&quot;</span><span class="cp"></span>
+
+<span class="c1">//! An implementation of WSf Scenario Extension that</span>
+<span class="c1">//! adds replicated project capability to an application.</span>
+<span class="c1">//! @see WsfScenarioExtension</span>
+<span class="k">class</span> <span class="nc">WSF_EXAMPLE_EXPORT</span> <span class="nl">WsfExampleExtension</span> <span class="p">:</span> <span class="k">public</span> <span class="n">WsfScenarioExtension</span>
+<span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+      <span class="c1">//! Called when the extension has been added to the scenario</span>
+      <span class="c1">//! to add script types and wsf_my_project specific types</span>
+      <span class="k">virtual</span> <span class="kt">void</span> <span class="n">AddedToScenario</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>WsfExampleExtension.cpp</strong></p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&quot;WsfExampleExtension.hpp&quot;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;UtMemory.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfApplication.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfApplicationExtension.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfExampleProcessor.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfProcessorTypes.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfScenario.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfScriptExampleProcessorClass.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;script/WsfScriptManager.hpp&quot;</span><span class="cp"></span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="k">namespace</span>
+<span class="p">{</span>
+   <span class="k">class</span> <span class="nc">ApplicationExtension</span> <span class="o">:</span> <span class="k">public</span> <span class="n">WsfApplicationExtension</span>
+   <span class="p">{</span>
+      <span class="k">public</span><span class="o">:</span>
+         <span class="kt">void</span> <span class="n">AddedToApplication</span><span class="p">(</span><span class="n">WsfApplication</span><span class="o">&amp;</span> <span class="n">aApplication</span><span class="p">)</span> <span class="k">override</span>
+         <span class="p">{</span>
+            <span class="c1">// Register script classes associated with this extension</span>
+            <span class="n">UtScriptTypes</span><span class="o">*</span> <span class="n">scriptTypesPtr</span> <span class="o">=</span> <span class="n">aApplication</span><span class="p">.</span><span class="n">GetScriptTypes</span><span class="p">();</span>
+            <span class="n">scriptTypesPtr</span><span class="o">-&gt;</span><span class="n">Register</span><span class="p">(</span><span class="k">new</span> <span class="n">WsfScriptExampleProcessorClass</span><span class="p">(</span><span class="s">&quot;WsfExampleProcessor&quot;</span><span class="p">,</span> <span class="n">scriptTypesPtr</span><span class="p">));</span>
+         <span class="p">}</span>
+
+         <span class="kt">void</span> <span class="n">ScenarioCreated</span><span class="p">(</span><span class="n">WsfScenario</span><span class="o">&amp;</span> <span class="n">aScenario</span><span class="p">)</span> <span class="k">override</span>
+         <span class="p">{</span>
+            <span class="n">aScenario</span><span class="p">.</span><span class="n">RegisterExtension</span><span class="p">(</span><span class="n">GetExtensionName</span><span class="p">(),</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">WsfExampleExtension</span><span class="o">&gt;</span><span class="p">());</span>
+         <span class="p">}</span>
+   <span class="p">};</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">WsfExampleExtension</span><span class="o">::</span><span class="n">AddedToScenario</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="n">WsfScenario</span><span class="o">&amp;</span> <span class="n">scenario</span> <span class="o">=</span> <span class="n">GetScenario</span><span class="p">();</span>
+   <span class="n">WsfProcessorTypes</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="n">scenario</span><span class="p">).</span><span class="n">AddCoreType</span><span class="p">(</span><span class="s">&quot;WSF_EXAMPLE_PROCESSOR&quot;</span><span class="p">,</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">WsfExampleProcessor</span><span class="o">&gt;</span><span class="p">(</span><span class="n">scenario</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="c1">//! Registers the wsf_example extension with the application</span>
+<span class="c1">//! so it is available for use.</span>
+<span class="kt">void</span> <span class="n">WSF_EXAMPLE_EXPORT</span> <span class="n">Register_wsf_example</span><span class="p">(</span><span class="n">WsfApplication</span><span class="o">&amp;</span> <span class="n">aApplication</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">aApplication</span><span class="p">.</span><span class="n">ExtensionIsRegistered</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">))</span>
+   <span class="p">{</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterFeature</span><span class="p">(</span><span class="s">&quot;example&quot;</span><span class="p">,</span> <span class="s">&quot;wsf_example&quot;</span><span class="p">);</span> <span class="c1">// Indicate the feature is present</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterExtension</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">,</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">ApplicationExtension</span><span class="o">&gt;</span><span class="p">());</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<p>Registration function definition for WsfExampleExtension Scenario extension:</p>
+<blockquote>
+<div><p><strong>WsfExampleExtension.hpp</strong></p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifndef WSFEXAMPLEEXTENSION_HPP</span>
+<span class="cp">#define WSFEXAMPLEEXTENSION_HPP</span>
+
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>WsfExampleExtension.cpp</strong></p>
+<blockquote>
+<div><div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&quot;WsfExampleExtension.hpp&quot;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;UtMemory.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfApplication.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfApplicationExtension.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfExampleProcessor.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfProcessorTypes.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfScenario.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;WsfScenarioExtension.hpp&quot;</span><span class="cp"></span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="k">namespace</span>
+<span class="p">{</span>
+   <span class="k">class</span> <span class="nc">ScenarioExtension</span> <span class="o">:</span> <span class="k">public</span> <span class="n">WsfScenarioExtension</span>
+   <span class="p">{</span>
+      <span class="k">public</span><span class="o">:</span>
+         <span class="kt">void</span> <span class="n">AddedToScenario</span><span class="p">()</span> <span class="k">override</span>
+         <span class="p">{</span>
+            <span class="n">WsfScenario</span><span class="o">&amp;</span> <span class="n">scenario</span> <span class="o">=</span> <span class="n">GetScenario</span><span class="p">();</span>
+            <span class="n">WsfProcessorTypes</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="n">scenario</span><span class="p">).</span><span class="n">AddCoreType</span><span class="p">(</span><span class="s">&quot;WSF_EXAMPLE_PROCESSOR&quot;</span><span class="p">,</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">WsfExampleProcessor</span><span class="o">&gt;</span><span class="p">(</span><span class="n">scenario</span><span class="p">));</span>
+         <span class="p">}</span>
+   <span class="p">};</span>
+<span class="p">}</span>
+
+<span class="c1">//! Registers the wsf_example extension with the application</span>
+<span class="c1">//! so it is available for use.</span>
+<span class="kt">void</span> <span class="n">WSF_EXAMPLE_EXPORT</span> <span class="n">Register_wsf_example</span><span class="p">(</span><span class="n">WsfApplication</span><span class="o">&amp;</span> <span class="n">aApplication</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">aApplication</span><span class="p">.</span><span class="n">ExtensionIsRegistered</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">))</span>
+   <span class="p">{</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterFeature</span><span class="p">(</span><span class="s">&quot;example&quot;</span><span class="p">,</span> <span class="s">&quot;wsf_example&quot;</span><span class="p">);</span> <span class="c1">// Indicate the feature is present</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterExtension</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">,</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">WsfDefaultApplicationExtension</span><span class="o">&lt;</span><span class="n">ScenarioExtension</span><span class="o">&gt;</span><span class="p">());</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+</section>
+</section>
+<section id="plug-in">
+<h3><a class="toc-backref" href="#id24">Plug-In</a><a class="headerlink" href="#plug-in" title="Permalink to this headline">¶</a></h3>
+<p>As a plug-in, similar to project and may be dual-use. The modifications are outlined in this section to the <a class="reference internal" href="#project">Project</a> integration method.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is possible to integrate a project to be integrated via project and as a plug-in via the CMake build configuration and project interface setup.</p>
+</div>
+<section id="id1">
+<span id="docs/developer/integration_guide:plug-in:CMake Configuration Setup"></span><h4><a class="toc-backref" href="#id25">CMake Configuration Setup</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Modifications to the following files are required to create or convert a <a class="reference internal" href="#project">Project</a> into a plug-in project:</p>
+<ul class="simple">
+<li><p>wsf_cmake_extension.cmake</p></li>
+<li><p>source/CMakeLists.txt.</p></li>
+</ul>
+<dl>
+<dt><strong>wsf_cmake_extension.cmake</strong></dt><dd><p>Addition of the logic check and setting the extension type to a plug-in if a <strong>WSF_PLUGIN_BUILD</strong> is selected in the CMake build configuration.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the <strong>WSF_PLUGIN_BUILD</strong> is set to FALSE, then the <a class="reference internal" href="#project">Project</a> integration method will be build with this configuration, as the default WSF_EXT_TYPE is <em>lib</em>.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="c"># configuration for automatic inclusion as a WSF extension</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_NAME</span> <span class="s">my_project</span><span class="p">)</span> <span class="c"># Required; Project name, match project name in main CMakeLists.txt</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_SOURCE_PATH</span> <span class="s">.</span><span class="p">)</span>   <span class="c"># Required; Path to the project main CMakeLists.txt</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">WSF_PLUGIN_BUILD</span><span class="p">)</span>
+   <span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_TYPE</span> <span class="s">plugin</span><span class="p">)</span>  <span class="c"># Optional; default value: lib; available options: lib, plugin, exe</span>
+<span class="nb">endif</span><span class="p">()</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">WSF_EXT_BUILD</span> <span class="s">TRUE</span><span class="p">)</span>      <span class="c"># Optional; default value: TRUE; available options: TRUE, FALSE</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>source/CMakeLists.txt</strong></dt><dd><p>This is the secondary CMake configuration file called from the projects main CMakelists.txt with the <em>add_subdirectory</em> command. It’s purpose is to glob for all source files, specify the grammar file, setup the project includes, libraries and link stuff and lastly the installation of source and demos.</p>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span> <span class="p">(</span><span class="s">VERSION</span> <span class="s">3.2.3</span><span class="p">)</span>
+<span class="nb">include</span> <span class="p">(</span><span class="s">GenerateExportHeader</span><span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span><span class="s">swdev_project</span><span class="p">)</span>
+
+<span class="nb">FILE</span><span class="p">(</span><span class="s">GLOB</span> <span class="s">SRCS</span> <span class="s">*.cpp</span> <span class="s">*.hpp</span><span class="p">)</span>
+
+<span class="nb">wsf_grammar_file</span><span class="p">(</span><span class="s">SRCS</span> <span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}/../grammar/wsf_my_project.ag&quot;</span><span class="p">)</span>
+
+<span class="nb">add_library</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="o">${</span><span class="nv">SRCS</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">generate_export_header</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">target_include_directories</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span>
+                           <span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}&quot;</span>
+                           <span class="s2">&quot;${PROJECT_BINARY_DIR}/source&quot;</span><span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">wsf</span> <span class="s">util</span><span class="p">)</span>
+<span class="nb">swdev_warning_level</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+
+<span class="nb">if</span><span class="p">(</span><span class="s">WSF_PLUGIN_BUILD</span><span class="p">)</span>
+   <span class="nb">swdev_plugin_install</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">wsf_plugins</span><span class="p">)</span>
+<span class="nb">else</span><span class="p">()</span>
+   <span class="nb">swdev_lib_install</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="id2">
+<span id="docs/developer/integration_guide:plug-in:Source Configuration Setup"></span><h4><a class="toc-backref" href="#id26">Source Configuration Setup</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Similar to the <a class="reference internal" href="#project">Project</a> Source Configuration Setup section with an additional <em>extern “C”</em> section below the global Register_wsf_example definition. Registration function example definition for plug-in project:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="p">...</span>
+
+<span class="c1">//! Registers the wsf_example extension with the application</span>
+<span class="c1">//! so it is available for use.</span>
+<span class="kt">void</span> <span class="n">WSF_EXAMPLE_EXPORT</span> <span class="n">Register_wsf_example</span><span class="p">(</span><span class="n">WsfApplication</span><span class="o">&amp;</span> <span class="n">aApplication</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">aApplication</span><span class="p">.</span><span class="n">ExtensionIsRegistered</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">))</span>
+   <span class="p">{</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterFeature</span><span class="p">(</span><span class="s">&quot;example&quot;</span><span class="p">,</span> <span class="s">&quot;wsf_example&quot;</span><span class="p">);</span> <span class="c1">// Indicate the feature is present</span>
+      <span class="n">aApplication</span><span class="p">.</span><span class="n">RegisterExtension</span><span class="p">(</span><span class="s">&quot;wsf_example&quot;</span><span class="p">,</span> <span class="n">ut</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">ApplicationExtension</span><span class="o">&gt;</span><span class="p">());</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">extern</span> <span class="s">&quot;C&quot;</span>
+<span class="p">{</span>
+   <span class="c1">//! This method is called when the plug-in is loaded to ensure that the plug-in and the executable loading it were built with</span>
+   <span class="c1">//! the same version of the plug-in API.</span>
+   <span class="n">UT_PLUGIN_EXPORT</span> <span class="kt">void</span> <span class="n">WsfPluginVersion</span><span class="p">(</span><span class="n">UtPluginVersion</span><span class="o">&amp;</span> <span class="n">aVersion</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">aVersion</span> <span class="o">=</span> <span class="n">UtPluginVersion</span><span class="p">(</span><span class="n">WSF_PLUGIN_API_MAJOR_VERSION</span><span class="p">,</span>
+                                 <span class="n">WSF_PLUGIN_API_MINOR_VERSION</span><span class="p">,</span>
+                                 <span class="n">WSF_PLUGIN_API_COMPILER_STRING</span><span class="p">);</span>
+   <span class="p">}</span>
+   <span class="c1">//! This method is called when the plug-in is loaded. It must have exactly this signature (name and parameter) to succeed.</span>
+   <span class="c1">//! As we only have an application reference at load time, one usually registers an application extension, within which the</span>
+   <span class="c1">//! ScenarioCreated method can be overridden to gain access to a scenario.  If one also needs</span>
+   <span class="c1">//! access to the simulation, one should also instantiate and register a simulation extension by overriding</span>
+   <span class="c1">//! the SimulationCreated method in the scenario extension.</span>
+   <span class="n">UT_PLUGIN_EXPORT</span> <span class="kt">void</span> <span class="n">WsfPluginSetup</span><span class="p">(</span><span class="n">WsfApplication</span><span class="o">&amp;</span> <span class="n">aApplication</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">Register_wsf_example</span><span class="p">(</span><span class="n">aApplication</span><span class="p">,</span> <span class="n">wsf_example</span><span class="p">);</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="additional-integration-items-and-requirements">
+<h2><a class="toc-backref" href="#id27">Additional Integration Items and Requirements</a><a class="headerlink" href="#additional-integration-items-and-requirements" title="Permalink to this headline">¶</a></h2>
+<section id="coding-standards">
+<h3><a class="toc-backref" href="#id28">Coding Standards</a><a class="headerlink" href="#coding-standards" title="Permalink to this headline">¶</a></h3>
+<p>Coding standards, as outlined in <a class="reference internal" href="coding_standards.html"><span class="doc">Coding Standards</span></a> should be followed for all integrations. Third party libraries and source not directly tied to the AFSIM community may not always follow the standard, this does not preclude the AFSIM interface to the third-party source/library from following the standards.</p>
+</section>
+<section id="cmake">
+<h3><a class="toc-backref" href="#id29">CMake</a><a class="headerlink" href="#cmake" title="Permalink to this headline">¶</a></h3>
+<p>Any CMake files should follow the directory structures outlined in this document or in <a class="reference internal" href="build_instructions.html"><span class="doc">Building WSF Applications</span></a>. Many examples exist and format should follow closely to the released projects.</p>
+<p>See <a class="reference internal" href="build_instructions.html"><span class="doc">Building WSF Applications</span></a> for more information on AFSIM’s build system using CMake.</p>
+</section>
+<section id="grammar">
+<h3><a class="toc-backref" href="#id30">Grammar</a><a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h3>
+<p>Any user input that is required for the integration shall be included in the grammar folder and file for the project which is adding the capability and should execute error and warning free when tested. The grammar is outlined in <a class="reference internal" href="wsf_grammar_guide.html"><span class="doc">WSF Grammar Guide</span></a> and <a class="reference internal" href="wsf_grammar_format.html"><span class="doc">WSF Grammar Format</span></a>.</p>
+</section>
+<section id="documentation">
+<h3><a class="toc-backref" href="#id31">Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<p>AFSIM documentation is provided at the user and developer level via the Sphinx and Doxygen tools respectively. Both shall build error and warning free.</p>
+<section id="sphinx">
+<h4><a class="toc-backref" href="#id32">Sphinx</a><a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Any documentation for user input or reference material that is required for the integration should be included in the doc folder for the project in which is adding the capability. This inclusion ensures that the capability is defined for use by an end-user. Sphinx is utilized as the tool to create HTML output of restrctureText format. CMake provides for a DOCUMENTATION target that is used to build and install the documentation.</p>
+<p>To properly include the doc folder in the build target add the following to your projects CMakeLists.txt file:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="c"># Add project to Sphinx for documentation</span>
+<span class="nb">add_wsf_doc_input</span><span class="p">(</span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="s">/..</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Further information on documentation refer to <a class="reference internal" href="documentation_guide.html"><span class="doc">AFSIM Documentation Guide</span></a>.</p>
+</div></blockquote>
+</section>
+<section id="doxygen">
+<h4><a class="toc-backref" href="#id33">Doxygen</a><a class="headerlink" href="#doxygen" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Doxygen code documenting is supported and should be provided by the developer. To add a project’s source code to the doxygen target for parsing add the following CMake macro to your project’s CMakelists.txt file.</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="c"># Add source directories to doxygen input</span>
+<span class="nb">add_wsf_doxygen_input</span><span class="p">(</span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="s">/source</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="build">
+<h3><a class="toc-backref" href="#id34">Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
+<p>All warnings or errors should be removed for each of the build configurations and platforms utilized by AFSIM in production. Third party sources and libraries not maintained by the AFSIM community or integrator may not be able to meet this guideline.</p>
+<p>Further information on documentation refer to <a class="reference internal" href="build_instructions.html"><span class="doc">Building WSF Applications</span></a>.</p>
+</section>
+<section id="tests">
+<h3><a class="toc-backref" href="#id35">Tests</a><a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
+<section id="unit">
+<h4><a class="toc-backref" href="#id36">Unit</a><a class="headerlink" href="#unit" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Unit testing within AFSIM is provided as outlined in <a class="reference internal" href="build_instructions.html"><span class="doc">Building AFSIM Applications</span></a>.</p>
+<p>To add unit testing to your project you will need to provide the following:</p>
+<ul class="simple">
+<li><p>test/CMakeLists.txt</p></li>
+<li><p>test/test_example.cpp</p></li>
+</ul>
+<dl>
+<dt><strong>test/CMakeLists.txt</strong></dt><dd><p>This is the test CMake configuration file called from the project’s main CMakeList.txt with the <em>add_subdirectory</em> command. It’s purpose is to glob all test source files, link the test executable, and register the test to be run as part of the CMake target.</p>
+<p>Example:</p>
+<div class="highlight-CMake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">3.2.3</span><span class="p">)</span>
+<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span> <span class="s">SRCS</span> <span class="s">*.cpp</span> <span class="s">*.hpp</span><span class="p">)</span>
+
+<span class="nb">if</span><span class="p">(</span><span class="s">GTest_FOUND</span><span class="p">)</span>
+   <span class="nb">add_executable</span><span class="p">(</span><span class="s">example_test</span> <span class="o">${</span><span class="nv">SRCS</span><span class="o">}</span><span class="p">)</span>
+   <span class="nb">target_include_directories</span><span class="p">(</span><span class="s">example_test</span> <span class="s">PUBLIC</span> <span class="o">${</span><span class="nv">EXAMPLE_PROJECT_INCLUDES</span><span class="o">}</span><span class="p">)</span>
+   <span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">example_test</span>
+      <span class="o">${</span><span class="nv">WSF_LIBS</span><span class="o">}</span>
+      <span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span>
+      <span class="o">${</span><span class="nv">SWDEV_THREAD_LIB</span><span class="o">}</span>
+      <span class="o">${</span><span class="nv">SWDEV_DL_LIB</span><span class="o">}</span>
+      <span class="o">${</span><span class="nv">GTEST_BOTH_LIBRARIES</span><span class="o">}</span>
+   <span class="p">)</span>
+   <span class="nb">add_test</span><span class="p">(</span><span class="s">NAME</span> <span class="s2">&quot;example&quot;</span> <span class="s">COMMAND</span> <span class="s">example_test</span><span class="p">)</span>
+   <span class="nb">set_property</span><span class="p">(</span><span class="s">TARGET</span> <span class="s">example_test</span> <span class="s">PROPERTY</span> <span class="s">FOLDER</span> <span class="s">UnitTests</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>test/test_example.cpp</strong></dt><dd><p>This is a source file containing tests targeting specific functions or a class. Multiple source files can be created in the test directory and will be automatically included to be compiled. It is best practice to create a new source file for each class that is being tested.</p>
+<p>Example:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;gtest/gtest.h&gt;</span><span class="cp"></span>
+
+<span class="c1">// Assume Example.hpp declares a factorial function</span>
+<span class="cp">#include</span> <span class="cpf">&quot;Example.hpp&quot;</span><span class="cp"></span>
+
+<span class="n">TEST</span><span class="p">(</span><span class="n">Factorial</span><span class="p">,</span> <span class="n">HandlesZeroInput</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="n">ASSERT_EQ</span><span class="p">(</span><span class="mf">1.</span> <span class="n">factorial</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">TEST</span><span class="p">(</span><span class="n">Factorial</span><span class="p">,</span> <span class="n">HandlesPositiveInput</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="n">ASSERT_EQ</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">factorial</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+   <span class="n">ASSERT_EQ</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">factorial</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+   <span class="n">ASSERT_EQ</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">factorial</span><span class="p">(</span><span class="mi">3</span><span class="p">));</span>
+   <span class="n">ASSERT_EQ</span><span class="p">(</span><span class="mi">362880</span><span class="p">,</span> <span class="n">factorial</span><span class="p">(</span><span class="mi">9</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">TEST</span><span class="p">(</span><span class="n">Factorial</span><span class="p">,</span> <span class="n">ThrowsOnNegativeInput</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="n">ASSERT_THROWS</span><span class="p">(</span><span class="n">factorial</span><span class="p">(</span><span class="o">-</span><span class="mi">12</span><span class="p">),</span> <span class="n">InvalidValueException</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="system-integration">
+<h4><a class="toc-backref" href="#id37">System, Integration</a><a class="headerlink" href="#system-integration" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>System or integration testing within AFSIM is provided as outlined in <a class="reference internal" href="build_instructions.html"><span class="doc">Building AFSIM Applications</span></a>.</p>
+<p>To add systems or integration testing to your project you will need to provide the following file:</p>
+<ul class="simple">
+<li><p>test_&lt;application&gt;/test_&lt;capability&gt;.txt</p></li>
+</ul>
+<p>This file contains the AFSIM test commands and scripts to test with AFSIM and WSF for the application as defined by &lt;application&gt;. The file should contain a pass/fail criteria and output at a minimum a <strong>-FAIL</strong> as shown below , with an optional <strong>-PASS-</strong> output for proper parsing by the run script and output failing in the case a <strong>-FAIL-</strong> is parsed within the test.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example file: test_mission/test_maketrack.txt</span>
+<span class="n">platform</span> <span class="n">test_platform</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">execute</span> <span class="n">at_time</span> <span class="mi">1</span> <span class="n">s</span> <span class="n">absolute</span>
+      <span class="n">WsfTrack</span> <span class="n">track</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MakeTrack</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">track</span><span class="o">.</span><span class="n">LocationValid</span><span class="p">())</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;-PASS-&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">else</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;-FAIL-&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="n">end_execute</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="terminology">
+<h2><a class="toc-backref" href="#id38">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><strong>AFSIM</strong> - Advanced Framework for Simulation, Integration and Modeling</p></li>
+<li><p><strong>WSF</strong> - World Simulation Framework</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/developer/integration_guide.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="marking_guide.html" title="Marking Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="documentation_linking.html" title="Documentation Linking"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

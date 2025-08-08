@@ -1,0 +1,293 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+wsf_weapon_server
+-----------------
+
+.. command:: wsf_weapon_server ... end_wsf_weapon_server
+   :block:
+
+.. parsed-literal::
+
+   wsf_weapon_server
+      debug
+      port_ ...
+      host_ ...
+      outgoing_weapon_server_ ...
+      outgoing_weapon_type_ ...
+      rpi_multiplier_ ...
+      tn_to_disid_mapping_ ... end_tn_to_disid_mapping
+      weapon_lar_mapping_ ... end_weapon_lar_mapping
+      weapon_mapping_ ... end_weapon_mapping
+   end_wsf_weapon_server
+
+   Reference Material: `Client to Host Commands`_ for the RELEASE_STORE_ ASCII command
+
+Overview
+========
+
+The :doc:`mission` application can function as a weapon server (host) or as a client that requests weapon fires from an
+external weapon server.  If using :doc:`mission` in either of these ways then please use the
+:command:`realtime` simulation command to run it as a real time application.  If "debug"
+is specified, the weapon server client/host will print the sent/received weapon commands to the standard output.  It
+will also print how it successfully processed or failed to process the command.
+
+Commands
+========
+
+.. command:: port <port>
+
+   This is the only command required to set up the weapon server as a host that listens for "RELEASE_STORE" commands,
+   fires, and manages weapon fly-outs.  The weapon server will listen for connections on the given port, and a
+   theoretically infinite number of clients can connect and request weapon fires.  It is important to note that the weapon
+   server will only be able to handle requests for weapon types that it knows about, so any weapon types referenced in the
+   received RELEASE_STORE commands should already be defined in the WSF input files that :doc:`mission` loads.
+
+.. command:: host <host-name>
+
+   TBD
+
+.. command:: outgoing_weapon_server <host> <port>
+
+   If this command is used then :doc:`mission` will act as regular, but will send off "RELEASE_STORE" commands to an external weapon
+   server specified by the given host and port.  It will only send off such fire requests for weapon types that are
+   specified with the "outgoing_weapon_type" command.  See below.
+
+.. command:: outgoing_weapon_type <weapon type>
+
+   This command is only relevant for :doc:`mission` acting as a weapon server client; it instructs :doc:`mission` on which weapon types should
+   be hosted externally by another weapon server.
+
+.. command:: rpi_multiplier <rpi-multiplier-value>
+
+   TBD
+
+.. command:: tn_to_disid_mapping ... end_tn_to_disid_mapping
+   :block:
+
+   .. parsed-literal::
+    tn_to_disid_mapping_
+       tn_to_disid_ ...
+    end_tn_to_disid_mapping
+
+   .. command:: tn_to_disid <track_number> <disid>
+
+      The 'tn_to_disid_mapping' block allows an external platform acting as a weapon controller (linker)
+      to be set as a weapon's commander upon launch.  Track numbers for external platforms do not get stored internally.
+      This approach allows the user to map a track number (decimal value) to a DisEntityId of an external platform using
+      the keyword 'tn_to_disid'.
+
+.. block:: wsf_weapon_server
+.. command:: weapon_lar_mapping ... end_weapon_lar_mapping
+   :block:
+
+   .. parsed-literal::
+    weapon_lar_mapping_
+       enum_to_type_ ...
+    end_weapon_lar_mapping
+
+   The 'enum_to_type' block allows the external application to map a user defined weapon enumeration
+   (integer) to a WSF weapon system type name. When a request for LAR data is made via a DisSetData PDU
+   data is received, the weapon enumeration field is mapped to a weapon.  If the WSF weapon has valid
+   launch computer, data is retrieved and sent back in a DisData PDU.
+
+   .. command:: enum_to_type  <their-weapon-enum> <our-weapon-name>
+
+      TBD
+
+   DisSetData Lar Format::
+
+     Fixed Data Record Length    = 0
+     Variable Data Record Length = 5
+     Data Id:   1000
+     Data Size: 192 - bits
+     Data:      ownshipLLA[3];
+     Data Id:   2
+     Data Size: 192 - bits
+     Data:      ownshipVelWCS[3];
+     Data Id:   3
+     Data Size: 192 - bits
+     Data:      targetLLA[3];
+     Data Id:   4
+     Data Size: 192 - bits
+     Data:      targetVelWCS[3];
+     Data Id:   5
+     Data Size: 32 - bits
+     Data:      weapon enumeration
+
+   DisData Lar Format::
+
+     Fixed Data Record Length    = 0
+     Variable Data Record Length = 10
+     Data Id:   0
+     Data Size: 16-bits
+     Data:      11
+     Data Id:   1100
+     Data Size: 64-bits
+     Data:      rmax
+     Data Id:   1101
+     Data Size: 64-bits
+     Data:      rmaxTOF
+     Data Id:   1102
+     Data Size: 64-bits
+     Data:      rpi
+     Data Id:   1103
+     Data Size: 64-bits
+     Data:      rpiTOF
+     Data Id:   1104
+     Data Size: 64-bits
+     Data:      rNe
+     Data Id:   1105
+     Data Size: 64-bits
+     Data:      rNeTOF
+     Data Id:   1106
+     Data Size: 64-bits
+     Data:      rmin
+     Data Id:   1107
+     Data Size: 64-bits
+     Data:      rminTOF
+     Data Id:   1108
+     Data Size: 32-bits
+     Data:      DMC
+
+.. block:: wsf_weapon_server
+.. command:: weapon_mapping ... end_weapon_mapping
+   :block:
+
+   .. parsed-literal::
+
+      weapon_mapping_
+         weapon_name_mapping_ ...
+         platform_ ... end_platform
+      end_weapon_mapping
+
+   .. command:: weapon_name_mapping  <their-weapon-enum> <our-weapon-name>
+
+      The 'weapon_name_mapping' block allows the external application to map a user defined weapon name to
+      WSF weapon system type name, eliminating the need to be aware of AFSIM types or to easily switch
+      weapon types with no affect on the user's simulation.
+
+   .. command:: platform ... end_platform
+      :block:
+
+      .. parsed-literal::
+       platform_
+          disid_ ...
+          name_ ...
+          station_mapping_ ...
+       end_platform
+
+      .. command:: disid  <platform-disid>
+
+         TBD
+
+      .. command:: name  <platform-name>
+
+        TBD
+
+      .. command:: station_mapping  <their-station-name> <our-weapon-name>
+
+         TBD
+
+.. block:: wsf_weapon_server
+
+Examples
+========
+
+Input block for a Weapon Server (host)::
+
+  wsf_weapon_server
+     port 3456
+  end_wsf_weapon_server
+
+Input block for a Weapon Server Client::
+
+  wsf_weapon_server
+    outgoing_weapon_server  192.168.1.32  3456
+    outgoing_weapon_type    AIM-9X
+  end_wsf_weapon_server
+
+Client to Host Commands
+=======================
+
+This section is included only as reference for other simulations; a :doc:`mission` weapon server client already sends this
+command and a :doc:`mission` weapon server (host) already receives & processes this command.
+
+The **release_store** command is the only recognized command at this time.  It follows the format of most ASCII interface
+commands: "<command> [key=value]+".  This is to say that the command is simply an ascii string with key value pairs
+specified after the command name, all entries separated by a space.  Some parameters are required, others are optional.
+The parameter key names are not case sensitive but happen to be shown as uppercase in this guide.
+
+.. block:: wsf_weapon_server
+.. command:: release_store ...
+   :block:
+
+   .. parsed-literal::
+    release_store
+       [disid_ ... | nameid_ ...]
+       [target_disid_ ... | target_nameid ... | lat ... lon ... alt ...]
+       wpn_type_ ...
+       lch_type_ ...
+       ctrl_track_num
+       wpn_tail_number_ ...
+       usetailnuminpdus_ ...
+
+   The only required parameters are at least one entry from each of the first three parameter sets: shooter (e.g., disid_), weapon type (wpn_type_), target (e.g., target_disid_).  If the weapon is to have a working J11 interface, then the
+   ctrl_track_num_ and wpn_tail_number_ parameters are required, as they specify the J11 track numbers of the two interfacing J11 platforms.
+
+
+   .. command:: disid <dis-entity-id>
+   .. command:: nameid <platform name>
+
+      [Required] (one of these parameters are required in the command string).  They specify the identity of the shooter: the
+      dis entity id or the WSF platform name.  If both are sent, the last to be specified in the command will be used.
+
+   .. command:: target_disid <dis-entity-id>
+   .. command:: target_nameid <platform name>
+   .. command:: lat <latitude>
+   .. command:: lon <longitude>
+   .. command:: alt <altitude> [Optional] **Default:** 0
+
+      [Optional] Required (one of these parameters are required in the command string). These parameters specify the identity of the
+      target: the dis entity id, the WSF platform name, or its geodetic location.  lat_ & lon_ must be given together if at
+      all.  It is acceptable to send more than one of these parameters, the weapon server will search for the target in this
+      order: dis id, name, then location.
+
+   .. command:: wpn_type <weapon-name>
+
+      [Required] It specifies the name of the WSF weapon type.
+
+   .. command:: lch_type [0 | 1]
+
+      [Optional]  Specifies the domain of the target. 0 = air, 1 = ground.  This parameter is not useful or relevant at this
+      time.
+
+   .. command:: ctrl_track_num <controller-j11-track-number>
+
+      [Optional]  Only required if the weapon is to have a working J11 interface.  Specifies the J11 controller (shooter)
+      track number.
+
+   .. command:: wpn_tail_number <weapon-j11-track number>
+
+      [Optional]  Only required if the weapon is to have a working J11 interface.  Specifies the J11 weapon track number.
+
+   .. command:: usetailnuminpdus [0 | 1]
+
+      [Optional]  Default is zero.  Specifies that the weapon j11 track number should be used (if possible) as the dis entity
+      id as well.  Even if this parameter is set to 1, the weapon server will still only give a best effort to accommodate,
+      as other clients could already have weapons with the given dis entity id.
+
+   Example commands::
+
+    release_store disid=1:1:43 wpn_type=aim-9x target_disid=1:1:56
+    release_store nameid=blue_striker wpn_type=aim-120 target_disid=1:1:56
+    release_store disid=1:1:43 wpn_type=aim-9x target_nameid=red_flanker
+    release_store disid=1:1:43 wpn_type=aim-9x target_disid=1:1:56 lat=38.63 lon=-90.2 lch_type=1 ctrl_track_num=13 wpn_tail_number=27 usetailnuminpdus=0

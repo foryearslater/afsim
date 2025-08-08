@@ -1,0 +1,449 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_EXCHANGE_PROCESSOR
+----------------------
+
+.. model:: processor WSF_EXCHANGE_PROCESSOR
+
+.. parsed-literal::
+
+   processor *<name>* :model:`WSF_EXCHANGE_PROCESSOR`
+      ... :command:`processor` commands ...
+      ... :ref:`Platform_Part_Commands` ...
+      ... `Exchange Processor Commands`_ ...
+      ... `Exchange Processor Script Interface`_ ...
+      container_ <name>
+        ...
+      end_transactor
+      transactor_ <name>
+        ...
+      end_transactor
+   end_processor
+
+Overview
+========
+
+:model:`WSF_EXCHANGE_PROCESSOR` is a processor that manages the exchange of commodities or services with other simulated
+platforms.  Three possible examples would be a tanker-to-receiver exchange of fuel, a warehouse which supplies spare
+parts to a mechanic who needs them, or that same mechanic which goes to a disabled vehicle to repair it and return it to
+service.  An exchange is negotiated in a series of ping-pong negotiation events as given below.  The result is a mutually
+decided upon quantity of exchange, and optionally, a decided rate of transfer of that commodity or service.  (If no
+rate is specified, the exchange rate defaults to zero, and is thus considered instantaneous.)  If a non-zero rate is
+negotiated, both platforms understand the exchange is in-progress until the full amount is transacted, based upon time
+elapsed.  In this case, either participant may cancel the transaction prematurely, and the transacted amount to the
+present time will be retained.
+
+The platform-to-platform exchange may be within a single WSF-based simulation, or with an externally simulated entity
+across a DIS interface (see final two paragraphs below).  A DIS interface does _not_ specify a rate of transfer, so the
+fidelity of these exchanges may degrade a bit.  More on this later.
+
+There are several sub-classes the user will need to understand to accomplish Exchange functionality, as noted in the
+paragraphs below:
+
+First, a discussion of 'quantity'.  A quantity is captured in any implementation-defined convenient unit of measure.
+However, if the exchanged commodity is linked to the WSF platform payload or fuel in order to affect the motion dynamics
+(see below), then the units of measure must be internally specified in kilograms.  (The standard WSF input parsing will
+accept imperial or other unit types, but will translate them internally to MKS.)  But provided the Container contents do
+not interact with the platform mass, the units supplied to the container, and interacted with by scripting, may be
+arbitrary floating point values, such as "pallets of supplies", "spare engines", or "number of wing repairs".  It is up
+to the implementation to consistently interpret what this quantity represents.
+
+A "tender" encapsulates a Request or an Offer of a commodity or service.  The tender will specify the name of the
+commodity or service, the maximum amount desired or available to be provided, the maximum rate at which it may be
+transferred, and a flag indicating whether this named item is a commodity, or a service.  This tender item is an
+object which is creatable via script, and may be compared to another to see if they are a match.  Tendered quantities
+are always specified as positive, regardless of whether the associated transactor is a supplier or receiver.
+
+A "container" is placed on the WSF_EXCHANGE_PROCESSOR, and specifies the maximum amount of an item which may be stored
+for later provision, or the maximum amount which may be accumulated at any one time on the platform.  The container
+holds a tender as one of its attributes, which dictates an overall maximum quantity and rate of exchange for any
+transaction into or out of the Container.  In addition to a 'maximum' quantity, there is also a 'current' quantity to
+the container, which is set separately, and always constrained to only what will fit in the container.  The container
+may begin the simulation full, empty, or anywhere in between.
+
+A "transactor" is a conduit through which commodities or services may enter or leave a specified container.  The
+direction of flow ('is_offeror' or 'is_requestor') is specified at the time of creation of the transactor, and may
+not be changed afterward.  Multiple transactors may be plugged into the same container at the same time, to permit
+simultaneous additions and removals. Each transactor may optionally specify a further Rate constraint, which is
+applied in addition to the container's rate constraint.  For any proposed transaction to succeed, it must be
+compatible in name and 'is_service' with the container it is plugged into.
+
+The potential for a future exchange will begin when one 'is_offeror' transactor reserves or sets aside a tender of
+some commodity or service.  The transactor may be told via script to reserve all or some part of what is available
+to supply from its associated container, using ReserveAll() or ReserveTender() operations.  This Reserve action may
+trigger an externally observable event that a platform capability is changed (see :ref:`docs/event/platform_events:PLATFORM_CAPABILITY_CHANGED`).
+Note that for this observable event to be generated, a commodity and capability type must be paired, via the
+'commodity_and_capability_pairing' keyword.  This Reserve call is required, otherwise the associated offering
+transactor will not be "listening", for an exchange.  (Depending upon the ground rules appropriate to the simulation,
+it might be considered a "cheat" to use the :ref:`docs/event/platform_events:PLATFORM_CAPABILITY_CHANGED` notification, and other communication
+mechanisms such as radio transmissions might be more appropriate.  This is left as an implementation detail.)
+
+After a reservation is made, at any time later, another transactor on another platform that 'is_requestor' may
+request a tender.  An actual exchange is always initiated by the requestor of goods or services, by calling
+RequestAll() or RequestTender(), usually via scripted call.  The request will then internally issue a REQUEST event.
+If the reserve and the request are compatible in name and service/commodity type, and are sufficiently close in
+proximity, then a negotiation begins as to the actual amount and rate of the transaction.
+
+For exchanges, the events REQUEST, OFFER, ACCEPT, SUPPLY, RECEIVE occur in quick succession, and involve a negotiation
+of exchanged quantity and rate of service.  The negotiation accepts the largest quantity and fastest rate that both
+players can support.  The offeror and receiver may then stay in the SUPPLYING and ACCEPTING state for a time duration,
+with the mutual understanding that a shared transaction rate of goods is in process.   During this span of time,
+either player may choose to terminate the transaction prematurely with a CANCEL event.  If so triggered, a CANCEL
+event terminates the transaction, but any goods or services partially transacted prior to the CANCEL event are
+maintained, in accordance with the agreed-upon rate of exchange.  NOTE: This is true only for WSF-to-WSF transactions;
+the fidelity of a transaction over DIS is lower, as a rate cannot be communicated; the PDUs do not contain a rate value.
+So every exchange will appear as instantaneous to a DIS entity.  Even so, there may still be value in modeling a
+transfer rate within WSF, as the supplier of the commodity will be made unavailable for a specified length of time,
+to account for a realistic transfer rate.
+
+The underlying exchange process will generate WSF observable events:  :ref:`docs/event/exchange_events:EXCHANGE_QUERIED`,
+:ref:`docs/event/exchange_events:EXCHANGE_NEGOTIATED`, and :ref:`docs/event/exchange_events:EXCHANGE_COMPLETED`.  The former two are for low-level coordination between
+all potentially transacting platforms, so the end-user will generally prefer to observe the latter.  A script method
+is available to react to the EXCHANGE_COMPLETED event.  If the exchange is occurring at an agreed-upon rate, then
+the EXCHANGE_COMPLETED event is generated at the trailing edge of the exchange.
+
+The processor will also subscribe to a callback for observable event :ref:`docs/event/platform_events:PLATFORM_CAPABILITY_CHANGED`.  This
+permits the processor to internally maintain a list of what simulated platforms offer goods or services that may
+be desired.  A script method is available to provide the closest available provider of a payload, fuel, or repair.
+(Note that this knowledge is imperfect... a simulated entity may be known to supply fuel, however it cannot be known
+for certain that this the same _kind_ of fuel, and so an affirmative response to the request may not result.)
+
+Through the `Exchange Processor Script Interface`_, the user may control the addressee, timing, amount, and rate of
+the transactions desired.  The named types described above (tender, container, transactor) are "scriptable" objects,
+identified with a capital first letter:  Tender, Container, Transactor, and in addition, a Query object.
+
+Within WSF, the mass of a particular platform consists of three parts:  its empty mass, its fuel mass, and its
+payload mass.  The WSF_EXCHANGE_PROCESSOR allows its Containers to <optionally> be hooked to either payload or
+fuel, so that exchanged commodities immediately impact the total mass of the platform.  See the 'hook_to_payload'
+and 'hook_to_fuel' keyword options below.
+
+The underlying state machine behavior for a transaction of commodities (goods) is as follows::
+
+   _Transactor_Role_  _Begin_State_  _End_State_  _Generated_Event_
+   Offeror            -disabled-     READY        -none-
+   Receiver           READY          REQUESTING   REQUESTED
+   Offeror            READY          OFFERING     OFFERED
+   Receiver           REQUESTING     ACCEPTING    ACCEPTED
+   Offeror            OFFERING       SUPPLYING    SUPPLIED => <Begin transfer in-progress timer>
+   Receiver           ACCEPTING      READY        RECEIVED => <Begin transfer in-progress timer>
+   <For the offeror and receiver, when the timer elapses, the transaction is fully completed.>
+
+The underlying state machine behavior for a transaction of services (repairs) is similar to the above, but with
+additions::
+
+   _Transactor_Role_  _Begin_State_  _End_State_  _Generated_Event_
+   Offeror            -disabled-     READY        -none-
+   Receiver           READY          REQUESTING   REQUESTED
+   Offeror            READY          OFFERING     OFFERED
+   Receiver           REQUESTING     ACCEPTING    ACCEPTED
+   Offeror            OFFERING       SUPPLYING    SUPPLIED => <Begin repair in-progress timer>
+                                                  <repair in-progress timer expires>
+   Offeror            SUPPLYING      READY        OFFEROR_COMPLETED
+   Receiver           ACCEPTING      READY        REQUESTOR_RESPONDED
+   Offeror            READY          READY        <confirmation received, but no action needed>
+
+Either Transactor may Cancel a transaction in progress, which will generate event CANCEL to inform the other,
+so CANCEL may be an internally or externally generated event.  A Cancel is automatically queued internally as a
+timeout mechanism if the other player becomes unresponsive during the exchange.  Provided that follow-on
+transaction negotiations have succeeded, the time-queued Cancel is later ignored.
+
+A typical goods exchange example is one in which a platform of an air refueling tanker type is to offload fuel from its
+payload quantity, and supply it to a nearby aircraft to replenish its fuel quantity.  Following is a declaration of
+such a tanker platform type with an ability to supply fuel.
+
+::
+
+   platform_type TANKER WSF_PLATFORM
+     processor exchange_proc WSF_EXCHANGE_PROCESSOR
+        update_interval 5 sec                   # Will periodically evaluate (if auto_request true) which platform to
+                                                # send a request to.
+        commodity_and_capability_pairing JP8_FUEL SUPPLY_FUEL
+                                                # Associates a commodity or service name (appearing again below) to a
+                                                # DIS-enumerated platform Capability item.
+                                                # The third keyword must be one of the following:
+                                                #    SUPPLY_PAYLOAD, SUPPLY_FUEL, VEHICLE_REPAIR, VEHICLE_RECOVERY,
+                                                #    SUPPLY_ADS_B
+        container fuel_supply_tank
+           commodity JP8_FUEL                   # == begin "tender" ==
+              maximum_mass_quantity 8000 kg     # Under no circumstances will the quantity of this container exceed
+                                                #    8000 kg
+              mass_rate           50 kg/sec     # This is an upper constraint on the rate at which fuel may enter or
+                                                # leave the container.
+           end_commodity                        # == end "tender" ==
+           initial_mass_quantity    7000 kg     # The initial quantity in this container is 7000 kg, 1000 kg short
+                                                # of "full".
+        end_container
+        transactor fuel_provider
+           # === TANKER WITH FUEL === (OFFERS)
+           container_name     fuel_supply_tank  # Specifies the source for the fuel to supply to others.
+           is_offeror                           # Specifies that this transactor will always supply, not receive fuel.
+                                                # If fuel is to be simultaneously onloaded and offloaded, another
+                                                # transactor should be defined.
+           hook_to_fuel                 false   # This flag (if true) would be applicable to the _receiver's_ processor.
+           hook_to_payload               true   # As transactions are completed, the exchanged quantity
+                                                # is DECREMENTED from the payload attribute of the platform.
+           exclusive_hook_to_payload     true   # Indicates that this transactor has full exclusive ownership of the
+                                                # platform payload attribute,
+                                                # and so can and will overwrite the quantity of the platform's payload as
+                                                # fuel is transferred.
+           response_time_out_interval  10 sec   # If we receive a request, and make an offer, this is how long we
+                                                # will wait for a response back before we terminate and move on.
+           proximity_limit             500 m    # If the transacting platforms are more than this distance apart,
+                                                # the transaction will not be allowed to take place.
+        end_transactor
+     end_processor
+   end_platform_type
+
+
+Provided that a DIS network is properly configured, the exchange of goods or services may be with an external DIS
+entity.  In this case, the commodity or service type to be exchanged must be declared within the DIS environment as
+below::
+
+   dis_interface
+      entity_type JP8_FUEL 6:0:0:0:1:4    # This is a DIS-compliant value.  Consult SISO-REF-010-20xx.x for standard DIS
+                                          # enumerations of typical logistics commodities.
+      dis_exchange debug end_dis_exchange # For assistance in debugging transactions over DIS.
+   end_dis_interface
+
+In all cases of remote exchanges via DIS, each state machine transition triggering event delineated in the sequences
+above must occur twice, once in the local simulation, once in the remote one.   A local event triggers a call-back
+mechanism which sends an appropriate DIS PDU type externally.  The receipt of that PDU at the remote destination will
+trigger the same event which previously precipitated the event in the local simulation.
+
+.. block:: WSF_EXCHANGE_PROCESSOR
+
+Tender Definition
+=================
+
+A Tender can be constructed by the user in the input stream in two ways, as a commodity or service.
+
+.. command:: commodity <commodity-name> ... #Tender Commands <tender_body> ... end_commodity
+
+   A tender of 'commodity' is to propose an exchange of some named tangible goods, noting the kind, amount, and rate of a
+   planned requested or offered exchange.  It does _not_ specify the direction of flow, which is dictated by the
+   transactor is_offeror_ or is_requestor_ setting.
+
+.. command:: service <service-name> ... #Tender Commands <tender_body> ... end_service
+
+   A tender of 'service' is to propose an exchange of some named intangible service, noting the kind, amount, and rate of
+   a planned requested or offered exchange.  It does _not_ specify the direction of flow, which is dictated by the
+   transactor is_offeror_ or is_requestor_ setting.
+
+Tender Commands
+===============
+
+.. command:: quantity <real-value>
+
+   Specifies the current number of services available or desired.
+
+.. command:: maximum_quantity <real-value>
+
+   Specifies the limiting number of services available or desired.  Syntactical convenience to indicate the maximum size
+   of a container (see below).
+
+.. command:: mass_quantity <mass-value>
+
+   Specifies the current mass of commodity available or desired.
+
+.. command:: maximum_mass_quantity <mass-value>
+
+   Specifies the limiting quantity of commodity available or desired.  Syntactical convenience to indicate the maximum
+   size of a container (see below).
+
+.. command:: rate <real-value>
+
+   Specifies the rate of services offered per unit time.
+
+.. command:: service_interval <real-value>
+
+   Specifies the time required to accomplish a unit of service.  30 minutes = Two repairs per hour.
+
+.. command:: mass_rate <real-value>
+
+   Specifies the rate of commodities exchanged services offered per unit time.  The real value must be followed with a
+   correct mass rate specification, such as kg/sec, etc.
+
+Container Definition
+====================
+
+.. command:: container <container-name> ... #Container Commands <container_body> ... end_container
+
+   The <container-name> specifies the name of the object, as a way for the :model:`WSF_EXCHANGE_PROCESSOR` to differentiate
+   between perhaps several containers owned by the processor.  The container block quantifies a container; its name, what
+   it holds, maximum, and current quantities of the commodity or service.  While a service (i.e. engine-repair) is not a
+   tangible to be held in a container, for the purposes of simulation book-keeping, it is treated as such.  Transactions
+   are always "piped" into or out of a named container.  No transaction is permitted which transfers more of a commodity
+   or service than may be added to or decremented from a container, given its maximum capacity and current quantity.  A
+   constraining operation will always bound/clamp the transaction to abide by the container's constraint.  Any convenient
+   number of containers may be defined as needed, and a container may have more than one transaction "piped" into it, such
+   as a tanker aircraft which may both on-load fuel from another tanker and offload fuel to a receiver simultaneously,
+   both linked to the same container.
+
+Container Commands
+==================
+
+.. command:: service ...end_service
+
+   Specify a service type, amount, and exchange rate, as in `Tender Definition`_ above.  Only one "service" or
+   "commodity" may be supplied.
+
+.. command:: commodity ...end_commodity
+
+   Specify a commodity type, amount, and exchange rate, as in `Tender Definition`_ above.  Only one "service" or
+   "commodity" may be supplied.
+
+.. command:: initial_quantity <real-value>
+
+   Specifies the beginning number of services available in the container, which must be less than or equal to the maximum
+   container size in the above tender specification.
+
+.. command:: initial_mass_quantity <mass-value>
+
+   Specifies the beginning amount of a commodity available in the container, which must be less than or equal to the
+   maximum container size in the above tender specification.
+
+Transactor Definition
+=====================
+
+.. command:: transactor <transactor-name> ... #Transactor Commands <transactor_body> ... end_transactor
+
+   The <transactor-name> specifies the name of the object, as a way for the :model:`WSF_EXCHANGE_PROCESSOR` to differentiate
+   between perhaps several transactors owned by the processor.  The transactor block quantifies a transaction; its name,
+   the direction of flow of the commodity or service, and current quantities of the transaction in-progress.  Regardless
+   of direction, quantities tend toward zero as the transaction progresses (is_offeror starts with amount available and
+   reaches zero when exhausted, is_requestor starts with amount desired and reaches zero as fully satisfied).
+   Transactions are always "piped" into or out of a named container.  Regardless of the initial amount of Reserve() or
+   Request(), the transaction starts only after being constrained to what may come from or fit into the named container.
+
+Transactor Commands
+===================
+
+.. command:: is_offeror
+
+   Transactor is configured as an offeror/provider of goods or services.
+
+.. command:: is_requestor
+
+   Transactor is configured as a requestor/consumer of goods or services.
+
+.. command:: hook_to_fuel <boolean-value>
+
+   Transactor will increment or decrement the quantity of fuel on its platform after every successful transaction.  Will
+   not decrement below a zero quantity.
+
+.. command:: hook_to_payload <boolean-value>
+
+   Transactor will increment or decrement the quantity of payload on its platform after every successful transaction.
+   Will not decrement below a zero quantity.
+
+.. command:: exclusive_hook_to_payload exclusive_hook_to_fuel
+
+   Transactor will directly control the quantity of payload or fuel, forcing it to match what is currently in the named
+   container.  It will be permitted to ignore and override any other process which sets the fuel or payload quantity,
+   including input file specifications.  Will not decrement below a zero quantity.
+
+.. command:: proximity_limit <length-value>
+
+   Specifies the maximum distance allowed between two platforms in order to exchange.  Default is zero, or distance
+   ignored.
+
+.. command:: time_out_clock_interval <time-value>
+
+   Specifies the maximum interval allowed to wait for a response to an offer or request.  If a request is received, and a
+   corresponding offer is sent out, and then no response is subsequently received, the offer is canceled after this
+   period of time, in order to allow the transactor to be freed up to offer to another requestor.
+
+
+Exchange Processor Commands
+===========================
+
+.. command:: commodity_and_capability_pairing <commodity-name> <capability-type>
+
+   This keyword creates an association between a commodity name, and a :ref:`Platform Capability <WsfPlatform.Capabilities_Methods>`,
+   as supplied in the DIS Entity State PDU.  If an exchange processor has a transactor which is currently
+   offering a fuel commodity, then this processor will assure that the platform capability "SUPPLY_FUEL" will be flagged
+   as present.  (See example input above.)  Other bits may indicate that fuel or payload can be provided, but only if they
+   are properly indicated with the keyword above.  Multiple pairings may be provided.
+
+.. command:: service_and_capability_pairing <service-name> <capability-type>
+
+   This keyword creates an association between a service type name, and a :ref:`Platform Capability <WsfPlatform.Capabilities_Methods>`,
+   as supplied in the DIS Entity State PDU.  If an exchange processor has a transactor which is currently
+   offering a repair service, then this processor will assure that the platform capability "VEHICLE_REPAIR" will be
+   flagged as present.  Other bits may indicate that vehicle repair or vehicle recovery, is available, but only if they
+   are properly indicated with the keyword above.  Multiple pairings may be provided.
+   (Capability Automated Data Service - Broadcast (ADS_B) is currently not supported.)
+
+.. command:: ignore_all_proximity_checks <boolean-value>
+
+   If set true, command ignores, and overrides all the transactor 'proximity_limit' values above, forcing them to zero.
+   No transactions will fail due to a proximity limit check.  Default is 'false'.
+
+.. command:: force_transactions_instantaneous <boolean-value>
+
+   If set true, command ignores all specifications of tender 'rate', 'service_interval', or 'mass_rate'.  Once successfully
+   negotiated, the resulting transactions will take zero simulated time.
+
+.. command:: debug <boolean-value>
+
+   Command prompts console output of assistance in debugging processor operations.
+
+.. command:: edit <object_type> <object_name> ... end_<object_type>
+
+   Command allows the edit of a previously named transactor or container.  This command will begin a block, which must
+   be concluded with the normal end_block syntax.  Inside the block, any commands may be used which are appropriate for
+   the chosen object_type.
+
+
+Exchange Processor Script Interface
+===================================
+
+:model:`WSF_EXCHANGE_PROCESSOR` (script object name WsfExchangeProcessor) utilizes the capabilities of the
+:ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`, as well as providing the following:
+
+.. command:: Transactor FindContainer(string)
+
+   If the named Container (1st arg) exists, will return a reference to the Transactor to interact with.  Returned object should be checked for IsValid() before use.
+
+.. command:: Transactor FindTransactor(string)
+
+   If the named Transactor (1st arg) exists, will return a reference to the Transactor to interact with.  Returned object should be checked for IsValid() before use.
+
+.. command:: Array<int> PayloadProviders()
+
+   Returns an array of the platform indices for the simulated entities currently known to be providing payload,
+   regardless of their proximity.
+
+.. command:: Array<int> FuelProviders()
+
+   Returns an array of the platform indices for the simulated entities currently known to be providing fuel, regardless of
+   their proximity.
+
+.. command:: Array<int> VehicleRepairers()
+
+   Returns an array of the platform indices for the simulated entities currently known to be providing vehicle repair
+   services, regardless of their proximity.
+
+.. command:: Array<int> VehicleRecoverers()
+
+   Returns an array of the platform indices for the simulated entities currently known to be providing vehicle recovery
+   services, regardless of their proximity.
+
+.. command:: WsfPlatform ClosestPossibleProvider(string)
+
+   Returns a reference to the platform which is the closest known provider of the capability represented by the supplied commodity Item name.  Returned object should be checked for IsValid() before use.
+
+In general, each of the sub-component types given above are scriptable objects, to include:  'tender' as "Tender",
+'container' as "Container", 'transactor' as "Transactor", and a new scriptable type not previously mentioned, a
+"Query" type.  The purpose of the Query type is simply to provide details to be able to discern in script if two Tenders are compatible.
+
+

@@ -1,0 +1,101 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfTeardropManeuver
+-------------------
+
+.. class:: WsfTeardropManeuver inherits WsfOrbitalManeuver
+
+**Input type:** :doc:`../teardrop`
+
+:class:`WsfTeardropManeuver` will place the executing platform, called the inspector, into an orbit that will hover near the a target platform, called the chief. The maneuver gets its name from the shape of the relative orbit of the inspector from the perspective of the chief. The parameters that define the relative orbit are the radial distance at the point of closest approach (POCA), and the time it takes to traverse the teardrop, called the period.
+
+To achieve the teardrop relative orbit, the executing platform must transfer to one of a number of relative states. To allow for maximum flexibility in achieving this transfer, the :class:`WsfTeardropManeuver` shares many options with other targeting-class maneuvers (e.g., :class:`WsfRendezvousManeuver`). In particular, the transfer to the teardrop orbit can be specified to take a fixed time, or be optimized to take the least time or delta-v. The point along the teardrop orbit the transfer reaches is called the insertion point. Users will be able to specify the time from the insertion point to the POCA. See :doc:`Teardrop Orbit <../teardrop_details>` for details.
+
+Several conditions must be met for the transfer orbit to be successful:
+
+.. _conditions:
+
+* The :class:`target point<WsfTargetPoint>` must reference a valid :class:`WsfLocalTrack` with both valid location and velocity;
+* The transfer orbit can only be hyperbolic if the mover executing the maneuver supports hyperbolic propagation;
+* The transfer orbit must not intersect earth;
+* When optimizing, a valid solution must exist for the provided optimization option;
+* The expended energy for the transfer must be less than the available delta-v.
+
+  .. note:: The targeting algorithm is direct (less than one orbit).  Phasing orbits are not considered.
+
+Method
+******
+
+.. method:: static WsfTeardropManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, int aOptimizeOption, double aMaximumDeltaTime, double aMaximumDeltaV, double aRadialOffsetAtPOCA, double aPeriod, double aTimeToPOCA)
+
+   Create a :class:`WsfTeardropManeuver` with the intent of finding an optimal transfer solution in delta-V or time, using the following:
+
+   * **aCondition**:  A specific :class:`WsfOrbitalEventCondition`. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_APOAPSIS`, :method:`WsfOrbitalEventCondition.AT_PERIAPSIS` :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aTargetPoint**: A :class:`WsfTargetPoint` specifying the target of this maneuver. This target must be a track target, and should not specify any position or velocity offsets, offset time, or lag time.
+   * **aOptimizeOption**: The return value from a :method:`WsfTeardropManeuver.EARLIEST_TIME` or :method:`WsfTeardropManeuver.LEAST_DELTA_V`.
+   * **aMaximumDeltaTime**: The maximum time in seconds after the current time to consider in computing a solution.
+   * **aMaximumDeltaV**: The maximum delta-V in meters per second to consider when computing a solution.
+   * **aRadialOffsetAtPOCA**: The distance from the chief to the inspector at the point of closest approach, in meters. This distance must not be zero.
+   * **aPeriod**: The time in seconds to traverse the teardrop.
+   * **aTimeToPOCA**: The time from the insertion point to the point of closest approach. This must be greater than half of the period.
+
+.. method:: static WsfTeardropManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, WsfOrbitalOptimizationCost aCost, double aMaximumDeltaTime, double aMaximumDeltaV, double aRadialOffsetAtPOCA, double aPeriod, double aTimeToPOCA)
+
+   Create a :class:`WsfTeardropManeuver` with the intent of finding a transfer solution that minimizes the provided cost, using the following:
+
+   * **aCondition**:  A specific :class:`WsfOrbitalEventCondition`. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_APOAPSIS`, :method:`WsfOrbitalEventCondition.AT_PERIAPSIS` :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aTargetPoint**: A :class:`WsfTargetPoint` specifying the target of this maneuver. This target must be a track target, and should not specify any position or velocity offsets, offset time, or lag time.
+   * **aCost**: A :class:`WsfOrbitalOptimizationCost` instance specifying the cost function to minimize.
+   * **aMaximumDeltaTime**: The maximum time in seconds after the current time to consider in computing a solution.
+   * **aMaximumDeltaV**: The maximum delta-V in meters per second to consider when computing a solution.
+   * **aRadialOffsetAtPOCA**: The distance from the chief to the inspector at the point of closest approach, in meters. This distance must not be zero.
+   * **aPeriod**: The time in seconds to traverse the teardrop.
+   * **aTimeToPOCA**: The time from the insertion point to the point of closest approach. This must be greater than half of the period.
+
+.. method:: static WsfTeardropManeuver Construct(WsfOrbitalEventCondition aCondition, WsfTargetPoint aTargetPoint, double aDeltaTime, double aRadialOffsetAtPOCA, double aPeriod, double aTimeToPOCA)
+
+   Create a :class:`WsfTeardropManeuver` without optimizing the transfer, instead executing a transfer that takes a fixed amount of time.
+
+   * **aCondition**:  A specific :class:`WsfOrbitalEventCondition`. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_APOAPSIS`, :method:`WsfOrbitalEventCondition.AT_PERIAPSIS` :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aTargetPoint**: A :class:`WsfTargetPoint` specifying the target of this maneuver. This target must be a track target, and should not specify any position or velocity offsets, offset time, or lag time.
+   * **aDeltaTime**: The time after the current time when the transfer is planned to complete.
+   * **aRadialOffsetAtPOCA**: The distance from the chief to the inspector at the point of closest approach, in meters. This distance must not be zero.
+   * **aPeriod**: The time in seconds to traverse the teardrop.
+   * **aTimeToPOCA**: The time from the insertion point to the point of closest approach. This must be greater than half of the period.
+
+.. method:: int EARLIEST_TIME()
+
+   Attempt to optimize the maneuver such that it will execute at the earliest possible time, up to delta-t and delta-V constraints provided during construction.
+
+.. method:: int LEAST_DELTA_V()
+
+   Attempt to optimize the maneuver such that it will execute with the least possible delta-v, up to delta-t and delta-V constraints provided during construction.
+
+.. method:: double Period()
+
+   Return the time it takes for the platform executing this maneuver to traverse the teardrop in seconds.
+
+.. method:: double RadialOffsetAtPOCA()
+
+   Return the distance from the chief at the point of closest approach in meters. This distance will be entirely in the radial direction, with positive values meaning the platform executing this maneuver will be farther from the central body than the target.
+
+.. method:: double TimeToPOCA()
+
+   Return the time in seconds from the end of the transfer to the teardrop orbit to the point of closest approach.
+
+.. method:: int Repetitions()
+
+   Return the number of times the platform executing this maneuver will traverse the teardrop. This parameter has a default value of 1.
+
+.. method:: void SetRepetitions(int aRepetitions)
+
+   Set the number of times the platform executing this maneuver will traverse the teardrop. The provided value must be at least 1.

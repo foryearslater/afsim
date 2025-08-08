@@ -1,0 +1,387 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Mover Creator Theory
+====================
+
+Introduction
+------------
+
+This document should contribute to the user's understanding of the equations which make up Mover Creator's predictions for aerodynamic coefficients and mass distribution.
+
+Mover Creator produces vehicles for the :command:`WSF_P6DOF_MOVER`, :command:`WSF_RIGID_BODY_SIX_DOF_MOVER`, and :command:`WSF_GUIDED_MOVER`, and so estimates coefficients for aerodynamic forces as well as moments.
+In some cases, the derivatives of these coefficients are also provided in order to provide realistic aerodynamic damping effects.
+In producing these coefficients, Mover Creator attempts to consider multiple variables for each component, such as angles of attack, Mach number, and control surface deflection angle.
+
+Given a user-provided total vehicle mass, Mover Creator apportions mass to components based on their relative sizes.
+The locations of these components, as well as their own intrinsic moments of inertia, contribute to the vehicle's center of mass and to its whole-vehicle moment of inertia tensor.
+
+
+List of Symbols
+---------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 50
+   :align: left
+
+   * - Symbol
+     - Definition
+   * - :math:`\alpha`
+     - angle of attack (in this document, with respect to the component, rather than the vehicle)
+   * - :math:`\beta`
+     - angle of side slip (again, with respect to the component)
+   * - :math:`S_{wet}`
+     - wetted surface area of a component
+   * - :math:`S_{ref}`
+     - reference surface area (in this document, of a component)
+   * - :math:`c_{L}`
+     - lift coefficient, specific to a single component
+   * - :math:`c_{L_{\textnormal{baseline}}}`
+     - tabulated lift coefficient for a wing section
+   * - :math:`c_{m}`
+     - zero-lift pitching moment coefficient, specific to a single component
+   * - :math:`c_{m_{\textnormal{baseline}}}`
+     - tabulated pitching moment coefficient for a wing section
+   * - :math:`c_{D}`
+     - drag coefficient, specific to a single component
+   * - :math:`c_{D_{\textnormal{baseline}}}`
+     - tabulated drag coefficient for a wing section
+   * - :math:`c_{D_{i}}`
+     - coefficient of drag induced by lift or side force
+   * - :math:`c_{D_{f}}`
+     - coefficient of drag from skin friction
+   * - :math:`c_{D_{\textnormal{shape}}}`
+     - coefficient of drag from wave drag effects particular to a body's shape
+   * - :math:`c_{f}`
+     - skin friction coefficient
+   * - :math:`e`
+     - Oswald efficiency factor for lifting surfaces
+   * - :math:`e_{1}`
+     - airfoil-specific factor for transonic drag efficiency
+   * - :math:`M`
+     - Mach number
+   * - :math:`M_{\textnormal{peak}}`
+     - Mach number where wave drag is at its peak for a given surface and incidence angle
+   * - :math:`M_{dd}`
+     - Mach number where drag diverges from subsonic drag as wave drag is introduced
+   * - :math:`f_{M}`
+     - factor to account for Mach effects over lifting surfaces
+   * - :math:`f_{\textnormal{peak}}`
+     - :math:`f_{M}` at :math:`M_{\textnormal{peak}}`
+   * - :math:`f_{\infty}`
+     - :math:`f_{M}` as :math:`M \rightarrow \infty`
+   * - :math:`AR`
+     - aspect ratio
+   * - :math:`Re`
+     - Reynolds number
+   * - :math:`\frac{t}{c}`
+     - lifting surface thickness-to-chord ratio
+   * - :math:`\Lambda`
+     - lifting surface sweep angle, at a specific chord fraction if subscripted, at the leading edge otherwise
+   * - :math:`\Delta c_{l}`
+     - change in a lifting surface's 2D (section) lift coefficient from control surface deflection
+   * - :math:`\Delta C_{L}`
+     - change in a lifting surface's 3D (surface) lift coefficient from control surface deflection
+   * - :math:`\Delta C_{D}`
+     - change in a lifting surface's drag coefficient from control surface deflection
+   * - :math:`\Delta C_{m}`
+     - change in a lifting surface's pitching moment coefficient from control surface deflection
+   * - :math:`\Delta x_{c.p.}`
+     - change in a lifting surface's center of pressure from control surface deflection
+   * - :math:`c_{l_{\alpha}}`
+     - 2D lift curve slope
+   * - :math:`\frac{c_{f}}{\bar{c}}`
+     - ratio between the mean chord of a control surface and the mean chord of its parent fixed surface
+   * - :math:`\frac{b_{f}}{b}`
+     - ratio between the span of a control surface and the span of its parent fixed surface
+   * - :math:`\delta`
+     - control surface deflection angle
+   * - :math:`\delta_{\alpha_{\textnormal{eff}}}`
+     - change in effective :math:`\alpha` from spoiler deflection
+   * - :math:`\left[ \frac{c_{l_{\delta}}}{\left( c_{l_{\delta}} \right) _{\textnormal{theory}}} \right]`
+     - empirical ratio between observed and theoretical slope of :math:`c_{l}` with respect to :math:`\delta`
+   * - :math:`\left( c_{l_{\delta}} \right) _{\textnormal{theory}}`
+     - theoretical slope of :math:`c_{l}` with respect to :math:`\delta`
+   * - :math:`K'`
+     - correction factor to account for :math:`\frac{c_{f}}{\bar{c}}`
+   * - :math:`K_{b}`
+     - correction factor to account for :math:`\frac{b_{f}}{b}`
+   * - :math:`\left( \frac{C_{L_\alpha}}{c_{l_{\alpha}}} \right)`
+     - ratio between 3D and 2D undeflected lift curve slopes
+   * - :math:`\left[ \frac{(\alpha_{\delta})_{C_{L}}}{(\alpha_{\delta})_{c_{l}}} \right]`
+     - ratio between changes in effective :math:`\alpha` from control deflection between 3D surfaces and 2D sections
+   * - :math:`\Delta C_{D_{i}}`
+     - change in a lifting surface's lift-induced drag coefficient from control surface deflection
+   * - :math:`\Delta C_{D_{p}}`
+     - change in a lifting surface's profile drag coefficient from control surface deflection
+   * - :math:`C'_{L_{\delta}}`
+     - reference supersonic slope of :math:`C_{L}` with respect to :math:`\delta`, assuming a flat plate and a full-span control surface
+   * - :math:`\gamma`
+     - ratio of specific heats, assumed equal to 1.4 for Earth's atmosphere
+   * - :math:`\phi_{TE}`
+     - approximated angle of the surface cross-section trailing edge
+   * - :math:`\frac{C_{D_{w}}}{C_{D_{w, \delta=0}}}`
+     - ratio between the wave drag of the deflected surface and that of the undeflected surface	  
+   * - :math:`r`
+     - assumed surface roughness ratio
+
+Aerodynamic Prediction
+======================
+
+Surfaces and Wings
+------------------
+
+Baseline :ref:`wing<Wing>` (and other :ref:`surfaces<Surfaces>`) lift, drag, and pitching moment coefficients are provided as tabulated data as a function of :math:`\alpha`.
+Drag coefficient is modified according to Mach number [#Mason]_ [#Nasa67]_ and Reynolds number; pitching moment coefficient is modified according to aspect ratio.
+Side force coefficient is neglected.
+
+.. math::
+   :label: wing_CL
+	
+	c_{L} &= c_{L_{\textnormal{baseline}}}
+	
+.. math::
+   :label: wing_CD
+	
+	c_{D} &= c_{D_{\textnormal{baseline}}} f_{M} + c_{D_{i}} + 2 c_{D_{f}} 
+	
+	c_{D_{i}} &= \frac{c_{L}^{2}}{\pi e AR}
+	
+	Re > 500000: c_{D_{f}} &= \frac{1.328}{\sqrt{Re}}
+	
+	Re \leq 500000: c_{D_{f}} &= \frac{0.0307}{\sqrt[7]{Re}}
+	
+	\textnormal{transonic: } f_{M} &= 1 + \frac{df}{dM} (M - M_{dd})
+	
+	\textnormal{supersonic: } f_{M} &= e^{ln(f_{\textnormal{peak}} - f_{\infty}) + M_{\textnormal{peak}} - M} + f_{\infty}
+
+	M_{dd} &= M_{dd_{0}} + \max \left(0, \frac{1}{3} e_{1} \sin|\Lambda| - \frac{1}{2} \frac{t}{c} \sin^{2}|\Lambda| \right)
+	
+	M_{dd_{0}} &= e_{1} - \frac{1}{2} \frac{t}{c} - 0.02
+	
+	M_{\textnormal{peak}} &= M_{dd} + 0.125 \cos^{3}|\Lambda| + 0.01
+	
+	f_{\textnormal{peak}} &= 4 - 3 \sin|\Lambda|
+	
+	f_{\infty} &= 0.6 f_{peak} + 0.4
+	
+	\frac{df}{dM} &= \frac{f_{\textnormal{peak}} - 1}{M_{\textnormal{peak}} - M_{dd}}
+	
+.. math::
+   :label: wing_CM
+	
+	c_{M} &= c_{M_{\textnormal{baseline}}} \frac{AR}{AR + 2}
+	
+The center of pressure for surfaces sits at quarter-chord up to Mach 0.9, at half-chord at Mach 1.9, and is linearly interpolated between the two.
+
+Control Surfaces
+----------------
+
+:ref:`Control surfaces<Control_Surfaces>` can be modeled as either "full-flying" unbroken pieces which rotate about a point at the control surface's root chord (think missile control fins), or as "hinged" surfaces, where a section of the surface at the trailing edge deflects up or down about a spanwise hinge (think aircraft rudders).
+The full-flying case is relatively straightforward -- the deflection angle can be treated as a shift in the angle of attack.
+For hinged control surfaces, the calculus can be more complicated.
+
+Mover Creator uses equations and curve fits taken from the USAF DATCOM to model hinged control surfaces.
+One key difference is the definition of the transonic regime.
+DATCOM describes Mach 0.6 through 1.2 as transonic, but Mover Creator uses the method listed in :eq:`wing_CD`.
+As a compromise, hinged surfaces assume a transonic region that starts at Mach 0.8 and ends at :math:`\frac{1.02}{\cos \Lambda_{LE}}`.
+
+Lift effects are informed by sections 6.1.1 and 6.1.4 of the DATCOM, and drag effects are informed by section 6.1.7.
+
+Subsonic
+~~~~~~~~
+
+For subsonic conditions, a 2D lift increment is computed, then modified to account for sweep angle, aspect ratio, and chord and span fraction.
+
+.. math::
+   :label: panel_CL2D_subsonic
+
+   \textnormal{spoilers: } \Delta c_{l} &= -c_{l_{\alpha}} \delta_{\alpha_{\textnormal{eff}}}
+	
+   \textnormal{plain flaps: } \Delta c_{l} &= \delta \left[ \frac{c_{l_{\delta}}}{\left( c_{l_{\delta}} \right) _{\textnormal{theory}}} \right] \left( c_{l_{\delta}} \right) _{\textnormal{theory}} K'
+
+The inputs to these functions are themselves functions of control surface dimensions, represented by curve fits of DATCOM Figures 6.1.1.1-52, 6.1.1.3-12a-b, 6.1.1.3-13a, 6.1.1.3-39a-b, and 6.1.1.3-40.
+For both spoilers and flaps, the 3D lift coefficient increment can be produced from the 2D increment.
+
+.. math::
+   :label: panel_CL3D_subsonic
+	
+	\Delta C_{L} &= \Delta c_{l} \left( \frac{C_{L_\alpha}}{c_{l_{\alpha}}} \right) \left[ \frac{(\alpha_{\delta})_{C_{L}}}{(\alpha_{\delta})_{c_{l}}} \right] K_{b}
+
+The missing pieces for this modification are taken from curve fits of DATCOM Figures 6.1.6.1-14 and 6.1.6.1-15.
+
+Subsonic drag increment consists of two components -- profile drag and induced drag.
+
+.. math::
+   :label: panel_CD_subsonic
+	
+	\Delta C_{D} &= \Delta C_{D_{i}} + \Delta C_{D_{p}}	
+
+The induced drag calculation employs a finite element span loading method, which could be used to provide more sophisticated pitching moment calculations at a later phase of development.
+This method is fairly involved for the scope of this document and so will not be repeated here -- instead, it can be found in section 6.1.7A of the DATCOM.
+Profile drag is more straightforward and is constructed by a curve fit of DATCOM Figure 6.1.7.22.
+
+Supersonic
+~~~~~~~~~~
+
+For the supersonic case, the slope of the 3D lift coefficient increment is calculated directly.
+
+.. math::
+   :label: panel_CL_supersonic
+	
+	\frac{dC_{L}}{d\delta} &= \left( 1 - \frac{C_{2}}{C_{1}} \phi_{TE}  \right) C'_{L_{\delta}} \frac{S_{f}}{S}
+	
+	C_{1} &= \frac{2}{\sqrt{M^{2} - 1}}
+	
+	C_{2} &= \frac{(\gamma + 1) M^{4} - 4 (M^{2} - 1)}{2 (M^{2} - 1)^{2}}
+	
+The :math:`C'_{L_{\delta}}` value is found as a function of Mach number and trailing edge sweep angle from a curve fit of DATCOM Figure 6.1.4.1-25.
+
+For supersonic drag, the increment is considered as an increment of wave drag alone.
+The DATCOM prescription in section 6.1.7C assumes a flat plate and presents a singularity near :math:`\alpha=0`, so the implementation is simplified and modified to account for surface thickness.
+
+.. math::
+   :label: panel_CD_supersonic
+	
+	\frac{C_{D_{w}}}{C_{D_{w, \delta=0}}} &= \left( 1 - \frac{c_{f}}{\bar{c}} \right) + \frac{c_{f}}{\bar{c}} \frac{ \alpha^{2} + \left( \frac{t}{c} \right) ^{2}}{(\alpha + \delta)^{2} + \left( \frac{t}{c} \right) ^{2}}
+
+Additional Information
+~~~~~~~~~~~~~~~~~~~~~~
+
+Data in the transonic regime is interpolated between the subsonic and supersonic values.
+
+Moment coefficient deltas are computed as a result of two different phenomena.
+First, the changes in lift and drag on each component create different moments about the center of gravity as a matter of course.
+Secondly, per DATCOM section 6.1.2., a component-intrinsic moment coefficient delta can be estimated based on the change in lift coefficient.
+
+.. math::
+   :label: panel_CM
+	
+	\Delta C_{m} &= \Delta C_{L} (0.25 - \Delta x_{c.p.})
+	
+	\Delta x_{c.p.} &= 0.5 - 0.25 \frac{c_{f}}{\bar{c}}
+
+Speed Brakes
+------------
+
+Similar to lifting control surfaces, :ref:`speed brakes<Speed_Brake>` are computed as a full-flying surface.
+Speed brakes are modeled very simply, similar to a flat plate for both the subsonic and supersonic cases. [#Nicolai2010]_
+The lift (or side force, depending on how the brake is installed) is reduced by half, assuming that the suction pressure of the flat plate is eliminated.
+
+An additional assumption places stall at 10 degrees of wind-relative angle of attack and keeps lift constant beyond that stall angle.
+Zero-lift moment coefficient is assumed negligible prior to stall, stepping to a stabilizing :math:`C_{m}` of 0.075.
+
+Note that in the following equations, \alpha is the angle of attack of the deflected brake, not the angle of attack of the vehicle.
+For speed brakes, the transonic region is between Mach 0.8 and Mach 1.2.
+
+Subsonic
+~~~~~~~~
+
+.. math::
+   :label: speedbrake_CL_subsonic
+	
+	c_{L_{\alpha}} &= \frac{1}{2} \left( \frac{\pi}{2} \frac{AR}{\sqrt{1 - M^{2}}} \right)
+	
+
+.. math::
+   :label: speedbrake_CD_subsonic
+	
+	c_{D} &= 0.8 \left( 1 - \cos 2 \alpha \right)
+
+Supersonic
+~~~~~~~~~~
+
+.. math::
+   :label: speedbrake_CL_supersonic
+	
+	c_{L_{\alpha}} &= \frac{1}{2} \left( \frac{4}{\sqrt{M^{2} - 1}} \right)
+	
+
+.. math::
+   :label: speedbrake_CD_supersonic
+	
+	c_{D} &= c_{D_{\textnormal{subsonic}}} + c_{L} \alpha^{2}
+
+Bodies and Nacelles
+-------------------
+
+For :ref:`bodies<Bodies>` and :ref:`nacelles<Nacelle>`, the drag coefficient is modified according to Mach number, based on the shape of the leading section.
+
+.. math::
+   :label: body_CL
+	
+	c_{L} &= \sin(2 \alpha) \cos|\beta|
+
+.. math::
+   :label: body_CY
+	
+	c_{Y} &= -\sin(2 \beta) \cos|\alpha|
+
+.. math::
+   :label: body_CD
+	
+	c_{D} &= c_{D_{\textnormal{shape}}} + c_{D_{\alpha,\beta}} + c_{D_{i,L}} + c_{D_{i,Y}} + c_{D_{f}}
+	
+	c_{D_{\alpha,\beta}} &= \sin^{2} \alpha (\cos^{2}\beta + 1) + \sin^{2} \beta (\cos^{2}\alpha + 1)
+	
+	c_{D_{i,L}} &= \frac{c_{L}^{2}}{\pi}
+
+	c_{D_{i,Y}} &= \frac{c_{Y}^{2}}{\pi}
+
+	c_{D_{f}} &= c_{f} \frac{S_{wet}}{S_{ref}}
+	
+	r &= \frac{0.001}{l_{\textnormal{inches}}}
+	
+	Re > 51 r^{-1.039}: c_{f} &= 0.032 r^{0.2}
+	
+	Re \leq 51 r^{-1.039}, Re < 50000: c_{f} &= \frac{1.328}{\sqrt{Re}}
+	
+	Re \leq 51 r^{-1.039}, Re \geq 50000: c_{f} &= \frac{0.0307}{\sqrt[7]{Re}}
+	
+The shape factor :math:`c_{D_{\textnormal{shape}}}` uses reference drag coefficient values at different Mach numbers for the various leading section shapes. [#Jpl64]_
+From these reference points, in combination with fineness (:math:`\frac{l}{d}`) values, a spline is constructed to approximate the drag rise in the transonic region.
+
+Zero-lift pitching moment is neglected, and the center of pressure is placed near the center of mass.
+As a result, bodies of rotation contribute little to no aerodynamic moment, other than incidental torques generated by drag acting on bodies located offset from the vehicle center of mass.
+
+Dishes
+------
+
+:ref:`Dishes<Dish>`, like those found atop AWACS fuselages, are modeled relatively simply.
+
+.. math::
+   :label: dish_CL
+	
+	c_{L} &= 2 \alpha \cos|\beta|
+
+.. math::
+   :label: dish_CY
+	
+	c_{Y} &= 2 \beta \cos|\alpha|
+
+.. math::
+   :label: dish_CD
+	
+	c_{D} &= 0.3 + \sqrt{\alpha^{2} + \beta^{2}}
+	
+As with cylindrical bodies, the intrinsic moment contribution from dishes is neglected.
+	
+.. rubric:: References
+
+.. [#Mason] W.H. Mason, "Configuration Aerodynamics", Chapter 7: Transonic Aerodynamics of Airfoils and Wings.
+
+.. [#Nasa67] NASA SP-367 "Introduction to the Aerodynamics of Flight". Chapter V: Transonic Flow.
+
+.. [#Jpl64] JPL, "Aerodynamic Characteristics of Blunt Bodies".
+
+.. [#Nicolai2010] Nicolai, Leland M. & Carichner, Grant E. "Fundamentals of Aircraft and Airship Design". Vol I -- Aircraft Design.
+

@@ -1,0 +1,139 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TSPI_MOVER
+--------------
+
+.. model:: mover WSF_TSPI_MOVER
+
+    .. parsed-literal::
+
+     mover :model:`WSF_TSPI_MOVER`
+
+        ... :ref:`Platform_Part_Commands` ...
+
+        filename_ or :command:`WSF_TSPI_MOVER.TSPI_filename` ...
+        start_time_ ...
+        at_end_of_path_ ...
+
+        # `Data Format Commands`_
+
+        time_in_ ...
+        altitude_in_ ...
+        heading_in_ ...
+        pitch_in_ ...
+        roll_in_ ...
+        relocate_and_rotate_ ...
+        heading_inverted_
+        pitch_inverted_
+        roll_inverted_
+     end_mover
+
+Overview
+========
+
+WSF_TSPI_MOVER implements a mover that updates position based on Time Space Position Information (TSPI) data read from a text file.
+
+The data contained in the TSPI data file are of the following form::
+
+<time> <latitude> <longitude> <altitude> <speed> <heading> <pitch> <roll>
+
+The default units for these TSPI values are seconds, meters, meters/second, and radians.  However, the user can specify `Data Format Commands`_ that override the defaults.
+
+.. block:: WSF_TSPI_MOVER
+
+Commands
+========
+
+.. command:: filename <filename>
+
+.. command:: TSPI_filename <filename>
+
+   Specify the name of the file containing the TSPI data.  (Note that this is also a separately scriptable command.  See
+   :class:`WsfMover` SetTSPI_FileName() for details.)
+
+.. command:: start_time <time-value>
+
+   Specify the simulation time that corresponds with the time of the first TSPI data value.  This is the simulation time
+   at which the associated platform will begin moving.
+
+   Default: 0.0
+
+.. command:: at_end_of_path [ extrapolate   stop   remove ]
+
+   Specify what occurs when the end of the TSPI file is encountered.
+
+   * **extrapolate**: Continue in a great-circle path from the last point.
+   * **stop**: Stop at the last point.
+   * **remove**: Remove the platform from the simulation.
+
+   Default: extrapolate
+
+.. command:: extrapolation <boolean-value>
+
+   This is retained for compatibility with old input files. A value of 'true' is the same as 'at_end_of_path extrapolate',
+   while a value of 'false' is the same as 'at_end_of_path stop'.
+
+Data Format Commands
+====================
+
+These commands define the format of the data contained within the TSPI file. For example, when using a TSPI file that
+is compatible with BLUEMAX the following commands should be specified::
+
+ altitude in feet
+ roll inverted
+
+.. command:: time_in <time-unit>
+
+   Specify that the units of the *<time>* values in the TSPI data file are in units *<time-units>*
+
+   Default: seconds
+
+.. command:: altitude_in <length-units>
+
+   Specify that the units of the *<altitude>* values in the TSPI data file are in units *<length-units>*.
+
+   Default: meters
+
+.. command:: speed_in <speed-units>
+
+   Specify that the units of the *<speed>* values in the TSPI data file are in units *<speed-units>*.
+
+   Default: meters/second
+
+.. command:: heading_in <angle-unit>
+.. command:: pitch_in <angle-unit>
+.. command:: roll_in <angle-unit>
+
+   Specify that the units of the *<heading>*, *<pitch>*, or *<roll>* values in the TSPI data file are in units
+   *<angular-units>*.
+
+   Default: radians
+
+.. command:: heading_inverted
+.. command:: pitch_inverted
+.. command:: roll_inverted
+
+   Specify that the given value name in the TSPI data file is to be inverted (i.e., the values are negated).
+
+   Default: Not negated
+
+.. command:: relocate_and_rotate
+
+   The relocate_and_rotate ... end_relocate_and_rotate block is a means to move a trajectory from one locale to another,
+   including a change in orientation.  Two keywords will move a TSPI trajectory from one (latitude, longitude) to another
+   (latitude, longitude), either:  A) initial_endpoint_anchor <lat> <lon>, or B) terminal_endpoint_anchor <lat> <lon>.
+   After the path is relocated, it can them be re-oriented.  To do so, use either A) great_circle_heading_at_anchor_point
+   <angle-value>, or B) align_to_great_circle_through <lat> <lon>.  In the later case, the <lat> <lon> value must be
+   different than the anchor point.  Note that due to the spherical geometry calculations used, and the ellipsoidal earth,
+   the path translation process will be approximate.  Also note that the initial or terminal heading value to be specified
+   is along a great circle arc between initial and final trajectory points, not necessarily the true heading being flown
+   at the beginning or end of trajectory.

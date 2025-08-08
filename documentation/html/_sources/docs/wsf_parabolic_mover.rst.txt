@@ -1,0 +1,82 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_PARABOLIC_MOVER
+-------------------
+
+.. model:: mover WSF_PARABOLIC_MOVER
+
+.. parsed-literal::
+
+   mover :model:`WSF_PARABOLIC_MOVER`
+
+      :ref:`Platform_Part_Commands` ...
+
+      // `Mover Commands`_
+
+      update_interval_ ...
+      update_time_tolerance_ ...
+
+      // `Parabolic Mover Commands`_
+
+      tof_and_impact_lat_lon_alt_ ...
+      tof_and_impact_lat_lon_ ...
+
+   end_mover
+
+Overview
+========
+
+This class approximates a ballistic trajectory.  It may be used in three different ways:  1) It can fly a simple
+parabolic trajectory from specified initial conditions (vertical path subject only to a constant downward gravitational
+acceleration), or 2) it may specify final conditions, and how long to get there, and will fly constantly accelerated
+motion in order to arrive at the final desired impact point, or 3) if not set in some other manner, it will query its
+platform for the current target (if it exists), and will attempt to fly there, given its initial conditions.
+
+NOTE: This mover will not terminate motion on its own; terrain impact must be determined separately, so the calculated
+final conditions (Lat, Lon, Alt) are only the desired values.  The actual trajectory may terminate early, or fly
+through the desired point and continue on.
+
+.. block:: WSF_PARABOLIC_MOVER
+
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+   
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+   will be called only when it is necessary to determine the position of the containing platform.
+   
+   Default: 0 seconds unless overridden by the specific mover implementation.
+
+.. command:: update_time_tolerance <time-value>
+   
+   When a position update is requested by the simulation, if the time since the previous update is less than or equal to
+   this value then the mover will ignore the update.
+   
+   Default: Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is
+   appropriate for the implementation.
+
+   .. note::
+   
+      A mover implementation may choose to ignore this command.
+
+Parabolic Mover Commands
+========================
+
+.. command:: tof_and_impact_lat_lon_alt <time-value> <latitude-value> <longitude-value> <altitude-value>
+   
+   The desired final conditions: time of flight and impact latitude, longitude, and altitude.
+
+.. command:: tof_and_impact_lat_lon <time-value> <latitude-value> <longitude-value>
+   
+   The desired final conditions: time of flight and impact latitude, longitude. Altitude is determined by finding the
+   terrain elevation at the given latitude and longitude.

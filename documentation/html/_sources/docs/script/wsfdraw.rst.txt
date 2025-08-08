@@ -1,0 +1,396 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfDraw
+-------
+
+.. class:: WsfDraw inherits Object
+   :constructible:
+
+WsfDraw allows drawing commands (i.e., lines, points, icons) to be inserted into the :command:`dis_interface` output
+stream, or a separate :command:`draw_file`.
+
+.. _WsfDraw.Begin_Methods:
+
+Begin Methods
+=============
+
+Begin methods specify what kind of geometry to draw.
+
+.. method:: void BeginLines()
+   
+   Draws lines between points.  Points are specified with :method:`WsfDraw.Vertex`.  Treats each pair of vertices as an independent
+   line segment. Uses the current drawing state set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetLineStyle`,
+   :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`.
+
+.. method:: void BeginPolyline()
+   
+   Draws a connected group of line segments from the first vertex to the last.  Points are specified with :method:`WsfDraw.Vertex`. 
+   Uses the current drawing state set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetLineStyle`, :method:`WsfDraw.SetDuration`, and
+   :method:`WsfDraw.SetId`.
+
+.. method:: void BeginPoints()
+   
+   Begins plotting points.  Points are specified with :method:`WsfDraw.Vertex`.  Uses the current drawing `State Methods`_ set by
+   :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetLineStyle`, :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`.
+   Draw a point at a location.  Point locations are specified with :method:`WsfDraw.Vertex`.  Uses the current drawing `State Methods`_
+   set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetPointSize`, :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`.
+
+.. method:: void BeginQuadrilateral()
+
+   Begins plotting a quadrilateral. The points of the quadrilateral and their associated locations are specified with :method:`WsfDraw.Vertex` or :method:`WsfDraw.VertexLLA`. Uses the current drawing `State Methods`_ set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetLineStyle`, :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`. 
+
+.. method:: void BeginIcons(double aHeading, string aIcon)
+   
+   Begins plotting icons.  Icon position is given using :method:`WsfDraw.Vertex`.  Uses the current drawing `State Methods`_ set by
+   :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`.
+   aIcon is the name of an icon which is used the same as the :command:`platform icon <platform.icon>` command.  If aIcon == "",
+   the "Wedge" icon will be used.
+
+.. method:: void BeginEllipse(double aHeading, double aSemiMinor, double aSemiMajor)
+   
+   Begins drawing an Ellipse shape. aSemiMinor and aSemiMajor define the length of the axes and aHeading, defined in a
+   local NED coordinate frame, defines the direction along which the aSemiMajor axis points. Position is given using
+   :method:`WsfDraw.Vertex`. Uses the current drawing `State Methods`_ set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetDuration`, :method:`WsfDraw.SetLineStyle`,
+   :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetEllipseMode` and :method:`WsfDraw.SetId`.
+
+.. method:: void BeginEllipsoid(double aHeading, double aPitch, double aRoll, double aRadiusX, \
+                                double aRadiusY, double aRadiusZ)
+   
+   Begins drawing an Ellipsoid shape.  Arguments aHeading, aPitch, and aRoll (degrees) defined in a local NED coordinate
+   frame, are used to set the orientation of the ellipsoid.  Arguments aRadiusX, aRadiusY, and aRadiusZ (meters) specify
+   the lengths of the semi-principal axes.  Position is given using :method:`WsfDraw.Vertex`. Uses the current drawing `State Methods`_
+   set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetDuration`, :method:`WsfDraw.SetLineStyle`, :method:`WsfDraw.SetLineSize`, :method:`WsfDraw.SetEllipseMode` and
+   :method:`WsfDraw.SetId`.
+
+.. method:: void BeginCircle(double aHeading, double aRadius)
+   
+   An alias for BeginEllipse_(aHeading, aRadius, aRadius)
+
+.. method:: void BeginSphere(double aHeading, double aPitch, double aRoll, double aRadius)
+   
+   An alias for BeginEllipsoid_(aHeading, aPitch, aRoll, aRadius, aRadius, aRadius)
+
+.. method:: void BeginText(string aText)
+   
+   Begins drawing text. Text position is given using :method:`WsfDraw.Vertex`.  Uses the current drawing `State Methods`_ set by
+   :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetTextSize`, :method:`WsfDraw.SetDuration`, and :method:`WsfDraw.SetId`.
+
+.. method:: void BeginTimer()
+
+   Displays a clock at the vertex location that will countdown over the duration.  Timer position is given using
+   :method:`WsfDraw.Vertex`.  Uses the current drawing `State Methods`_ set by :method:`WsfDraw.SetColor`, :method:`WsfDraw.SetTimerSize`, :method:`WsfDraw.SetDuration`,
+   and :method:`WsfDraw.SetId`.
+
+.. method:: void End()
+   
+   Defines the end of a 'Begin' method.  Further :method:`WsfDraw.Vertex` commands will be ignored, and commands will be drawn
+   immediately.
+   
+   .. note::
+
+      End() is implicitly called prior to any `Begin Methods`_.
+
+
+Vertex Methods
+==============
+
+The following methods provide positions used to draw items.  These methods must be called after a Begin() method has
+been called (i.e., BeginLines()).
+
+.. method:: void Vertex(WsfPlatform aPlatform)
+   
+   Specifies the position of the platform.  The position will remain equivalent to the platform position.  For instance,
+   this could be used to draw a line between two entities.
+
+.. method:: void Vertex(WsfGeoPoint aGeoPoint)
+   
+   Specifies and absolute position using :class:`WsfGeoPoint`.
+
+.. method:: void VertexLLA(double aLat, double aLon, double aAlt)
+   
+   Specifies and absolute position using Latitude, Longitude (Degrees), and altitude(Meters).
+
+.. method:: void VertexWCS(double aX, double aY, double aZ)
+            void VertexWCS(Vec3 aWCS)
+   
+   Specifies and absolute position using :ref:`WCS <WCS>` coordinates.
+
+.. method:: void VertexECS(WsfPlatform aPlatform, double aFront, double aRight, double aDown)
+   
+   Specifies a relative position to a platform using :ref:`ECS` coordinates.  The position will remain relative to the moving
+   platform.
+
+.. method:: void VertexNED(WsfPlatform aPlatform, double aNorth, double aEast, double aDown)
+   
+   Specifies a relative position to a platform using North, East, and Down (Meters) coordinates.  The position will remain
+   relative to the moving platform.
+
+.. method:: void VertexRoute(WsfRoute aRoute)
+   
+   Specifies all of the position waypoints in a route as vertices.  Useful to quickly draw a route in conjunction with
+   :method:`WsfDraw.BeginPolyline`.
+   
+.. method:: void VertexScreen(double aRight, double aUp)
+   
+   Specifies a normalized position in screen coordinates relative to the bottom-left corner of the screen. Arguments *aRight* and *aUp* must be in the range [0, 1], so that (0, 0) corresponds to the bottom-left corner and (1, 1) corresponds to the top-right corner.
+   
+.. method:: void VertexScreenPlat(WsfPlatform aPlatform, double aRight, double aUp)
+   
+   Specifies a normalized position in screen coordinates relative to the given platform. Arguments *aRight* and *aUp* must be in the range [-1, 1], so that (0, 0) is coincident with the platform and (1, 1) is a screen width right and a screen height up from the platform.
+
+State Methods
+=============
+
+These methods change the state of the WsfDraw object.  The state is used to set options which apply to all objects
+drawn.  Changing a state will affect any :class"`vertex` :method:`WsfDraw.Vertex` given after the state change.
+
+.. method:: void SetDuration(double aDuration)
+   
+   Sets the duration for items drawn.  The duration is the length of time the item remains visible.  For example, a line
+   drawn with a duration of 1.0 second will remain visible from the time it is drawn to 1 second later.
+    
+   **Default** Infinite
+
+.. method:: void SetColor(double aRed, double aGreen, double aBlue)
+.. method:: void SetColor(double aRed, double aGreen, double aBlue, double aAlpha)
+   
+   Sets the current color used to draw items. aRed, aGreen, aBlue, and aAlpha should be in the range [0.0,1.0]. 
+   Take a standard RGB color, ranging [0,255], and divide each value by 255.0. aAlpha sets the level of visibility of the current shape. 0=hidden, 1=visible with no blending. 
+   Any number between 0 and 1 will blend with other drawn objects. Note: this can cause drawing artifacts due to the 
+   nature of OpenGL and draw order.
+
+.. method:: void SetColor(Color aColor)
+
+   Sets the current color used to draw items to the :class:`Color` specified.
+
+.. method:: void SetLineStyle(string aStyle)
+   
+   Defines the style used to draw lines.
+   aStyle can be any of:
+
+    * "dashed"      --------------
+    * "long_dashed" -- -- -- -- --
+    * "dotted"      ..............
+    * "dotted2"     . . . . . . .
+    * "dash_dot"    -.-. -.-. -.-.
+    * "dash_dot2"   -.--.--.--.--.
+    * "solid"       ______________
+
+   **Default** "solid"
+
+.. method:: void SetLineSize(int aLineSize)
+   
+   Determines the width of drawn lines, in pixels.
+    
+   **Default** 1
+
+.. method:: void SetEllipseMode(string aEllipseMode)
+   
+   Defines the style in which to draw an ellipse shape. aEllipseMode can be one of two values:
+
+    * "fill" - draws a filled ellipse with no outline
+    * "line" - draws a clear ellipse with an outline
+
+   **Default** "fill"
+
+.. method:: void SetPointSize(int aPointSize)
+   
+   Determines the width of drawn points, in pixels
+    
+   **Default** 1
+
+.. method:: void SetTextSize(int aTextSize)
+   
+   Determines the size of drawn text.
+    
+   **Default** 12
+
+.. method:: void SetTimerSize(int aTimerSize)
+   
+   Determines the size of drawn timers.
+    
+   **Default** 10
+
+.. method:: void SetId(string aId)
+            void SetId(int aId)
+   
+   Sets the ID assigned to drawn items.  This ID is used by :method:`WsfDraw.Erase`
+
+.. method:: int NewId()
+   
+   Attempts to return a unique integer ID for use with SetId().  Depending on the use of WsfDraw, the ID returned is not
+   guaranteed to be unique.
+
+.. method:: void Reset()
+   
+   Returns the WsfDraw object's state to its original value.  This has the same effect as::
+
+      SetColor(1,1,1);
+      SetId(0);
+      SetDuration(1.0E20);
+      SetLineStyle("solid");
+      SetLineSize(1);
+      SetPointSize(1);
+      SetTextSize(12);
+      SetTimerSize(10);
+
+.. _WsfDraw.Other_Methods:
+      
+Other Methods
+=============
+
+.. method:: void Erase(string aId)
+            void Erase(int aId)
+   
+   Erase is an alternate way to set the duration of drawn items.  All items drawn with the specified ID are given a
+   duration of (TIME_NOW - Time_Drawn). aId corresponds to the value given in :method:`WsfDraw.SetId`.
+
+.. method:: void SetTarget(string aTarget)
+   
+   SetTarget defines what should draw the output of WsfDraw.  aTarget is a comma-separated string
+   containing the list of targets.  By default, aTarget is empty and means the draw command will be given to all outputs.
+
+.. method:: void SetLayer(string aLayer)
+
+   Layers can be used to filter draw commands. After a call to SetLayer, any subsequent draw commands will be placed
+   into this layer until the next call to SetLayer.
+   
+   **Default** If SetLayer has not been called upon creation of a new geometry, that draw command will be placed into a
+   layer named 'default'.
+
+Example
+=======
+
+::
+
+  end_time 5 min
+  dis_interface
+     record wsfdraw.rep
+  end_dis_interface
+
+  platform tracker WSF_PLATFORM
+    add mover WSF_AIR_MOVER
+    end_mover
+    route
+       position 0.0n 0.1w altitude 10 km heading 90 deg speed 400 kts
+    end_route
+    add sensor geom-1 WSF_GEOMETRIC_SENSOR
+       frame_time 1 s
+       maximum_range 20 km
+       azimuth_error_sigma 10 deg
+       elevation_error_sigma 10 deg
+       range_error_sigma 1000 m
+       reports_location
+       reports_velocity
+       processor track_processor
+       on
+    end_sensor
+    add processor track_processor WSF_TRACK_PROCESSOR
+    end_processor
+    script_variables
+       # Create a WsfDraw object.
+       WsfDraw draw = WsfDraw();
+    end_script_variables
+
+    execute at_time .1 s absolute
+        # Draw a circle representing the sensor range
+        draw.SetEllipseMode("line");
+        draw.BeginCircle(0, 20000.0);
+           draw.Vertex(PLATFORM);
+        draw.End();
+
+        WsfPlatform tgtPlat = WsfSimulation.FindPlatform("target");
+        # Demonstrates drawing lines between platforms
+        draw.SetId("rel-lines");
+        draw.SetLineStyle("solid");
+        draw.BeginLines();
+           draw.SetColor(0.3, 0.3, 0.3);
+           draw.Vertex(PLATFORM);
+           draw.Vertex(tgtPlat);
+        draw.End();
+
+        # draw a filled ellipsoid
+        # use the ellipse mode as the layer name
+        draw.SetLayer("ellipsoid_fill");
+        draw.SetEllipseMode("fill");
+
+        # setting the alpha value less than 1 will make the ellipsoid appear translucent
+        draw.SetColor(0.0, 0.0, 1.0, 0.25);
+
+        # draw an ellipsoid around the platform
+        draw.BeginEllipsoid(PLATFORM.Heading(), 45, 0, 10000.0, 20000.0, 10000.0);
+           draw.Vertex(PLATFORM);
+        draw.End();
+
+        # draw an outlined ellipse
+        draw.SetLayer("ellipse_line");
+        draw.SetEllipseMode("line");
+        draw.SetLineStyle("dashed");
+        draw.SetLineSize(5);
+
+        # setting the alpha value less than 1 will make the ellipse appear translucent
+        draw.SetColor(1.0, 0.0, 0.0, 0.5);
+
+        # draw an ellipse around the target
+        draw.BeginEllipse(tgtPlat.Heading(), 10000.0, 20000.0);
+           draw.Vertex(tgtPlat);
+        draw.End();
+    end_execute
+
+    execute at_interval_of 1.0 s
+     WsfLocalTrack track = MasterTrackList().Entry(0);
+     if (track.IsValid())
+     {
+        # use the track ID as a unique draw ID
+        # a track icon and a line to the track icon
+        # is drawn at each track update
+        string trackId = track.TrackId().ToString();
+        draw.SetId(trackId);
+
+        # Call Erase() to hide the last track position
+        draw.Erase(trackId);
+
+        # Draw a track icon
+        draw.SetColor(1,0,0);
+        draw.BeginIcons(track.Heading(), "Wedge");
+           draw.Vertex(track.CurrentLocation());
+        draw.End();
+
+        draw.SetLineStyle("dotted");
+        draw.SetLineSize(3);
+
+        # Draw a line to the track
+        draw.BeginLines();
+           draw.Vertex(PLATFORM);
+           draw.Vertex(track.CurrentLocation());
+        draw.End();
+     }
+    end_execute
+  end_platform
+  platform target WSF_PLATFORM
+    add mover WSF_AIR_MOVER
+    end_mover
+    route
+       position 0.0n 0.0e altitude 10 km heading 90 deg speed 400 kts
+    end_route
+  end_platform
+
+  # Set up a timer at a defined location
+  execute at_interval_of 5 s
+    double timerAlt = 1524;
+    WsfDraw d = WsfDraw();
+    d.BeginTimer();
+    d.SetColor(0.0, 1.0, 0.0, 1.0);
+    d.SetDuration(5);
+    d.VertexLLA(0, 0, timerAlt);
+    d.End();
+  end_execute

@@ -1,0 +1,120 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_BALLISTIC_LAUNCH_COMPUTER
+-----------------------------
+
+.. model:: launch_computer WSF_BALLISTIC_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_BALLISTIC_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      ... `WSF_BALLISTIC_LAUNCH_COMPUTER Commands <Commands>`_ ...
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_BALLISTIC_LAUNCH_COMPUTER` implements a launch computer for an unguided weapon, such as a gravity bomb or
+unguided rocket. The weapon may have various engagement constraints that must be satisfied prior to launch of the
+:model:`WSF_EXPLICIT_WEAPON`.
+
+The :command:`weapon_tools` application assists with creation of launch computers of this type.
+(See :command:`BALLISTIC_LAUNCH_COMPUTER_GENERATOR`). The generated output product is a table providing
+the downrange travel and time of flight of a weapon dropped from a particular altitude and speed, which allows a
+future weapon release to be anticipated to place the impact location as desired.
+
+.. block:: WSF_BALLISTIC_LAUNCH_COMPUTER
+
+Commands
+========
+
+.. warning::
+   Ordering of the following commands is important. Launch altitudes, launch speeds, and target altitudes must
+   be defined before the time-of-flight and down range values.
+
+.. command:: launch_altitudes <minimum-altitude> <delta-altitude> <number-of-altitudes>
+
+   Specifies the :argtype:`minimum launch altitude <length-value>`, the :argtype:`altitude increment <length-value>`
+   and :argtype:`number of altitudes <integer-value>` that constitute the intercept envelope. Altitudes are assumed
+   to be the height of the launcher above an ellipsoidal earth.
+
+   .. note::
+      The number of altitudes must be greater than 1 and the altitude increment must be greater than 0.0.
+
+.. command:: launch_speeds <minimum-speed> <delta-speed> <number-of-speeds>
+
+   Specifies the :argtype:`minimum launch speed <speed-value>`, the :argtype:`speed increment <speed-value>`
+   and :argtype:`number of launch speeds <integer-value>` that constitute the intercept envelope.
+
+   .. note::
+      The number of speeds must be greater than 1 and the speed increment must be greater than 0.0.
+
+.. command:: target_altitudes <minimum-altitude> <delta-altitude> <number-of-altitudes>
+
+   Specifies the :argtype:`minimum target altitude <length-value>`, the :argtype:`altitude increment <length-value>`
+   and :argtype:`number of altitudes <integer-value>` that constitute the intercept envelope. Altitudes are assumed
+   to be the height of the target above an ellipsoidal earth.
+
+   .. note::
+      The number of altitudes must be greater than 1 and the altitude increment must be greater than 0.0.
+
+.. command:: times_of_flight_values ...
+
+   The time-of-flight value for the weapon, when released at the specified launch altitude, target altitude and launch
+   speed.  The number of value given must equal the number of launch altitudes X number of target altitudes X number of
+   launch speeds, and the latter indices cycle faster than the former (typical "matrix" order).
+
+   .. note::
+      The values entered must be in seconds.
+
+.. command:: downrange_values ...
+
+   The down range distance from launch location to impact location, when the weapon is released at the specified launch
+   altitude, target altitude and launch speed.  The number of values provided must equal the number of launch altitudes X
+   number of target altitudes X number of launch speeds, and the latter indices cycle faster than the former (typical
+   "matrix" order).
+
+   .. note::
+      The values entered must be in meters.
+
+Example
+=======
+
+::
+
+   launch_computer example_lc WSF_BALLISTIC_LAUNCH_COMPUTER
+      # Created by BallisticLaunchComputerGenerator on Fri Jan 13 15:02:49 2017
+      launch_altitudes 3048 m 1524 m 2 # Min, Max, Number
+      launch_speeds 128.611 m/s 25.7222 m/s 2 # Min, Max, Number
+      target_altitudes 0.3048 m 3.048 m 2 # Min, Max, Number
+      #  target_altitudes (m) = 0, 3
+      #  target_altitudes (ft) = 1, 11
+
+      times_of_flight_values # (seconds)
+               # launch_alt = 3048 m, 10000 ft
+         25.1523 25.1395 # launch_spd = 128 m/s, 421 ft/s, Mach=0.39
+         25.179 25.1662 # launch_spd = 154 m/s, 506 ft/s, Mach=0.47
+               # launch_alt = 4572 m, 15000 ft
+         30.8852 30.8747 # launch_spd = 128 m/s, 421 ft/s, Mach=0.39
+         30.9199 30.9094 # launch_spd = 154 m/s, 506 ft/s, Mach=0.47
+
+      downrange_values # (meters)
+               # launch_alt = 3048 m, 10000 ft
+         3146.33 3140.31 # launch_spd = 128 m/s, 421 ft/s, Mach=0.39
+         3763.21 3763.21 # launch_spd = 154 m/s, 506 ft/s, Mach=0.47
+               # launch_alt = 4572 m, 15000 ft
+         3841.33 3841.33 # launch_spd = 128 m/s, 421 ft/s, Mach=0.39
+         4601.07 4601.07 # launch_spd = 154 m/s, 506 ft/s, Mach=0.47
+
+   end_launch_computer

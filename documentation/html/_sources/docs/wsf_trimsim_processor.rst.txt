@@ -1,0 +1,140 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TRIMSIM_PROCESSOR
+---------------------
+
+.. model:: processor WSF_TRIMSIM_PROCESSOR
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_TRIMSIM_PROCESSOR`
+      :command:`processor` Commands ...
+      :ref:`Platform_Part_Commands` ...
+
+      sensors_ ... end_sensors
+
+      minimum_detections_
+
+      message_length_ ...
+      message_priority_ ...
+   end_processor
+
+.. seealso::
+   :ref:`error_model.trimsim_error` type must be defined on the sensor(s) for this process to operate and apply errors properly.
+
+Overview
+========
+
+:model:`WSF_TRIMSIM_PROCESSOR` provides for the Time Difference Of Arrival (TDOA) algorithm was derived from the Theater-wide Reference Information Management Simulation (TRIMSIM) and SUPPRESSOR implementations. It models the effect of reference system errors on data fusion for air-to-ground targeting. The TDOA algorithm generates measurement errors of a target point in three dimensions based on errors from various sources. These errors are applied to the primary sensor's (first sensor in sensors_ block) detection information.
+
+.. note::
+   The first sensor in the sensors_ list is initially set as the primary sensor and the rest are considered secondary sensors. Secondary sensors are updated by the processor while the primary sensor is updated on it's own accord and triggers the processor to update the secondary sensors for a given target. If the number of the sensors in the list detecting the target meet the minimum_detections_ criteria then a detection is declared and errors are applied to the resulting track, the sensor result may not display the errors currently only the track.
+
+.. note::
+   If the first sensor is removed, either by the simulation or user, then the next sensor in the list will become the primary sensor if enough sensors are available to meet the minimum_detections_ criteria. If the minimum_detections_ criteria is not met due to the number sensors available then all sensors are set to operate in a normal manner.
+
+.. note::
+   The sensors must be passive type sensors.
+
+.. note::
+   The :command:`processor.update_interval` is not operational for this type of processor currently.
+
+The processor is typically used in the following construct:
+
+.. parsed-literal::
+
+   platform_type ...
+      sensor sensor-1 :model:`WSF_ESM_SENSOR`
+         ...
+         # Forward the tracks to 'track_proc'
+         processor track_proc
+      end_sensor
+
+      sensor sensor-2 :model:`WSF_ESM_SENSOR`
+         ...
+         # Forward the tracks to 'track_proc'
+         processor track_proc
+      end_sensor
+
+      processor trimsim_proc :model:`WSF_TRIMSIM_PROCESSOR`
+         ...
+
+         # Connect to sensors to collect 'interaction' data for processing
+         sensors
+            sensor sensor-1
+            sensor sensor-2
+         end_sensors
+      end_processor
+
+      # minimum detections required
+      minimum_detections 2
+
+   end_platform_type
+
+.. block:: WSF_TRIMSIM_PROCESSOR
+
+Commands
+========
+
+.. command:: sensors ... end_sensors
+   :block:
+
+   .. parsed-literal::
+
+    sensors
+       sensor_ <sensor-name>
+       platform_sensor_ <platform-name> <sensor-name>
+    end_sensors
+
+   .. command:: sensor <sensor-name>
+
+      Specifies the name of the sensor, *<sensor-name>*, on the same platform as the processor.
+
+   .. command:: platform_sensor <platform-name> <sensor-name>
+
+      Specifies the name of the sensor, *<sensor-name>*, on an external platform with name *<platform-name>*.
+
+   .. note::
+      The sensors must be passive type sensors.
+
+.. block:: WSF_TRIMSIM_PROCESSOR
+
+.. command:: minimum_detections <integer>
+
+   Specifies the minimum_number of detections required from the sensors in the sensor list to declare a detection by the primary sensor.
+
+.. command:: message_length <data-size-value>
+
+   Specify the logical length assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+.. command:: message_priority <integer-priority>
+
+   Specify the priority assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+Script Interface
+================
+
+The following methods extend the :class:`WsfProcessor` script class by adding the following methods to it:
+
+.. method:: AddSensor(string aSensorName)
+.. method:: AddSensor(string aPlatformName, string aSensorName)
+
+   Adds the sensor by name to the list of sensor on the :model:`WSF_TRIMSIM_PROCESSOR`. If aPlatformName is omitted the sensor is assumed to be on the same platform as the processor.
+
+.. method:: RemoveSensor(string aSensorName)
+.. method:: RemoveSensor(string aPlatformName, string aSensorName)
+
+   Removes the sensor by name from the list of sensor on the :model:`WSF_TRIMSIM_PROCESSOR`. If aPlatformName is omitted the sensor is assumed to be on the same platform as the processor.

@@ -1,0 +1,206 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Script demo 1.txt
+-----------------
+
+.. parsed-literal::
+
+ #         1         2         3         4         5         6         7
+ #234567890123456789012345678901234567890123456789012345678901234567890123456789
+ ################################################################################
+ #                           Basic :command:`Script <_.script_commands.script>` Demo
+ #
+ # This is a basic :command:`_.script_commands.script` example that demonstrates some the features
+ # of the scripting language and how to use scripting in a WSF component.
+ #
+ # In this scenario we have:
+ #
+ # a) an air :command:`platform`.
+ #
+ # The air :command:`platform` will fly a :command:`route` and print its configuration using a :command:`_.script_commands.script`.
+ #
+ ################################################################################
+
+ :command:`_.script_commands.script_interface`
+    debug
+ end_script_interface
+
+ .. include:: dis_network.txt
+
+ ################################################################################
+ // Define the :command:`platform` type for the notional 737.
+
+ :command:`platform.platform_type` 737 :model:`WSF_PLATFORM`
+
+    :command:`mover` :model:`WSF_AIR_MOVER`
+    end_mover
+
+    // This is an example single shot :command:`processor` that runs only once.
+    // It dumps out a bunch of information about the :command:`platform`.  In its
+    // current configuration it doesn't contain any sensors, :command:`comm` devices, etc.
+    :command:`processor` show-config-proc :model:`WSF_SCRIPT_PROCESSOR`
+       update_interval 1.0 sec
+
+       // An example of how to create instance variables.  These can be used
+       // in any scripts defined within the current :command:`processor`.
+       :ref:`ScriptVariables`
+          int mMyInt = 999;
+          double mMyDouble = 123.456;
+          :class:`WsfPlatform` mMyPlatform = PLATFORM;
+
+          // Create an :class:`Array\<T\>`.  Maps are also available (see the User's guide).
+          :class:`Array\<double\><Array\<T\>>` mMyArray = :class:`Array\<double\><Array\<T\>>` ();
+       end_script_variables
+
+       // This is an example of how to create a :command:`_.script_commands.script` that is available
+       // on the current :command:`processor`.
+       :command:`_.script_commands.script` void PrintPlatformName(:class:`WsfPlatform` aPlatform)
+          // Print name using :command:`_.script_commands.script` argument.
+          print("The :command:`platform`\'s name is ", aPlatform.Name());
+
+          // Print name using the :command:`_.script_commands.script` variable (declared in :ref:`ScriptVariables`).
+          print("The :command:`platform`\'s name is ", mMyPlatform.Name());
+       end_script
+
+       // on_initialize is a 'common' :command:`_.script_commands.script` provided by several WSF components
+       // (see User's guide for a complete list).  Notice the syntax is different
+       // from how regular scripts are declared.
+       on_initialize
+          print("on_initialize");
+
+          // Add some data to the :class:`Array<Array\<T\>>`.
+          mMyArray.PushBack(1.2);
+          mMyArray.PushBack(2.3);
+          mMyArray.PushBack(3.4);
+       end_on_initialize
+
+       // on_update is a 'common' :command:`_.script_commands.script` provided by several WSF components
+       // (see User's guide for a complete list).  Notice the syntax is different
+       // from how regular scripts are declared..
+       on_update
+          print("on_update");
+
+          // Calls to external :command:`_.script_commands.script` must be externed.
+          extern void PrintPlatformName(:class:`WsfPlatform`);
+          PrintPlatformName(PLATFORM);
+
+          print("");
+          print("Print my member variables");
+          print("--- mMyPlatform name = ", mMyPlatform.Name());
+          print("--- mMyInt = ", mMyInt);
+          print("--- mMyDouble = ", mMyDouble);
+          print("--- mMyArray = ");
+
+          // For each loop.  The key loop variable is optional.
+          print(":class:`Array<Array\<T\>>` elements using a foreach with key and data");
+          foreach (int key : double data in mMyArray)
+          {
+             print("---            key, data ", key, ", ", data);
+          }
+          print("");
+
+          // For each loop without the key.
+          print(":class:`Array<Array\<T\>>` elements using a foreach with data");
+          foreach (double data in mMyArray)
+          {
+             print("---            data ", data);
+          }
+          print("");
+
+          // You can use an :class:`iterator`.
+          print(":class:`Array<Array\<T\>>` elements using an :class:`iterator`");
+          :class:`ArrayIterator` arrayIter = mMyArray.GetIterator();
+          while (arrayIter.HasNext())
+          {
+             double data = (double)arrayIter.Next();
+             print("---            key, data ", arrayIter.Key(), ", ", data);
+          }
+          print("");
+
+          print("Information for ", PLATFORM.Name(), ".", PLATFORM.Type());
+
+          print("  Command Chains");
+          for (int i = 0; i < PLATFORM.CommandChainCount(); i = i + 1)
+          {
+             :class:`WsfCommandChain` chain = PLATFORM.CommandChainEntry(i);
+             print("    ", chain.Name());
+             if (chain.Commander().IsValid())
+             {
+                print("      Commander: ", chain.Commander().Name());
+             }
+             print("      Peers");
+             foreach (:class:`WsfPlatform` peer in chain.Peers())
+             {
+                print("          ", peer.Name());
+             }
+             print("      Subordinates");
+             foreach (:class:`WsfPlatform` subordinate in chain.Subordinates())
+             {
+                print("          ", subordinate.Name());
+             }
+          }
+          print("  :command:`comm` Systems");
+          for (int i = 0; i < PLATFORM.CommCount(); i = i + 1)
+          {
+             :class:`WsfComm` :command:`comm` = PLATFORM.CommEntry(i);
+             print("    ", :command:`comm`.Name(), "; Type=", :command:`comm`.Type(),
+                   " On=", :command:`comm`.IsTurnedOn());
+          }
+          print("  :command:`sensor` Systems");
+          for (int i = 0; i < PLATFORM.SensorCount(); i = i + 1)
+          {
+             :class:`WsfSensor` :command:`sensor` = PLATFORM.SensorEntry(i);
+             print("    ", :command:`sensor`.Name(), "; Type=", :command:`sensor`.Type(),
+                   " On=", :command:`sensor`.IsTurnedOn());
+          }
+          print("  Processors");
+          for (int i = 0; i < PLATFORM.ProcessorCount(); i = i + 1)
+          {
+             :class:`WsfProcessor` :command:`processor` = PLATFORM.ProcessorEntry(i);
+             print("    ", :command:`processor`.Name(), "; Type=", :command:`processor`.Type(),
+                   " On=", :command:`processor`.IsTurnedOn(),
+                   " UpdateInterval=", :command:`processor`.UpdateInterval());
+          }
+
+          // Disable future calls.
+          PROCESSOR.TurnOff();
+       end_on_update
+    end_processor
+
+ end_platform_type
+
+ #         1         2         3         4         5         6         7
+ #234567890123456789012345678901234567890123456789012345678901234567890123456789
+ ################################################################################
+
+ :command:`platform` 737-1 737
+    side blue
+
+    command_chain ATC SELF
+
+    :command:`route`
+ #     Take off
+       position 38:44:52.3n 90:21:36.4w altitude 6 ft agl speed 0 kts
+       position 38:45:07.6n 90:22:09.4w altitude 6 ft agl speed 120 kts # climb_rate 1000 fpm
+
+       position 38:49:00n 90:29:00w altitude 15000 ft speed 400 kts
+       position 39:29:00n 91:30:00w altitude 35000 ft
+       position 38:45:00n 90:06:08w
+       position 38:38:24n 90:07:46w altitude 10000 ft speed 250 kts
+
+ #     Landing
+       position 38:44:52.3n 90:21:36.4w altitude 6 ft agl speed 120 kts
+       position 38:45:07.6n 90:22:09.4w altitude 6 ft agl speed 0 kts
+    end_route
+ end_platform
+
+ :command:`end_time` 1200 sec

@@ -1,0 +1,468 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _P6DOF_Flight_Control_System_Label:
+
+P6DOF Flight Control System Definition
+======================================
+
+The flight control system determines how control inputs from the active pilot object are routed/mixed to move control
+surfaces, throttles, or other components/controls (such as landing gear, speed brakes, etc.). Many of the control
+surfaces serve as inputs into :command:`aero_component` objects.
+
+.. command:: flight_controls ... end_flight_controls
+   :block:
+
+   The flight_controls_ block defines various control surfaces/values (control_surface_, control_value_,
+   and control_boolean_) that control the vehicle and/or effect its performance. The flight_controls_ block
+   also defines various input/signal modifiers which are referenced within the control surfaces/values
+   (control_surface_, control_value_, and control_boolean_) blocks. It is important to define
+   `Control Signal Modifiers`_ before they are referenced in the `Control Surfaces and Components`_ blocks.
+
+   .. parsed-literal::
+
+    flight_controls
+
+       // `Control Signal Modifiers`_
+       mapping_table_ ... end_mapping_table
+       gain_table_ ... end_gain_table       
+       scalar_gain_ ... end_scalar_gain
+       clamp_gain_ ... end_clamp_gain
+
+       // `Control Surfaces and Components`_
+       control_surface_ ... end_control_surface
+       control_value_ ... end_control_value
+       control_boolean_ ... end_control_boolean
+
+    end_flight_controls
+
+Control Signal Modifiers
+========================
+
+The control signal modifiers provide a means to modify control input "signals" from the active pilot object. The modifiers
+can be used repeatedly within the control_surface_, control_value_, and control_boolean_ blocks, as needed.
+
+.. command:: mapping_table ... end_mapping_table
+   :block:
+
+   Mapping tables are used to modify a control input signal by modulating with a control value source. The control value
+   can be a range of sources such as mach, alpha, g-load, etc. A table defines the relationship between the control value
+
+   .. parsed-literal::
+ 
+    mapping_table <string>
+       type_ ...
+       table_data_ ... end_table_data
+    end_mapping_table
+
+   .. command:: type <string>
+
+      This sets the type of the mapping table. Valid types include:
+
+      mach_mapping 
+         Uses mach as the control_value
+
+      ktas_mapping 
+         Uses ktas as the control_value
+
+      alpha_mapping 
+         Uses alpha as the control_value
+
+      beta_mapping   
+         Uses beta as the control_value
+
+      g_x_load_mapping 
+         Uses g-load-x (Nx) as the control_value
+
+      g_y_load_mapping 
+         Uses g-load-y (Ny) as the control_value
+
+      g_z_load_mapping 
+         Uses g-load-z (Nz) as the control_value
+
+      alt_mapping 
+         Uses altitude as the control_value
+
+      q_mapping   
+         Uses dynamic pressure as the control_value
+
+      signal_mapping 
+         Uses a signal as the control_value
+
+   .. command:: table_data
+
+      This table maps a signal/input to an output/value). A typical table is like this:
+
+      ::
+
+       table_data
+          irregular_table
+              independent_variable control_value precision float
+              independent_variable input         precision float
+              dependent_variable                 precision float
+              control_value 0.0
+                  input   -1.0 -0.5  0.0  0.5  1.0
+                  values  -0.8 -0.4  0.0  0.4  0.8
+              control_value 1.0
+                  input   -1.0 -0.5  0.0  0.5  1.0
+                  values  -0.8 -0.4  0.0  0.4  0.8
+              control_value 2.0
+                  input   -1.0 -0.5  0.0  0.5  1.0
+                  values  -0.8 -0.4  0.0  0.4  0.8
+          end_irregular_table
+       end_table_data
+
+.. block:: flight_controls
+
+.. command:: gain_table ... end_gain_table
+   :block:
+
+   This table maps a signal/input to an output/value). A typical table is like this:
+
+   .. parsed-literal::
+
+    gain_table <string>
+
+       type_ ...
+       
+       simple_table
+        # value   gain
+          -12.0   0.0
+          -10.0   1.0
+          0.00    1.0
+          10.0    1.0
+          12.0    0.8
+          20.0    0.1
+          30.0    0.0
+       end_simple_table
+       
+    end_gain_table
+
+.. block:: flight_controls
+
+.. command:: scalar_gain ... end_scalar_gain
+   :block:
+
+   The scalar gain consists of a name and a gain value. Once defined, a scalar gain can be used repeatedly within the
+   control_surface_, control_value_, and control_boolean_ blocks to scale a control signal.
+
+   .. parsed-literal::
+
+    scalar_gain <string>
+       gain_ ...
+    end_scalar_gain
+
+   .. command:: gain <real-value>
+
+      This sets the gain of the scalar gain.
+
+.. block:: flight_controls
+
+.. command:: clamp_gain ... end_clamp_gain
+   :block:
+
+   Clamp gains are used to limit a signal between min/max values. The output of signal will be "clamped" to the minimum
+   and maximum values.
+
+   .. parsed-literal::
+
+    clamp_gain <string>
+       min_clamp_ ...
+       max_clamp_ ...
+    end_clamp_gain
+
+   .. command:: min_clamp <real-value>
+
+      This sets the minimum value that will be allowed to pass the clamp gain.
+
+   .. command:: max_clamp <real-value>
+
+      This sets the maximum value that will be allowed to pass the clamp gain.
+
+Control Surfaces and Components
+===============================
+
+The control_surface_, control_value_, and control_boolean_ represent control surfaces and other components on the
+platform that produce forces and moments or control actions on the vehicle.
+
+.. block:: flight_controls
+
+.. command:: control_surface ... end_control_surface
+   :block:
+
+   This defines a "control surface" or other component that can produce aerodynamic effects on the platform. Control
+   surfaces include ailerons, elevators, elevons, rudders, spoilers, speedbrakes, etc. but also include things like
+   landing gear, which can produce drag. See `Sample Control Surface`_ for an example of a control_surface block.
+   
+   Each **control_surface** is given a **name** that must be unique and must "map" to an :command:`aero_component`
+   that will produce the effect of the control_surface.
+
+   .. warning::
+      The key concept is that each **control_surface** in the :command:`flight_controls` block should be "connected"
+      to a corresponding :command:`aero_component`.
+      
+      The **control_surface** name and the **aero_component** type must match exactly and are case-sensitive.
+
+   .. parsed-literal::
+
+      control_surface <name-string>
+      
+         min_angle_ ...
+         max_angle_ ...
+         current_angle_ ...
+      
+         inputs_ ... end_inputs
+      
+         angle_mapping_table_ ... end_angle_mapping_table
+      
+         actuator_ ... end_actuator
+      
+      end_control_surface
+
+.. command:: min_angle <angle-value>
+
+   This sets the minimum angle of this control surface.
+
+.. command:: max_angle <angle-value>
+
+   This sets the maximum angle of this control surface.
+
+.. command:: current_angle <angle-value>
+
+   This sets the current angle of this control surface.
+
+.. command:: inputs ... end_inputs
+   :block:
+
+   Inputs provide a means to modify a "control input/signal" from the active pilot object. If multiple inputs_ blocks
+   are used, the output from each block is summed with the other inputs_ for a given control_surface_. This can provide
+   a means to "mix" control inputs/signals to drive a particular control surface. For example, an elevon may mix signals
+   from stick_right and stick_back inputs to allow the elevon to be used for both pitch and roll forces/moments.
+
+   .. parsed-literal::
+
+    inputs
+       control_input_.. end_control_input
+    end_inputs
+
+.. command:: control_input ... end_control_input
+   :block:
+
+   .. parsed-literal::
+
+    control_input <string>
+       modifier_ ...
+    end_control_input
+
+   .. command:: modifier <string>
+
+      This indicates which of the `Control Signal Modifiers`_ should be used. If multiple modifier entries are present,
+	  they are performed in succession with the result from the previous modifier serving as the input of the next,
+	  forming a "chain" of modifiers.
+
+   .. warning::
+      The key concept is that each **control_input** in :command:`flight_controls` should be "connected" to a
+      **control_name** in :command:`control_inputs`.
+      
+      The names must match exactly and are case-sensitive.
+
+.. command:: angle_mapping_table ... end_angle_mapping_table
+
+   This table provides a means to "shape" the mapping of input to control surface angle. In many situations, a non-linear
+   mapping will be used, with a reduced slope near zero and increased slope near the endpoints. This often improves the
+   "feel" of controls and provides more control sensitivity near the zero point. Data in the table is normalized input
+   mapping to a control surface angle in degrees.
+
+   Sample mapping table::
+
+    angle_mapping_table
+       #input        angle_deg
+       -1.00         -20.0
+       0.00          0.0
+       1.00          20.0
+    end_angle_mapping_table
+
+   In this example, a normalized input of +/- 1 results in a linear mapping to +/- 20 degrees.
+
+.. command:: actuator
+
+   This allows an simple model of an actuator.
+
+   .. parsed-literal::
+
+    actuator
+       max_positive_rate_ ...
+       max_negative_rate_ ...
+       max_angle_ ...
+       min_angle_ ...
+       current_angle_ ...
+    end_actuator
+
+.. command:: max_positive_rate <angle-rate-value>
+
+   This is the maximum rate that the actuator can move in the positive direction.
+
+   **Default**: 0.0
+
+.. command:: max_negative_rate <angle-rate-value>
+
+   This is the maximum rate that the actuator can move in the negative direction.
+
+   **Default**: 0.0
+
+.. command:: max_angle <angle-value>
+
+   This is the maximum angle to which the actuator can move.
+
+   **Default**: 0.0
+
+.. command:: min_angle <angle-value>
+
+   This is the minimum angle to which the actuator can move.
+
+   **Default**: 0.0
+
+.. command:: current_angle <angle-value>
+
+   This is the current angle of the actuator.
+
+   **Default**: 0.0
+
+
+Sample Control Surface
+======================
+
+This is a sample control surface listing:
+
+::
+
+ control_surface   RightElevator_TEUp
+    min_angle            -20.0 deg
+    max_angle            20.0 deg
+    current_angle        0.0 deg
+
+    inputs
+       control_input     StickRight
+          modifier       Gain_40Percent
+          modifier       Clamp_PosNegOne
+       end_control_input
+    end_inputs
+    inputs
+       control_input     StickBack
+          modifier       Gain_80Percent
+          modifier       Clamp_PosNegOne
+       end_control_input
+    end_inputs
+
+    angle_mapping_table
+       #input  angle_deg
+       -1.00   -20.000
+       -0.90   -12.812
+       -0.80   -8.744
+       -0.70   -5.920
+       -0.60   -3.958
+       -0.50   -2.596
+       -0.40   -1.650
+       -0.30   -0.993
+       -0.20   -0.537
+       -0.10   -0.220
+       -0.05   -0.100
+       0.00    0.000
+       0.05    0.100
+       0.10    0.220
+       0.20    0.537
+       0.30    0.993
+       0.40    1.650
+       0.50    2.596
+       0.60    3.958
+       0.70    5.920
+       0.80    8.744
+       0.90    12.812
+       1.00    20.000
+    end_angle_mapping_table
+
+    actuator
+       max_positive_rate  60.0 deg/sec
+       max_negative_rate  -60.0 deg/sec
+       max_angle          20.0
+       min_angle          -20.0
+       current_angle      0.0
+   end_actuator
+
+ end_control_surface
+
+.. block:: flight_controls
+
+.. command:: control_value
+
+   This defines a "control value" that can be used to drive controls such as throttles and thrust reversers or control
+   other objects on the platform. A control value provides a range of values, constrained by the specified limits.
+
+   .. parsed-literal::
+
+    control_value <string>
+
+       min_value_ ...
+       max_value_ ...
+       current_value_ ...
+
+       inputs_ ... end_inputs
+
+    end_control_value
+
+.. command:: min_value <real-value>
+
+   This is the minimum value of the control value.
+
+   **Default**: 0.0
+
+.. command:: max_value <real-value>
+
+   This is the maximum value of the control value.
+
+   **Default**: 0.0
+
+.. command:: current_angle <real-value>
+
+   This is the current angle of the control value.
+
+   **Default**: 0.0
+
+.. command:: control_boolean
+
+   This defines a "control boolean" that can be used to drive "button", "trigger", and "switch" types of controls on the
+   platform. A control boolean's output is either true (on) or false (off).
+
+   .. parsed-literal::
+    
+    control_boolean <string>
+
+       current_value_ ...
+       threshold_value_ ...
+
+       inputs_ ... end_inputs
+
+    end_control_boolean
+
+.. command:: current_value <integer-value>
+
+   This should be '0' if the control boolean is false (off) or '1' if the control boolean is true (on).
+
+   **Default**: 0
+
+.. command:: threshold_value <real-value>
+
+   This sets the value above which a signal will be considered to be true (on).
+
+   **Default**: 0.5
+
+
+Return to :doc:`p6dof_object_types` or :doc:`p6dof_object_type`

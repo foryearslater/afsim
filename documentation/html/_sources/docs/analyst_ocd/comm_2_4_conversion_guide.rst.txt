@@ -1,0 +1,199 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+AFSIM Comms 2.4 Conversion Guide
+--------------------------------
+
+.. contents:: Table of Contents
+   :local:
+   :depth: 2
+
+Quick Conversion Guide for Typical Laydowns
+===========================================
+
+   #. Ensure that the typical command chain **commander** and **subordinate** comm object are named the same throughout the scenario (they have typically been named **sub_net** and **cmdr_net**)
+
+      ::
+
+         # Top Commander platform:
+            comm  sub_net WSF_COMM_TRANSCEIVER     # only needs subnet
+               network_name <local:master>
+               internal_link data_mgr
+               internal_link task_mgr
+            end_comm
+
+         # Subordinate platform:
+            comm  cmdr_net WSF_COMM_TRANSCEIVER      # talks to his commander
+               network_name <local:slave>
+               internal_link data_mgr
+               internal_link task_mgr
+            end_comm
+            comm   sub_net WSF_COMM_TRANSCEIVER     # has subordinates too
+               network_name <local:master>
+               internal_link data_mgr
+               internal_link task_mgr
+            end_comm
+
+         # SubSubordinate platform
+            comm  cmdr_net WSF_COMM_TRANSCEIVER      # talks to his commander
+               network_name <local:slave>
+               internal_link data_mgr
+               internal_link task_mgr
+            end_comm
+
+   #. For any launchers or non-command platforms using the **datalink** named comm, rename this comm to **cmdr_net**.
+
+      ::
+
+         # SubSubordinate platform
+            comm  cmdr_net WSF_COMM_TRANSCEIVER      # talks to his commander
+               network_name <local:slave>
+               internal_link data_mgr
+               internal_link task_mgr
+            end_comm
+
+   #. Replace all old :command:`_.External_Link_Commands.external_link` or :command:`_.External_Link_Commands.report_to` commands with the following:
+
+      ::
+
+         report_to commander -> report_to commander via cmdr_net to sub_net # Commanders comm name is sub_net
+         report_to subordinates -> report_to subordinates via sub_net to cmdr_net
+         report_to peers -> report_to peers via cmdr_net OR report_to peers via sub_net
+
+Comm Naming
+===========
+
+When sending messages between platforms, if the name of the receiver comm is different than the sender comm, the comm name of the receiver must be specified using the "to" keyword.
+
+::
+
+   # commander
+     ...
+     comm  type1 WSF_COMM_TRANSCEIVER   # type1 name of comm
+        network_name <local:master>
+        internal_link data_mgr
+        internal_link task_mgr
+     end_comm
+     processor data_mgr WSF_TRACK_PROCESSOR
+        report_to subordinates via type1 to type2
+     end_processor
+     ...
+
+   # subordinate
+     ...
+     comm  type2 WSF_COMM_TRANSCEIVER    # type2 name of comm
+        network_name <local:slave>
+        internal_link data_mgr
+        internal_link task_mgr
+     end_comm
+     processor data_mgr WSF_TRACK_PROCESSOR
+        report_to commander via type2 to type1  # Commander's comm name is different
+     end_processor
+     ...
+
+For wired perfect communication (:model:`WSF_COMM_TRANSCEIVER`), having only one comm device per platform type is sufficient; having both a sub_net and cmdr_net comm really isn'tnecessary. In the following example, both sender and receiver have only one comm and they are named the same.
+
+::
+
+   # commander
+     ...
+     comm  type1 WSF_COMM_TRANSCEIVER   # TYPE1 NAME OF COMM
+        network_name <local:master>
+        internal_link data_mgr
+        internal_link task_mgr
+     end_comm
+     processor data_mgr WSF_TRACK_PROCESSOR
+        report_to subordinates via type1 #to type1 not needed because the subs have same comm name
+     end_processor
+     ...
+
+   # subordinate
+     ...
+     comm  type1 WSF_COMM_TRANSCEIVER    # TYPE1 NAME OF COMM
+        network_name <local:slave>
+        internal_link data_mgr
+        internal_link task_mgr
+     end_comm
+     processor data_mgr WSF_TRACK_PROCESSOR
+        report_to commander via type1 #to type1 not needed because the commander has same comm name
+     end_processor
+     ...
+
+Performance Considerations for Large Scenarios
+==============================================
+
+AFSIM's default network topology is a mesh: everyone on the same network can communicate directly to each other. This creates a very large number of links when using <local:master> and <local:slave> to define the linkage between platforms. Performance issues will most likely be experienced. For simulations having greater than a couple thousand platforms, consider using a star network topology. To convert a scenario to use a star network, the outline is as follows:
+
+::
+
+   comm MY_COMM WSF_COMM_TRANSCEIVER
+   end_comm
+
+   platform_type COMMANDER_TYPE WSF_PLATFORM
+     comm comm1 MY_COMM
+     end_comm
+   end_platform_type
+
+   platform_type  LAUNCHER_TYPE   WSF_PLATFORM
+     comm comm1 MY_COMM
+     end_comm
+   end_platform_type
+
+   platform_type  RADAR_TYPE   WSF_PLATFORM
+     comm comm1 MY_COMM
+     end_comm
+   end_platform_type
+
+
+   ###Now Instantiate the platforms (scenario file)
+   platform commander_of_the_net COMMANDER_TYPE
+     comm comm1
+         network_name commander_of_the_net
+     end_comm
+   end_platform
+
+   platform launcher1 LAUNCHER_TYPE
+     comm comm1
+         network_name commander_of_the_net
+     end_comm
+   end_platform
+
+   platform launcher2 LAUNCHER_TYPE
+     comm comm1
+         network_name commander_of_the_net
+     end_comm
+   end_platform
+
+   platform  radar1  RADAR_TYPE
+     comm comm1
+         network_name commander_of_the_net
+     end_comm
+   end_platform
+   platform  radar2  RADAR_TYPE
+     comm comm1
+         network_name commander_of_the_net
+     end_comm
+   end_platform
+
+   # define the star network by defining the network_name to a star network
+   # this can be done after the platforms are instantiated because it is an attribute, just like a signature.
+   network commander_of_the_net WSF_COMM_NETWORK_STAR
+      hub_named commander_of_the_net comm1  #commander is the hub
+   ## comm_list not needed because they are defined at instantiation -  this would be overkill.
+   #   comm_list
+   #      member launcher1 comm1
+   #      member radar1 comm1
+   #      member radar2 comm1
+   #      member launcher2 comm1
+   #   end_comm_list
+   end_network
+
+.. note:: The commander does NOT have to be the hub

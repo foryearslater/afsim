@@ -1,0 +1,335 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Weapons
+=======
+
+A **weapon** is an object with the purpose to destroy or disrupt enemy platforms and systems.
+
+There are two weapon forms implemented within AFSIM:
+
+.. hlist::
+   :columns: 4
+
+   * Explicit
+   * Implicit
+
+An **explicit** weapon is modeled to physically leave the owning/launching platform and enter the simulation as an independent platform. Examples include bombs and missiles.
+
+An **implicit** weapon is not modeled to leave the owning platform. Examples include energy weapons such as lasers and jammers.  Ballistic weapons such as rockets, artillery and mortars can be modeled as implicit or explicit weapons.
+
+AFSIM provides a number of predefined weapon models, including:
+
+.. hlist::
+   :columns: 3
+
+   * WSF_EXPLICIT_WEAPON
+   * WSF_IMPLICIT_WEAPON
+   * WSF_CUED_LASER_WEAPON
+   * WSF_LASER_WEAPON
+   * WSF_RF_JAMMER
+   * WSF_CHAFF_WEAPON
+
+
+Quick Start
+-----------
+
+A **weapon** may be defined as follows:
+
+.. code-block::
+
+   weapon SIMPLE_WEAPON WSF_EXPLICIT_WEAPON
+   end_weapon
+
+By itself though, a weapon like this is just a skeleton. In order to be useful, it must be implemented as part of a platform type:
+
+.. code-block::
+
+   platform_type SIMPLE_WEAPON WSF_PLATFORM
+      weapon self SIMPLE_WEAPON
+      end_weapon
+   end_platform_type
+
+Now other platforms and platform types may be armed with this weapon if the following command is added to the platform or platform type definition:
+
+.. code-block::
+
+   add weapon sgm SIMPLE_GUIDED_MISSILE
+      quantity 1
+   end_weapon
+
+At this point, a platform may be equipped with this weapon, but the weapon doesn't do anything - In other words, it has no effect. To make the weapon effective,
+create a `weapon_effects` block, and add it to the weapon's platform type definition as follows:
+
+.. code-block::
+
+   weapon_effects HIT WSF_GRADUATED_LETHALITY
+      radius_and_pk 40 m 0.7
+   end_weapon_effects
+
+.. code-block::
+
+   platform_type SIMPLE_WEAPON WSF_PLATFORM
+      ...
+      weapon_effects HIT
+   end_platform_type
+
+This defines *what* the weapon does but not *when* it will do it. A `WSF_AIR_TARGET_FUSE` may be added to the weapon's platform type definition to determine the circumstances in which it will detonate:
+
+.. code-block::
+
+   processor fuse WSF_AIR_TARGET_FUSE
+      fuse_function_range 10 m
+   end_processor
+
+.. tip:: Multiple fuse models are predefined. This block may specify detonation criteria based on multiple factors, such as distance from target, time of flight, altitude, and more.
+
+The question that now remains, is *how* the weapon will reach it's target. For a weapon to seek it's target, a mover and a targeting processor must be defined in the weapon's platform type definition:
+
+.. list-table::
+   :header-rows: 0
+
+   * - .. code-block::
+
+         mover WSF_GUIDED_MOVER
+            aero WSF_AERO
+            total_mass 250 kg
+            fuel_mass 150 kg
+            specific_impulse 90 sec
+            thrust_duration 30 sec
+         end_mover
+
+     - .. code-block::
+
+         processor targeting WSF_GUIDANCE_COMPUTER
+            guide_to_truth true
+         end_processor
+
+This weapon is designed to fly directly to the true location of it's target. It will accelerate while burning fuel, and detonate when it is 10 meters from it's target, with a high lethality.
+
+This weapon is now ready to fire. From warlock, the user may now directly fire this weapon using Warlock's weapon browser with the weapon's owning platform selected. Alternatively, to automate
+this process the user must define the circumstances under which the weapon will fire. This may require additional behaviors and/or advanced processing. An example implementation of engagement logic
+is provided in `Fire a Weapon at a Track`_.
+
+.. warning:: This is a simplistic model of a weapon provided for learning purposes only.
+
+Closer Look
+-----------
+
+.. note:: The following steps assume that the "simple_flight" scenario is present as discussed in :doc:`p2-7_primer_communications`
+
+Currently, the *simple_flight* scenario is setup such that "cargo-2" will adjust it's course to accommodate "cargo-1" after receiving a collision warning message over the air traffic control (`atc`) communications.
+However, it may be the case that while cargo-1 is friendly, cargo-2 is hostile. The following section will detail the necessary changes and additions to cause cargo-2 to fire a missile at cargo-1 instead of
+changing it's route.
+
+Adding Weapons
+""""""""""""""
+
+To implement a weapon and provide it to "cargo-2", complete the following steps:
+
+1. Open the *simple_flight* scenario in Wizard.
+2. Create the following files: *weapon.txt*, *cargo_aircraft_mil.txt*.
+3. Include *weapon.txt* and *cargo_aircraft.txt* in *cargo_aircraft_mil.txt* and include *cargo_aircraft_mil.txt* in *platform_laydown.txt*.
+4. Create a weapon in *weapon.txt* as follows:
+
+   .. code-block::
+
+      # weapon.txt - CUI
+      # A component of the simple_flight demo
+
+      weapon_effects PERFECT_HIT WSF_GRADUATED_LETHALITY
+         radius_and_pk 100 m 1
+      end_weapon_effects
+
+      platform_type SIMPLE_GUIDED_MISSILE WSF_PLATFORM
+         icon aim-120c
+
+         weapon_effects PERFECT_HIT
+
+         weapon self SIMPLE_GUIDED_MISSILE
+         end_weapon
+
+         processor targeting WSF_GUIDANCE_COMPUTER
+            guide_to_truth true
+         end_processor
+
+         processor fuse WSF_AIR_TARGET_FUSE
+            fuse_function_range 5 m
+         end_processor
+
+         mover WSF_GUIDED_MOVER
+            aero WSF_AERO
+            total_mass 250 kg
+            fuel_mass 150 kg
+            specific_impulse 90 sec
+            thrust_duration 30 sec
+         end_mover
+      end_platform_type
+
+      weapon SIMPLE_GUIDED_MISSILE WSF_EXPLICIT_WEAPON
+         launched_platform_type SIMPLE_GUIDED_MISSILE
+         location 0 5 0 m
+      end_weapon
+
+5. In *cargo_aircraft_mil.txt*, implement a new platform type `CARGO_AIRCRAFT_MIL`, deriving from `CARGO_AIRCRAFT` as follows:
+
+   .. code-block::
+
+      # cargo_aircraft_mil.txt - UNCLASSIFIED//FOUO
+      # A component of the simple_flight demo
+      # See AAA_ITAR.txt for distribution and usage.
+
+      include_once cargo_aircraft.txt
+      include_once weapon.txt
+      #include_once behaviors_mil.txt
+
+      platform_type CARGO_AIRCRAFT_MIL CARGO_AIRCRAFT
+
+         edit processor task_mgr
+            behavior_tree
+               sequence
+                  selector
+                     behavior_node all_clear
+                     behavior_node entity_detected
+                     behavior_node next_selector
+                  end_selector
+                  selector
+                     #behavior_node engage_track
+                     #behavior_node weapon_terminated
+                  end_selector
+               end_sequence
+
+            end_behavior_tree
+         end_processor
+
+         add weapon sgm SIMPLE_GUIDED_MISSILE
+            quantity 1
+         end_weapon
+
+      end_platform_type
+
+6. Notice the commented "include" file and "behavior nodes" in *cargo_aircraft_mil.txt*. These will be implemented in `Fire a Weapon at a Track`_.
+7. In `platform_laydown.txt` update the platform definition of cargo-2 to implement `CARGO_AIRCRAFT_MIL` as follows:
+
+   .. code-block::
+
+      platform cargo-2 CARGO_AIRCRAFT_MIL
+         ...
+      end_platform
+
+.. note:: As mentioned in `Quick Start`_ and alluded to in Step 6, this weapon has everything it needs once fired. To automate a weapon launch/fire, additional processing is needed, as implemented in the next section.
+
+Fire a Weapon at a Track
+""""""""""""""""""""""""
+
+From Warlock, the user may now directly fire this weapon at cargo-1 from Warlock's Weapon Browser. To fire the weapon manually, complete the following steps:
+
+1. Run *simple_flight* in Warlock.
+2. Advance the simulation to time `1000 s`.
+3. Select cargo-2.
+4. Open Warlock's Weapon browser from the `View` menu.
+5. When a track for cargo-1 is detected click `New Target` in the Weapon Browser.
+
+.. list-table::
+   :header-rows: 0
+
+   * - .. image:: ../images/weapon_track_cargo-1.png
+         :scale: 75%
+     - .. image:: ../images/weapon_select_cargo-1.png
+	     :scale: 70%
+
+6. To choose a target track for the sgm, use the cursor button in the Weapon Browser to select the track on the Map Display, or type the track number directly.
+7. Click `Fire` in the Weapon Browser to launch the sgm.
+8. Notice that a new platform was created to represent the sgm. It will seek its target and detonate when it arrives.
+
+   .. image:: ../images/weapon_launch_sgm.png
+	  :scale: 70%
+	  :align: center
+
+9. Notice that cargo-2 does not alter it's route, despite receiving warnings from cargo-1. This is due to the modified behavior tree, implemented in `CARGO_AIRCRAFT_MIL`\ s task processor.
+
+This may also be automated by altering the behavior of cargo-2. To automate this process, complete the following steps:
+
+1. Create a new file *behaviors_mil.txt*.
+2. Remove the comment in *cargo_aircraft_mil.txt* to include the new *behaviors_mil.txt* file.
+3. Add the following behavior definitions to *behaviors_mil.txt*:
+
+   .. code-block::
+
+      behavior engage_track
+         precondition
+            bool collisionExpected = PLATFORM.AuxDataBool("collisionExpected");
+            bool trackListEmpty = PLATFORM.TrackList("track_proc").Empty();
+            WsfWeapon wep = PLATFORM.WeaponEntry(0);
+
+            return (collisionExpected && !trackListEmpty &&
+                    wep.QuantityRemaining() > 0);
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            WsfLocalTrack track = plat.TrackList("track_proc")[0];
+            if (track.Target().IsValid())
+            {
+               writeln(plat.Name(), " Report: Engage");
+               writeln("\t- Weapon: ", plat.WeaponEntry(0).Name());
+               writeln("\t- Track: ", track.TrackId(), "\n");
+               plat.SetCurrentTarget(track);
+               plat.WeaponEntry(0).Fire(track);
+            }
+         end_execute
+      end_behavior
+
+
+   .. code-block::
+
+      behavior weapon_terminated
+         precondition
+            WsfPlatform plat = PLATFORM;
+            WsfTrack targetTrack = plat.CurrentTargetTrack();
+            return (targetTrack.IsValid() &&
+               (PLATFORM.TimeSinceWeaponLastTerminatedFor(targetTrack.TrackId()) > 0));
+
+         end_precondition
+
+         execute
+            WsfPlatform plat = PLATFORM;
+            writeln(plat.Name(), " Report: Weapon Terminated");
+            writeln("\t- Weapon: ", plat.WeaponEntry(0).Name());
+            writeln("\t- Track: ", plat.CurrentTargetTrack().TrackId());
+            writeln("\t- Time: ", TIME_NOW, " s\n");
+            plat.SetAuxData("collisionExpected", false);
+         end_execute
+      end_behavior
+
+4. Edit `cargo_aircraft_mil.txt` to remove the comments in the `CARGO_AIRCRAFT_MIL` task processor re-definition to enable the `engage_track` and `weapon_terminated` behaviors.
+
+With these additions, if *simple_flight* is simulated in Warlock or Mission, cargo-2 will remain on route despite warnings from cargo-1, and fire its sgm at it's track when cargo-1 is in range of it's `AIR_RADAR`.
+
+.. warning:: This is a simplistic model of a weapon provided for learning purposes only. Automated behaviors serve the same purpose - provided for learning only - and should not be considered as strategic
+             advice for real-world or simulated operations.
+
+Summary
+-------
+
+Weapons may be modeled simply, as demonstrated in this module. However, AFSIM supports modeling and simulating weapon behavior in much higher fidelity. Weapons may also include additional features like communications,
+sensors, and other platform parts as desired.
+
+Related Topics
+--------------
+
+:doc:`p2-3_primer_sensors_signatures`
+
+:doc:`p2-4_primer_tracks`
+
+:doc:`p2-5_primer_processors`
+
+

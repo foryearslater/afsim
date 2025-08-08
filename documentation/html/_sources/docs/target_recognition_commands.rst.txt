@@ -1,0 +1,162 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Target_Recognition_Commands:
+
+Target Recognition Commands
+===========================
+
+.. block:: _.target_recognition_commands
+
+.. parsed-literal::
+
+    average_aspect_ratio_ ...
+    detection_scene_analysis_factor_ ...
+    classification_scene_analysis_factor_ ...
+    identification_scene_analysis_factor_ ...
+
+    minimum_detection_pixel_count_ ...
+    minimum_classification_pixel_count_ ...
+    minimum_identification_pixel_count_ ...
+
+    detection_delay_time_ ...
+    classification_delay_time_ ...
+    identification_delay_time_ ...
+    transition_coast_time_ ...
+
+    detection_coast_time_ ...
+    classification_coast_time_ ...
+    identification_coast_time_ ...
+
+Overview
+--------
+
+Target recognition is enabled in :model:`WSF_IMAGE_PROCESSOR` when the :command:`WSF_IMAGE_PROCESSOR.target_recognition`
+flag is set to true. In this mode, the processor attempts to detect, classify, and/or identify all 'objects' (platforms) 
+in the currently evaluated image. These decisions are based on the number of pixels an object's platform occupies, using 
+the following Johnson's Criteria equations:
+
+* An object is declared **DETECTED** when the following criteria are met:
+    1. The object occupies the number of pixels specified in minimum_detection_pixel_count_.
+    2. The object passes the Johnson criteria for 'detection'.
+    3. The object has met these two criteria for the minimum time specified by detection_delay_time_.
+
+* An object is declared **CLASSIFIED** when the following criteria are met:
+    1. The object has passed the **DETECTED** state.
+    2. The object occupies the minimum number of pixels specified by minimum_classification_pixel_count_.
+    3. The object passes the Johnson criteria for 'classification'.
+    4. The object has met the latter two criteria for the minimum time specified by classification_delay_time_.
+
+* An object is declared **IDENTIFIED** when the following criteria are met:
+    1. The object has passed the **CLASSIFIED** state.
+    2. The object occupies the minimum number of pixels specified by minimum_identification_pixel_count_.
+    3. The object passes the Johnson criteria for 'identification'.
+    4. The object has met the latter two criteria for at least the time specified by identification_delay_time_.
+
+When an object is declared **DETECTED**, a track is emitted over the internal link(s) that
+represents the object. The track will continue to be updated and emitted as long as updates are received from the
+imaging sensor. The following additional information is included in the track to indicate the current state:
+
+==========   ===========================   ===========================   ===============
+State        AuxDataDouble("CLASSIFIED")   AuxDataDouble("IDENTIFIED")   Type()
+==========   ===========================   ===========================   ===============
+DETECTED     -1                            -1                            "UNKNOWN"
+CLASSIFIED   <time>                        -1                            <platform-type>
+IDENTIFIED   <time>                        <time>                        <platform-type>
+==========   ===========================   ===========================   ===============
+
+The aux_data variables **CLASSIFIED** and **IDENTIFIED** represent the most recent time the object was categorized
+in that state, with a value of -1 representing 'not in that state'.
+
+.. note::
+   In the current implementation, once an object reaches a given state, it will never be reset to a lower
+   state. It is the user's responsibility to check the data and determine if the information is usable.
+
+Commands
+--------
+
+.. command:: average_aspect_ratio <real-reference>
+   
+   Defines the average aspect ratio used when converting the raw pixel count from the pseudo-image into a number of line
+   pairs. If *AR* is the average aspect ratio defined by this command, and *PC* is the raw pixel count from an object in the
+   pseudo-image, the number of line pairs *LP* is defined to be:
+   : :math:`LP = \frac{\sqrt{PC / AR} } {2}\,` 
+    
+   **Default** 4.0
+
+.. command:: detection_scene_analysis_factor <real-reference>
+.. command:: classification_scene_analysis_factor <real-reference>
+.. command:: identification_scene_analysis_factor <real-reference>
+   
+   Defines the 'scene analysis factor' (SAF) in the Johnson criteria equation for detection, classification, or
+   identification, respectively.  The equation is:
+   
+   :math:`P(LP)=(LP/SAF)^{2.7+0.7(LP/SAF)} \Big / 1+(LP/SAF)^{2.7+0.7(LP/SAF)}`
+   
+   Where *LP* is the number of line pairs and *SAF* is the appropriate scene analysis function.
+    
+   **Defaults** detection: 1.0, classification: 4.0, identification: 6.4
+
+.. command:: minimum_detection_pixel_count <real-reference>
+.. command:: minimum_classification_pixel_count <real-reference>
+.. command:: minimum_identification_pixel_count <real-reference>
+   
+   Defines the minimum number of pixels an object must occupy in an image before it can possibly be detected,
+   classified, or identified, respectively. An object must pass the pixel count test and Johnson criteria test for a given
+   state.
+    
+   **Default** 0
+
+.. command:: detection_delay_time <time-reference>
+   
+   Defines the amount of time in which an object must meet the 'detection' criteria until it is declared as **DETECTED**.
+   During the delay time, detections that do not meet the 'detection' criteria will result in the state being reset back to
+   **UNDETECTED** unless the transition_coast_time_ is defined.
+    
+   **Default** 0 seconds
+
+.. command:: classification_delay_time <time-reference>
+   
+   Defines the amount of time in which an object must meet the 'classification' criteria until it is declared as
+   **CLASSIFIED**. During the delay time, detections that do not meet the 'classification' criteria will result in the
+   state being reset back to **DETECTED** or **UNDETECTED** (depending on the quality of the failed detections) unless the
+   transition_coast_time_ is defined.
+    
+   **Default** 0 seconds
+
+.. command:: identification_delay_time <time-reference>
+   
+   Defines the amount of time in which an object must meet the 'identification' criteria until it is declared as
+   **IDENTIFIED**. During the delay time, detections that do not meet the 'identification' criteria will result in the
+   state being reset back to **CLASSIFIED**, **DETECTED**, or **UNDETECTED** (depending on the quality of the failed
+   detections) unless the transition_coast_time_ is defined.
+    
+   **Default** 0 seconds
+
+.. command:: transition_coast_time <time-reference>
+   
+   Defines the amount of time the object can 'coast' without receiving an 'acceptable detection' while in a transition
+   period between states (as defined by detection_delay_time_, classification_delay_time_, and identification_delay_time_). 
+   An 'acceptable detection' is one that at least meets the detection criteria for the destination state.
+    
+   **Default** 0 seconds
+
+.. command:: detection_coast_time <time-reference>
+.. command:: classification_coast_time <time-reference>
+.. command:: identification_coast_time <time-reference>
+   
+   Defines the amount of time an object can remain in a state without receiving a detection that does not meet the Johnson
+   criteria for that state.
+    
+   **Default** 0 seconds
+
+   .. note::
+      This is currently an investigative capability and does not affect the produced track.

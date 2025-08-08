@@ -1,0 +1,452 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _guidance_program_types:
+
+Guidance Program Types
+----------------------
+
+This section defines the predefined guidance program types that may be referenced by :model:`WSF_GUIDANCE_COMPUTER`.
+
+Guidance programs are defined and used by the commands :command:`WSF_GUIDANCE_COMPUTER.program` and
+:command:`WSF_GUIDANCE_COMPUTER.use_program`.
+
+.. block:: guidance_program_types
+
+.. _guidance_program_types.null_program:
+
+NULL_PROGRAM
+============
+
+This program does nothing. It is typically used as a place-holder in a phase where no guidance is desired.
+
+Example:
+
+::
+   
+   phase LIFTOFF
+      program NULL_PROGRAM end_program
+      next_phase PITCH_OVER when speed > 100 m/s
+   end_phase
+
+.. _guidance_program_types.altitude_program:
+
+ALTITUDE_PROGRAM
+================
+
+This program is used to command the vehicle to climb or dive to a specified altitude and hold that altitude.
+This provides the same functionality as using :command:`WSF_GUIDANCE_COMPUTER.commanded_altitude` with the legacy guidance.
+ 
+The maximum rate of ascent and descent are defined by the phase commands :command:`WSF_GUIDANCE_COMPUTER.maximum_ascent_rate`
+and :command:`WSF_GUIDANCE_COMPUTER.maximum_descent_rate` respectively.
+
+.. command:: altitude <length-value> [ msl | agl ]
+
+   Specifies a commanded altitude. Typically used to climb or dive to a cruise altitude and hold the altitude. The
+   altitude reference tag ('**msl**', or 'above mean sea level'; '**agl**', or 'above ground level') may be omitted, in
+   which case '**msl**' is assumed.
+   
+   Specifying an altitude reference of '**agl**' is a crude mechanism for implementing terrain-following. When '**agl**'
+   is specified the mover will enforce an additional constraint that it always stays above the ground. However, no
+   look-ahead is performed (it only checks the height above the terrain directly under the platform), so it is possible
+   that the vehicle may make very abrupt changes if the terrain rises rapidly.
+ 
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.commanded_altitude`.
+   
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+      
+Example:
+
+::
+   
+   # The desired altitude is specified inside the program definition.
+   # This is perhaps clearer, but it prevents using the script command to alter altitude.
+   phase CRUISE
+      program INTERCEPT_PROGRAM end_program
+      program ALTITUDE_PROGRAM
+         altitude 10000 m
+      end_program
+   end_phase
+
+   # This does the same as above, but the desired altitude is specified as a phase command
+   # rather than a program command. This form allows the altitude to be altered via script command.
+   phase CRUISE
+      commanded_altitude 10000 m    # Altitude for the ALTITUDE_PROGRAM
+      
+      program INTERCEPT_PROGRAM end_program
+      program ALTITUDE_PROGRAM end_program
+   end_phase
+
+.. _guidance_program_types.attitude_program:
+
+ATTITUDE_PROGRAM
+================
+
+This program is used to orient the vehicle to some desired orientation. It computes a commanded angle rate necessary to achieve whatever 
+commands are specified.
+
+It can also be used to command a continuous rotation for cases such as when some space objects continuously
+rotate to balance heating due to the Sun. This is accomplished by specifying a rate without a corresponding target angle.
+
+The program will signal complete when all commanded angles have been reached AND no bare rate commands were specified.
+
+.. note::
+   This does not affect performance and does not require any accelerations to be imposed. See the overview in
+   :model:`WSF_GUIDED_MOVER`.
+   
+.. command:: yaw <angle-value>
+.. command:: pitch <angle-value>
+.. command:: roll <angle-value>
+
+   Specifies a target orientation angle relative to the wind coordinate system (aligned with the velocity vector with no angle
+   of attack or roll). The corresponding rate command specifies the angular rate to be applied to reaching the target angle.
+
+   **Default:** Not specified
+
+   .. note::
+      The target angle is relative to the unrotated wind coordinate system - not the current orientation!
+   
+   .. note::
+      'yaw' and 'yaw_fixed' cannot be specified together, and 'pitch' and 'pitch_fixed' cannot be specified together. If both
+      are specified then the last one specified is used.
+   
+.. command:: yaw_fixed <angle-value>
+.. command:: pitch_fixed <angle-value>
+
+   Specifies a target orientation angle relative to the North-East-Down coordinate system.
+   The corresponding rate command specifies the angular rate to be applied to reaching the target angle.
+
+   **Default:** Not specified
+   
+   .. note::
+      'yaw' and 'yaw_fixed' cannot be specified together, and 'pitch' and 'pitch_fixed' cannot be specified together. If both
+      are specified then the last one specified is used.
+      
+.. command:: yaw_rate <angle-rate-value>
+.. command:: pitch_rate <angle-rate-value>
+.. command:: roll_rate <angle-rate-value>
+
+   These commands serve two purposes depending on the context:
+   
+   * If specified with a corresponding target angle, it specifies the rate to be used toward achieving the target angle.
+   * If specified without a corresponding target angle, the commanded rate will simply be set to that value (effecting
+     continuous rotation)
+   
+   **Default:** 10 deg/sec
+
+.. command:: reset
+
+   This is the same as setting the yaw, pitch and roll to zero. The rate commands may be used to specify the rate at which the
+   angles are reset.
+
+Example:
+
+::
+
+   phase ROLL_RIGHT
+      program ATTITUDE_PROGRAM
+        roll 50 deg  roll_rate 5 deg/sec
+      end_program
+      next_phase ROLL_LEFT when ATTITUDE_PROGRAM complete
+   end_phase
+   phase ROLL_LEFT
+      program ATTITUDE_PROGRAM
+        roll -50 deg  roll_rate 5 deg/sec
+      end_program
+      next_phase ROLL_RESET when ATTITUDE_PROGRAM complete
+   end_phase
+   phase ROLL_RIGHT
+      program ATTITUDE_PROGRAM
+        reset  roll_rate 10 deg/sec
+      end_program
+      next_phase COAST when ATTITUDE_PROGRAM complete
+   end_phase
+   phase COAST
+      ...
+   end_phase
+
+.. _guidance_program_types.flight_path_angle_program:
+
+FLIGHT_PATH_ANGLE_PROGRAM
+=========================
+
+.. note::
+   Use the LEGACY_FLIGHT_PATH_ANGLE_PROGRAM if you want the behavior that exists in the legacy program. This
+   program is used for orbital launch vehicles.
+   
+This program is typically used by orbital launch vehicles to pitch the vehicle over to its ascent trajectory.
+
+This program is very sensitive. The termination conditions of this program determine the initial conditions
+for the powered ballistic trajectory that typically follows. Small changes here can make large differences in
+the orbit altitude and even the ability to orbit.
+
+This program should be invoked as early as possible after liftoff. The 'next_phase' command in the lift off phase
+should specify a vertical_speed test with a speed sufficient for the maneuver to be made. If it is too low the
+vehicle may crash or the orbit altitude may be too low. If it is too high burnout will occur at a high altitude
+before orbital velocity can be reached. A reasonable value is 50 m/s, but you may be able to go as low as 40 m/s.
+Higher values may be necessary for some vehicles, but rarely over 100 m/s.
+
+Most of the launch vehicles in demos/space_operations/launch_vehicles include a :command:`weapon_tools`
+input file named tune.txt that assist in the tuning process. It can be used to help determines the 'optimum' pitch rate
+that should be used in this program, as well as the vertical_speed test for the liftoff phase.
+
+.. command:: flight_path_angle <angle-value>
+
+   Specifies the target flight path angle at which the pitch over is declared complete in the range (0, 90).
+   If not specified, the first of the following that returns a value is used:
+   
+   * The value of the 'commanded_flight_path_angle' from the current phase.
+   * The value of the commanded flight path angle from the launch computer.
+   
+   **Default:** Not specified.
+
+.. command:: pitch_rate <angle-rate-value>
+
+   Specifies the rate at which the pitch maneuver is to take place. The actual pitch rate will be phased in according to
+   time_constant_ below.
+
+   **Default:** 0.15 deg/sec
+   
+.. command:: time_constant <time-value>
+
+   Specifies the exponential time constant for phasing in the pitch specified pitch rate. The pitch rate will achieve its
+   full value approximately 4 time constants after the program starts.
+   
+   **Default:** 1 second
+   
+Example:
+
+::
+
+   phase LIFT_OFF
+      program NULL_PROGRAM end_program
+      next_phase when speed > 50 m/s
+   end_phase
+   phase PITCH_OVER
+      program FLIGHT_PATH_ANGLE_PROGRAM
+         flight_path_angle 86 deg
+         pitch_rate 0.15 deg/sec
+      end_program
+      next_phase ASCENT when program FLIGHT_PATH_ANGLE_PROGRAM complete
+   end_phase
+   phase ASCENT
+      ...
+   end_phase
+
+.. _guidance_program_types.legacy_flight_path_angle_program:
+
+LEGACY_FLIGHT_PATH_ANGLE_PROGRAM
+================================
+
+This program implements the flight path angle guidance that exists in the legacy guidance model.
+
+.. command:: flight_path_angle <angle-value>
+
+   Specifies the desired flight path angle in the range (-90, 90).
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.commanded_flight_path_angle`.
+   
+   .. note::
+
+      This command must **NOT** be used if the value needs to be set or modified by script or originates from
+      the launch computer.
+   
+.. _guidance_program_types.gravity_bias_program:
+
+GRAVITY_BIAS_PROGRAM
+====================
+
+This program modifies (e.g.: adds to) the vertical component of the commanded acceleration. It is typically used to prevent the 
+trajectory from sagging due to the downward pull of gravity.
+
+.. command: g_bias <real-value>
+   
+   The gravity bias factor. Values greater that zero will attempt apply a commanded vertical acceleration in the upwards direction
+   while a negative value will result in a vertical commanded acceleration in the downward direction. If a vehicle is already
+   traveling with a flight path angle of zero, a value of 1.0 should eliminate the effects of gravity and result in continued
+   level flight (assuming the aerodynamics or thrust vectoring can provide the required acceleration).
+   in level flight.
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.gee_bias` (nominally 1.0)
+
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+
+Example:
+
+::
+
+   phase INTERCEPT
+      program INTERCEPT_PROGRAM
+         proportional_navigation_gain 5
+      end_program
+      program GRAVITY_BIAS_PROGRAM
+      end_program
+   end_phase
+
+.. _guidance_program_types.gravity_turn_program:
+   
+GRAVITY_TURN_PROGRAM
+====================
+
+This program sets commanded vertical acceleration to zero. Any commanded horizontal acceleration set by a preceding program
+(e.g. INTERCEPT_PROGRAM) is left unmodified.
+
+.. _guidance_program_types.intercept_program:
+
+INTERCEPT_PROGRAM
+=================
+
+This program provides guidance to intercept the current target using proportional and velocity pursuit navigation. This uses the
+same algorithm as the legacy intercept guidance.
+
+.. note::
+
+   In general the use of this program should be followed by the GRAVITY_BIAS_PROGRAM, ALTITUDE_PROGRAM or
+   LEGACY_FLIGHT_PATH_ANGLE_PROGRAM to achieve the desired result.
+      
+.. command:: proportional_navigation_gain <real-value>
+   
+   Specifies the gain for proportional navigation. A value of zero indicates proportional navigation will not be performed.
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_gain` (nominally 3.0).
+   
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+
+.. command:: proportional_navigation_limit_angle <angle-value>
+   
+   Specifies the 3D aspect angle of the target with respect to the weapon at which the navigation method will switch
+   between proportional and velocity pursuit. Proportional navigation will be used if the target aspect angle is less than
+   or equal to this value, otherwise velocity pursuit will be used.
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_limit_angle` (nominally 30 degrees).
+   
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+
+.. command:: proportional_navigation_method  [ pure | augmented ]
+   
+   Specifies whether additional acceleration should be commanded because of current target acceleration.
+   
+   **pure** indicates target acceleration is ignored. **augmented** indicates target acceleration should be considered.
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.proportional_navigation_method` (nominally 'pure')
+
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+   
+.. command:: velocity_pursuit_gain <real-value>
+
+   Specifies the gain for velocity pursuit navigation. A value of zero indicates velocity pursuit navigation will not be
+   performed.
+   
+   **Default:** The value of the current phase command :command:`WSF_GUIDANCE_COMPUTER.velocity_pursuit_gain` (nominally 10.0).
+   
+   .. note:: This command must **NOT** be used if the value needs to be set or modified by script.
+
+Example:
+
+::
+
+   phase INTERCEPT
+      program INTERCEPT_PROGRAM
+         proportional_navigation_gain 5
+      end_program
+      program GRAVITY_BIAS_PROGRAM
+      end_program
+   end_phase
+       
+.. _guidance_program_types.orbit_insertion_program:
+
+ORBIT_INSERTION_PROGRAM
+=======================
+
+This program is used to guide an orbital launch vehicle into a circular orbit. When the vehicle comes close to apogee
+(flight path angle is less than the value defined by the fine_adjustment_threshold_) it will manage the altitude so the
+platform can achieve orbit. This means:
+
+* If the current speed is less than the speed required to maintain orbit at the current altitude, the program will attempt
+  to maintain the current altitude so the platform can continue to accelerate towards the required speed.
+* If the current speed is in excess of the speed required to maintain orbit at the current altitude, the program will attempt
+  to increase the altitude to the point where the speed is that required for orbit.
+  
+When the program detects that the speed and altitude meet the conditions necessary for orbit then it will declare orbit and
+command the engines to stop.
+
+The user should include a next_phase statement in the phase that uses this program, and test for completion of the program.
+
+.. command:: ascent_g_bias <real-value>
+
+   The gravity bias factor to be applied during ascent. Ascent is defined to be when the flight path angle is greater than
+   the value defined in coarse_adjustment_threshold_ (default of 0.5 degrees).
+
+   **Default:** 0
+   
+.. command:: maximum_lateral_acceleration <acceleration-value>
+
+   The maximum lateral acceleration that will be applied to adjust the trajectory during orbit insertion.
+   This does not include any acceleration imposed by gravity.
+
+   Because the platform is outside the atmosphere at this point, thrust vectoring must satisfy all the requirements.
+   
+   **Default:** 0.1 g
+   
+.. command:: minimum_insertion_altitude <length-value>
+
+   The program will not attempt orbit insertion when the altitude is less than this value.
+   
+   The default is defined as 100 km because maintaining orbit below this altitude is not possible due to atmospheric drag.
+   
+   **Default:** 100 km
+
+.. command:: coarse_adjustment_threshold <angle-value>
+
+   Defines the flight path angle at which the platform is no longer considered to be in ascent. All gravity bias is disabled when
+   the flight path angle is less this value but greater than the fine_adjustment_threshold_. This allows the ascending
+   platform to naturally settle towards a flight path angle of zero.
+   
+   **Default:** 0.5 degrees
+
+.. command:: fine_adjustment_threshold <angle-value>
+
+   Defines the flight path angle at which 'fine adjustment' occurs. When the absolute value of the flight path angle is less than
+   this value then program will actively manage the altitude so as to achieve orbit. This may mean holding the altitude to allow
+   the speed to build to that required to maintain orbit, or if the speed is already too great, let the altitude increase.
+   
+   **Default:** 0.05 degrees
+   
+.. command:: show_orbit <boolean-value>
+
+   Write diagnostic information about the orbit conditions when orbit conditions are satisfied.
+   
+   **Default:** false
+   
+.. command:: on_injection { eject_stage | continue }
+
+   Additional actions to take when the program declares orbit conditions are satisfied.
+   
+   * **eject_stage** causes the current stage to be ejected (see :method:'WsfGuidanceComputer::EjectStage').
+   * **continue** simply marks the program complete.
+   
+   **Default:** eject_stage
+   
+   .. note:: This is not typically used and may be removed in a future release.
+
+Example:
+
+::
+   
+   phase ORBIT_INSERTION
+      program ORBIT_INSERTION_PROGRAM
+         # ... using default arguments...
+      end_program
+      next_phase IN_ORBIT when ORBIT_INSERTION_PROGRAM complete
+   end_phase
+   phase IN_ORBIT
+      ...
+   end_phase

@@ -1,0 +1,98 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_FIRES_LAUNCH_COMPUTER
+-------------------------
+
+.. model:: launch_computer WSF_FIRES_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_FIRES_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      fires_table_ ... end_fires_table
+   end_launch_computer
+
+.. attention::
+
+   This launch computer requires the associated weapon to define a :command:`WSF_EXPLICIT_WEAPON.launched_platform_type`.
+   As documented in :command:`WSF_IMPLICIT_WEAPON<WSF_IMPLICIT_WEAPON.launched_platform_type>`, this is required even for implicit weapons that do not create new platforms.
+   The name of the *launched_platform_type* must match the *SystemMunition* name of the fires_table_ as described below.
+
+Overview
+========
+
+:model:`WSF_FIRES_LAUNCH_COMPUTER` implements a launch computer for a short-range, indirect fire munition.  This launch
+computer is used by the :model:`WSF_FIRES_MOVER` to acquire characteristic trajectory values for max. height, and
+time-of-flight (given range), with which to compute a full trajectory.  Discrete values for these values are stored in
+fires_table_.  If one has access to U.S. Army's FireSim tables for desired systems and munitions, these can
+be used directly (see fires_table_, below).  Otherwise the tables can be generated from existing
+definitions.
+
+.. note::
+
+   Multiple tables, corresponding with multiple systems for the same munition, can be used in the same
+   launch computer definition.
+
+.. block:: WSF_FIRES_LAUNCH_COMPUTER
+
+Commands
+========
+
+.. command:: fires_table   SystemMunition ... end_fires_table
+
+   Define a fires table with multiple entries for range, maximum ordinate, and time of flight.  Ranges and maximum
+   ordinates are measured in meters; times of flight are measured in seconds.  Each entry (1, 2, ... n) for range, max.
+   ord. and time-of-flight represents a discrete possible trajectory.
+
+   .. command:: SystemMunition <string-value>
+
+      Provide the System+Munition type to which this table refers.  This name should be the same as the launched platform
+      type of the launching weapon.
+
+   .. command::  range_values  <range-value-1> <range-value-2> ... <range-value-n> end_range_values
+
+      Define a set of characteristic trajectory values for range.
+
+   .. command::  maximum_ordinate_values  <maximum-ordinate-1> <maximum-ordinate-2> ... <maximum-ordinate-n> end_maximum_ordinate_values
+
+      Define a set of characteristic trajectory values for maximum ordinate.
+
+      .. note::
+
+         Either of elevation_angle_values or maximum_ordinate_values must be defined.
+
+   .. command::  elevation_angle_values  <elevation-angle-1> <elevation-angle-2> ... <elevation-angle-n> end_elevation-angle_values
+
+      Define a set of characteristic trajectory values for initial elevation angle.
+
+      .. note::
+
+         Either of elevation_angle_values or maximum_ordinate_values must be defined.
+
+   .. command::  time_of_flight_values  <time-of-flight-value-1> <time-of-flight-value-2> ... <time-of-flight-value-n> end_time_of_flight_values
+
+      Define a set of characteristic trajectory values for time of flight.
+
+Example
+=======
+
+::
+
+   fires_table FIRES_60MM_MORTAR
+      maximum_ordinate_values 2581.65 2581.3  2548.23 2510.96 2468.58 2419.26 2364.94 2300.47 2226.98 2129.38 2038.33
+      end_maximum_ordinate_values
+      range_values            1596.07 1868.87 2063.09 2272.4  2458.37 2675.11 2850.41 3075.58 3277.17 3359.59 3680.16
+      end_range_values
+      time_of_flight_values   46.21     46.21   45.56   45.56   44.66   44.66   43.51   43.51   42.76   40.81   40.81
+      end_time_of_flight_values
+   end_fires_table

@@ -1,0 +1,176 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. |TRACK_MSG| replace:: :class:`WsfTrackMessage`
+.. |TRACK_DROP_MSG| replace:: :class:`WsfTrackDropMessage`
+.. |TASK_ASSIGN_MSG| replace:: :class:`WsfTaskAssignMessage`
+.. |STATUS_MSG| replace:: :class:`WsfStatusMessage`
+
+.. _message-data:
+
+message-data
+------------
+
+This is documentation for the <**message-data**> field referenced in the :command:`csv_event_output` and :command:`event_output` documentation.
+
+.. contents::
+   :local:
+   :depth: 1
+
+Possible Signatures
+===================
+
+.. include:: event/print_track_data_format.txt
+
+.. note::
+   The format varies depending on the message type.
+   All of the <**track-data**> prints if :command:`event_output.print_track_in_message` is enabled; otherwise, a brief form of the **<track-data>** is printed.
+
+.. table:: <message-data> Possible Signatures
+   :align: left
+
+   ================================================================================================================================================================ ================================================================================
+   Condition                                                                                                                                                        Signature
+   ================================================================================================================================================================ ================================================================================
+   If the message is a |TRACK_MSG| AND the track exists OR the message is a |TASK_ASSIGN_MSG| {                                                                     CSV:
+
+                                                                                                                                                                    .. parsed-literal::
+
+                                                                                                                                                                       <track\ :sub:`id`\ >,\ |CSV_TRACK_DATA|
+
+                                                                                                                                                                    EVT:
+
+                                                                                                                                                                       TrackId: <track\ :sub:`id`\ >
+
+   If :command:`event_output.print_track_in_message`                                                                                                                .. parsed-literal::
+
+                                                                                                                                                                       |EVT_TRACK_DATA|
+
+   Else                                                                                                                                                             .. parsed-literal::
+
+                                                                                                                                                                       |EVT_TRACK_DATA_BRIEF|
+   }
+
+   If the message is a |TRACK_DROP_MSG|                                                                                                                             CSV:
+
+                                                                                                                                                                       <track\ :sub:`id`\ >,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+                                                                                                                                                                    EVT:
+
+                                                                                                                                                                       TrackId: <track\ :sub:`id`\ >
+
+   If the message is a |STATUS_MSG|                                                                                                                                 CSV:
+
+                                                                                                                                                                       <status>,<request\ :sub:`id`\ >,<system\ :sub:`name`\ >,<platform\ :sub:`name`\ >,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+                                                                                                                                                                    EVT:
+
+                                                                                                                                                                       Status: <status> RequestId: <request\ :sub:`id`\ > System: <system\ :sub:`name`\ > Platform: <platform\ :sub:`name`\ >
+
+   Else                                                                                                                                                             All other messages have their own way of printing. The appropriate printing function will execute if it exists; otherwise nothing will be printed.
+   ================================================================================================================================================================ ================================================================================
+
+Signature Elements
+==================
+
+.. table:: <message-data> Signature Elements
+   :align: left
+
+   ================================================================================ ================================================================================ ================================================================================
+   Condition                                                                        Field                                                                            Description
+   ================================================================================ ================================================================================ ================================================================================
+   For |TRACK_MSG|\ , |TRACK_DROP_MSG|\ , and |TASK_ASSIGN_MSG|                     <track\ :sub:`id`\ >                                                             The ID of the track within the message
+
+                                                                                    <track-data>                                                                     See **<track-data>** table below
+
+   For |STATUS_MSG| {
+   If the message has a request                                                     <request\ :sub:`id`\ >
+   If the message has a system                                                      <system\ :sub:`name`\ >
+   If the message has an associated platform                                        <platform\ :sub:`name`\ >                                                        .. note::
+                                                                                                                                                                        This platform is not the platform who sent the message.
+   }
+
+   For all other messages                                                           Not applicable
+   ================================================================================ ================================================================================ ================================================================================
+
+.. include:: event/print_location_data_breakdown.txt
+.. include:: event/print_track_data_breakdown.txt
+
+Example Output
+==============
+
+.. admonition:: Examples
+
+   from heatmap/heatmap_commander_demo extracted from **MESSAGE_QUEUED** message
+   (for |TRACK_MSG|)
+
+   * csv_event_output Example::
+
+      ,,,,ew_radar.1,2.700000e+02,2.700000e+02,0,5.000000e-01,air,M,,,red_1,STRIKER,red,-1.630000e+01,4.972858e+01,6.00000000e+00,-3.09694815e+06,5.28277976e+06,-1.77779023e+06,-1.624251e+01,5.076280e+01,1.06680000e+04,-3.19805944e+06,5.23628797e+06,-1.77463341e+06,L,3,,,,-1.624251e+01,5.076280e+01,1.06680000e+04,-3.19805944e+06,5.23628797e+06,-1.77463341e+06,0.000000e+00,2.572222e+02,4.709940e+00,2.572222e+02,4.709940e+00,1.113326e+05,1.515836e+00,8.723217e-02,1.113326e+05,1.515836e+00,8.723217e-02,,,,,,,,0,,,
+
+   * event_output Example::
+
+      TrackId: ew_radar.1
+      Start_Time: 00:04:30.0 Update_Time: 00:04:30.0 Update_Count: 0 Quality: 0.5 Domain: air Type: M
+      Target_Truth: Name: red_1 Type: STRIKER Side: red
+      Originator: LLA: 16:18:00.00s 49:43:42.88e 6 m
+      Track: LLA: 16:14:33.02s 50:45:46.08e 10668 m Flags: L3
+      Truth: LLA: 16:14:33.02s 50:45:46.08e 10668 m  Difference: 0 m
+      Track: Vel: 257.222 m/s Hdg: 269.86 deg  Truth: Vel: 257.222 m/s Hdg: 269.86 deg
+      Track: Range: 111333 m Bearing: 86.851 deg Elevation: 4.99804 deg
+      Truth: Range: 111333 m Bearing: 86.851 deg Elevation: 4.99804 deg
+
+.. admonition:: Examples
+
+   from heatmap/heatmap_commander_demo extracted from **MESSAGE_QUEUED** message
+   (for |TRACK_DROP_MSG|)
+
+   * csv_event_output Example::
+
+      ,,,,ew_radar.1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+   * event_output Example::
+
+      TrackId: ew_radar.1
+
+.. admonition:: Examples
+
+   from heatmap/heatmap_commander_demo extracted from **MESSAGE_QUEUED** message
+   (for |TRACK_DROP_MSG|)
+
+   * csv_event_output Example::
+
+      SYSTEM_TURNED_ON,,ew_radar,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+   * event_output Example::
+
+      Status: SYSTEM_TURNED_ON System: ew_radar
+
+.. admonition:: Examples
+
+   from heatmap/heatmap_commander_demo extracted from **MESSAGE_QUEUED** message
+   (for |TASK_ASSIGN_MSG|)
+
+   * csv_event_output Example::
+
+      ,,,,flight_lead.1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+   * event_output Example::
+
+      TrackId: flight_lead.1
+      Start_Time: 00:04:30.0 Update_Time: 00:04:30.0 Update_Count: 0 Quality: 0.5 Domain: air Type: P
+      Target_Truth: Name: red_1 Type: STRIKER Side: red
+      Originator: LLA: 16:18:00.00s 49:43:42.88e 6 m
+      Track: LLA: 16:14:33.02s 50:45:46.08e 10668 m Flags: L3
+      Truth: LLA: 16:14:33.22s 50:44:19.48e 10668 m  Difference: 2576.16 m
+      Track: Vel: 257.222 m/s Hdg: 269.866 deg  Truth: Vel: 257.222 m/s Hdg: 269.866 deg
+      Track: Range: 111333 m Bearing: 86.851 deg Elevation: 4.99804 deg
+      Truth: Range: 108775 m Bearing: 86.7726 deg Elevation: 5.13919 deg

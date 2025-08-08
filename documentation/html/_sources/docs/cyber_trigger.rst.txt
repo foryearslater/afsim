@@ -1,0 +1,138 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+cyber_trigger
+-------------
+
+Navigation: :ref:`cyber_overview`
+
+.. command:: cyber_trigger <type> <base_type> ... end_cyber_trigger
+    :block:
+    
+    .. parsed-literal::
+    
+     cyber_trigger <type> <base_type>
+     
+         extrapolated_trigger_ <boolean-value>
+         execute_trigger_ <boolean-value>
+         
+         # Defines the time intervals over which this trigger can potentially execute.
+         # Repeat as necessary.
+         
+         update_interval_
+            from <random_time_value> to <random_time_value> every <random_time_value>
+            from <random_time_value> every <random_time_value>
+            to <random_time_value> every <random_time_value>
+            every <random_time_value>
+         end_update_interval
+         
+         script bool :command:`cyber_trigger.OnEvaluate` ...
+         script void :command:`cyber_trigger.OnExecute` ...
+     
+     end_cyber_trigger
+     
+<type>
+   The name of the cyber_trigger being defined.
+   
+<base_type>
+   The name of an existing cyber_trigger type or a pre-defined trigger type.
+   
+Instantiation on a platform type:
+
+.. parsed-literal::
+
+    platform_type <type> <base_type>
+         cyber_trigger <name> <type>
+            ...
+         end_cyber_trigger
+    end_platform_type
+    
+Adding cyber_trigger to a platform:
+ 
+.. parsed-literal::
+ 
+    platform <name> <type>
+         add cyber_trigger <name> <type>
+            ...
+         end_cyber_trigger
+    end_platform
+    
+Editing a cyber_trigger on a platform:
+
+.. parsed-literal::
+
+    platform <name> <type>
+         edit cyber_trigger <name>
+            ...
+         end_cyber_trigger
+    end_platform
+    
+Deleting a cyber_trigger on a platform:
+
+.. parsed-literal::
+
+    platform <name> <type>
+         delete cyber_trigger <name>
+            ...
+         end_cyber_trigger
+    end_platform    
+
+Overview
+========
+
+The cyber_trigger_ object provides an inheritable, user defined method of scheduling events. It is similar to the :command:`execute` capability already present in the AFSIM core, but expands on it's capabilities in various ways. Unlike the ::command:`execute` call, triggers are AFSIM objects, and may be maintained more easily by defining and using these objects via multiple scenario input files without redefinition. In addition, these objects contain user defined logic for when it should execute, and how it executes, as separate script methods. This allows for more complex behavior. The method in which time intervals are defined for usage with cyber_trigger_ allows for more robust and user definable event execution, or re-execution, if wanted. Distribution draws are available for use with the interval definitions, allowing for randomness in the execution and use of the cyber_trigger_. Unlike :command:`execute`, any constant re-evaluation time intervals defined for a cyber_trigger_ occur at the exact times the user specified.
+
+A cyber_trigger_ can be defined from the global or platform scope. Global triggers are not functional in their default state, unless specified to do so by the user. Otherwise, they are assumed to be used as type definitions. Platform based triggers are tied to the platform itself, and have the same lifetime of the platform object - they only exist and function as long as the platform exists.
+
+The main purpose of the cyber_trigger_ is to allow :command:`cyber_attack` usage. Combining a :command:`cyber_attack` with a cyber_trigger_ allows for embedded cyber attacks to be launched when certain criteria is met. However, the cyber_trigger_ can be used throughout AFSIM, and is not restricted solely to cyber functionality.
+
+Commands
+========
+
+.. command:: extrapolated_trigger <boolean-value>
+
+   Typically, triggers only execute once after the evaluation criteria is met. By setting this command to true, this trigger will continue to evaluate during user defined time intervals. Note that the trigger must still meet its evaluation criteria to execute if indicated to extrapolate. (OnEvaluate return of true)
+   
+   **Default**: false
+   
+.. command:: execute_trigger <boolean-value>
+
+   Indicates whether or not a globally defined trigger should attempt evaluation and execution during the simulation.
+   
+   **Default**: false
+   
+.. command:: update_interval ... end_update_interval
+
+   This command block allows for the user specification of the time intervals over which this trigger should attempt evaluation and execution. Overlapping intervals are allowed, and regardless of the number of overlapping intervals, the next evaluation that is scheduled will take the earliest occurring time from any such overlapping intervals. In addition, gaps are allowed in intervals, such that the user may define periods of time where triggers should not evaluate or execute.
+   
+   An interval can potentially have three parts - **from**, **to**, and **every**. **from** defines the time that evaluation and execution can begin. **to** defines the time that evaluation and execution will stop. **every** defines how often within the interval the trigger will attempt evaluation and execution. Note that these intervals are not checked for validity, so that the user may define an interval that will never evaluate or execute. Not every part of the time interval is required, in that only the **every** value must be defined. If the user omits the **from** value, it is assumed this value is implicitly set from time 0, the beginning of the simulation. If the **to** value is omitted, it is assumed this value is implicitly set for a very large value, such that the trigger will evaluate to the end of the simulation.
+   
+   The user must define at least one interval for a trigger to be valid.
+   
+.. command:: OnEvaluate (script)
+
+   .. parsed-literal::
+   
+      script bool OnEvaluate()
+         ...
+      end_script
+      
+   Defines the evaluation script for a trigger. This script must return a value or true or false, where true indicates triggering, followed by a subsequent and immediate execution of the trigger. False indicates that the criteria was not meant for this trigger to activate, and will attempt to re-evaluate by calling this method again in the future (assuming the user defined time interval allows it to do so). The user may run any script as needed in this context, as long as a boolean value is returned.
+   
+.. command:: OnExecute (script)
+
+   .. parsed-literal::
+   
+      script void OnExecute()
+         ...
+      end_script
+      
+   Defines the execution script for a trigger. Once a trigger has evaluated to true, this execution script will be called immediately.

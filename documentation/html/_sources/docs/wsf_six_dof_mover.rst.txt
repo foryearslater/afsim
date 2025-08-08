@@ -1,0 +1,267 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SIX_DOF_MOVER
+-----------------
+
+**Script Class:** :class:`WsfSixDOF_Mover`
+
+.. model:: mover WSF_SIX_DOF_MOVER
+
+.. parsed-literal::
+
+   mover <name> :model:`WSF_SIX_DOF_MOVER`
+
+      // `SixDOF Vehicle Type Commands`_
+      autopilot_no_control_ ...
+      enable_controls_ ...
+      enable_thrust_vectoring_ ...
+      engines_on_ ...
+      follow_vertical_track_ ...
+      ignore_all_crashes_ ...
+      six_dof_alt_ ...
+      six_dof_ned_heading_ ...
+      six_dof_ned_pitch_ ...
+      six_dof_ned_roll_ ...
+      six_dof_position_ ...
+      six_dof_set_velocity_ned_fps_ ...
+      produces_launch_smoke_ ...
+      throttle_afterburner_ ...
+      throttle_full_ ...
+      throttle_idle_ ...
+      wash_in_conditions_ ...
+
+      // `Route Commands`_
+      route_ ... end_route
+      use_route_ ... 
+
+      // Script Methods -- see :class:`WsfSixDOF_Mover`
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_SIX_DOF_MOVER` is a base class for time-stepped, physics-based movers operating in three translational and three rotational degrees of freedom. These movers offer the ability to produce higher-order dynamics than those available to other movers. Two flavors of SixDOF mover are available: the :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` and the :model:`WSF_POINT_MASS_SIX_DOF_MOVER`.
+
+:model:`WSF_RIGID_BODY_SIX_DOF_MOVER` is a direct descendant of the :model:`WSF_P6DOF_MOVER`, and retains nearly all of its functionality. It is a true 6DOF mover, complete with three axes of rotational inertia. :model:`WSF_POINT_MASS_SIX_DOF_MOVER` is intended to provide a simpler model while retaining useful features such as sub-objects and sequencers. It requires far less tuning to be useful, but can still be fine-tuned to match desired characteristics.
+
+.. note::
+
+   Due to its increased fidelity, the :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` involves significantly more computations than most 3DOF models. It also updates internally at a comparatively high update rate (100 Hz).
+	
+	:model:`WSF_POINT_MASS_SIX_DOF_MOVER` is less numerically sensitive, and so updates at 20 Hz. A single point-mass simulation frame is not much faster than a rigid-body simulation frame, but since fewer frames are needed, it is a much less expensive mover.
+	
+	One strategy an analyst may pursue is to produce rigid-body and point-mass version of a vehicle, using the rigid-body representation where necessary and using the point-mass model for less critical movers and during less interesting phases of flight.
+	
+   Scenarios using :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` **must** set :command:`minimum_mover_timestep`, and set it to no larger than 0.01 seconds -- smaller than the :command:`realtime` default minimum timestep of 0.05 seconds. This is necessary to allow guidance computers and sequencers to update in step with the SixDOF vehicle when using the explicit :command:`realtime` mode or when using real-time applications like Warlock.
+
+.. block:: WSF_SIX_DOF_MOVER
+
+SixDOF Vehicle Type Commands
+============================
+
+.. command:: vehicle_type <string>
+   
+   This defines the type of object used by the mover. See :command:`WSF_POINT_MASS_SIX_DOF_MOVER.vehicle_type` and :command:`WSF_RIGID_BODY_SIX_DOF_MOVER.vehicle_type`.
+   
+.. command:: autopilot_no_control <boolean-value>
+   
+   This will command the autopilot to "zero" all controls, which will center the stick and rudder and pull back throttle(s) to zero (idle). It is similar to enable_controls_ but is commanding the autopilot, rather than the controls themselves.   
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.SetAutopilotNoControl`
+  
+.. command:: enable_controls <boolean-value>
+   
+   This enables/disables control inputs from any source (autopilot, external manual pilot, etc.). Controls are enabled by default, so this command is typically used to disable controls at the start. This is often used to allow a weapon to drop ballistically and without control inputs as it is released from the carrying aircraft and then calling the script method :method:`WsfSixDOF_Mover.EnableControls` with true to establish control input after the weapon is safely clear of the aircraft.
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.EnableControls`
+  
+.. command:: enable_thrust_vectoring <boolean-value>
+   
+   Indicates whether thrust vectoring is enabled or not.
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.EnableThrustVectoring`
+  
+.. command:: engines_on <boolean-value>
+   
+   Indicates whether the engines should be on or off when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfSixDOF_Mover.StartupEngines` or :method:`WsfSixDOF_Mover.ShutdownEngines`
+  
+.. command:: follow_vertical_track
+   
+   Normally, the autopilot will climb/dive as quickly as possible (within the current limits -- see :method:`WsfSixDOF_Mover.SetVerticalSpeedMax` and :method:`WsfSixDOF_Mover.SetVerticalSpeedMin`) when changing altitude, but when "follow_vertical_track" is set, the autopilot will instead use a vertical speed that will allow the object to smoothly/slowly change altitude along a straight line vertical track between waypoints.
+   
+   Although this is an option and the default is to **not** use follow_vertical_track, it will often be used, since many users prefer the resultant "gradual" vertical flight path over the default "quick" altitude change between waypoints.
+   
+.. command:: ignore_all_crashes <boolean-value>
+
+   Indicates whether the mover ignore all forms of crashes. This is often used in testing.
+   
+.. command:: six_dof_alt <length-value>
+   
+   This command sets the initial altitude of the mover.
+
+.. command:: six_dof_ned_heading <angle-value>
+   
+   This command sets the initial heading of the mover.
+
+.. command:: six_dof_ned_pitch <angle-value>
+   
+   This command sets the initial pitch angle of the mover.
+   
+.. command:: six_dof_ned_roll <angle-value>
+   
+   This command sets the initial roll angle of the mover.  
+
+.. command:: six_dof_position <real-value> <real-value>
+   
+   This command sets the initial position (using decimal latitude longitude) of the mover.
+
+.. command:: six_dof_set_velocity_ned_fps <real-value> <real-value> <real-value>
+   
+   This command sets the initial velocity of the mover in NED coordinates using ft/sec.
+   
+.. command:: produces_launch_smoke <time-value>
+   
+   This command sets how long the vehicle will produce a launch smoke/flash effect (appearance only) when launched. If no launch effect is desired, this should not be defined at all.
+  
+.. command:: throttle_afterburner <boolean-value>
+   
+   This command sets the throttle to afterburner when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.MoveThrottleToAfterburner`
+  
+.. command:: throttle_full <boolean-value>
+   
+   This command sets the throttle to mil power when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.MoveThrottleToFull`
+  
+.. command:: throttle_idle <boolean-value>
+   
+   This command sets the throttle to idle when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfSixDOF_Mover.MoveThrottleToIdle`
+  
+.. command:: wash_in_conditions <boolean-value>
+    
+   Including this flag indicates that this mover should "wash-in" conditions on initialization. This means that the object will run in a special mode to help "ramp-in" and "stabilize" the object on initialization by allowing it to have some time to settle in the needed angle of attack (alpha) as well as the proper throttle setting. This is useful to ensure vehicles are stable when they start the simulation -- they may otherwise lack the correct alpha, for example, when they start in the simulation.
+   
+   Since the wash-in operation actually performs numerous "update" functions to arrive at a stable condition, it is computationally expensive and should only be used when needed. In addition, it should not be used for subobjects.
+   
+   During the stabilization wash-in operation, parameters must meet various tolerances in order to be considered stable. Parameters include altitude, vertical speed, angle of attack, speed, pitch control input, and throttle control input.
+   
+Route Commands
+==============
+
+The WSF_SIX_DOF_MOVER supports the following :command:`route` commands.
+
+.. note::
+
+   WSF_SIX_DOF_MOVER does not support all the :command:`route` commands.
+
+.. command:: route ... end_route
+   :block:
+
+   .. parsed-literal::
+
+      route
+         position_ ...
+         altitude_ ...
+         speed_ ...
+         label_ ...
+         goto_ ...
+         bank_angle_limit_ ...
+         radial_acceleration_ ...
+         turn_g_limit_ ...
+         switch_on_passing_ ...
+         switch_on_approach_ ...
+      end_route
+
+   .. command:: position <latitude-value> <longitude-value>
+      
+      Specifies the latitude and longitude of the waypoint.
+
+   .. command:: altitude <length-value>
+      
+      Specifies the altitude (MSL) at the waypoint.
+
+   .. command:: speed <speed-value>
+      
+      Specifies the speed at the waypoint.
+
+   .. command:: label <label-name>
+   
+      Associates a label with the immediately following waypoint definition. This can be used as the target of a goto_
+      command.
+   
+   .. command:: goto <label>
+   
+      Go to the waypoint with the specified label in the current route.
+   
+   .. command:: bank_angle_limit <angle-value>
+         
+      Specifies the maximum bank angle to be used for turns when making heading changes on the route segment that starts with
+      this waypoint.  This effectively sets the radial_acceleration to :math:`g * tan(bank\_angle\_limit)`.
+
+   .. command:: radial_acceleration <acceleration-value>
+         
+      Specifies the radial acceleration to be used for turns when making heading changes on the route segment that starts
+      with this waypoint.
+      
+   .. command:: turn_g_limit <acceleration-value>
+         
+      Specifies the maximum turn g-load to be used for turns when making heading changes on the route segment that starts with
+      this waypoint.  This effectively sets the radial_acceleration to :math:`sqrt(turn\_g\_limit^2 - g^2)`.
+      
+   .. command:: switch_on_passing
+   .. command:: switch_on_approach
+      
+      Defines the condition when the mover should declare that it has reached this waypoint and should start moving towards
+      the next waypoint. **switch_on_passing** is sometimes known as 'turn long' and causes the switch to occur when the
+      platform passes over or along side of the waypoint. **switch_on_approach** is sometimes known as 'turn short' and
+      causes the switch to occur before the waypoint.
+      
+      .. note:: 
+         WSF_SIX_DOF_MOVER defaults to switch_on_approach, which is different from most other movers.
+   
+.. end::
+
+.. command:: use_route <route-name>
+
+   Supplies the name of the route to follow. The route is assumed to be a predefined absolute route.
+   
+Sample WSF_SIX_DOF_MOVER Route
+==============================
+
+A sample route definition is shown below. The simplest route includes multiple lines using the position_,
+altitude_, and speed_ commands like this::
+
+   route
+      position 21.325n 158.000w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.941w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.250n 157.800w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.260n 157.700w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.400n 157.700w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.700n 157.900w   altitude 13000.0 ft   speed 600.0 kts
+      position 21.900n 158.300w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.600n 158.200w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.550n 158.120w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.941w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.900w   altitude  9000.0 ft   speed 600.0 kts
+   end_route
+
+Script Methods
+==============
+
+To learn about the various script methods supported by WSF_SIX_DOF_MOVER, see :class:`WsfSixDOF_Mover`

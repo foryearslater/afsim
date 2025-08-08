@@ -1,0 +1,81 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RADIUS_EFFECT
+-----------------
+
+.. model:: effect WSF_RADIUS_EFFECT
+
+.. model:: effect WSF_JAMMER_RADIUS_EFFECT
+
+    .. parsed-literal::
+
+         effect <effect-name> WSF_RADIUS_EFFECT
+            :command:`electronic_warfare_effect` Commands
+            radius_factor_ <target-position-type> <value>
+            system_type_data_ <system-type-name> ... end_system_type_data
+         end_effect
+
+    This base effect type can be included in the :command:`electronic_protect` or :command:`electronic_attack` technique block as one of the many available effects for a given technique. The commands listed below are the base-type commands that can be specified in the effect block for this effect type.
+
+    This effect type is meant for use as a :command:`electronic_attack` technique, but may be used as a :command:`electronic_protect` also.
+
+.. block:: WSF_RADIUS_EFFECT
+
+.. _WSF_RADIUS_EFFECT.Commands:
+
+Commands
+========
+
+.. command:: radius_factor  <target-position-type> <value>
+
+.. command:: jamming_radius_factor  <target-position-type> <value>
+
+   Specifies an adjustment factor of the effective jamming level based on the targets location type wrt to the sensor's receiver and jammer transmitter.  This adjustment modifies the normally-determined jamming power. If this input is specified within the system_type_data_ input block then it is specific to a system-type, otherwise this input is defined as the 'default' data to use for undefined system-types in the system_type_data_. This input can be listed multiple times for defining different <target-position-type> values.
+
+   **<target-position-type>**
+     A string input that defines the target-radius-type that the following <ratio-value> applies to, valid values are listed in the table below:
+
+     inside
+         Apply <ratio-value> if the target range is **inside** the jammer range (radius) wrt to the sensor's receiver.
+     inside_and_equal
+         Apply <ratio-value> if the target range is **inside or equals** the jammer range (radius) wrt to the sensor's receiver.
+     outside
+         Apply <ratio-value> if the target range is **outside** the jammer range (radius) wrt to the sensor's receiver.
+     outside_and_equal
+         Apply <ratio-value> if the target range is **outside or equals** the jammer range (radius) wrt to the sensor's receiver.
+     outside_and_inside or inside_and_outside
+         Apply <ratio-value> if the target range is **inside** or **outside** the jammer range (radius) wrt to the sensor's receiver.
+     equal
+         Apply <ratio-value> if the target range **equals** the jammer range (radius) wrt to the sensor's receiver.
+     inside_and_outside_and_equal or all
+         Apply <ratio-value> if the target range is **inside, outside or equals** the jammer range (radius) wrt to the sensor's receiver.
+
+   **<value>**
+      A decimal ratio value that specifies the factor that is applied for the given <target-location-type> to the jammer power level, must be greater or equal to 0.
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data
+
+   Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this technique for a given system type. Default data can be set up for system types not defined using the "default" string as the system type.
+
+   .. parsed-literal::
+
+       system_type_data_ <system-type-name>
+          radius_factor_ <target-position-type> <value>
+       end_system_type_data
+
+   <system-type-name>
+      A string input of the system-type the following data applies to, valid values are **[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will be applied for the given system-type.
+
+   .. note::
+
+      This input is most often used by :command:`electronic_attack` definitions to specify different sensor-type data. It may be used by an :command:`electronic_protect` definitions to specify jammer-type data inputs, but most often data is just entered outside this input block and is applied against all jammer-types for :command:`electronic_protect` effects.
+

@@ -1,0 +1,104 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfOrbitalScriptEvent
+---------------------
+
+.. class:: WsfOrbitalScriptEvent inherits WsfOrbitalEvent
+
+**Input type:** :doc:`scripted<../scripted>`
+
+WsfOrbitalScriptEvent_ is used to invoke scripts from within a :class:`WsfOrbitalMissionSequence`.  Scripts are callable for when the event is initialized, when it updates, and when it completes.  One can also define a script to determine whether the event should exit.  Scripts should be defined in the enclosing :model:`WSF_SPACE_MOVER` definition, and they must not take any arguments. They are referenced by name in the :method:`WsfOrbitalScriptEvent.Construct` method.
+
+.. method:: static WsfOrbitalScriptEvent Construct(WsfOrbitalEventCondition aCondition, string aOnInitializeScriptName, string aOnUpdateScriptName, string aOnCompleteScriptName, string aIsCompleteScriptName)
+
+   Static method to create a WsfOrbitalScriptEvent_.  Each string argument is the name of a script defined in the parent :model:`WSF_SPACE_MOVER`, platform, or at global context.  If no script is to be called, an empty string ("") should be provided as argument.
+
+   This event behaves identically with its input-based analog (the :doc:`scripted<../scripted>` event):
+
+   - The script identified by **aOnInitializeScriptName** is executed when the event is initialized. This initialization occurs when the mission event is scheduled, which is either when the mission sequence is scheduled for the first event of a mission sequence, or immediately upon completion of the previous event of a mission sequence.
+   - The script identified by **aOnUpdateScriptName** executes with the :method:`update interval<WsfOrbitalEvent.SetUpdateInterval>` and :method:`duration<WsfOrbitalEvent.SetDuration>` of the event, starting from the time at which the event's execution :class:`condition<WsfOrbitalEventCondition>` is first met.   The script is always executed once. If the event is set  :method:`finite<WsfOrbitalEvent.SetFinite>` and a referenced **aIsCompleteScriptName** is defined, the event continues to execute at subsequent constraint times until that script returns *true*. Alternatively, if a :method:`duration<WsfOrbitalEvent.SetDuration>` is set, the event will execute at the specified update rate for the given duration.
+   - The script identified by **aOnCompleteScriptName** executes on completion of the event.
+
+     .. note:: Scripts that invoke other :class:`mission events<WsfOrbitalEvent>` can only be called from this referenced script (otherwise, the current event from which the script is being called would be invalidated).
+   - The script identified by **aIsCompleteScriptName** determines whether the script event is complete.  If *false*, the event continues to execute; if *true*, the event is considered complete, and any referenced **aOnCompleteScriptName** is called. If defined the referenced script is called immediately after each event update, and it overrides any :method:`duration<WsfOrbitalEvent.SetDuration>`, if set.
+
+     .. note:: This script must return a bool.
+
+Examples
+""""""""
+
+::
+
+      // Example scripted script event within a WSF_SPACE_MOVER definition
+      script void DoSomething()
+         // Insert code here
+      end_script
+      script_variables
+         static int sUpdateNum = 0;
+      end_script_variables
+      script void Initialize()
+      end_script
+      script void Update()
+         sUpdateNum += 1;
+         DoSomething();
+         writeln(" Update ", sUpdateNum);
+      end_script
+      script void Complete()
+         writeln("Complete");
+      end_script
+      script bool IsComplete()
+         return (sUpdateNum == 100); // Execute 100 times
+      end_script
+
+      execute at_time 1 s absolute
+         WsfOrbitalScriptEvent event = WsfOrbitalScriptEvent.Construct(WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY(),
+                                       "Initialize",
+                                       "Update",
+                                       "Complete",
+                                       "IsComplete");
+         event.SetUpdateInterval(10);
+         event.SetFinite(true);  // Evaluate IsComplete at the update interval (every 10 sec.),
+                                 // instead of at the next eclipse entry.
+         SPACE_MOVER.ExecuteOrbitalEvent(event);
+      end_execute
+
+::
+
+      // Example scripted script event within a WSF_SPACE_MOVER definition
+      // (same as above, using duration instead of IsComplete script)
+      script void DoSomething()
+         // Insert code here
+      end_script
+
+      script void Initialize()
+      end_script
+      script void Update()
+         static int sUpdateNum = 0;
+         sUpdateNum += 1;
+          DoSomething();
+         writeln(TIME_NOW, " Update ", sUpdateNum);
+      end_script
+      script void Complete()
+         writeln("Complete");
+      end_script
+
+      execute at_time 1 s absolute
+         WsfOrbitalScriptEvent event = WsfOrbitalScriptEvent.Construct(WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY(),
+                                       "Initialize",
+                                       "Update",
+                                       "Complete",
+                                       "");  // No IsComplete script defined
+         event.SetUpdateInterval(10);
+         event.SetDuration(990);     // Execute 100 times at 10 sec interval
+         SPACE_MOVER.ExecuteOrbitalEvent(event);
+      end_execute
+

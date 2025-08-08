@@ -1,0 +1,471 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Subsystem Geometry Considerations &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Subsystem location, orientation, slewing and scanning" href="subsystem_location,_orientation,_slewing_and_scanning.html" />
+    <link rel="prev" title="Integration of Planck’s Law of Black Body Radiation Over an Interval" href="Plancks_Law_of_Black_Body_Radiation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="subsystem_location,_orientation,_slewing_and_scanning.html" title="Subsystem location, orientation, slewing and scanning"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Plancks_Law_of_Black_Body_Radiation.html" title="Integration of Planck’s Law of Black Body Radiation Over an Interval"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="subsystem-geometry-considerations">
+<span id="id1"></span><h1>Subsystem Geometry Considerations<a class="headerlink" href="#subsystem-geometry-considerations" title="Permalink to this headline">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Because WSF attempts to represent subsystems (sensor, weapon or comm) that operate in a variety of ways, the
+mechanisms it provides to define attributes, such as geometric limits, can be rather daunting. This document provides
+some clarity into how these mechanisms operate as well as guidance on how to define subsystem models that will behave
+like the real subsystems.</p>
+<p>From a geometric standpoint, subsystems can be broadly separated into three categories:</p>
+<ul class="simple">
+<li><p><strong>Fixed pointing</strong> - the pointing angle is always in the same direction.</p></li>
+<li><p><strong>Scanning</strong> - the pointing angle is moved in a regular pattern.</p></li>
+<li><p><strong>Commanded pointing</strong> - the pointing angle is selected by command (like a track)</p></li>
+</ul>
+<p>A subsystem may exhibit characteristics of all three depending on its operating mode. In some cases commanded pointing
+and scanning may be employed together (e.g., cued acquisition or cued search). In a scanning or commanded pointing
+subsystem, the mechanism of how the pointing angle is changed may be mechanical, electrical, optical or through some
+other means. Regardless, the moving of the pointing angle may be constrained in direction (e.g., only move in azimuth,
+only move in elevation, or move in any direction) and also in the amount that it may move in the allowed directions.</p>
+</section>
+<section id="coordinate-systems">
+<h2>Coordinate Systems<a class="headerlink" href="#coordinate-systems" title="Permalink to this headline">¶</a></h2>
+<p>Ultimately, subsystems interact with other platforms or subsystems (e.g., sense, send a message). When an interaction
+occurs, the objects are located somewhere in space and have a certain orientation. The subsystem(s) themselves have a
+location and orientation with respect to their host platform, and may use scanning ‘beams.’ Because the eventual
+success or failure of an interaction depends a great deal on the geometry, it is fundamental to understand the
+coordinate systems that are employed and how their key parameters are defined.</p>
+<p>Up to seven coordinate systems are employed during the course of an interaction:</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="#world-coordinate-system">World Coordinate System</a> (WCS)</p></li>
+<li><p>The <a class="reference internal" href="#entity-coordinate-system">Entity Coordinate System</a> (ECS)</p></li>
+<li><p>The <a class="reference internal" href="#part-coordinate-system">Part Coordinate System</a> (PCS)</p></li>
+<li><p>The <a class="reference internal" href="#cued-coordinate-system">Cued Coordinate System</a> (CCS)</p></li>
+<li><p>The <a class="reference internal" href="#scan-coordinate-system">Scan Coordinate System</a> (SCS)</p></li>
+<li><p>The <a class="reference internal" href="#beam-coordinate-system">Beam Coordinate System</a> (BCS)</p></li>
+<li><p>The <a class="reference internal" href="#antenna-coordinate-system">Antenna Coordinate System</a> (ACS)</p></li>
+</ul>
+<p>Conventional weapons, such as missiles or guns, typically only employ the first four coordinate systems (i.e., WCS,
+ECS, PCS, and CCS). Sensors and communications devices also use the last three (i.e., SCS, BCS, and ACS). Note that the
+terms ‘beam’ and ‘antenna’ are probably too reflective of the radio frequency nature of things. You could consider the
+‘beam’ to be the instantaneous viewing angle and the ‘antenna’ as the aperture through which a signal is being
+transmitted or received.</p>
+<p>The following section defines how the various coordinate systems are formed and the commands that are used to define
+the parameters that are used in the process.</p>
+</section>
+<section id="world-coordinate-system">
+<h2>World Coordinate System<a class="headerlink" href="#world-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The World Coordinate System (WCS) is a right-handed Cartesian system defined as follows:</p>
+<ul class="simple">
+<li><p>The origin is at the center of the Earth.</p></li>
+<li><p>The +X axis passes through 0N, 0E</p></li>
+<li><p>The +Y axis passes through 0N, 90E</p></li>
+<li><p>The +Z axis passes through 90N (the North Pole).</p></li>
+</ul>
+<p>The Earth’s surface is modeled as an oblate ellipsoid as defined by the WGS-84 standard (NIMA TR-8350.2).</p>
+</section>
+<section id="entity-coordinate-system">
+<h2>Entity Coordinate System<a class="headerlink" href="#entity-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Entity Coordinate System (ECS) is a coordinate frame rigidly attached to a platform (entity) and is a right-handed
+Cartesian system defined as follows:</p>
+<ul class="simple">
+<li><p>The origin is at the center of the entity</p></li>
+<li><p>The +X axis goes out the front of the entity. For an aircraft this would be forward out the nose.</p></li>
+<li><p>The +Y axis goes out the right side of the entity (when looking down the +X axis). For an aircraft this would be out
+the right wing with respect to the pilot.</p></li>
+<li><p>The +Z axis goes out the bottom of the entity.</p></li>
+<li><p>Yaw is a rotation about the Z axis.  Positive yaw is to the right. For an aircraft this would move the nose right with
+respect to the pilot.</p></li>
+<li><p>Pitch is a rotation about the Y axis. Positive pitch raises the +X axis. For an aircraft this would raise the nose up.</p></li>
+<li><p>Roll is a rotation about the X axis.  Positive roll drops the +Y axis. For an aircraft this would drop the right wing.</p></li>
+</ul>
+</section>
+<section id="part-coordinate-system">
+<h2>Part Coordinate System<a class="headerlink" href="#part-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Part Coordinate System (PCS) is a coordinate frame that is rigidly attached to the subsystem and is simply a
+translation and rotation of the Entity Coordinate System (ECS). <strong>The location and orientation of the part are defined
+with respect to the ECS.</strong> The relative location and orientation may be defined through one of two means:</p>
+<ul class="simple">
+<li><p>Statically using the <a class="reference internal" href="../articulated_part.html#_.articulated_part.location" title="location (_.articulated_part)"><span class="xref wsf wsf-command">location</span></a>, <a class="reference internal" href="../articulated_part.html#_.articulated_part.yaw" title="yaw (_.articulated_part)"><span class="xref wsf wsf-command">yaw</span></a>,
+<a class="reference internal" href="../articulated_part.html#_.articulated_part.pitch" title="pitch (_.articulated_part)"><span class="xref wsf wsf-command">pitch</span></a> and <a class="reference internal" href="../articulated_part.html#_.articulated_part.roll" title="roll (_.articulated_part)"><span class="xref wsf wsf-command">roll</span></a>.</p></li>
+<li><p>Dynamically using the <a class="reference internal" href="../script/wsfarticulatedpart.html#WsfArticulatedPart.SetYaw" title="WsfArticulatedPart.SetYaw"><span class="xref wsf wsf-method">WsfArticulatedPart.SetYaw</span></a>, <a class="reference internal" href="../script/wsfarticulatedpart.html#WsfArticulatedPart.SetPitch" title="WsfArticulatedPart.SetPitch"><span class="xref wsf wsf-method">WsfArticulatedPart.SetPitch</span></a> and
+<a class="reference internal" href="../script/wsfarticulatedpart.html#WsfArticulatedPart.SetRoll" title="WsfArticulatedPart.SetRoll"><span class="xref wsf wsf-method">WsfArticulatedPart.SetRoll</span></a> script commands.</p></li>
+</ul>
+<p>The slew limits defined by <a class="reference internal" href="../articulated_part.html#_.articulated_part.azimuth_slew_limits" title="azimuth_slew_limits (_.articulated_part)"><span class="xref wsf wsf-command">azimuth_slew_limits</span></a> and
+:command`_.articulated_part.elevation_slew_limits` are defined relative to this coordinate system and represent the
+absolute limits of pointing that can be achieved by the system. The sensor mode-specific cuing limit overrides (defined
+by <a class="reference internal" href="../sensor.html#sensor_mode.azimuth_cue_limits" title="azimuth_cue_limits (sensor_mode)"><span class="xref wsf wsf-command">azimuth_cue_limits</span></a> and <a class="reference internal" href="../sensor.html#sensor_mode.elevation_cue_limits" title="elevation_cue_limits (sensor_mode)"><span class="xref wsf wsf-command">elevation_cue_limits</span></a>) are also defined relative to this
+coordinate system.</p>
+<p>One common mistake is to use the <a class="reference internal" href="../articulated_part.html#_.articulated_part.pitch" title="pitch (_.articulated_part)"><span class="xref wsf wsf-command">pitch</span></a> command to define the tilt angle of antenna for
+a system that rotates about its Z axis (e.g., an airport surveillance radar, missile launcher). Unfortunately the
+<a class="reference internal" href="../articulated_part.html#_.articulated_part.pitch" title="pitch (_.articulated_part)"><span class="xref wsf wsf-command">pitch</span></a> tilts the entire coordinate frame, including the Z axis! For cases where it is
+desirable to have the Z axis remain vertical, one of the following commands should be used:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../articulated_part.html#_.articulated_part.tilt" title="tilt (_.articulated_part)"><span class="xref wsf wsf-command">tilt</span></a> for platforms such as SAM launchers or tank turrets.</p></li>
+<li><p><a class="reference internal" href="../antenna_commands.html#_.antenna_commands.antenna_tilt" title="antenna_tilt (_.antenna_commands)"><span class="xref wsf wsf-command">antenna_tilt</span></a> for simple single aperture (beam) systems or for electronically steered systems
+that use body coordinates for the scan limits.</p></li>
+<li><p><a class="reference internal" href="../wsf_radar_sensor.html#WSF_RADAR_SENSOR" title="WSF_RADAR_SENSOR"><span class="xref wsf wsf-model">beam_tilt</span></a> for stacked beam radar systems.</p></li>
+</ul>
+</section>
+<section id="cued-coordinate-system">
+<h2>Cued Coordinate System<a class="headerlink" href="#cued-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Cued Coordinate System (CCS) is the PCS after <em>cueing</em> commands have been applied. A subsystem can be ‘cued’ if it
+has a :command`_.articulated_part.slew_mode` or <a class="reference internal" href="../sensor.html#sensor_mode.cue_mode" title="cue_mode (sensor_mode)"><span class="xref wsf wsf-command">cue_mode</span></a> that is not <strong>fixed</strong>. The commands that
+‘cue’ the subsystem are:</p>
+<ul class="simple">
+<li><p>Any of the <strong>CueTo</strong> commands in <a class="reference internal" href="../script/wsfarticulatedpart.html#WsfArticulatedPart" title="WsfArticulatedPart"><span class="xref wsf wsf-class">WsfArticulatedPart</span></a></p></li>
+<li><p>The <a class="reference internal" href="../script/wsftaskmanager.html#WsfTaskManager.StartTracking" title="WsfTaskManager.StartTracking"><span class="xref wsf wsf-method">StartTracking</span></a> or <a class="reference internal" href="../script/wsftaskmanager.html#WsfTaskManager.StartJamming" title="WsfTaskManager.StartJamming"><span class="xref wsf wsf-method">StartJamming</span></a> commands in
+<a class="reference internal" href="../script/wsftaskmanager.html#WsfTaskManager" title="WsfTaskManager"><span class="xref wsf wsf-class">WsfTaskManager</span></a></p></li>
+</ul>
+<p>If a subsystem can be cued and a cue is present, the CCS is determined as follows:</p>
+<ul class="simple">
+<li><p>Compute the azimuth and elevation cue angles as the aspect of the cue point <strong>with respect to the PCS</strong>.</p></li>
+<li><p>Determine the ‘active’ azimuth and elevation cue modes and cue limits.</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>In general these are defined by <a class="reference internal" href="../articulated_part.html#_.articulated_part.slew_mode" title="slew_mode (_.articulated_part)"><span class="xref wsf wsf-command">slew_mode</span></a>, and <a class="reference internal" href="../articulated_part.html#_.articulated_part.elevation_slew_limits" title="elevation_slew_limits (_.articulated_part)"><span class="xref wsf wsf-command">elevation_slew_limits</span></a>.</p></li>
+<li><p>The active cue mode and cue limits are optionally overridden by sensor mode-specific <a class="reference internal" href="../sensor.html#sensor_mode.cue_mode" title="cue_mode (sensor_mode)"><span class="xref wsf wsf-command">cue_mode</span></a>,
+<a class="reference internal" href="../sensor.html#sensor_mode.azimuth_cue_limits" title="azimuth_cue_limits (sensor_mode)"><span class="xref wsf wsf-command">azimuth_cue_limits</span></a>, <a class="reference internal" href="../sensor.html#sensor_mode.elevation_cue_limits" title="elevation_cue_limits (sensor_mode)"><span class="xref wsf wsf-command">elevation_cue_limits</span></a>.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Determine the final azimuth cue angle <strong>with respect to the PCS</strong>.</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the subsystem can cue in azimuth (active cue mode is <strong>azimuth</strong> or <strong>azimuth_and_elevation</strong>), limit the azimuth
+cue angle by the active azimuth cue angle limits defined in the previous step.</p></li>
+<li><p>If the subsystem cannot cue in azimuth (active cue mode is <strong>fixed</strong> or <strong>elevation</strong>), the azimuth cue angle is
+zero.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Determine the final elevation cue angle <strong>with respect to the PCS</strong>.</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the subsystem can cue in elevation (active cue mode is <strong>elevation</strong> or <strong>azimuth_and_elevation</strong>), limit the
+elevation cue angle by the active elevation cue angle limits defined in the previous step.</p></li>
+<li><p>If the subsystem cannot cue in elevation (active cue mode is <strong>fixed</strong> or <strong>azimuth</strong>), the elevation cue angle is
+zero.</p></li>
+<li><p>Compute the CCS transform by rotating the PCS transform by the azimuth and elevation cue angles determined in the
+previous steps.</p></li>
+</ul>
+</div></blockquote>
+<p>If the subsystem cannot be cued or if a cue is not defined then the CCS is just the PCS.</p>
+</section>
+<section id="scan-coordinate-system">
+<h2>Scan Coordinate System<a class="headerlink" href="#scan-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Scan Coordinate System (SCS) defines the origin and orientation of the ‘scan pattern.’ It is the same as the CCS
+except when <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_stabilization" title="scan_stabilization (_.antenna_commands)"><span class="xref wsf wsf-command">scan_stabilization</span></a> is something other than <strong>none</strong>. If scan
+stabilization is something other than <strong>none then the SCS will be reoriented to implement the effects of scan</strong>
+<strong>stabilization</strong>.</p>
+<p>The angles specified in the <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.azimuth_scan_limits" title="azimuth_scan_limits (_.antenna_commands)"><span class="xref wsf wsf-command">azimuth_scan_limits</span></a>, <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.elevation_scan_limits" title="elevation_scan_limits (_.antenna_commands)"><span class="xref wsf wsf-command">elevation_scan_limits</span></a>,
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.azimuth_field_of_view" title="azimuth_field_of_view (_.antenna_commands)"><span class="xref wsf wsf-command">azimuth_field_of_view</span></a> and <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.elevation_field_of_view" title="elevation_field_of_view (_.antenna_commands)"><span class="xref wsf wsf-command">elevation_field_of_view</span></a> commands are with
+respect to the SCS.</p>
+</section>
+<section id="beam-coordinate-system">
+<h2>Beam Coordinate System<a class="headerlink" href="#beam-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Beam Coordinate System (BCS) defines the instantaneous position of a ‘beam.’ The X axis of the BCS is aligned with
+the center of the beam. For non-scanning systems (i.e., <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_mode" title="scan_mode (_.antenna_commands)"><span class="xref wsf wsf-command">scan_mode</span></a> is <strong>fixed</strong>), the BCS, the
+scan coordinate system (SCS) and cued coordinate system (CCS) should all be the same.</p>
+<p>The BCS is formed as follows:</p>
+<ul class="simple">
+<li><p>Compute the target azimuth and elevation angles <strong>with respect to the SCS</strong>.</p></li>
+<li><p>Determine the beam azimuth angle <strong>with respect to the SCS</strong>:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the beam can scan in azimuth (i.e., <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_mode" title="scan_mode (_.antenna_commands)"><span class="xref wsf wsf-command">scan_mode</span></a> is <strong>azimuth</strong> or
+<strong>azimuth_and_elevation</strong>), the beam azimuth angle is the target azimuth angle limited to the range defined by the
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.azimuth_scan_limits" title="azimuth_scan_limits (_.antenna_commands)"><span class="xref wsf wsf-command">azimuth_scan_limits</span></a>.</p></li>
+<li><p>If the beam cannot scan in azimuth (i.e., <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_mode" title="scan_mode (_.antenna_commands)"><span class="xref wsf wsf-command">scan_mode</span></a> is <strong>fixed</strong> or <strong>elevation</strong>), the beam
+azimuth angle is zero.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Determine the beam elevation angle <strong>with respect to the SCS</strong>:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the beam can scan in elevation (i.e., <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_mode" title="scan_mode (_.antenna_commands)"><span class="xref wsf wsf-command">scan_mode</span></a> is <strong>elevation</strong> or
+<strong>azimuth_and_elevation</strong>), the elevation angle is the target elevation angled limited to the range defined by the
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.elevation_scan_limits" title="elevation_scan_limits (_.antenna_commands)"><span class="xref wsf wsf-command">elevation_scan_limits</span></a>.</p></li>
+<li><p>If the beam cannot scan in elevation (i.e., <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.scan_mode" title="scan_mode (_.antenna_commands)"><span class="xref wsf wsf-command">scan_mode</span></a> is <strong>fixed</strong> or <strong>azimuth</strong>), the beam
+elevation angle is zero.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Ensure the beam position does not exceed the slew limits of the subsystem. This is done as follows:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>Convert the beam azimuth and elevation angles from the SCS back to the cued coordinate system.</p></li>
+<li><p>Adjust the converted beam azimuth and elevation angles, if necessary, so that the sum of the each angle and its
+respective current cue angle does not exceed the respective limit defined by the <a class="reference internal" href="../articulated_part.html#_.articulated_part.azimuth_slew_limits" title="azimuth_slew_limits (_.articulated_part)"><span class="xref wsf wsf-command">azimuth_slew_limits</span></a>
+and <a class="reference internal" href="../articulated_part.html#_.articulated_part.elevation_slew_limits" title="elevation_slew_limits (_.articulated_part)"><span class="xref wsf wsf-command">elevation_slew_limits</span></a>.</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>The BCS is finally formed by rotating the CCS by the converted and limited beam azimuth and elevation angles
+determined in the previous step.</p></li>
+</ul>
+<p>The azimuth and elevation aspect angles of the target with respect to the BCS are used to determine the antenna gain
+for RF interactions.</p>
+</section>
+<section id="antenna-coordinate-system">
+<h2>Antenna Coordinate System<a class="headerlink" href="#antenna-coordinate-system" title="Permalink to this headline">¶</a></h2>
+<p>The Antenna Coordinate System (ACS) defines the orientation of an ‘antenna.’  For systems that are not electronically
+steered (<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.electronic_beam_steering" title="electronic_beam_steering (_.antenna_commands)"><span class="xref wsf wsf-command">electronic_beam_steering</span></a> is <strong>none</strong>), the BCS and ACS will be the same. For systems
+that are electronically steered, the X axis of the ACS will be normal to the face of the array.</p>
+<p>The angle between the X axis of the BCS and the X axis of the ACS is used to compute beam steering losses. See
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.electronic_beam_steering" title="electronic_beam_steering (_.antenna_commands)"><span class="xref wsf wsf-command">electronic_beam_steering</span></a>, <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.electronic_beam_steering_limit" title="electronic_beam_steering_limit (_.antenna_commands)"><span class="xref wsf wsf-command">electronic_beam_steering_limit</span></a> and
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.electronic_beam_steering_loss_exponent" title="electronic_beam_steering_loss_exponent (_.antenna_commands)"><span class="xref wsf wsf-command">electronic_beam_steering_loss_exponent</span></a> for more information.</p>
+</section>
+<section id="general-flow-of-sensor-and-comm-processing">
+<h2>General Flow of Sensor and Comm Processing<a class="headerlink" href="#general-flow-of-sensor-and-comm-processing" title="Permalink to this headline">¶</a></h2>
+<p>This section attempts to describe the general flow of a sensor or communications attempt from a geometric point of
+view. It does not discuss the system-specific processing.</p>
+<ul class="simple">
+<li><p>Compute the range to the target and compare against the mode-specific <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.minimum_range" title="minimum_range (_.antenna_commands)"><span class="xref wsf wsf-command">minimum_range</span></a> and
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.maximum_range" title="maximum_range (_.antenna_commands)"><span class="xref wsf wsf-command">maximum_range</span></a>. Suppress the rest of the detection processing if not within the limits.</p></li>
+<li><p>Compute the relative altitude between the target and the sensor, and then compare against the mode-specific
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.minimum_altitude" title="minimum_altitude (_.antenna_commands)"><span class="xref wsf wsf-command">minimum_altitude</span></a> and <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.maximum_altitude" title="maximum_altitude (_.antenna_commands)"><span class="xref wsf wsf-command">maximum_altitude</span></a>. Suppress the rest of the
+detection processing if not within the relative-altitude limits. Note that altitude limits below the sensor should be
+negative numbers.</p></li>
+<li><p>Update the orientation of the subsystem to reflect any potential cuing (computes the <a class="reference internal" href="#part-coordinate-system">Part Coordinate System</a>
+and <a class="reference internal" href="#cued-coordinate-system">Cued Coordinate System</a>).</p></li>
+<li><p>Compute the aspect of the target with respect to the <a class="reference internal" href="#scan-coordinate-system">Scan Coordinate System</a> and compare to the
+<a class="reference internal" href="../antenna_commands.html#_.antenna_commands.azimuth_field_of_view" title="azimuth_field_of_view (_.antenna_commands)"><span class="xref wsf wsf-command">azimuth_field_of_view</span></a> and <a class="reference internal" href="../antenna_commands.html#_.antenna_commands.elevation_field_of_view" title="elevation_field_of_view (_.antenna_commands)"><span class="xref wsf wsf-command">elevation_field_of_view</span></a>. Suppress the rest of
+the detection processing if not within the limits.</p></li>
+<li><p>Set the transmitter/receiver beam positions (i.e., compute the <a class="reference internal" href="#beam-coordinate-system">Beam Coordinate System</a> for the beams, and the
+<a class="reference internal" href="#antenna-coordinate-system">Antenna Coordinate System</a>).</p></li>
+</ul>
+<p>Beyond this the processing gets sensor specific. For something like a radar, the aspect of the target with respect to
+the transmitter and receiver BCS (and perhaps the ACS for electronically steered systems) will be used to derive the
+antenna gain.</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/subsystem_geometry_considerations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="subsystem_location,_orientation,_slewing_and_scanning.html" title="Subsystem location, orientation, slewing and scanning"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Plancks_Law_of_Black_Body_Radiation.html" title="Integration of Planck’s Law of Black Body Radiation Over an Interval"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

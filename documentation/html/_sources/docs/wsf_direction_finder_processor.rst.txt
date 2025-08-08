@@ -1,0 +1,151 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_DIRECTION_FINDER_PROCESSOR
+------------------------------
+
+.. model:: processor WSF_DIRECTION_FINDER_PROCESSOR
+
+**Derives From:** :model:`WSF_LINKED_PROCESSOR`
+   
+.. parsed-literal::
+
+   processor <name> :model:`WSF_DIRECTION_FINDER_PROCESSOR`
+      ... :model:`WSF_LINKED_PROCESSOR Commands <WSF_LINKED_PROCESSOR>` ...
+      fuse_all_measurements_ | fuse_all_collects_
+      measurement_replacement_interval_ | collect_replacement_interval_
+      maximum_expected_error_
+      use_truth_altitude_
+      filter_
+      filter_bypass_
+      maximum_time_difference_
+      minimum_baseline_distance_
+      test_
+   end_processor
+
+Overview
+========
+
+:model:`WSF_DIRECTION_FINDER_PROCESSOR` is a specialized processor that is used to fuse multiple bearing-only tracks (e.g.,
+from one or more passive systems).  This function is somewhat different from the standard WSF
+"default" fusion.  Usually track data are filtered first, then fused.  In this case the raw bearing track data must be
+fused to form location and location error data, then the filtering takes place.  The products of the direction-finder
+processor are fused-filtered tracks with valid, triangulated target location.
+
+This filtering is necessary in order to reduce the triangulation error to actionable values.  As pairs of reports are
+run through the triangulation algorithm, the error in the location goes down as the square root of the number of pairs
+accumulated.
+
+Typically this processor would be the consumer of track reports from a bearing-only sensor.  Therefore,
+the sensor would be linked with the direction finder processor as follows::
+
+   processor direction-finder WSF_DIRECTION_FINDER_PROCESSOR
+   end_processor
+
+   sensor passive_sensor WSF_PASSIVE_SENSOR
+      internal_link direction-finder
+      ...
+   end_sensor
+
+The outputs of the direction-finder processor are tracks containing valid target position data.  Typically, it would be
+linked with a :model:`WSF_TRACK_PROCESSOR` or a communications link to an external fusion node. For example:
+
+::
+
+   processor direction-finder WSF_DIRECTION_FINDER_PROCESSOR
+      processor track
+      processor share
+   end_processor
+
+   processor track WSF_TRACK_PROCESSOR
+   end_processor
+
+   processor share WSF_LINKED_PROCESSOR
+      report_to commander via datalink
+   end_processor
+
+   comm datalink WSF_COMM_TRANSCEIVER
+   end_comm
+
+.. block:: WSF_DIRECTION_FINDER_PROCESSOR
+
+Commands
+========
+
+.. command:: fuse_all_measurements
+
+.. command:: fuse_all_collects <boolean-value>
+   
+   If enabled, all measurements for a given target will be used for direction finding.  Otherwise if the expected value of
+   the location error, after the pair are utilized, is greater than the current value, the pair will not be fused.
+   
+   Default: *disable*
+
+.. command:: measurement_replacement_interval
+
+.. command:: collect_replacement_interval <time-value>
+   
+   Specifies a time interval after which an existing measurement that has not been used for direction finding, will be
+   updated with a more recent measurement.
+   
+   Default: *1.0e+12 (Infinite)*
+
+.. command:: maximum_expected_error <length-value>
+   
+   Specifies a maximum value in a single dimension, that the expected direction-finding error value should not exceed.
+   
+   Default: *100000 m*
+
+.. command:: use_truth_altitude <boolean-value>
+   
+   Specifies that the actual altitude should be used when reporting the locations of air targets.
+   
+   Default: *disabled*
+
+.. command:: filter ... end_filter
+   
+   Associates a :command:`filter` type with this processor.  All incoming tracks of that have no filter, will be assigned this
+   type.  If this command isn't indicated, a WsfKalmanFilter type will be used.
+   
+   Default: *WsfKalmanFilter w/zero process noise*
+
+.. command:: filter_bypass  <flag>
+   
+   Allows bypassing the filter, such that the output will be the 'measurement', which is just the intersection point from
+   a successful triangulation.
+   
+   Default: *filter enabled*
+
+.. command:: minimum_baseline_distance <length-value>
+
+   Specifies the minimum distance between origin locations of pairs of measurements being fused.  
+
+   Default: 10 km
+   
+.. command:: maximum_time_difference <time-value>
+   
+   Specifies the maximum time difference allowed between measurements.  Measurements that exceed this time
+   difference, will not be fused.  This helps reduce errors when the targets are moving.  If this field is not included,
+   there is no maximum time difference - all pairs will be fused, assuming all other things being equal.
+   
+   Default: *1.0e+12 (Infinite)*
+
+.. command:: test <boolean-value>
+   
+   Enable output of diagnostic messages and a WsfDraw-based representation of each direction-finding solution.
+   Diagnostic messages are output when candidate direction finding solutions fail due to the following:
+   
+   * Angle threshold test failure: The interior angle formed by the two candidate target vectors is less than five times the maximum expected azimuth error of the two measurements.  This test rejects solutions with very large uncertainties in range.
+   * Baseline distance test failure:  The distance between the origin of the two measurement positions is less than that specified by the minimum_baseline_distance_ command.
+   * Bearing lines divergence failure:  The lines of bearing of the two measurements are divergent in the direction of the target (i.e., they intersect in the opposite direction from the target).
+   * Maximum expected range error failure:  The computed expected range error exceeded the value specified with the maximum_expected_error_ input.
+   
+   WsfDraw-based visualization of solutions displays green lines along the track direction, red lines to indicate the extents of expected bearing errors, blue lines and points to show the extent of the errors of the computed 3D solutions, and a point to indicate the computed target location.

@@ -1,0 +1,182 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COHERENT_SENSOR_PROCESSOR
+-----------------------------
+
+.. contents::
+   :local:
+
+.. model:: processor WSF_COHERENT_SENSOR_PROCESSOR
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_COHERENT_SENSOR_PROCESSOR`
+      :command:`processor` Commands ...
+      :ref:`Platform_Part_Commands` ...
+
+      sensors_ ... end_sensors
+
+      detection_threshold_ ...
+      use_target_result_ ...
+      coast_time_ ...
+      result_processing_type_ ...
+
+      fusion_method_ ...
+
+      message_length_ ...
+      message_priority_ ...
+   end_processor
+
+Overview
+========
+
+:model:`WSF_COHERENT_SENSOR_PROCESSOR` provides for Coherent Sensor capabilities that include the ability to process multiple sensor :class:`WsfEM_Interaction` results (i.e. non-local results) into a single interaction result (local result) for detection and track reporting. This processor will based upon the result_processing_type_ calculate a local result from a non-local result and use fusion to calculate the local result location (i.e. measurement) from the non-local results.
+
+.. note::
+   If an :command:`processor.update_interval` is specified then the sensor or target results will be queued until the next update interval and batch processed. If an :command:`processor.update_interval` is not specified then the sensor or target results will be processed as each target is updated by each sensor.
+
+The processor is typically used in the following construct:
+
+.. parsed-literal::
+
+   platform_type ...
+      sensor sensor-1 :model:`WSF_RADAR_SENSOR`
+         ...
+         # Forward the tracks to 'track_proc'
+         processor track_proc
+      end_sensor
+
+      sensor sensor-2 :model:`WSF_RADAR_SENSOR`
+         ...
+         # Forward the tracks to 'track_proc'
+         processor track_proc
+      end_sensor
+
+      processor cs_proc :model:`WSF_COHERENT_SENSOR_PROCESSOR`
+         ...
+         # Forward the extracted 'tracks' to 'track_proc'
+         processor track_proc
+
+         # Connect to sensors to collect 'interaction' data for processing
+         sensors
+            sensor sensor-1
+            sensor sensor-2
+         end_sensors
+      end_processor
+
+      processor track_proc :model:`WSF_TRACK_PROCESSOR`
+         ...
+         # Implicitly takes the tracks from 'cs_proc' and updates the track_manager
+      end_processor
+   end_platform_type
+
+.. block:: WSF_COHERENT_SENSOR_PROCESSOR
+
+Commands
+========
+
+.. command:: sensors ... end_sensors
+   :block:
+
+   .. parsed-literal::
+
+    sensors
+       sensor_ <sensor-name>
+       platform_sensor_ <platform-name> <sensor-name>
+    end_sensors
+
+   .. command:: sensor <sensor-name>
+
+      Specifies the name of the sensor, *<sensor-name>*, on the same platform as the processor.
+
+   .. command:: platform_sensor <platform-name> <sensor-name>
+
+      Specifies the name of the sensor, *<sensor-name>*, on an external platform with name *<platform-name>*.
+
+.. block:: WSF_COHERENT_SENSOR_PROCESSOR
+
+.. command:: detection_threshold <dbratio-value>
+
+   An alternative method of defining the receiver's detection threshold.  The value can be entered here for readability of
+   the input file.
+
+   Default: 3.0 dB
+
+.. command:: use_target_result <boolean-value>
+
+   Specifies if 'true' that the target result from each sensor should be used. If 'false' use each of the sensor results, a culmination of each mode and beam dependent upon sensor capabilities.
+
+   Default: false
+
+.. command:: coast_time <time-value>
+
+   Specifies the maximum amount of time that may elapse between updates before a track is dropped.
+
+.. command:: result_processing_type [ SNR_BASED | RSS_BASED ]
+
+   Specifies the results processing type to be used to calculate the resulting Signal-to-Noise Ratio (SNR) from the non-local sensor or target results to the local result to be used in track formation.
+
+   .. note::
+      Note that fusion will take place with any type.
+
+* **SNR_BASED** - Use the best non-local result for forming the local result based on SNR, the best non-local result's SNR and other data will replace the local result.
+
+* **RSS_BASED** - Use the Root of the Sums Squared (RSS) of the signal power coupled with the RMS of noise power for each of the non-local results with valid signal and noise power measurements to calculate the local results signal, noise and SNR.
+
+   .. math::
+      SNR_{\mathrm{RSS}} = \frac{\sqrt{\sum_{i=1}^{N} P_{signal\_i}^2}}{\sqrt{\sum_{i=1}^{N} P_{noise\_i}^2/N}}
+
+ Default: SNR_BASED
+
+.. command:: fusion_method [ replacement | weighted_average | MTT(Multi-Target Tracker) mtt ]
+
+   Specifies the fusion algorithms used by the results processing.
+
+   A fusion algorithm combines information about a single entity from two or more sources into a coherent information set,
+   e.g. a measurement or :command:`track`.
+
+* **replacement**- Correlated measurements are fused according to a standard set of algorithms.  Local measurement positions are replaced by nonlocal measurement positions.
+* **weighted_average**- Correlated measurements are fused according to a standard set of algorithms.  Local measurement positions are combined with nonlocal measurement positions using the covariance matrices of the local and nonlocal measurement.
+
+   .. note::
+      If there is no covariance matrix associated with a nonlocal track, the track manager will attempt to use a measurement covariance matrix, generated from the track's measurement errors in range, elevation, and bearing.
+
+* **mtt** - Correlated measurements and tracks are fused using the Multiple Target Tracker (MTT).  If this method is selected, the correlation_method must also be **mtt**.
+
+   Default: replacement
+
+.. command:: message_length <data-size-value>
+
+   Specify the logical length assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+.. command:: message_priority <integer-priority>
+
+   Specify the priority assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+Script Interface
+================
+
+The following methods extend the :class:`WsfProcessor` script class by adding the following methods to it:
+
+.. method:: AddSensor(string aSensorName)
+.. method:: AddSensor(string aPlatformName, string aSensorName)
+
+   Adds the sensor by name to the list of sensor on the :model:`WSF_COHERENT_SENSOR_PROCESSOR`. If aPlatformName is omitted the sensor is assumed to be on the same platform as the processor.
+
+.. method:: RemoveSensor(string aSensorName)
+.. method:: RemoveSensor(string aPlatformName, string aSensorName)
+
+   Removes the sensor by name from the list of sensor on the :model:`WSF_COHERENT_SENSOR_PROCESSOR`. If aPlatformName is omitted the sensor is assumed to be on the same platform as the processor.

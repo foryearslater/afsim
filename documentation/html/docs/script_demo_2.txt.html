@@ -1,0 +1,812 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Script demo 2.txt &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Script demo 3.txt" href="script_demo_3.txt.html" />
+    <link rel="prev" title="Script demo 1.txt" href="script_demo_1.txt.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demo_3.txt.html" title="Script demo 3.txt"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_1.txt.html" title="Script demo 1.txt"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="script-demo-2-txt">
+<h1>Script demo 2.txt<a class="headerlink" href="#script-demo-2-txt" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>################################################################################
+#                           Script Demo 2
+#
+# This is a script example that demonstrates many of the features
+# of the scripting language. It is not a lesson in tactics.
+#
+# In this scenario we have:
+# a) an air platform with a &#39;perfect&#39; ESM device which gives the precise
+#    location of an emitter.
+# b) another air platform that is acting as a strike platform.
+# c) a ground platform that is an enemy threat radar.
+#
+# The air platform will detect the threat radar and send a track to the striker
+# which will drop bombs on it.  The route is already planned for the striker.
+#
+################################################################################
+
+event_output
+   file output/script_demo_2.evt
+   enable all
+end_event_output
+
+script_interface
+#   debug
+end_script_interface
+
+dis_interface
+  record output/script_demo_2.rep
+  mover_update_timer            5.0 seconds
+  entity_position_threshold    10 m  # default is 1 m
+  heartbeat_timer              5.0 seconds
+end_dis_interface
+
+# tps-1d
+antenna_pattern TPS-1D_RADAR_ANTENNA
+  constant_pattern
+     peak_gain  28 dB
+     azimuth_beamwidth  4 deg
+     elevation_beamwidth  10 deg
+  end_constant_pattern
+end_antenna_pattern
+
+sensor TPS-1D_SENSOR WSF_RADAR_SENSOR
+  frame_time  10 sec
+  location  0.0 0.0 -30 ft
+  scan_mode  azimuth
+  minimum_range    0 nm
+  maximum_range  160 nm
+  transmitter
+     antenna_pattern TPS-1D_RADAR_ANTENNA
+     antenna_tilt  5 deg
+     power  500 kw
+     pulse_width                 2.0e-6 sec
+     pulse_repetition_frequency  400 hz
+     frequency  1285 mhz
+  end_transmitter
+  receiver
+     antenna_pattern TPS-1D_RADAR_ANTENNA
+     antenna_tilt  5 deg
+     bandwidth  1 mhz
+     internal_loss  19 dB
+  end_receiver
+  swerling_case  1
+  number_of_pulses_integrated  44
+  detector_law  square
+  probability_of_false_alarm  1.0e-6
+  azimuth_error_sigma  0.5 deg
+  elevation_error_sigma  0.0 deg
+  range_error_sigma  1.2 nm
+  filter WSF_ALPHA_BETA_FILTER
+    alpha  0.6
+    beta   0.2
+  end_filter
+  hits_to_establish_track  3 5
+  hits_to_maintain_track  1 3
+  reports_location
+  reports_signal_to_noise
+  reports_range
+  reports_bearing
+end_sensor
+
+#GBU.txt
+processor GBU_GUIDANCE_COMPUTER WSF_GUIDANCE_COMPUTER
+  proportional_navigation_gain  10.0
+  velocity_pursuit_gain         10.0
+  g_bias                         1.0
+  max_commanded_g              25.0 g
+  guidance_delay                0.0 sec
+  time_between_GPS_fixes      600.0 sec
+  IMU_drift_rate                0.0 m/s
+  update_interval               0.5 s
+end_processor
+
+processor CONTACT_FUSE WSF_GROUND_TARGET_FUSE
+   proximity_cancel_on_loss_of_target
+end_processor
+
+aero GBU_1000_LB_AERO WSF_AERO
+  reference_area      1.078 ft2 # 14.06 in dia
+  cd_zero_subsonic    0.100
+  cd_zero_supersonic  0.40
+  mach_begin_cd_rise  0.800
+  mach_end_cd_rise    1.200
+  mach_max_supersonic 2.000
+  cl_max             10.400    # unknown
+  aspect_ratio        4.000    # unknown
+end_aero
+
+aero GBU_1000_LB_PENETRATOR_AERO WSF_AERO
+  reference_area      1.078 ft2 # 14.06 in dia
+  cd_zero_subsonic    0.100
+  cd_zero_supersonic  0.40
+  mach_begin_cd_rise  0.800
+  mach_end_cd_rise    1.200
+  mach_max_supersonic 2.000
+  cl_max             10.400    # unknown
+  aspect_ratio        4.000    # unknown
+end_aero
+
+platform_type GBU_1000_LB WSF_PLATFORM
+  icon gbu-15
+  mover WSF_GUIDED_MOVER
+    aero GBU_1000_LB_AERO
+    mass 1015.0 lbm
+    update_interval 0.5 s
+  end_mover
+  processor guidance_computer GBU_GUIDANCE_COMPUTER
+  end_processor
+  processor detonator CONTACT_FUSE
+  end_processor
+end_platform_type
+
+platform_type GBU_1000_LB_PENETRATOR WSF_PLATFORM
+  icon gbu-15
+  mover WSF_GUIDED_MOVER
+    aero GBU_1000_LB_PENETRATOR_AERO
+    mass 1015.0 lbm
+    update_interval 0.5 s
+  end_mover
+  processor guidance_computer GBU_GUIDANCE_COMPUTER
+  end_processor
+  processor detonator CONTACT_FUSE
+  end_processor
+end_platform_type
+
+weapon_effects GBU_1000_LB_EFFECT WSF_SPHERICAL_LETHALITY
+  allow_incidental_damage
+  minimum_radius   30.0 m
+  maximum_radius   35.0 m
+  maximum_damage   1.0
+  minimum_damage   0.1
+  threshold_damage 0.2
+  exponent         1.0
+end_weapon_effects
+#################################################################################
+#                           Define the weapon types
+#################################################################################
+weapon GBU_1000_LB WSF_EXPLICIT_WEAPON
+   launched_platform_type GBU_1000_LB
+   weapon_effects         GBU_1000_LB_EFFECT
+   category               1000_POUNDER
+   category               glide_bomb_unit
+end_weapon
+
+weapon GBU_1000_LB_PENETRATOR WSF_EXPLICIT_WEAPON
+   launched_platform_type GBU_1000_LB_PENETRATOR
+   weapon_effects         GBU_1000_LB_EFFECT
+   category               1000_POUNDER
+   category               penetrator
+   category               glide_bomb_unit
+end_weapon
+
+processor GBU_1000_LB_LAUNCH_COMPUTER WSF_TASK_PROCESSOR
+   script_debug_writes on
+   show_state_transitions
+   show_task_messages
+
+   script_variables
+      string WEAPON_NAME               = &quot;jdam-1000&quot;;
+      int SALVO_SIZE                   = 1;
+      # the following are used internally and should not be modified by the
+      # user
+      string mShootTaskStr      = &quot;Shoot&quot;;
+   end_script_variables
+
+    script bool InInterceptEnvelopeOf(WsfWeapon aWeapon)
+       bool canIntercept = false;
+       double maxRng = 19000;
+       double minRng = 300;
+       WsfTrackId id = TRACK.TrackId();
+       double targetrange = PLATFORM.SlantRangeTo(TRACK);
+       writeln(&quot;Target range is &quot; , targetrange);
+       if ((targetrange &gt; minRng) &amp;&amp; (targetrange &lt; maxRng))
+       {
+         canIntercept = true;
+         writeln(&quot;Intercept is true&quot;);
+       }
+       return canIntercept;
+   end_script
+
+   script bool LaunchWeapon()
+      WsfWeapon   weapon;
+      weapon = PLATFORM.Weapon(WEAPON_NAME);
+      bool canInterceptNow = false;
+      if (weapon.QuantityRemaining() &gt;= SALVO_SIZE)
+      {
+         canInterceptNow = InInterceptEnvelopeOf(weapon);
+      }
+      bool launched = false;
+      if (canInterceptNow)
+      {
+         launched = FireAt(TRACK, mShootTaskStr, weapon, SALVO_SIZE);
+         if (launched)
+         {
+            writeln_d(&quot;*** T=&quot;, TIME_NOW, &quot; &quot;, PLATFORM.Name(), &quot; &quot;,
+                      TRACK.TargetName(), &quot; R=&quot;, PLATFORM.SlantRangeTo(TRACK),
+                      &quot; FIRE!!!!&quot;);
+         }
+      }
+      return launched;
+   end_script
+
+
+# State Machine
+# Very simple single state state machine
+   evaluation_interval ENGAGE 2.0 sec
+   state ENGAGE  # Engages and fires the weapon if it can
+      next_state ENGAGE
+         bool launched = false;
+         if (InInterceptEnvelopeOf(PLATFORM.Weapon(WEAPON_NAME)))
+         {
+             writeln_d(&quot;Trying to launch weapon &quot; );
+             launched = LaunchWeapon();
+         }
+         return launched;
+      end_next_state
+   end_state
+end_processor
+
+################################################################################
+# Define the platform type for notional EW radar site.
+platform_type EW_RADAR_SITE WSF_PLATFORM
+
+   sensor ew-radar-1 TPS-1D_SENSOR
+      processor track-proc
+   end_sensor
+
+   // This processor simply receives the tracks from the sensor and stores them
+   // in the master track list
+   processor track-proc WSF_TRACK_PROCESSOR
+   end_processor
+
+   // This processor runs periodically and simply dumps out the track list.
+   processor show-tracks-proc WSF_SCRIPT_PROCESSOR
+      update_interval 2 min
+
+      // An example of how to create instance variables.  These can be used
+      // in any scripts defined within the current processor.
+      script_variables
+         int mMyInt = 888;
+         double mMyDouble = -123.456;
+         WsfPlatform mMyPlatform = PLATFORM;
+      end_script_variables
+
+      // This is an example of how to create a script that is available
+      // on the current processor.
+      script void PrintPlatformName(WsfPlatform aPlatform)
+         // Print name using script argument.
+         writeln(&quot;The platform\&#39;s name is &quot;, aPlatform.Name());
+
+         // Print name using the script variable (declared in script_variables).
+         writeln(&quot;The platform\&#39;s name is &quot;, mMyPlatform.Name());
+      end_script
+
+      // on_initialize is a &#39;common&#39; script provided by several WSF components
+      // (see User&#39;s guide for a complete list).  Notice the syntax is different
+      // from how regular scripts are declared.
+      on_initialize
+         writeln(&quot;on_initialize&quot;);
+      end_on_initialize
+
+      // on_update is a &#39;common&#39; script provided by several WSF components
+      // (see User&#39;s guide for a complete list).  Notice the syntax is different
+      // from how regular scripts are declared..
+      on_update
+         writeln(&quot;on_update&quot;);
+
+         // Calls to external script must be externed.
+         extern void PrintPlatformName(WsfPlatform);
+         PrintPlatformName(PLATFORM);
+
+         writeln(&quot;Platform &quot;, PLATFORM.Name(), &quot; is at location LLA &quot;,
+                           PLATFORM.Latitude(), &quot;, &quot;,
+                           PLATFORM.Longitude(), &quot;, &quot;,
+                           PLATFORM.Altitude(),
+                           &quot; XYZ &quot;, PLATFORM.X(), &quot;, &quot;, PLATFORM.Y(), &quot;, &quot;, PLATFORM.Z());
+
+         writeln(&quot;Print my member variables&quot;);
+         writeln(&quot;--- mMyPlatform name = &quot;, mMyPlatform.Name());
+         writeln(&quot;--- mMyInt = &quot;, mMyInt);
+         writeln(&quot;--- mMyDouble = &quot;, mMyDouble);
+
+         WsfLocalTrackList trackList = PLATFORM.MasterTrackList();
+         if (trackList.TrackCount() &gt; 0)
+         {
+            writeln(&quot;T=&quot;, TIME_NOW, &quot;; Track List for &quot;, PLATFORM.Name());
+         }
+
+         foreach (WsfTrack track in trackList)
+         {
+            WsfTrackId trackId = track.TrackId();
+            writeln(&quot;Track &quot;, trackId.OwningPlatform(), &quot; &lt;&quot;, trackId.TrackNumber(), &quot;&gt;&quot;,
+                  &quot;; Update Count=&quot;, track.UpdateCount(), &quot; Update Time=&quot;, track.UpdateTime());
+            writeln(&quot;  Sensor: &quot;, track.SensorName(), &quot;.&quot;, track.SensorType(),
+                  &quot; (&quot;, track.SensorName(), &quot;.&quot;, track.SensorType(), &quot;)&quot;);
+            if (track.RangeValid())
+            {
+               writeln(&quot;  Range=&quot;, track.Range(), &quot; m&quot;);
+            }
+            if (track.BearingValid())
+            {
+               writeln(&quot;  Bearing=&quot;, track.Bearing(), &quot; deg&quot;);
+            }
+            if (track.ElevationValid())
+            {
+               writeln(&quot;  Elevation=&quot;, track.Elevation(), &quot; deg&quot;);
+            }
+            if (track.TypeValid())
+            {
+               writeln(&quot;  Type=&quot;, track.Type());
+            }
+            if (track.SideValid())
+            {
+               writeln(&quot;  Side=&quot;, track.Side());
+            }
+            if (track.SignalToNoiseValid())
+            {
+               writeln(&quot;  S/N=&quot;, track.SignalToNoise(), &quot; absolute&quot;);
+            }
+            if (track.LocationValid())
+            {
+               writeln(&quot;  Location: Lat=&quot;, track.Latitude(),
+                     &quot; Lon=&quot;, track.Longitude(), &quot; Alt=&quot;, track.Altitude());
+            }
+            if (track.FrequencyValid())
+            {
+               writeln(&quot;  Frequency=&quot;, track.Frequency(), &quot; hz&quot;);
+            }
+            writeln(&quot;  Track Quality=&quot;, track.TrackQuality());
+         }
+      end_on_update
+   end_processor
+
+end_platform_type
+
+################################################################################
+// Define the platform type for the notional AWACS.
+
+platform_type AWACS WSF_PLATFORM
+   mover WSF_AIR_MOVER
+   end_mover
+   comm rcvr-1 WSF_RADIO_RCVR
+      frequency 1200 mhz
+   end_comm
+   comm xmtr-1 WSF_RADIO_XMTR
+      frequency 1200 mhz
+   end_comm
+   // The &#39;perfect&#39; ESM device.  It can perfectly locate any transmitter in L-band
+   sensor esm-1 WSF_ESM_SENSOR
+      on
+      frame_time 5 sec
+      frequency_band 1000 mhz 2000 mhz    // L-band
+      reports_location
+      reports_frequency
+      processor track-proc
+      ignore no_awacs_esm
+   end_sensor
+   processor track-proc WSF_TRACK_PROCESSOR
+      update_interval 2 sec
+      report_to GOOD_GUYS subordinates via xmtr-1
+   end_processor
+end_platform_type
+################################################################################
+# Define the platform type for the notional F-18.
+platform_type F-18 WSF_PLATFORM
+   // This is used to prevent the AWACS ESM from attempting to detect me.
+   // (We aren&#39;t interested in these detections and they just confuse the output).
+   category no_awacs_esm
+
+   mover WSF_AIR_MOVER
+   end_mover
+
+   // The receiver will receive the track updates from the AWACS and
+   // internally forward them to the track processor and the attack processor.
+   comm rcvr-1 WSF_RADIO_RCVR
+      frequency 1200 mhz
+      processor track-proc
+      processor attack-proc
+   end_comm
+
+   comm xmtr-1 WSF_RADIO_XMTR
+      frequency 1200 mhz
+   end_comm
+
+   // The track processor does nothing more than gather the tracks and maintain
+   // them in the track list.
+   processor track-proc WSF_TRACK_PROCESSOR
+   end_processor
+
+   processor attack-proc WSF_SCRIPT_PROCESSOR
+      on_message
+         type WSF_TRACK_MESSAGE
+            script
+               WsfTrackMessage trackMsg = (WsfTrackMessage)MESSAGE;
+               WsfTrack        track    = trackMsg.Track();
+               WsfTrackId      trackId  = track.TrackId();
+
+               if (TIME_NOW &lt; 50.0)
+               {
+                  writeln(&quot;Received track message from &quot;, trackId.OwningPlatform());
+               }
+
+               // If we aren&#39;t attacking then start the &#39;attack&#39;
+               WsfProcessor launchComputer = PLATFORM.Processor(&quot;jdam-1000-launch-computer&quot;);
+               if (! launchComputer.IsTurnedOn())
+               {
+                  writeln(&quot;Starting attack at T=&quot;, TIME_NOW);
+                  launchComputer.TurnOn();
+               }
+            end_script
+
+         type default
+            script
+               writeln(&quot;Received message of type &quot;, MESSAGE.Type());
+            end_script
+      end_on_message
+   end_processor
+
+   // This is an example single shot processor that runs only once.
+   // It dumps out a bunch of information about the platform
+   processor show-config-proc WSF_SCRIPT_PROCESSOR
+      update_interval 1.0 sec
+
+      script_variables
+         int mMyInt = 999;
+         double mMyDouble = 123.456;
+         WsfPlatform mMyPlatform;
+      end_script_variables
+
+      on_update
+         mMyPlatform = PLATFORM;
+
+         writeln(&quot;Print my member variables&quot;);
+         writeln(&quot;--- mMyPlatform name = &quot;, mMyPlatform.Name());
+         writeln(&quot;--- mMyInt = &quot;, mMyInt);
+         writeln(&quot;--- mMyDouble = &quot;, mMyDouble);
+
+         writeln(&quot;Information for &quot;, PLATFORM.Name(), &quot;.&quot;, PLATFORM.Type());
+         int i;
+         int j;
+         writeln(&quot;  Command Chains&quot;);
+         for (i = 0; i &lt; PLATFORM.CommandChainCount(); i = i + 1)
+         {
+            WsfCommandChain chain = PLATFORM.CommandChainEntry(i);
+            writeln(&quot;    &quot;, chain.Name());
+            if (chain.Commander().IsValid())
+            {
+               writeln(&quot;      Commander: &quot;, chain.Commander().Name());
+            }
+            writeln(&quot;      Peers&quot;);
+            foreach (WsfPlatform peer in chain.Peers())
+            {
+               writeln(&quot;          &quot;, peer.Name());
+            }
+            writeln(&quot;      Subordinates&quot;);
+            foreach (WsfPlatform subordinate in chain.Subordinates())
+            {
+               writeln(&quot;          &quot;, subordinate.Name());
+            }
+         }
+         writeln(&quot;  Comm Systems&quot;);
+         for (i = 0; i &lt; PLATFORM.CommCount(); i = i + 1)
+         {
+            WsfComm comm = PLATFORM.CommEntry(i);
+            writeln(&quot;    &quot;, comm.Name(), &quot;; Type=&quot;, comm.Type(),
+                  &quot; On=&quot;, comm.IsTurnedOn());
+         }
+         writeln(&quot;  Sensor Systems&quot;);
+         for (i = 0; i &lt; PLATFORM.SensorCount(); i = i + 1)
+         {
+            WsfSensor sensor = PLATFORM.SensorEntry(i);
+            writeln(&quot;    &quot;, sensor.Name(), &quot;; Type=&quot;, sensor.Type(),
+                  &quot; On=&quot;, sensor.IsTurnedOn());
+         }
+         writeln(&quot;  Weapon Systems&quot;);
+         for (i = 0; i &lt; PLATFORM.WeaponCount(); i = i + 1)
+         {
+            WsfWeapon weapon = PLATFORM.WeaponEntry(i);
+            writeln(&quot;    &quot;, weapon.Name(), &quot;; Type=&quot;, weapon.Type(),
+                  &quot;; quantity=&quot;, weapon.QuantityRemaining());
+         }
+         writeln(&quot;  Processors&quot;);
+         for (i = 0; i &lt; PLATFORM.ProcessorCount(); i = i + 1)
+         {
+            WsfProcessor processor = PLATFORM.ProcessorEntry(i);
+            writeln(&quot;    &quot;, processor.Name(), &quot;; Type=&quot;, processor.Type(),
+                  &quot; On=&quot;, processor.IsTurnedOn(),
+                  &quot; UpdateInterval=&quot;, processor.UpdateInterval());
+         }
+
+         // Disable future calls.
+         PROCESSOR.TurnOff();
+      end_on_update
+   end_processor
+
+   weapon jdam-1000 GBU_1000_LB
+   end_weapon
+
+   processor jdam-1000-launch-computer GBU_1000_LB_LAUNCH_COMPUTER
+     on
+     update_interval 2 sec
+   end_processor
+end_platform_type
+
+################################################################################
+# And now the scenario
+
+platform threat-ew-1 EW_RADAR_SITE
+   side red
+   position 39:31:42.42n 91:38:35.111w
+
+   sensor ew-radar-1
+      on
+   end_sensor
+end_platform
+
+platform awacs-1 AWACS
+   side blue
+   command_chain GOOD_GUYS SELF
+
+   sensor esm-1
+      on
+   end_sensor
+
+   route
+      position 39n 90w altitude 30000 ft speed 450 kts
+      position 40n 90w
+      position 40n 89:30w
+      position 39n 89:30w
+   end_route
+end_platform
+
+platform strike-1 F-18
+   side blue
+   command_chain GOOD_GUYS awacs-1
+   route
+#     Take off
+      position 38:44:52.3n 90:21:36.4w altitude 6 ft agl speed 20 kts
+      position 38:45:07.6n 90:22:09.4w altitude 6 ft agl speed 120 kts # climb_rate 1000 fpm
+      position 38:49:00n 90:29:00w altitude 15000 ft speed 400 kts
+      position 39:29:00n 91:30:00w altitude 35000 ft
+      position 38:45:00n 90:06:08w
+      position 38:38:24n 90:07:46w altitude 10000 ft speed 250 kts
+#     Landing
+      position 38:44:52.3n 90:21:36.4w altitude 6 ft agl speed 120 kts
+      position 38:45:07.6n 90:22:09.4w altitude 6 ft agl speed 0 kts
+   end_route
+
+   weapon jdam-1000
+      quantity 4
+      firing_interval 2 sec
+   end_weapon
+end_platform
+
+end_time 2200 sec
+</pre></div>
+</div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/script_demo_2.txt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demo_3.txt.html" title="Script demo 3.txt"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_1.txt.html" title="Script demo 1.txt"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

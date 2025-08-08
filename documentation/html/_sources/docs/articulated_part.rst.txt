@@ -1,0 +1,135 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Articulated_Part_Commands:
+
+Articulated Part Commands
+-------------------------
+
+Overview
+========
+
+
+.. note::
+   This section is just a reference for the various commands.
+
+These commands specify the location and orientation of :command:`communications <comm>` and :command:`sensor`
+:ref:`subsystems <Platform_Subsystem>` with respect to the platform on which they are contained. They also specify the
+degrees of freedom and limits through which the part can rotate in response to a pointing request (cue).
+
+If a request is made to cue the device outside the slew limits, the resulting cue will be as close as possible without
+exceeding the limits.
+
+.. block:: _.articulated_part
+
+Commands
+========
+
+.. command:: location <x length-value> <y length-value> <z length-value> <length-unit>
+   
+   Specify the location of the origin of the articulated part with respect to the origin of the entity coordinate system.
+   
+   **Default:** 0 0 0 meters
+
+.. command:: yaw <angle-value>
+   
+   Specifies the yaw angle of the articulated part with respect to the entity to which it is attached.
+   
+   **Default:** 0.0 degrees
+
+.. command:: pitch <angle-value>
+   
+   Specifies the pitch of the articulated part with respect to the entity to which it is attached.
+   
+   **Default:** 0.0 degrees
+
+   .. note::
+      This command **must not** be used to specify the tilt angle for a system that rotates about its
+      vertical axis (such as an early warning radar or a fixed elevation turret-mounted launcher). Use the
+      :command:`_.antenna_commands.antenna_tilt` command or the **beam_tilt** commands in the
+      :command:`_.receiver.beam_tilt` and :command:`_.transmitter.beam_tilt` blocks for sensors and the **tilt**
+      command below for launcher.
+
+.. command:: roll <angle-value>
+   
+   Specifies the roll of the articulated part with respect to the entity to which it is attached.
+   
+   **Default:** 0.0 degrees
+
+.. command:: tilt <angle-value>
+   
+   Used to specify the fixed elevation angle of a launcher that can be cued in azimuth. See the note in the pitch_
+   command for the explanation.
+
+.. command:: slew_mode [ fixed | azimuth | elevation | both | azimuth_and_elevation]
+   
+   The slewing mode (and the corresponding limits) defines the ability of a subsystem to respond to cue.  If a system is
+   not cued then it is oriented in the direction specified by yaw_, pitch_, and roll_.
+   
+   * **fixed** - The system cannot be cued.
+   * **azimuth** - The system can be cued only in azimuth. The angular limits are defined by azimuth_slew_limits_.
+   * **elevation** - The system can be cued only in elevation. The angular limits are defined by
+     elevation_slew_limits_.
+   * **both** or **azimuth_and_elevation** - The system can be cued in both azimuth and elevation. The angular limits are
+     defined by azimuth_slew_limits_ and elevation_slew_limits_.
+   
+   **Default:** **fixed**
+
+.. command:: azimuth_slew_limits <min-angle-value angle-value> <max-angle-value angle-value> 
+   
+   Specify the absolute minimum and maximum angle about which the subsystem can be slewed in azimuth for both cueing and
+   scanning. The limits are specified in the part coordinate system (PCS).
+   
+   If **slew_mode** is **azimuth** or **both** then these represent the azimuth limits for an explicit cue request (See
+   Cueing above).
+   
+   **Default:** -180 degrees to 180 degrees
+
+.. command:: elevation_slew_limits < min-angle-value angle-value> <max-angle-value angle-value>
+   
+   Specify the minimum and maximum angle about which the subsystem can be slewed in elevation for both cueing and
+   scanning. The limits are specified in the part coordinate system (PCS).
+   
+   If **slew_mode** is **elevation** or **both** then these represent the elevation limits for an explicit cue (See
+   Cueing above).
+   
+   **Default:** -90 degrees to 90 degrees
+
+.. command:: azimuth_slew_rate <angle-rate-value>
+.. command:: elevation_slew_rate <angle-rate-value>
+   
+   Specify the angular velocities to be employed when slewing the part to satisfy a cueing request. This is primarily used
+   for modeling systems that track or point at a single target such as a mechanical tracker or a gun system. It is not
+   used for scanning systems, and should not be used for multiple-target tracking systems.
+   
+   The value must be greater than zero, and values greater than or equal to 1.0E+12 deg/sec will be treated as 'infinite'.
+   
+   **Default:** Infinite (instantaneous slewing)
+
+.. command:: slew_method [ independent | coordinated ]
+   
+   If non-infinite slew rates ares employed, this command specifies how the intermediate steps of a slewing operation will
+   occur. If *independent* is specified, the amount of movement in each direction within a time interval will be
+   determined independently, meaning that one direction may hit its desired value before the other direction. If
+   *coordinated* is specified then the rates will be adjusted so azimuth and elevation values will both reach the
+   desired value at the same time.
+   
+   **Default:** **independent**
+
+.. command:: masking_pattern <masking-pattern-name>
+   
+   Specify the name of a masking pattern defined with the global :command:`masking_pattern` command. Masking patterns are a
+   mechanism for modeling obscuration by structural elements on the platform.
+   
+   See the global :command:`masking_pattern` command for more information.
+   
+   **Default:** No masking pattern
+

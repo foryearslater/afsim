@@ -1,0 +1,125 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_GEOMETRIC_SENSOR
+--------------------
+
+.. model:: sensor WSF_GEOMETRIC_SENSOR
+
+.. parsed-literal::
+
+   sensor <name> WSF_GEOMETRIC_SENSOR
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+
+      // Sensor Commands
+      :command:`sensor` Commands ...
+
+      mode ...
+         ... :ref:`common sensor mode commands <sensor.Common_Mode_Commands>` ...
+         ... :command:`_.receiver` ...
+         ... :ref:`Antenna_Commands` ...
+         platform_type_ [ <platform-type> | default ]
+         check_terrain_masking_ <boolean-value>
+         terrain_masking_mode_ [ terrain_and_horizon | terrain_only | horizon_only ]
+         earth_radius_multiplier_ <value>
+         effective_earth_radius_ <length-value>
+         minimum_range_rate_ <speed-value>
+         maximum_range_rate_ <speed-value>
+      end_mode
+   end_sensor
+
+Overview
+========
+
+:model:`WSF_GEOMETRIC_SENSOR` is a simple sensor based strictly on geometry. Subject to the additional constraints imposed in the `Mode Commands`_ below, a target will be detected if it is within the frustum formed by the :ref:`Antenna_Commands`:
+
+* The :command:`_.antenna_commands.azimuth_field_of_view`
+* The :command:`_.antenna_commands.elevation_field_of_view`
+* The :command:`_.antenna_commands.maximum_range` and :command:`_.antenna_commands.minimum_range`
+
+.. note::
+   The sensor mode accepts :command:`_.receiver` commands, but that is only to gain access to the
+   check_terrain_masking_, terrain_masking_mode_, and earth_radius_multiplier_ / effective_earth_radius_ commands defined there. Those commands are also documented here for convenience. The other commands documented in :command:`_.receiver` are not used.
+
+Mode Commands
+=============
+
+.. begin:: mode
+
+.. command:: platform_type [ <platform-type> | default ]
+    :block:
+
+    .. command:: detection_range <length-value>
+
+       Defines the maximum detection range for targets with platform type of <platform-type>.  If the keyword **default** is provided, the range will apply to all platform types that do not have their own entry for detection range or pd-range table.
+
+    .. command:: pd_range_table ... end_pd_range_table
+
+       Defines a Probability of detection vs range table for targets with the platform_type of <platform-type>.
+       Example::
+
+        platform_type WSF_PLATFORM pd_range_table
+           1.0     0 km
+           0.8     0.5 km
+           0.2     2.0 km
+        end_pd_range_table
+
+       If the keyword **default** is
+       provided, the table will apply to all platform types that do not have their own entry for detection range or pd-range table.
+
+       .. note::
+
+          It is an input error to define a table with less than two entries. Ranges must be ascending, and intermediate values are linearly interpolated.  A platform_type may have both pd_range_table and detection_range.
+
+       .. note::
+
+          When this table is present, for each detection the required probability of detection (required Pd) is determined randomly.
+
+.. end::
+
+.. command:: check_terrain_masking <boolean-value>
+
+   Determines if the sensor will perform :command:`terrain` and horizon masking checks on a target. By default, horizon masking is checked first, followed by a separate terrain masking check if terrain is loaded. The simple horizon masking check assumes a smooth bald spherical Earth and that any object below zero mean sea level is obscured. For subsurface sensors, horizon checking can be disabled by setting the terrain_masking_mode_ to terrain_only.
+
+   **Default:** true (terrain and horizon masking checks are performed)
+
+.. command:: terrain_masking_mode [ terrain_and_horizon | terrain_only | horizon_only ]
+
+   Sets the mode or type of masking checks to perform. By default, both horizon and terrain masking checks are enabled.
+
+   **Default:** terrain_and_horizon
+
+.. command:: earth_radius_multiplier <value>
+.. command:: effective_earth_radius <length-value>
+
+   Specify either the multiplier for Earth's radius, or the effective earth radius, used to compute the effects of atmospheric refraction of electromagnetic radiation.
+
+   For example, specifying ``earth_radius_multiplier_ 1.3333333`` allows the sensor to act as a low-fidelity surrogate for a radar sensor.
+
+   **Default:** earth_radius_multiplier 1.0
+
+   .. note::
+
+      The Earth's radius is considered to be 6366707.019 meters.
+
+
+.. command:: minimum_range_rate <speed-value>
+
+   This sensor will not detect targets with a range rate less than this value.
+
+   **Default:** no minimum
+
+.. command:: maximum_range_rate <speed-value>
+
+   This sensor will not detect targets with a range rate greater than this value.
+
+   **Default:** no maximum

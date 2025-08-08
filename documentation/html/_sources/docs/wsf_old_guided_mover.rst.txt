@@ -1,0 +1,214 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_OLD_GUIDED_MOVER
+--------------------
+
+.. model:: mover WSF_OLD_GUIDED_MOVER
+
+.. note::
+   
+   This refers to the 'old' implementation and should be avoided for new work.
+
+.. parsed-literal::
+   
+   mover <name> :model:`WSF_OLD_GUIDED_MOVER`
+      :command:`mover` Commands ...
+
+      show_status_
+      show_trajectory_
+      disable_guidance_
+      integration_method_ ...
+      integration_timestep_ ...
+
+      stage_ 1
+         aero_ ...
+         empty_mass_ ...
+         fuel_mass_ ...
+         total_mass_ ...
+         pre_ignition_coast_time_ ...
+         pre_separation_coast_time_ ...
+         thrust_ ...
+         thrust_duration_ ...
+         burn_rate_ ...
+         specific_impulse_ ...
+         thrust_vectoring_angle_limit_ ...
+         thrust_vectoring_time_limits_ ...
+      end_stage
+
+      stage_ <n>
+         ... stage_ commands ...
+      end_stage
+   end_mover
+ 
+Overview
+========
+
+:model:`WSF_OLD_GUIDED_MOVER` implements a mover that is capable of representing a guided glide bomb, or a single or
+multistage guided missile.  The model has the following characteristics:
+
+* Propulsion is not required to model a glide-bomb type weapon, but if propulsion is desired, each stage thrust, burn
+  rate, and thus Isp is assumed constant over the burn time.
+* Mass properties and propulsion input are both flexible, and any omitted values will calculated if possible.  On
+  multistage vehicles, lower stages will carry as payload the aggregate mass of each upper stage.  Interrelated values
+  include thrust, burn_rate, thrust_duration, specific_impulse, fuel_mass, empty_mass, and total_mass.  If all values are
+  specified, but they do not sum consistently, an error message will be generated during initialization.
+* Aerodynamic drag and lift are modeled.  See :command:`aero` class.  Missile will aerodynamically turn to intercept a target
+  track, within the specified aerodynamics constraints.  Model will not properly guide to intercept if aerodynamics are
+  insufficient due to inadequate maximum lift coefficient or inadequate dynamic pressure (flight at extreme altitudes or
+  low speeds).
+* Aerodynamic angle of attack required to attain a desired side force is not modeled, so body pitch and yaw are directed
+  along the velocity vector, and local NED roll is zero at all times.
+* The guidance profile to be flown will be determined by the :model:`WSF_OLD_GUIDANCE_COMPUTER` processor that must be
+  present on the same platform.  The guidance computer will supply the desired lateral and vertical forces to steer the
+  mover.
+
+A :model:`WSF_OLD_GUIDED_MOVER` is typically part of a platform type that is launched by an instance of
+:model:`WSF_EXPLICIT_WEAPON`.  The platform type also typically includes a :model:`WSF_WEAPON_FUSE` to indicate when to terminate.
+
+Detailed Process Description:  The :model:`WSF_OLD_GUIDANCE_COMPUTER` is documented separately, and provides desired pitch
+and yaw forces to accomplish intercept guidance with the target track.  The desired forces are provided to the :command:`aero`
+object, which may intervene to reduce the lateral forces, based upon the current dynamic pressure and specified maximum
+lift coefficient.  In addition, drag values are calculated, impeding forward motion.  The vector sum of lateral and
+longitudinal forces act upon the platform in a Newtonian fashion, resulting in an acceleration vector which is
+integrated once for velocities, and a second time for positional updates.
+
+.. block:: WSF_OLD_GUIDED_MOVER
+
+Commands
+========
+
+.. command:: show_status 
+
+   Enables a debug printout that indicates when a staging operation takes place.  Automatically enabled if debug is
+   also enabled.
+
+.. command:: show_trajectory 
+
+   Enables debug printouts on mass changes and trajectory data points.  (Normal debug information includes [LLA]
+   location and NED Orientation [hdg,pitch,roll]).  This option provides downrange distance, speed, Mach number, and
+   applied aerodynamic forces.
+
+.. command:: disable_guidance 
+
+   Disables generation of any aerodynamic lift (lateral or vertical forces).  Turns a guided weapon into a "dumb"
+   ballistic one.  This option is the default setting for the :model:`WSF_UNGUIDED_MOVER`.
+
+.. command:: integration_method [ rk2 | rk4 | trapezoidal ]
+
+   Specify the method used to integrate the equations of motion.
+
+   Default: rk2
+
+.. command:: integration_timestep <time-value>
+
+   Specifies the global value of timestep to be used for integrating the equations of motion. This value is used for any
+   stage that does not specify a local integration timestep.
+
+   Default: Must be specified.
+
+.. command:: stage <stage-number>
+
+   Defines the attributes of the only stage of a single stage vehicle or one of the stages in a multistage vehicle.
+   *<stage number>* must be a value that is greater than or equal to 1 and less than or equal to the current number of
+   defined stages plus one.  If the value specifies a stage that already exists then the enclosed subcommands override the
+   values in that stage.  If the value is equal to the current number of defined stages plus one then a new stage is
+   created and populated with the enclosed subcommands.  It is invalid to specify a stage number that is more than one
+   higher than the current highest defined stage number.
+   
+   .. command:: integration_timestep <time-value>
+   
+      Specifies the timestep to be used for integrating the equations of motion. If specified this overrides the global
+      integration timestep.
+
+      Default: Not specified (use global integration_timestep)
+
+   .. command:: aero  <aero-type-name>
+
+      Specifies the aerodynamics type name for this stage.  Type must be known at initialization time.
+
+   .. command:: empty_mass <mass-value>
+
+      Specifies the mass of the stage without fuel.
+
+   .. command:: fuel_mass <mass-value>
+
+      Specifies the mass of the fuel on the stage.
+
+   .. command:: total_mass <mass-value>
+   
+      Specifies the total mass of the stage, which is the sum of empty_mass_ and fuel_mass_ but does not
+      include the mass of any upper stages on top of this one (considered payload).  Note:  For backward compatibility, this
+      same value may be supplied via the keywords:  'launch_mass', 'mass', 'initial_mass', or 'weight', but future support of
+      these keywords is not guaranteed.
+
+      Default: If not provided, this value will be computed from fuel_mass_ and empty_mass_ if they are provided.
+      If either fuel_mass_ or empty_mass_ is not provided then this value must be provided.
+
+   .. command:: pre_ignition_coast_time <time-value>
+
+      Specifies the amount of time that will elapse between the start of the stage and when the engine will ignite.
+
+      Default: 0.0 sec
+
+   .. command:: pre_separation_coast_time <time-value>
+
+      Specifies the amount of time that will elapse between the burnout of this stage and its separation from the vehicle. 
+      This command has no effect for single-stage vehicles or the last stage of a multistage vehicle.
+
+      Default: 0.0 sec
+
+   .. command:: thrust <force-value>
+   
+      Specifies the thrust of the propulsion system.
+
+   .. command:: thrust_duration <time-value>
+   
+      Specifies the amount of time the engine will produce the specified thrust.
+
+   .. command:: burn_rate <mass-flow-value>
+   
+      Specifies the propellant burn rate while thrusting.
+
+   .. command:: specific_impulse <time-value>
+   
+      Specific impulse of the propulsion system.
+
+   .. command:: thrust_vectoring_angle_limit  <angle-value>
+   
+      Specifies the angle off the longitudinal axis that the thrust is vectored during
+      thrust_vectoring_time_limits_ in order to introduce a pitch-over maneuver.
+
+      Default: 0 - No thrust vectoring.
+
+   .. command:: thrust_vectoring_time_limits  <time-value min-time-value> <time-value max-time-value>
+   
+      Specifies the time window after stage ignition in which thrust vectoring may be employed. This is applicable only
+      if thrust_vectoring_angle_limit_ is greater than zero.
+
+      Default: 0 sec <inf> sec
+
+**end_stage**
+
+Script Interface
+================
+
+The following script methods may be defined on the on the **platform** (**not** in the **mover** block):
+
+| **void on_stage_ignition(int aStage)**
+| **void on_stage_burnout(int aStage)**
+| **void on_stage_separation(int aStage)**
+
+   These scripts are invoked during the ignition, burnout and separation of a stage respectively. The value of 'aStage'
+   will be the stage number, starting at 1.
+
+   One use of these methods is to alter the signature state so as to reflect a change in signature of the vehicle, or to
+   use other script methods to change visual effects for the platform.

@@ -1,0 +1,614 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _P6DOF_Aerodynamics_Data_Label:
+
+P6DOF Aerodynamics Data
+=======================
+
+Aerodynamics data is composed of two distinct categories -- aero_data_ and aero_component_ blocks. The 
+aero_data_ block includes the aerodynamics produced by the object without any controls input or effects
+from any movable surfaces/components. There is only one aero_data_ block, although it may contain additional
+aero_data_ blocks within it that serve as aero sub-modes. An object usually contains multiple aero_component_
+blocks, with one of more for each axis of control and/or for each control surface, depending on the level
+of detail for the model.
+
+Each of these command blocks are detailed below.
+
+Core Aerodynamics Data (Non-Controls Data)
+==========================================
+
+This block defines the primary aerodynamics for the vehicle. The data includes one or more geometric parameters
+as well as multiple stability derivative tables.  See :ref:`P6DOF Theory<P6DOF_FM>` for information on how this data is used.
+In addition, this block includes support for "aero modes", which allow a vehicle to have discrete aerodynamic modes,
+such as a retarded-fall bomb that has two aero modes -- clean and high-drag.
+
+.. command:: aero_data ... end_aero_data
+
+   
+   The geometric data offers two modes: wing-based or reference area. When using wing-based mode, the 
+   wing_chord_ft_, wing_span_ft_, and wing_area_sqft_ should be specified. When using reference area mode,
+   the ref_area_sqft_ should be specified. The stability derivative tables are each a function of mach and
+   alpha (angle-of-attack) or mach and beta (angle-of-sideslip), as appropriate. The tables focus on the 
+   base, non-controls aerodynamics of the vehicle. The secondary aerodynamics consist of control surface
+   aerodynamics and are defined using aero_component_, which is completely separate from aero_data_.
+   
+   .. parsed-literal::
+
+      aero_data
+     
+         wing_chord_ft_ ...
+         wing_span_ft_ ...
+         wing_area_sqft_ ...
+         ref_area_sqft_ ...
+		 
+         use_legacy_derivatives_ ...
+         use_reduced_frequency_ ...
+         
+         aero_center_x_ ...
+         aero_center_y_ ...
+         aero_center_z_ ...
+     
+         :command:`cL_alpha_mach_table` ...
+         :command:`cL_alpha_beta_mach_table` ...
+         :command:`cLq_alpha_mach_table` ...
+         :command:`cL_alphadot_alpha_mach_table` ...
+		 
+         cd_alpha_mach_table_ ...
+         cd_beta_mach_table_ ...
+         cd_alpha_beta_mach_table_ ...
+         
+         cy_beta_mach_table_ ...
+         cy_alpha_beta_mach_table_ ...
+         cyr_beta_mach_table_ ...
+         cy_betadot_beta_mach_table_ ...
+         
+         cm_alpha_mach_table_ ...
+         cm_alpha_beta_mach_table_ ...
+         cmq_mach_table_ ...
+         cmp_mach_table_ ...
+         cm_alphadot_mach_table_ ...
+         
+         cn_beta_mach_table_ ...
+         cn_alpha_beta_mach_table_ ...
+         cn_betadot_mach_table_ ...
+         cnr_mach_table_ ...
+         cnp_mach_table_ ...
+         
+         cl_beta_mach_table_ ...
+         cl_alpha_beta_mach_table_ ...
+         clp_mach_table_ ...
+         cl_alphadot_mach_table_ ...
+         cl_betadot_mach_table_ ...		 
+         clr_mach_table_ ...
+         clq_mach_table_ ...
+     
+         aero_mode_ ... end_aero_mode
+     
+      end_aero_data
+
+.. command:: wing_chord_ft <real-value>
+   
+   The mean chord of the wing measured in feet. This should be used along with wing_span_ft_ and wing_area_sqft_.
+
+.. command:: wing_span_ft <real-value>
+   
+   The wing span of the wing measured in feet. This should be used along with wing_chord_ft_ and wing_area_sqft_.
+
+.. command:: wing_area_sqft <real-value>
+   
+   The area of the wing measured in square feet. This should be used along with wing_chord_ft_ and wing_span_ft_.
+
+.. command:: ref_area_sqft <real-value>
+   
+   The aerodynamic reference area of the vehicle measured in square feet. If this is used, wing_chord_ft_,
+   wing_span_ft_ and wing_area_sqft_ should not be used.
+
+.. command:: use_legacy_derivatives <boolean-value>
+   
+   This should be **true** when using the "legacy" stability derivatives (which are **DEPRECATED** and should not be
+   used in any new development).
+
+   **Default:** false
+
+.. command:: use_reduced_frequency <boolean-value>
+
+   This should be **true** when using the "reduced frequency" stability derivatives. If **false**, the rate derivatives
+   (e.g. :command:`cLq_alpha_mach_table`, :command:`cnr_mach_table`) will be multiplied by their corresponding angular rates.
+   If **true**, the rate derivatives will instead be multiplied by a non-dimensional reduced frequency. For pitching moment and lift coefficient derivatives, the reduced frequency
+   is calculated as the angular rate times the :command:`wing_chord_ft` divided by twice the speed. All other coefficient derivatives
+   use :command:`wing_span_ft` instead of chord. See :ref:`P6DOF Theory<reduced_frequency>` for more information.
+
+   **Default:** true
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: aero_center_x <length-value>
+   
+   The aerodynamic center (x-axis) of the vehicle relative to the reference point in object coordinates. This 
+   "aero-center" is the "aerodynamic reference point" at which aerodynamic forces and moments will be calculated.
+   The typical definition of aerodynamic center (as it relates to longitudinal stability) is the location at which
+   the moment does not change regardless of the angle of attack. Thus, the pitching moment remains constant at 
+   that particular point. Hence, the aerodynamic center, rather than the center of pressure, is used in the 
+   analysis of longitudinal stability.
+
+.. command:: aero_center_y <length-value>
+   
+   The aerodynamic center (y-axis) of the vehicle relative to the reference point in object coordinates.
+         
+.. command:: aero_center_z <length-value>
+   
+   The aerodynamic center (z-axis) of the vehicle relative to the reference point in object coordinates.
+
+Lift Derivatives
+----------------
+
+.. command:: cL_alpha_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the lift coefficient (cL) based on the Mach and angle of attack
+   (alpha), with a table order of Mach-alpha-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+   Sample 2-dimensional table::
+
+    sample_cL_alpha_mach_table
+       regular_table
+          independent_variable mach precision float 
+             0.000 0.900 1.2
+          end_independent_variable		  
+          independent_variable alpha units deg 
+             0.0 18.0 20.0
+          end_independent_variable
+          dependent_variable precision float 
+             0.0 1.2 1.3 0.0 1.2 1.3 0.0 1.2 1.3
+          end_dependent_variable
+       end_regular_table
+    end_sample_cL_alpha_mach_table
+
+.. command:: cL_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the lift coefficient (cL) based on Mach, angle of attack
+   (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+   
+.. command:: cLq_alpha_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the lift coefficient (cL) based on Mach, angle of
+   attack (alpha), and pitch rate (q), with a table order of Mach-alpha-q-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+   
+.. command:: cL_alphadot_alpha_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the lift coefficient (cL) based on Mach, angle of
+   attack (alpha), and alpha-dot (the rate of change of alpha), with a table order of Mach-alpha-alphaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+   
+Drag Derivatives
+----------------
+
+.. command:: cd_alpha_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach and angle of
+   attack (alpha), with a table order of Mach-alpha-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+.. command:: cd_beta_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach and angle of
+   sideslip (beta), with a table order of Mach-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+.. command:: cd_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach, angle of
+   attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+Side-Force Derivatives
+----------------------
+
+.. command:: cy_beta_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the side force coefficient (cy) based on the Mach and angle
+   of sideslip (beta), with a table order of Mach-beta-value.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+.. command:: cy_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the side force coefficient (cy) based on the Mach, angle of
+   attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cyr_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the side force coefficient (cy) based on the Mach, angle
+   of sideslip (beta), and yaw rate (q), with a table order of Mach-beta-q-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cy_betadot_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the side force coefficient (cy) based on the Mach, angle
+   of sideslip (beta), and rate of change of sideslip (beta-dot), with a table order of Mach-beta-betaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+Pitching Moment Derivatives
+---------------------------
+
+.. command:: cm_alpha_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the pitch coefficient (cm) based on the Mach and angle of
+   attack (alpha), with a table order of Mach-alpha-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+.. command:: cm_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the pitch coefficient (cm) based on the Mach, angle of
+   attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cmq_mach_table
+   
+   This is a simple table that outputs the pitch damping coefficient due to pitch rate (cmq) based on Mach.
+   When use_legacy_derivatives_ is true, the value will be multiplied by the pitch rate in deg/sec, while
+   when use_legacy_derivatives_ is false (new derivatives are being used), the value will be multiplied by
+   the pitch rate in rad/sec.
+
+.. command:: cmp_mach_table
+   
+   This is a simple table that outputs the pitch damping coefficient due to roll rate (cmp) based on Mach.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cm_alphadot_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the pitch (damping) coefficient (cm) based on the Mach and the
+   rate of change of alpha (alpha-dot), with a table order of Mach-alphaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+Yawing Moment Derivatives
+-------------------------
+
+.. command:: cn_beta_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the yaw coefficient (cn) based on the Mach and angle of
+   sideslip (beta), with a table order of Mach-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+   
+.. command:: cn_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the yaw coefficient (cn) based on the Mach, angle of
+   attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cn_betadot_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the yaw coefficient (cn) based on the Mach and
+   rate of change of sideslip angle (beta-dot), with a table order of Mach-betaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cnr_mach_table
+   
+   This is a simple table that outputs the yaw damping coefficient due to yaw rate (cnr) based on Mach.
+   When use_legacy_derivatives_ is true, the value will be multiplied by the yaw rate in deg/sec, while
+   when use_legacy_derivatives_ is false (new derivatives are being used), the value will be multiplied by
+   the yaw rate in rad/sec.
+
+.. command:: cnp_mach_table
+   
+   This is a simple table that outputs the yaw damping coefficient due to roll rate (cnp) based on Mach.
+   When use_legacy_derivatives_ is true, the value will be multiplied by the roll rate in deg/sec, while
+   when use_legacy_derivatives_ is false (new derivatives are being used), the value will be multiplied by
+   the roll rate in rad/sec.
+
+Rolling Moment Derivatives
+--------------------------
+
+.. command:: cl_beta_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll coefficient (cl) based on the Mach and angle of
+   sideslip (beta), with a table order of Mach-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is true.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+   
+.. command:: cl_alpha_beta_mach_table
+   
+   This is a 3-dimensional **regular_table** that outputs the roll coefficient (cl) based on the Mach, angle
+   of attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: clp_mach_table
+   
+   This is a simple table that outputs the roll damping coefficient due to roll rate (clp) based on Mach.
+   When use_legacy_derivatives_ is true, the value will be multiplied by the roll rate in deg/sec, while
+   when use_legacy_derivatives_ is false (new derivatives are being used), the value will be multiplied by
+   the roll rate in rad/sec.
+
+.. command:: cl_alphadot_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll coefficient (cl) based on the Mach and
+   the rate of change of angle of attack (alpha), with a table order of Mach-alphaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: cl_betadot_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll coefficient (cl) based on the Mach and
+   the rate of change of angle of sideslip (beta), with a table order of Mach-betaDot-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+.. command:: clr_mach_table
+   
+   This is a simple table that outputs the roll damping coefficient due to yaw rate (clr) based on Mach.
+   When use_legacy_derivatives_ is true, the value will be multiplied by the yaw rate in deg/sec, while
+   when use_legacy_derivatives_ is false (new derivatives are being used), the value will be multiplied by
+   the yaw rate in rad/sec.
+
+.. command:: clq_mach_table
+   
+   This is a simple table that outputs the roll damping coefficient due to pitch rate (clq) based on Mach.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+
+Aero Modes
+----------
+
+.. command:: aero_mode <string> ... end_aero_mode
+   
+   Aero modes may be defined to allow a vehicle to have discrete aerodynamic modes, such as a retarded-fall
+   bomb that has two aero modes -- clean and high-drag. Aero modes support all commands that aero data 
+   support with the exception of an aero_mode (aero_modes can not be nested within each other). Each aero 
+   mode name must be unique for that object.  Aero modes are typically changed using sequencers and the
+   :command:`action_change_aero_mode`.
+
+   If use_reduced_frequency_ or use_legacy_derivatives_ are not explicitly set within an aero_mode_ block,
+   those undefined settings will be set from the settings defined (or left as defaults) by the parent
+   aero_data_ block.
+   
+   .. parsed-literal::
+
+    aero_mode <string>
+       wing_chord_ft_ ...
+       wing_span_ft_ ...
+       wing_area_sqft_ ...
+       ref_area_sqft_ ...
+
+       use_legacy_derivatives_ ...
+       use_reduced_frequency_ ...
+
+       aero_center_x_ ...
+       aero_center_y_ ...
+       aero_center_z_ ...
+
+       :command:`cL_alpha_mach_table` ...
+       :command:`cL_alpha_beta_mach_table` ...
+       :command:`cLq_alpha_mach_table` ...
+       :command:`cL_alphadot_alpha_mach_table` ...
+		 
+       cd_alpha_mach_table_ ...
+       cd_beta_mach_table_ ...
+       cd_alpha_beta_mach_table_ ...
+         
+       cy_beta_mach_table_ ...
+       cy_alpha_beta_mach_table_ ...
+       cyr_beta_mach_table_ ...
+       cy_betadot_beta_mach_table_ ...
+         
+       cm_alpha_mach_table_ ...
+       cm_alpha_beta_mach_table_ ...
+       cmq_mach_table_ ...
+       cmp_mach_table_ ...
+       cm_alphadot_mach_table_ ...
+         
+       cn_beta_mach_table_ ...
+       cn_alpha_beta_mach_table_ ...
+       cn_betadot_mach_table_ ...
+       cnr_mach_table_ ...
+       cnp_mach_table_ ...
+         
+       cl_beta_mach_table_ ...
+       cl_alpha_beta_mach_table_ ...
+       clp_mach_table_ ...
+       cl_alphadot_mach_table_ ...
+       cl_betadot_mach_table_ ...		 
+       clr_mach_table_ ...
+       clq_mach_table_ ...
+
+    end_aero_mode
+
+    
+Movable Aerodynamics Data (Control Surface Aero)
+================================================
+
+Secondary aerodynamics include aerodynamic effects produced by control surfaces or other components, such as
+landing gear, that produce aero effects as a function of angle. For example, retractable landing gear produce
+significant drag when extended (angle of 90 deg) and no drag when retracted (angle of 0 deg).
+
+.. command:: aero_component ... end_aero_component
+
+   The use of aero components can be simple, such as having three "generic" yaw, pitch and roll aero components,
+   or can be more complex and realistic, such as having sixteen specific components: LeftAileron, RightAileron,
+   LeftStabilator, RightStabilator, LeftRudder, RightRudder, LeftSpeedbrake, RightSpeedbrake, LeftFlap, RightFlap,
+   LeftSpoiler, RightSpoiler, NoseLandingGear, LeftLandingGear, RightLandingGear, and ArrestingHook. During runtime,
+   the position of aero components is controlled by the :ref:`P6DOF_Flight_Control_System_Label`.
+
+   .. parsed-literal::
+
+    aero_component
+
+       type_ ...
+       ref_area_sqft_ ...
+	   
+       use_legacy_derivatives_ ...
+       use_reduced_frequency_ ...
+
+       :command:`cL_angle_alpha_mach_table` ...
+       cd_angle_alpha_mach_table_ ...
+       cd_angle_beta_mach_table_ ...
+       cd_angle_mach_table_ ...
+       cy_angle_beta_mach_table_ ...
+       cm_angle_alpha_mach_table_ ...
+       cmq_angle_mach_table_ ...
+       cn_angle_beta_mach_table_ ...
+       cnr_angle_mach_table_ ...
+       cl_angle_mach_table_ ...
+       cl_angle_alpha_beta_table_ ...
+       clp_angle_mach_table_ ...
+       clq_angle_mach_table_ ...
+       clr_angle_mach_table_ ...
+       :command:`cLFactor_angle_mach_table` ...
+
+    end_aero_component
+
+.. command:: type <string>
+      
+   This sets the name/type of the aero component. The name must be unique within the set of aero components for
+   the given :command:`p6dof_object_type`.
+	  
+   .. warning::
+      
+	  In order for an **aero_component** to operate, it must be "connected" to :command:`flight_controls` via the **control_surface** command in :command:`flight_controls`.
+	  
+	  The **control_surface** name and the **aero_component** type must match exactly and are case-sensitive.
+
+.. command:: ref_area_sqft <area-value>
+      
+   This is the reference aerodynamic area for the aero component. If this is not specified, the wing_area_sqft_
+   defined in aero_data_ is used.
+
+.. command:: cL_angle_alpha_mach_table
+            
+   This is a 3-dimensional **regular_table** that outputs the lift coefficient (cL) based on the Mach, angle of attack
+   (alpha), and control surface angle, with a table order of Mach-alpha-angle-value. Sample 3-dimensional table::
+
+       sample_cL_angle_alpha_mach_table
+          regular_table
+             independent_variable mach precision float 
+                0.000 0.900 1.2
+             end_independent_variable		  
+             independent_variable alpha units deg 
+                0.0 18.0 20.0
+             end_independent_variable
+             independent_variable angle units deg 
+                -10.0 0.0 10.0
+             end_independent_variable
+             dependent_variable precision float 
+                -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+                -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+                -1.0 0.0 1.0  -1.0 0.0 1.0  -1.0 0.0 1.0
+             end_dependent_variable
+          end_regular_table
+       end_sample_cL_angle_alpha_mach_table
+
+.. command:: cd_angle_alpha_mach_table
+      
+   This is a 3-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach, angle of attack
+   (alpha), and angle of the control surface, with a table order of Mach-alpha-angle-value.
+   This derivative should be used when drag is only a function of alpha (not beta).
+   When this derivative is used, **cd_angle_beta_mach_table** and **cd_angle_mach_table** should not be used.
+
+.. command:: cd_angle_beta_mach_table
+      
+   This is a 3-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach, angle of sideslip
+   (beta), and angle of the control surface, with a table order of Mach-beta-angle-value.
+   This derivative should be used when drag is only a function of beta (not alpha).
+   When this derivative is used, **cd_angle_alpha_mach_table** and **cd_angle_mach_table** should not be used.
+
+.. command:: cd_angle_mach_table
+      
+   This is a 2-dimensional **regular_table** that outputs the drag coefficient (cd) based on the Mach and
+   the angle of the control surface, with a table order of Mach-angle-value.
+   This derivative should be used when drag is a function of both alpha and beta. (Although this function
+   does not include either alpha or beta, it is more appropriate than either the pro-alpha or pro-beta
+   derivatives.)
+   When this derivative is used, **cd_angle_alpha_mach_table** and **cd_angle_beta_mach_table** should not be used.
+   
+.. command:: cy_angle_beta_mach_table
+      
+   This is a 3-dimensional **regular_table** that outputs the side force coefficient (cy) based on the Mach, angle of
+   sideslip (beta), and angle of the control surface, with a table order of Mach-beta-angle-value..
+
+.. command:: cm_angle_alpha_mach_table
+      
+   This is a 3-dimensional **regular_table** that outputs the pitch coefficient (cm) based on the Mach, angle of attack
+   (alpha), and angle of the control surface, with a table order of Mach-alpha-angle-value.
+
+.. command:: cmq_angle_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the pitch damping coefficient due to pitch rate (cmq) based on Mach 
+   and the angle of the control surface.
+   
+.. command:: cn_angle_beta_mach_table
+      
+   This is a 3-dimensional **regular_table** that outputs the yaw coefficient (cn) based on the Mach, angle of sideslip
+   (beta), and angle of the control surface, with a table order of Mach-beta-angle-value.
+
+.. command:: cnr_angle_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the yaw damping coefficient due to yaw rate (cnr) based on Mach 
+   and the angle of the control surface.
+   
+.. command:: cl_angle_mach_table
+      
+   This is a 2-dimensional **regular_table** that outputs the roll coefficient (cl) based on the Mach and angle of the
+   control surface, with a table order of Mach-angle-value.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+   
+.. command:: cl_angle_alpha_beta_table
+      
+   This is a 3-dimensional **regular_table** that outputs the roll coefficient (cl) based on the angle of the attack (alpha),
+   the angle of slideslip (beta) and the angle of the control surface, with a table order of alpha-beta-angle-value.
+   This derivative may only be used when use_legacy_derivatives_ is false.
+   
+.. command:: clp_angle_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll damping coefficient due to roll rate (clp) based on Mach 
+   and the angle of the control surface.  
+
+.. command:: clq_angle_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll damping coefficient due to pitch rate (clq) based on Mach 
+   and the angle of the control surface.
+
+.. command:: clr_angle_mach_table
+   
+   This is a 2-dimensional **regular_table** that outputs the roll damping coefficient due to yaw rate (clr) based on Mach 
+   and the angle of the control surface.
+   
+.. command:: cLFactor_angle_mach_table
+      
+   This is a 2-dimensional **regular_table** that outputs the lift factor based on the Mach and angle of the control
+   surface, with a table order of Mach-angle-value. The lift factor is multiplied by the calculated lift. It is used
+   for lift reducing components such as spoilers.  This is **DEPRECATED** and should not be used in new developments.
+   
+   .. warning::
+      This derivative is **DEPRECATED** and should not be used for any new development.
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Return to :doc:`p6dof_object_types` or :doc:`p6dof_object_type`

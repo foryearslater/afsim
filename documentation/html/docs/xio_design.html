@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>XIO Design &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="xio_interface" href="xio_interface.html" />
+    <link rel="prev" title="WsfWeaponsManagerSAM" href="WsfWeaponsManagerSAM.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="xio_interface.html" title="xio_interface"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="WsfWeaponsManagerSAM.html" title="WsfWeaponsManagerSAM"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="xio-design">
+<span id="id1"></span><h1>XIO Design<a class="headerlink" href="#xio-design" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#overview" id="id2">Overview</a></p></li>
+<li><p><a class="reference internal" href="#networking" id="id3">Networking</a></p></li>
+<li><p><a class="reference internal" href="#protocol" id="id4">Protocol</a></p></li>
+<li><p><a class="reference internal" href="#capabilities" id="id5">Capabilities</a></p></li>
+</ul>
+</div>
+<section id="overview">
+<h2><a class="toc-backref" href="#id2">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>XIO is the WSF external interface.  XIO defines the protocol used to communicate between WSF applications.  XIO does not replace but instead supplements the <a class="reference internal" href="dis_interface.html#dis_interface" title="dis_interface"><span class="xref wsf wsf-command">dis_interface</span></a>.</p>
+</section>
+<section id="networking">
+<h2><a class="toc-backref" href="#id3">Networking</a><a class="headerlink" href="#networking" title="Permalink to this headline">¶</a></h2>
+<p>XIO allows communication between any number of WSF applications using both TCP and UDP.  Participation in a UDP ‘network’ is determined by the <a class="reference internal" href="xio_interface.html#xio_interface.broadcast" title="broadcast (xio_interface)"><span class="xref wsf wsf-command">broadcast</span></a> or <a class="reference internal" href="xio_interface.html#xio_interface.multicast" title="multicast (xio_interface)"><span class="xref wsf wsf-command">multicast</span></a> command given in the <a class="reference internal" href="xio_interface.html#xio_interface" title="xio_interface"><span class="xref wsf wsf-command">xio_interface</span></a>.  This command determines the parameters for the UDP communication between WSF applications.  Using the UDP messaging, WSF applications perform the necessary handshaking to establish reliable TCP connections where appropriate.  WSF applications with different protocol versions will ignore each other.</p>
+</section>
+<section id="protocol">
+<h2><a class="toc-backref" href="#id4">Protocol</a><a class="headerlink" href="#protocol" title="Permalink to this headline">¶</a></h2>
+<p>There are two ways to communicate between applications:</p>
+<p><strong>TCP</strong></p>
+<ul class="simple">
+<li><p>Guaranteed sent messages will arrive and in the same order</p></li>
+<li><p>Messages must be sent separately to each recipient and have a larger network overhead</p></li>
+</ul>
+<p><strong>UDP</strong></p>
+<ul class="simple">
+<li><p>No guarantee of arrival or order of arrival</p></li>
+<li><p>Lower overhead of sending a message</p></li>
+<li><p>Broadcast or unicast allow sending a single message for multiple recipients</p></li>
+</ul>
+<p>Generally, there are 3 types of communication over XIO.</p>
+<ol class="arabic simple">
+<li><p>Commands</p></li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><p>Usually a one-way message issuing a command or request</p></li>
+<li><p>Can be sent reliably or unreliably</p></li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>Queries</p></li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><p>Consist of a single query message and response message</p></li>
+<li><p>Must be sent reliably</p></li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p>Subscriptions</p></li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><p>Initialized and maintained through reliable TCP messaging.</p></li>
+<li><p>The subject of the subscription can be sent using UDP or TCP.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="capabilities">
+<h2><a class="toc-backref" href="#id5">Capabilities</a><a class="headerlink" href="#capabilities" title="Permalink to this headline">¶</a></h2>
+<p>The following is a summary of the information transmitted over XIO.  This is not intended to be an all-encompassing list but instead an introduction to XIO’s capabilities.</p>
+<p><strong>Commands:</strong></p>
+<p>XIO Supports commands to do the following</p>
+<ul class="simple">
+<li><p>Delete a platform from the simulation</p></li>
+<li><p>Changing a platform’s target heading, speed, altitude, or entire route</p></li>
+<li><p>Turning a platform part (comm, sensor, processor, …) on or off</p></li>
+</ul>
+<p><strong>Subscription services:</strong></p>
+<blockquote>
+<div><p><strong>Platform List Service</strong></p>
+<ul class="simple">
+<li><p>Provides listing of platforms owned by an application as well as updates to that platform list when platforms are added or removed from the simulation</p></li>
+</ul>
+<p><strong>Platform Info Service</strong></p>
+<ul class="simple">
+<li><p>Provides information about a specific platform</p></li>
+<li><p>Provides information about platform parts attached to that platform.</p></li>
+<li><p>Provides information about platform part state changes</p></li>
+</ul>
+<p><strong>Track Service</strong></p>
+<ul class="simple">
+<li><p>Sends track update and track drop messages for either tracks in a platform’s track manager, or from a specific sensor attached to a platform.</p></li>
+</ul>
+<p><strong>Simulation Sensor Service</strong></p>
+<ul class="simple">
+<li><p>The application models a sensor for an external platform</p></li>
+<li><p>The sensor’s tracks are optionally sent back to the requestor</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Queries</strong></p>
+<blockquote>
+<div><p>Sensor rehost query</p>
+<ul class="simple">
+<li><p>Queries an application for its ability to model a specific sensor type</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/xio_design.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="xio_interface.html" title="xio_interface"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="WsfWeaponsManagerSAM.html" title="WsfWeaponsManagerSAM"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,174 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. |SPACE_MOVER_MODEL| replace:: :model:`WSF_INTEGRATING_SPACE_MOVER`
+
+.. |SPACE_MOVER_SCRIPT_CLASS| replace:: :class:`WsfIntegratingSpaceMover`
+
+.. |SPACE_MOVER_MISSION_REF| replace:: :ref:`mission_sequence<WSF_INTEGRATING_SPACE_MOVER.Orbital_Mission_Sequence>`
+
+.. |SPACE_MOVER_MANEUVERING_REF| replace:: :ref:`maneuvering models<WSF_INTEGRATING_SPACE_MOVER.Maneuvering_Models>`
+
+.. |SPACE_MOVER_ATTITUDE_REF| replace:: :ref:`attitude controller model<WSF_INTEGRATING_SPACE_MOVER.Attitude_Controller_Models>`
+
+WSF_INTEGRATING_SPACE_MOVER
+---------------------------
+
+.. contents::
+   :local:
+
+**Script Type:** |SPACE_MOVER_SCRIPT_CLASS|
+
+.. model:: mover WSF_INTEGRATING_SPACE_MOVER
+
+   .. parsed-literal::
+
+    mover *<name>* :model:`WSF_INTEGRATING_SPACE_MOVER`
+       ... :command:`base mover commands <mover>` ...
+       ... `Orbital Element Commands`_ ...
+       :command:`attitude_controller` :ref:`<type-name><WSF_INTEGRATING_SPACE_MOVER.Attitude_Controller_Models>` ...
+          ...
+       end_attitude_controller
+       conjunction_setup_
+          ...
+       end_conjunction_setup
+       :command:`maneuvering` :ref:`<type-name><WSF_INTEGRATING_SPACE_MOVER.Maneuvering_Models>` ...
+          ...
+       end_maneuvering
+       :ref:`mission_sequence<orbital_mission_sequence>`
+             ...
+       end_mission_sequence
+
+       initial_state_
+          ...
+       end_initial_state
+       integrator_
+          ...
+       end_integrator
+       dynamics_
+          ...
+       end_dynamics
+
+       orbital_state_
+          ...
+       end_orbital_state
+
+       # `Script Interface`_
+
+       :command:`on_initialize` ... end_on_initialize
+       :command:`on_initialize2` .. end_on_initialize2
+       :command:`on_update` ... end_on_update
+       :command:`_.script_commands.script_variables` ... end_script_variables
+       :ref:`scripts <Script_Commands>` ... end_script
+       ... Other :ref:`Script Commands <Common_Script_Interface>` ...
+    end_mover
+
+Overview
+========
+
+|SPACE_MOVER_MODEL| implements a mover for a platform in the space domain. Unlike
+:model:`WSF_SPACE_MOVER` or :model:`WSF_NORAD_SPACE_MOVER`, which both use an analytical model to
+provide the future state of a platform, the |SPACE_MOVER_MODEL| uses numerical
+integration. By using a user-specifiable dynamical model, this mover is not limited to the cases
+of interest for those two movers, namely, propagation where the Earth plays the dominant role in
+the dynamics. Further, the |SPACE_MOVER_MODEL| supports hyperbolic propagation, and so can
+also be used to represent unbound orbits.
+
+Users of |SPACE_MOVER_MODEL| need to select an integrator and a dynamical model
+to fully specify the behavior of this mover. The integrator specifies exactly how the state of the
+platform is numerically propagated forward in time. The dynamical model specifies the forces that
+the platform will experience.
+
+Users can specify the initial state of the platform in two ways: using
+`orbital elements commands <Orbital Element Commands_>`_, or with
+kinematics directly using the initial_state_ command.
+
+The dynamical models allow for terms that depend on the mass of the platform, the platform will need
+to have a mass specified. This can be accomplished by explicitly setting the mass on the platform,
+or by using a rocket maneuvering model for this mover.
+
+.. include:: space_mover_overview_common.txt
+
+.. include:: space_mover_raan_inclination_note.txt
+
+.. block:: WSF_INTEGRATING_SPACE_MOVER
+
+Initial State Commands
+======================
+
+.. include:: orbital_state.txt
+
+.. parsed-literal::
+
+   initial_state_
+      position_ <length-value> <length-value> <length-value>
+      velocity_ <speed-value> <speed-value> <speed-value>
+      epoch_ <epoch-value>
+      epoch_date_time_ <month> <day-of-month> <year> <hh:mm:ss>
+      j2000_
+   end_initial_state
+
+.. command:: initial_state ... end_initial_state
+   :block:
+
+   Set the initial state of the platform using ECI kinematics.
+
+.. command:: position <length-value> <length-value> <length-value>
+
+   Set the position of the platform in the ECI frame at the commanded epoch.
+
+.. command:: velocity <speed-value> <speed-value> <speed-value>
+
+   Set the velocity of the platform in the ECI frame at the commanded epoch.
+
+.. command:: epoch <epoch-value>
+.. command:: epoch_date_time <month> <day-of-month> <year> <hh:mm:ss>
+
+   Set the epoch at which the initial state is being given. Only one of
+   epoch_ or epoch_date_time_ needs to be specified.
+
+.. command:: j2000
+
+   Specify that the initial kinematics are given in the J2000 frame. If this
+   command is absent, the specified kinematics are taken to be in the ECI
+   frame.
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Orbital_Integrator_Models:
+
+.. include:: orbital_integrator_models.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Orbital_Dynamics:
+
+.. include:: orbital_dynamics.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Orbital_Dynamics_Terms:
+
+.. include:: orbital_dynamics_terms.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Orbital_Propagator_Commands:
+
+.. include:: conjunction_input.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Attitude_Controller_Models:
+
+.. include:: attitude_controller_models.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Maneuvering_Models:
+
+.. include:: orbital_maneuvering_models.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Orbital_Mission_Sequence:
+
+.. include:: orbital_mission_sequence.txt
+
+.. _WSF_INTEGRATING_SPACE_MOVER.Script_Interface:
+
+.. include:: space_mover_script_interface.txt

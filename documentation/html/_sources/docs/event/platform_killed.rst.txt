@@ -1,0 +1,134 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _PLATFORM_KILLED:
+
+PLATFORM_KILLED
+---------------
+
+.. deprecated:: 2.9
+   PLATFORM_KILLED event is deprecated and will be removed in a future release. Use :ref:`docs/event/platform_events:PLATFORM_BROKEN` instead.
+
+The output for **PLATFORM_** family of events is virtually identical except for the event name, and the
+**PLATFORM_DELETED** and **PLATFORM_KILLED** events include the additional 'Ps:' field on the first line.
+
+Format
+======
+
+::
+
+ *<time> <event> <platform>* Type: *<type>* Side: *<side>* Ps: *<ps>* \
+ LLA: *<lat> <lon> <alt>* m Heading: *<heading>* deg Pitch: *<pitch>* deg Roll: *<roll>* deg \
+ Speed: *<speed>* m/s * [ *<uvn> <uve> <uvd>* ] Acceleration: *<accel>* m/s2 * [ *uvn uve uve* ]
+
+
+Breakdown
+=========
+
+*<time>*
+    The current simulation time
+*<event>*
+    The simulation event that occurred
+*<platform>*
+    The name of platform added
+Type: *<type>*
+    The type of the platform
+Side: *<side>*
+    The team or affiliation of team
+Ps: *<ps>*
+    The probability of survival of the platform in the range [0, 1]. This is only for
+    PLATFORM_DELETED and PLATFORM_KILLED.
+LLA: *<lat> <lon> <alt>* m
+    The platform location; altitude is always in meters.
+Heading: *<heading>* deg
+    The heading of platform (degrees clockwise from north).
+Pitch: *<pitch>* deg
+    The pitch angle of the platform in degrees.
+Roll: *<roll>* deg
+    The roll angle of the platform in degrees.
+Speed: *<speed>* m/s
+    The speed of the platform in meters/second.
+Acceleration: *<accel>* m/s2
+    The acceleration of platform in meters/second^2.
+[ *uvn uve uvd* ]
+    The unit vector in the north-east-down frame that reflects the direction of the
+    velocity or acceleration vector. Note that all of the components will be zero if
+    the magnitude of the vector is zero.
+
+How it Appears in Output
+========================
+
+*PLATFORM_ADDED:*
+
+::
+
+ 0.00000 PLATFORM_ADDED fighter-1 Type: FIGHTER Side: red \
+  LLA: 40:00:00.00n 90:00:00.00w 9144 m Heading: 30.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+  Speed: 231.500 m/s * [ 0.866 0.500 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+
+*PLATFORM_DELETED:*
+
+::
+
+ 1.00000 PLATFORM_DELETED fighter-1 Type: FIGHTER Side: red Ps: 1 \
+  LLA: 40:00:00.00n 90:00:00.00w 9144 m Heading: 30.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+  Speed: 231.500 m/s * [ 0.866 0.500 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+
+*PLATFORM_INITIALIZED:*
+
+::
+
+ 0.00000 PLATFORM_INITIALIZED fighter-1 Type: FIGHTER Side: red \
+  LLA: 40:00:00.00n 90:00:00.00w 9144 m Heading: 30.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+  Speed: 231.500 m/s * [ 0.866 0.500 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+
+*PLATFORM_KILLED:*
+
+::
+
+ 1.00000 PLATFORM_KILLED fighter-1 Type: FIGHTER Side: red Ps: 1 \
+ LLA: 40:00:00.00n 90:00:00.00w 9144 m Heading: 30.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+ Speed: 231.500 m/s * [ 0.866 0.500 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+
+*PLATFORM_OMITTED:*
+
+::
+
+ 0.00000 PLATFORM_OMITTED fighter-1 Type: FIGHTER Side: red \
+  LLA: 40:00:00.00n 90:00:00.00w 9144 m Heading: 30.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+  Speed: 231.500 m/s * [ 0.866 0.500 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+
+
+
+How to Show Event Messages
+==========================
+
+.. parsed-literal::
+
+  :command:`event_output`
+     file replay.evt              # write event messages to file "replay.evt"
+     enable PLATFORM_ADDED
+     enable PLATFORM_DELETED
+     enable PLATFORM_INITIALIZED
+     enable PLATFORM_KILLED
+     enable PLATFORM_OMITTED
+  end_event_output
+
+  platform_type FIGHTER WSF_PLATFORM
+     mover WSF_AIR_MOVER end_mover
+  end_platform_type
+
+  platform fighter-1 FIGHTER
+     side red
+     route
+       position 40n 90w altitude 30000 ft heading 30 deg speed 450 kts
+     end_route
+  end_platform

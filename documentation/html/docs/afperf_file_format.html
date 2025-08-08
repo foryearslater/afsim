@@ -1,0 +1,822 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>AFPerf Intermediate File Format &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="AFSIM Changelog" href="afsim_change_log.html" />
+    <link rel="prev" title="aero" href="aero.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="afsim_change_log.html" title="AFSIM Changelog"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="aero.html" title="aero"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="afperf-intermediate-file-format">
+<h1>AFPerf Intermediate File Format<a class="headerlink" href="#afperf-intermediate-file-format" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#afperf-format-version-1-x" id="id1">AFPerf Format Version 1.x</a></p>
+<ul>
+<li><p><a class="reference internal" href="#record-ordering" id="id2">Record Ordering</a></p></li>
+<li><p><a class="reference internal" href="#common-record-fields" id="id3">Common Record Fields</a></p></li>
+<li><p><a class="reference internal" href="#defined-record-types" id="id4">Defined Record Types</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>The AFPerf file format is an intermediate format which stores profiling data.
+It is structured to capture profiling data during execution in a reasonably efficient manner.
+It is not intended to be used directly; the normal and supported usage pattern is post-processing using the Artificer toolset.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The AFPerf file format is an implementation detail and is subject to change without notice.</p>
+</div>
+<p>In addition, there is no guarantee that future releases will retain support for collecting data in a given format version.
+The Artificer toolset will preserve compatibility to <em>post-process</em> earlier versions (subject to AFSIM deprecation policies), but capturing new data in an old format may not be possible.
+More specifically, a future release may, without notice, change the major version of the AFPerf file format and use it as the exclusive collection version.</p>
+<p>While the format is raw, its content is both structured and versioned.
+The AFPerf format may be considered a type of container format in that it can represent profiling data collected from multiple independent executions.
+This document describes the structure primarily as an internal implementation reference, but it may be found useful by someone seeking to process AFPerf files directly.
+Such direct processing of AFPerf files is generally discouraged, and should be done with care.
+Every tool which processes an AFPerf data file MUST recognize and check compatibility of the version record prior to processing.
+When a tool encounters a later minor version than known, it SHOULD ignore all unknown record types and additional fields for known record types.</p>
+<section id="afperf-format-version-1-x">
+<h2><a class="toc-backref" href="#id1">AFPerf Format Version 1.x</a><a class="headerlink" href="#afperf-format-version-1-x" title="Permalink to this headline">¶</a></h2>
+<p>The AFPerf version 1.x format makes use of comma-delimited records.
+The format is text-based and MUST use UTF-8 encoding with no byte order marks.
+Processing compatibility with third party tools is a non-goal and should not be expected.
+In particular, the per-record variation in field count and semantics makes it incompatible with common CSV processing tools.
+The output format selection was constrained by a requirement to not depend on any third party library for functionality.
+The format design tries to balance size compactness, implementation efficiency, future implementation flexibility, as well as extensibility.</p>
+<p>The AFPerf format enables representing point and aggregate data samples for arbitrary performance measures.
+Point data represents a measurement from a single point in time, while aggregate data represents measurements between two points in time.
+The start and end time for an aggregate measurement may be identical, indicating a duration of zero.
+Aggregate data may have been aggregated at the time of collection and/or during subsequent processing.</p>
+<p>Aggregate data records may represent a single raw record or represent a processed derivation of multiple raw records.
+To distinguish between raw and processed aggregate records, raw records MUST contain a valid record id (run, region, section) with which they are associated.
+If the record id field is blank, the aggregate data represents a processed record derived from multiple raw records.
+A processed record MUST populate the aggregation type field, whereas raw records MUST leave it blank.</p>
+<p>The timing of when data measurements are performed varies with the profiling construct used to perform measurement.
+Data may be measured at an overall run level, a <code class="docutils literal notranslate"><span class="pre">ProfilingRegion</span></code> level, and a <code class="docutils literal notranslate"><span class="pre">ProfilingSection</span></code> level.
+For details on <code class="docutils literal notranslate"><span class="pre">ProfilingRegion</span></code> and <code class="docutils literal notranslate"><span class="pre">ProfilingSection</span></code> usage recommendations see the profiling interface documentation.</p>
+<p>For the limited purposes of the format specification, there are two important distinctions.
+First, a region covers a single interval (start/stop timestamp pair of nonnegative duration), while a section may include zero to many intervals.
+Second, regions are entirely disjoint or form a nested stack, while section intervals may partially overlap.
+As a result, section records contain a section interval id field, while it is implicit in the timed ordering of regions due to strict stacking.</p>
+<p>Depending on their definition, raw measurement types are either snapshot samples or duration/rate samples.
+The following table summarizes available measurement record points.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 39%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Scope of collection</p></th>
+<th class="head"><p>Snapshot Measurement</p></th>
+<th class="head"><p>Duration/Rate Measurement</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>run as a whole</p></td>
+<td><p>periodic (defined by profiling library)</p></td>
+<td><p>periodic (defined by profiling library)</p></td>
+</tr>
+<tr class="row-odd"><td><p>region interval</p></td>
+<td><p>start and end of interval</p></td>
+<td><p>once at end of region</p></td>
+</tr>
+<tr class="row-even"><td><p>section interval</p></td>
+<td><p>start and end of interval</p></td>
+<td><p>at end of each interval</p></td>
+</tr>
+</tbody>
+</table>
+<p>The preferred record separator is a single newline character (‘\n’, U+000A) regardless of platform.
+For compatibility it may also use CRLF (‘rn’), likewise regardless of platform.
+As a result, each record appears as a distinct line should a file be viewed with a text editor.
+If a record begins with the number sign character (‘#’, U+0023) then the entire record should be considered a comment and not processed.
+An empty record or record consisting only of tab and space characters MUST be likewise ignored.
+The first field in each record is the name of a record type.
+The record type defines all subsequent field count and meaning for each field.</p>
+<p>Each individual record follows the <a class="reference external" href="https://tools.ietf.org/html/rfc4180">RFC 4180</a> standard for formatting and quoting.
+However the overall file is not an RFC-conformant CSV file since not all records contain the same number (or meaning) of fields as is required by Section 2.4.</p>
+<p>Integer values MUST be represented using decimal or hexadecimal format as specified in the C99 standard for <code class="docutils literal notranslate"><span class="pre">strtoll</span></code> in the default locale.
+(Octal values are not supported due to potential confusion with leading zeroes.)
+Floating-point values MUST be represented as defined in the C99 standard for <code class="docutils literal notranslate"><span class="pre">strtod</span></code>, and MUST not have a non-whitespace final string component.
+Notably, floating-point values MAY use representations of infinity or not-a-number (NAN).
+Using appropriate measurement units, along with hexadecimal form for integers and exponential form for floating point values may result in a slightly more compact record size.</p>
+<p>A file may contain only point data, only aggregate data, or any combination for each measurement types.
+In particular, presence of aggregate data neither requires nor preclude presence of input point data.</p>
+<section id="record-ordering">
+<h3><a class="toc-backref" href="#id2">Record Ordering</a><a class="headerlink" href="#record-ordering" title="Permalink to this headline">¶</a></h3>
+<p>For a file to be valid it MUST start with a specific file format header value.
+The file format header is the literal string <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">AFPerf</span> <span class="pre">v1</span></code>, followed by space (U+0020) padding such that the header size comprises exactly 16 bytes.
+As such, the literal hex byte sequence <code class="docutils literal notranslate"><span class="pre">23</span> <span class="pre">20</span> <span class="pre">41</span> <span class="pre">46</span> <span class="pre">50</span> <span class="pre">65</span> <span class="pre">72</span> <span class="pre">66</span> <span class="pre">20</span> <span class="pre">76</span> <span class="pre">31</span> <span class="pre">20</span> <span class="pre">20</span> <span class="pre">20</span> <span class="pre">20</span> <span class="pre">20</span></code> may be used as file signature “magic” to identify AFPerf v1 files.
+This particular value was chosen for broad compatibility across possible future major version changes, since it is a single field CSV record, but also a comment for many common representation formats (e.g. Bourne shell, Python, YAML, binary packing, etc.).</p>
+<p>A file which only contains a version header is valid but meaningless other than an empty container.
+The minimal useful file contains a single version header followed by a single <cite>RunInfo</cite> record.
+Such a file is minimally useful to represent cases where no data was matched or collected for the given run.</p>
+<p>Additional version header lines may appear throughout the file contents, but MUST always be an identical header value.
+The minor and patch versions of AFPerf format may vary among multiple runs within a single container file, but all MUST be use an identical version header (i.e. major version).
+This can occur in many circumstances, including accumulating run data from multiple build versions and installation locations which support differing output versions.
+Before appending a new version header to an existing file, writing software MUST ensure that first file record version is compatible.
+Each occurence of a version header MUST be ordered such that it forms a logical boundary between other records.
+In other words, a new version record indicates that all records prior to it are in the old version, and all records following it are in the new version.</p>
+<p>A file may contain multiple <cite>RunInfo</cite> records to capture data from multiple runs within a single file.
+When multiple <cite>RunInfo</cite> records are present, there is no strict ordering requirement.
+In particular, complete records from multiple concurrent runs may be interleaved.</p>
+<p>There are no other ordering restrictions or constraints.
+In particular, point and aggregate data records may occur before the <cite>MeasurementType</cite> or <cite>RunInfo</cite> records to which they refer.
+This relaxed ordering provides flexibility in the writing of data during collection.
+The set of records provides sufficient information to reconstruct the execution order during later processing.</p>
+</section>
+<section id="common-record-fields">
+<h3><a class="toc-backref" href="#id3">Common Record Fields</a><a class="headerlink" href="#common-record-fields" title="Permalink to this headline">¶</a></h3>
+<p>There are several types of fields which are common to many of the record types.
+For brevity they are defined here.</p>
+<dl>
+<dt>aggregate type</dt><dd><p>The field describes the manner of aggregation for processed records (i.e. count, sum, mean, std deviation, max, min, etc.).
+It MUST be blank for raw records, and MUST be populated for composite/processed records.</p>
+</dd>
+<dt>aggregate timestamps</dt><dd><p>The start and stop timestamps of an aggregate data record reflect either a specific interval for raw aggregate records, or the overall combined span for processed aggregate records.</p>
+</dd>
+<dt>record id</dt><dd><p>Several record types use id values to establish relational references to other records.
+These ids provide flexibility in linking records in order to a) minimize the likelihood of ambiguous/colliding records, and b) ease visual inspection of file contents for internal debugging.
+All id values should be unsigned integer values no larger than may be represented with 64 bits.</p>
+<p>Note that each record type specifies required semantics on range for each id value.</p>
+<p>A generator of AFPerf files may opt to not use id fields by leaving the field blank.
+If id fields are not used, then the generator MUST ensure that consistent record block ordering is provided in the file.
+Record block ordering means that point and aggregate data records immediately follow the <cite>RunInfo</cite>, <cite>RegionStart</cite>, <cite>RegionStop</cite>, <cite>SectionStart</cite> or <cite>SectionStop</cite> record with which they are associated.
+By so doing, the data record block is unambiguously grouped.
+Distinct record blocks may still be arbitrarily ordered (i.e not ordered according to record timestamp) as long as each block is internally consistent.</p>
+</dd>
+<dt>tags</dt><dd><p>A tag is a name value pair of metadata which may be associated with collected data.
+Tags can be useful to provide alternate axes on which to report or aggregate data.</p>
+</dd>
+<dt>timestamp</dt><dd><p>An internal timestamp of a record, where the absolute value is arbitrary and implementation defined.
+The value of a timestamp must be nonnegative.
+The benefit of timestamps come through duration calculations between timestamps.
+The time unit is fixed for any single run, however may vary between runs due to differences across systems, compilers, and compiler versions.</p>
+</dd>
+</dl>
+</section>
+<section id="defined-record-types">
+<h3><a class="toc-backref" href="#id4">Defined Record Types</a><a class="headerlink" href="#defined-record-types" title="Permalink to this headline">¶</a></h3>
+<p>The following list contains the set of valid record types.
+Each record MUST begin with the first field designating the record type for that record.
+The record type may be represented as either the literal string name, or as the assigned record id.</p>
+<p>To provide for flexibility in implementation as well as future compatible extensibility, data record types (e.g. RegionPoint) are distinct from event record types (e.g. RegionStop).
+The data record types permit multiple measurements to be reported in a single record as well as multiple data records for the same event to be provided.
+This is intended to provide flexibility in compactness, while providing flexibility in format, in particular for reporting multiple aggregation types of multiple data points.</p>
+<table class="docutils align-left">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Record Name</p></th>
+<th class="head"><p>Version Available</p></th>
+<th class="head"><p>Record Id</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><cite>(reserved)</cite></p></td>
+<td></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#measurementtype">MeasurementType</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pauseresume">PauseResume</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#regionaggregate">RegionAggregate</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#regionpoint">RegionPoint</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#regionstart">RegionStart</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#regionstop">RegionStop</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>6</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#runaggregate">RunAggregate</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>7</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#runinfo">RunInfo</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>8</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#runpoint">RunPoint</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#sectionaggregate">SectionAggregate</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#sectioninfo">SectionInfo</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>11</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#sectionpoint">SectionPoint</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>12</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#sectionstart">SectionStart</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>13</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#sectionstop">SectionStop</a></p></td>
+<td><p>1.0.0</p></td>
+<td><p>14</p></td>
+</tr>
+</tbody>
+</table>
+<section id="measurementtype">
+<h4>MeasurementType<a class="headerlink" href="#measurementtype" title="Permalink to this headline">¶</a></h4>
+<p>This record provides definition for a particular element being measured.
+There is no central registry of known or available measurement types.
+This is intentional to provide flexibility in adding new measurement types as well as variation across platforms of what is collectable.
+While many data captures will contain identical measurement elements, each run MUST separately register all measurement types.</p>
+<p>Example possible measurement types and datatypes include:</p>
+<ul class="simple">
+<li><p>Operating System, string</p></li>
+<li><p>Operating System Version, string</p></li>
+<li><p>CPU Model, string</p></li>
+<li><p>Processing Cores, integer</p></li>
+<li><p>Processing Threads, integer</p></li>
+<li><p>System Available RAM, integer (in MB)</p></li>
+<li><p>System Free RAM, integer (in MB)</p></li>
+<li><p>Profiling Start, string (ISO 8601)</p></li>
+<li><p>Profiling Finish, string (ISO 8601)</p></li>
+<li><p>User run label, string</p></li>
+<li><p>Scenario input files, string</p></li>
+<li><p>Execution hostname, string</p></li>
+</ul>
+<p>Note that multiple <cite>MeasurementType</cite> records for the same run and measurement type id may be emitted.
+In such cases subsequent records update the previous definition.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">MeasurementType,&lt;timestamp&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;name&gt;,&lt;datatype&gt;,&lt;units&gt;,&lt;summary&gt;,&lt;description&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">MeasurementType,123456700,0xbad0bad0,0xabe,Execution</span> <span class="pre">Time,int64,nanoseconds,System</span> <span class="pre">execution,Some</span> <span class="pre">further</span> <span class="pre">elaboration</span> <span class="pre">on</span> <span class="pre">nuances</span> <span class="pre">of</span> <span class="pre">measured</span> <span class="pre">mechanism</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 8%" />
+<col style="width: 78%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>run id</p></td>
+<td><p>integer</p></td>
+<td><p>The run id from a <cite>RunInfo</cite> record with which this record is associated.</p></td>
+</tr>
+<tr class="row-odd"><td><p>measurement type id</p></td>
+<td><p>integer</p></td>
+<td><p>A dynamically assigned id for the specified measurement type.
+A type id value should be selected to minimize chance of duplication, including
+for successive runs using the same measurement type names.</p></td>
+</tr>
+<tr class="row-even"><td><p>name</p></td>
+<td><p>string</p></td>
+<td><p>A human friendly name of the measurement</p></td>
+</tr>
+<tr class="row-odd"><td><p>datatype</p></td>
+<td><p>string</p></td>
+<td><p>Indicates the base datatype for all values of this MeasurementType.
+This field enables processing tools to have some knowledge of exported data formats.
+This value must be one of “double”, “int32”, “int64”, “bool”, “string”, and “enum”.
+The “enum” datatype indicates strings with an expected small set of value options,
+indicating to reporting tools that binning of values is a reasonable action.
+For compactness “bool” a field MUST use only literal values <code class="docutils literal notranslate"><span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>units</p></td>
+<td><p>string</p></td>
+<td><p>The units used for values in measurement records, in a machine parseable format.
+A units value MUST be provided, and SHOULD be “text”, “count”, a time unit, or an amount-of-data units.
+A units value of “text” MUST only be used when datatype is “string”.
+A units value of “count” MUST only be used when datatype is one of the numeric values.
+Time units MUST use an SI abbreviated value of “s”, “ms”, “us”/”μs” (with U+00B5), or “ns”.
+Amount-of-data MUST use standard abbreviation and MUST follow IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.</p></td>
+</tr>
+<tr class="row-odd"><td><p>summary</p></td>
+<td><p>string</p></td>
+<td><p>A human friendly summary of the measurement, no more than a full sentence.
+This field may be blank.</p></td>
+</tr>
+<tr class="row-even"><td><p>description</p></td>
+<td><p>string</p></td>
+<td><p>A human friendly description of the measurement, with further detail and explanation if warranted.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="pauseresume">
+<h4>PauseResume<a class="headerlink" href="#pauseresume" title="Permalink to this headline">¶</a></h4>
+<p>This record provides context of execution pauses experiences.
+Such pauses are frequently the result of execution debugging.
+A tool interpreting an AFPerf file SHOULD indicate these pause periods and provide an option to deduct the overlapping paused duration from intervals which partially or fully overlapped.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">PauseResume,&lt;end</span> <span class="pre">timestamp&gt;,&lt;start</span> <span class="pre">timestamp&gt;,&lt;run</span> <span class="pre">id&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">PauseResume,123456750,123456700,0xbad0bad0</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 15%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>end timestamp</p></td>
+<td><p>timestamp</p></td>
+<td><p>The timestamp of when execution resumed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>start timestamp</p></td>
+<td><p>timestamp</p></td>
+<td><p>The timestamp of when an execution pause began.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="regionaggregate">
+<h4>RegionAggregate<a class="headerlink" href="#regionaggregate" title="Permalink to this headline">¶</a></h4>
+<p>This records represents data measurements collected from <code class="docutils literal notranslate"><span class="pre">ProfilingRegion</span></code> usages  within code.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RegionAggregate,&lt;end</span> <span class="pre">timestamp&gt;,&lt;start</span> <span class="pre">timestamp&gt;,&lt;record</span> <span class="pre">id&gt;,&lt;aggregation</span> <span class="pre">type&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;[,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;]</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RegionAggregate,123456788,123456784,0xaaaa0000,summation,0xcccddd,0.531</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 81%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>record id</p></td>
+<td><p>integer</p></td>
+<td><p>The most specific record with which the measurement data is associated.
+For raw records this MUST be the specific region id for which the data was measured.
+For processed records this MUST be the overall run id within which multiple region records were accumulated.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="regionpoint">
+<h4>RegionPoint<a class="headerlink" href="#regionpoint" title="Permalink to this headline">¶</a></h4>
+<p>There may be two <cite>RegionPoint</cite> records for each region id in cases of snapshot sampled data elements.
+One will have contain the timestamp of interval start, the other will contain the timestamp of stop.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RegionPoint,&lt;timestamp&gt;,&lt;region</span> <span class="pre">id&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;[,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;]</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RegionPoint,123456789,0xaaaa0000,0xcccddd,0.531,0xeeeeffff,3.445e7</span></code></p>
+</section>
+<section id="regionstart">
+<h4>RegionStart<a class="headerlink" href="#regionstart" title="Permalink to this headline">¶</a></h4>
+<p>This record type marks the start of a region interval.
+Since there can only be exactly one interval per region, <cite>RegionStart</cite> also serves as what would otherwise be a separate <cite>RegionInfo</cite> record.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RegionStart,&lt;timestamp&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;region</span> <span class="pre">id&gt;,&lt;region</span> <span class="pre">label&gt;,&lt;tags&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RegionStart,12345678,0xaaaa0000,rudimentary</span> <span class="pre">FooBar</span> <span class="pre">frobbing,platform=F15_ABC;component=sensor_XYZ</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 81%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>region id</p></td>
+<td><p>integer</p></td>
+<td><p>A region id value unique to each <cite>RegionStart</cite> record, even for distinct records with the same region label.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="regionstop">
+<h4>RegionStop<a class="headerlink" href="#regionstop" title="Permalink to this headline">¶</a></h4>
+<p>This record type marks the stop of a region interval.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RegionStop,&lt;timestamp&gt;,&lt;region</span> <span class="pre">id&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RegionStop,12345679,0xaaaa0000</span></code></p>
+</section>
+<section id="runaggregate">
+<h4>RunAggregate<a class="headerlink" href="#runaggregate" title="Permalink to this headline">¶</a></h4>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RunAggregate,&lt;end</span> <span class="pre">timestamp&gt;,&lt;start</span> <span class="pre">timestamp&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;aggregation</span> <span class="pre">type&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;[,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;]</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RunAggregate,123456786,123456780,0xbad0bad0,mean,0xcccddd,0.531</span></code></p>
+</section>
+<section id="runinfo">
+<h4>RunInfo<a class="headerlink" href="#runinfo" title="Permalink to this headline">¶</a></h4>
+<p>This record provides basic information about a single run.
+It assigns a run id which enables associated records to be relationally linked to a given run.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RunInfo,&lt;start</span> <span class="pre">timestamp&gt;,&lt;timestamp</span> <span class="pre">units&gt;,&lt;wallclock</span> <span class="pre">time&gt;,&lt;afperf</span> <span class="pre">format</span> <span class="pre">version&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;application</span> <span class="pre">name&gt;,&lt;application</span> <span class="pre">version&gt;,&lt;tags&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RunInfo,0x11223344,nanoseconds,1639527663.713,0xbad0bad0,mission,2.9.0.21.12.13-g123456789ab,</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 7%" />
+<col style="width: 79%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>start timestamp</p></td>
+<td><p>integer</p></td>
+<td><p>The initial timestamp value at the start of the run.
+Other records related to this run can be calculated relative to this timestamp.
+The combination of start timestamp and wallclock time allows subsequent processing to assign wallclock time to events.</p></td>
+</tr>
+<tr class="row-odd"><td><p>timestamp units</p></td>
+<td><p>string</p></td>
+<td><p>An SI division of seconds indicating the unit of timestamp values for this run.
+Valid values are “seconds”, “milliseconds”, “microseconds”, and “nanoseconds”.</p></td>
+</tr>
+<tr class="row-even"><td><p>wallclock time</p></td>
+<td><p>decimal</p></td>
+<td><p>UTC start time of the run as seconds since the Unix epoch.</p></td>
+</tr>
+<tr class="row-odd"><td><p>run id</p></td>
+<td><p>integer</p></td>
+<td><p>A generated run id.
+The value should be selected so as to have two arbitrary run ids be very unlikely to be duplicated.</p></td>
+</tr>
+<tr class="row-even"><td><p>afperf format version</p></td>
+<td><p>string</p></td>
+<td><p>The AFPerf output format version used.
+This is used to indicate minor versions of format semantics on a per-run basis.
+This permits a single AFPerf file to be a container for multiple runs with different minor versions.
+Must be three non-negative integer values, each separated by a single dot, e.g., “1.2.3”.</p></td>
+</tr>
+<tr class="row-odd"><td><p>application name</p></td>
+<td><p>string</p></td>
+<td><p>The name of the application which executed the run.</p></td>
+</tr>
+<tr class="row-even"><td><p>application version</p></td>
+<td><p>string</p></td>
+<td><p>The version of the application which executed the run.</p></td>
+</tr>
+<tr class="row-odd"><td><p>tags</p></td>
+<td><p>tags</p></td>
+<td><p>An optional set of tags reflecting user-specified values, such as user understandable
+run description, component type, host platform name etc.
+This field should <em>not</em> be used for system measured data such as hostname, CPU information, etc.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="runpoint">
+<h4>RunPoint<a class="headerlink" href="#runpoint" title="Permalink to this headline">¶</a></h4>
+<p>Represents point data collected throughout the entire run.
+There may be multiple <cite>RunPoint</cite> entries for a single run id and measurement type id.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">RunPoint,&lt;timestamp&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">RunPoint,123456786,0xbad0bad0,0xcccddd,0.531</span></code></p>
+</section>
+<section id="sectionaggregate">
+<h4>SectionAggregate<a class="headerlink" href="#sectionaggregate" title="Permalink to this headline">¶</a></h4>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">SectionAggregate,&lt;end</span> <span class="pre">timestamp&gt;,&lt;start</span> <span class="pre">timestamp&gt;,&lt;record</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">interval</span> <span class="pre">id&gt;,&lt;aggregation</span> <span class="pre">type&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;[,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;]</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">SectionAggregate,123456788,123456784,0xaaaa0000,3,maximum,0xcccddd,0.531</span></code></p>
+<p>Note: if <code class="docutils literal notranslate"><span class="pre">&lt;record</span> <span class="pre">id&gt;</span></code> is blank due to representing a processed record, then the <code class="docutils literal notranslate"><span class="pre">&lt;section</span> <span class="pre">interval</span> <span class="pre">id&gt;</span></code> should likewise be left blank.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>record id</p></td>
+<td><p>integer</p></td>
+<td><p>The most specific record with which the measurement data is associated.
+For raw records this MUST be the specific section id for which the data was measured.
+For processed records this MUST be the overall run id within which multiple section data was accumulated.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sectioninfo">
+<h4>SectionInfo<a class="headerlink" href="#sectioninfo" title="Permalink to this headline">¶</a></h4>
+<p>This record provides information about a <code class="docutils literal notranslate"><span class="pre">ProfilingSection</span></code>.</p>
+<p>The <cite>SectionInfo</cite> record contains a timestamp field for orthogonality with other record types.
+It does not have a clear interpretation for <cite>SectionInfo</cite> and therefore may be blank.
+In code, <code class="docutils literal notranslate"><span class="pre">ProfilingSection</span></code> is often generated separately from starting and thus not relevant to actual section intervals.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">SectionInfo,&lt;timestamp&gt;,&lt;run</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">label&gt;,&lt;tags&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">SectionInfo,0xbbbb0000,0x99887766,fancy</span> <span class="pre">FooBar</span> <span class="pre">frobbing,platform=F15_DEF;component=sensor_RST</span></code></p>
+<p>The section id is unique within each <cite>SectionInfo</cite> record, i.e. distinguishes each section creation during runtime.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>record id</p></td>
+<td><p>integer</p></td>
+<td><p>The most specific record with which the measurement data is associated.
+For raw records this MUST be the specific section id for which the data was measured.
+For processed records this MUST be the overall run id within which multiple section data was accumulated.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sectionpoint">
+<h4>SectionPoint<a class="headerlink" href="#sectionpoint" title="Permalink to this headline">¶</a></h4>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">SectionPoint,&lt;timestamp&gt;,&lt;section</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">interval</span> <span class="pre">id&gt;,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;[,&lt;measurement</span> <span class="pre">type</span> <span class="pre">id&gt;,&lt;value&gt;]</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">SectionPoint,123456789,0xaaaa0000,3,0xcccddd,0.531</span></code></p>
+</section>
+<section id="sectionstart">
+<h4>SectionStart<a class="headerlink" href="#sectionstart" title="Permalink to this headline">¶</a></h4>
+<p>This record marks the start of a distinct interval within a section.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">SectionStart,&lt;timestamp&gt;,&lt;section</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">interval</span> <span class="pre">id&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">SectionStart,0xbbbb0000,0x99887766,34,fancy</span> <span class="pre">FooBar</span> <span class="pre">frobbing</span></code></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 8%" />
+<col style="width: 78%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unique Field</p></th>
+<th class="head"><p>Data Format</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>section id</p></td>
+<td><p>integer</p></td>
+<td><p>The section id, as defined by a <cite>SectionInfo</cite> record, with which this interval is associated.</p></td>
+</tr>
+<tr class="row-odd"><td><p>section interval id</p></td>
+<td><p>integer</p></td>
+<td><p>A unique id for the interval.
+The interval id need only be unique within matching section ids, it is not required to be globally unique.
+Specifically, a simple incrementing counter of intervals for each section is sufficient (but not required).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sectionstop">
+<h4>SectionStop<a class="headerlink" href="#sectionstop" title="Permalink to this headline">¶</a></h4>
+<p>This records marks the close of a section interval.</p>
+<p>Format:  <code class="docutils literal notranslate"><span class="pre">SectionStop,&lt;timestamp&gt;,&lt;section</span> <span class="pre">id&gt;,&lt;section</span> <span class="pre">interval</span> <span class="pre">id&gt;</span></code></p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">SectionStop,12345679,0xaaaa0000,3</span></code></p>
+</section>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/afperf_file_format.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="afsim_change_log.html" title="AFSIM Changelog"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="aero.html" title="aero"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

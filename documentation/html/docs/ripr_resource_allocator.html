@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RIPR Resource Allocator &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="RIPR Scenarios" href="ripr_scenarios.html" />
+    <link rel="prev" title="RIPR Behavior Tree" href="ripr_behavior_tree.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="ripr_scenarios.html" title="RIPR Scenarios"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ripr_behavior_tree.html" title="RIPR Behavior Tree"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="ripr-resource-allocator">
+<span id="id1"></span><h1>RIPR Resource Allocator<a class="headerlink" href="#ripr-resource-allocator" title="Permalink to this headline">¶</a></h1>
+<section id="can-ripr-be-used-for-decision-making-in-an-ew-simulation">
+<h2>Can RIPR be used for decision making in an EW simulation?<a class="headerlink" href="#can-ripr-be-used-for-decision-making-in-an-ew-simulation" title="Permalink to this headline">¶</a></h2>
+<p>Electronic Warfare (EW) can be a complex arena to play in, and <a class="reference internal" href="ripr.html#ripr"><span class="std std-ref">RIPR</span></a> can help.  A RIPR agent can exist on any kind
+of platform and it can perform any kind of platform task.  A task to be performed might be as simple as flying towards
+a point, or maybe even firing a weapon.  A common application of the RIPR framework is to make a regular platform into
+a RIPR agent by adding a RIPR processor to it.  The RIPR processor can control the platform’s maneuvering and weapons
+in order to move towards the right locations and engage the right targets.  A platform’s weapons might include
+missiles, bombs, or in this case: various EW jamming emitters.  A RIPR agent can act in conjunction with other other
+RIPR agents (often through a commander) or it can act solo.  Much of the communication between RIPR agents is in the
+form of job bidding and job allocation; this is described in more detail below. RIPR agents can retrieve data from any
+aspect of the platform and can control any aspect of the platform.  It is typical to make your RIPR agent control some
+kind of weapon targeting.</p>
+<p>Here is an example of a simple platform structure of a RIPR agent:</p>
+<img alt="../_images/ripr_component_interaction.jpg" src="../_images/ripr_component_interaction.jpg" />
+<p>In a EW jamming simulation, it is reasonable to have a <a class="reference internal" href="ripr.html#ripr"><span class="std std-ref">RIPR</span></a> agent control the jamming weapons and perhaps leave the
+maneuvering to a pre-established route.</p>
+</section>
+<section id="so-what-is-the-ew-decision-making-that-needs-to-be-done">
+<h2>So what is the EW decision making that needs to be done?<a class="headerlink" href="#so-what-is-the-ew-decision-making-that-needs-to-be-done" title="Permalink to this headline">¶</a></h2>
+<p>A player in a EW jamming simulation commonly needs to answer the question “which targets or threats should I be
+jamming?”.  The decisions to jam some threats and ignore others are important and can determine mission success or
+failure.  The decisions are made difficult when you have many jamming emitters at your disposal and many targets that
+likely need to be jammed.  The decisions are also dynamic, and might need to be changed as the threat environment
+changes or as the player’s status changes.  This situation has just become a dynamic resource allocation problem, a
+trading game, where a player should attempt to optimize his effectiveness over a period of time.</p>
+</section>
+<section id="how-can-a-ripr-agent-make-these-kinds-of-decisions">
+<h2>How can a RIPR agent make these kinds of decisions?<a class="headerlink" href="#how-can-a-ripr-agent-make-these-kinds-of-decisions" title="Permalink to this headline">¶</a></h2>
+<p>One feature of <a class="reference internal" href="ripr.html#ripr"><span class="std std-ref">RIPR</span></a> is highly tuned to this kind of problem:  The <a class="reference internal" href="job_board.html#job-board"><span class="std std-ref">Job Board</span></a>.  In order to use a tool such as
+the Job Board to solve a typical dynamic resource allocation problem, we need to define the problem in terms of Job
+Board components.  The key components behind the Job Board tool are jobs, bidders, and bids.  Jobs are tasks to be
+done, bidders represent some manifestation (perhaps a platform, or even a weapon) that can perform the job, and bids
+represent an ability to perform said jobs, a measure of effectiveness or capability.  A job is known in WSF script as
+a <a class="reference internal" href="wsfriprjob.html#WsfRIPRJob" title="WsfRIPRJob"><span class="xref wsf wsf-class">WsfRIPRJob</span></a>.  Lets break down the EW decision making into these three components; we’ll use the example AIJAM
+agent along the way.</p>
+<p><strong>Jobs -</strong> The tasks to be performed in this case are simply jamming of various targets or threats.  Typical ways to
+get targets to jam is to read tracks from the track manager.  The track manager might contain tracks received from
+sensors, received from the network, or it might even contain pre-briefed tracks (representing intel you might have of
+the targets).  You can simply create a “jamming” job from a track like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">on_update</span>
+  <span class="n">foreach</span> <span class="p">(</span><span class="n">WsfTrack</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">MasterTrackList</span><span class="p">())</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">this</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">track</span> <span class="n">you</span> <span class="n">want</span> <span class="n">to</span> <span class="n">jam</span><span class="p">)</span>  <span class="o">//</span><span class="n">pseudo</span> <span class="n">code</span>
+    <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">job</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">already</span> <span class="n">exists</span> <span class="k">for</span> <span class="n">track</span><span class="p">)</span>  <span class="o">//</span><span class="n">pseudo</span> <span class="n">code</span>
+      <span class="p">{</span>
+        <span class="n">WsfRIPRJob</span> <span class="n">newJob</span> <span class="o">=</span> <span class="n">WsfRIPRJob</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span> <span class="n">PROCESSOR</span><span class="p">,</span> <span class="s2">&quot;jam type&quot;</span><span class="p">,</span> <span class="s2">&quot;job description&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">newJob</span><span class="o">.</span><span class="n">SetData</span><span class="p">(</span><span class="s2">&quot;target name&quot;</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">TargetName</span><span class="p">());</span>
+        <span class="n">AddJob</span><span class="p">(</span><span class="n">newJob</span><span class="p">);</span>  <span class="o">//</span><span class="n">adds</span> <span class="n">the</span> <span class="n">new</span> <span class="n">job</span> <span class="n">to</span> <span class="n">this</span> <span class="n">platforms</span> <span class="n">job</span> <span class="n">board</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="o">...</span>
+<span class="n">end_on_update</span>
+</pre></div>
+</div>
+<p>Now a jamming job exists on that <a class="reference internal" href="ripr.html#ripr"><span class="std std-ref">RIPR</span></a> agent’s Job Board for each track that platform has awareness of.  Anybody can
+bid on and perform these jobs: subordinates, or even the agent himself.  Typically a commander platform creates and
+owns jobs on it’s Job Board and the subordinates will be making bids to him and they will be tasked with performing the
+jobs.</p>
+<p><strong>Bids -</strong> Commanders need to know how well their subordinates can do jobs so that they can effectively distribute the
+tasks to the proper agents to perform them.  A bid represents an agent’s capability to perform a job.  Typically, a
+subordinate agent will query for his commander’s jobs and selectively make bids on them.  He should only bid on job
+types he understands, and he should only bid on jobs he can perform.  Here is an example of a subordinate looking for a
+jamming task and bidding on it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query_bid</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">JOB</span><span class="o">.</span><span class="n">Name</span><span class="p">()</span><span class="o">==</span><span class="s2">&quot;jam type&quot;</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="n">CalculateEffectivenessAgainst</span><span class="p">(</span> <span class="n">JOB</span><span class="o">.</span><span class="n">GetData</span><span class="p">(</span><span class="s2">&quot;target name&quot;</span><span class="p">)</span> <span class="p">);</span>  <span class="o">//</span><span class="n">pseudo</span> <span class="n">code</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="mf">0.0</span><span class="p">;</span>
+<span class="n">end_query_bid</span>
+
+<span class="n">on_update</span>
+  <span class="n">foreach</span> <span class="p">(</span><span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">GetRIPRCommanderProcessor</span><span class="p">()</span><span class="o">.</span><span class="n">GetJobs</span><span class="p">())</span>
+  <span class="p">{</span>
+    <span class="n">double</span> <span class="n">bid</span> <span class="o">=</span> <span class="n">QueryBid</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>  <span class="o">//</span><span class="n">this</span> <span class="n">calls</span> <span class="n">the</span> <span class="n">agents</span> <span class="n">own</span> <span class="s2">&quot;query_bid&quot;</span> <span class="n">script</span> <span class="n">block</span>
+    <span class="n">job</span><span class="o">.</span><span class="n">BidJob</span><span class="p">(</span><span class="n">bid</span><span class="p">);</span>           <span class="o">//</span><span class="n">here</span> <span class="n">the</span> <span class="n">bid</span> <span class="ow">is</span> <span class="n">made</span> <span class="n">on</span> <span class="n">the</span> <span class="n">job</span>
+  <span class="p">}</span>
+  <span class="o">...</span>
+<span class="n">end_on_update</span>
+</pre></div>
+</div>
+<p><em>NOTE -</em> So up this point we have an agent creating jobs to jam threats, and we have an agent bidding on those jobs.
+The bidding we have exampled here is a gross oversimplification, because a platform might not just have one bid for a
+particular threat.  A platform usually has multiple jammer emitters, and each emitter has multiple beams that can be
+utilized, and each beam might be modulated (a few spots for each beam) so as to hit different threats at different
+times.  We will cover the more complex case of multiple bids further down.  For now, in this simple example, a platform
+will provide one bid for each job and will only win (or be tasked with) one job to perform.</p>
+<p><strong>Performing a Job -</strong> As an agent makes bids on jobs it is communicating to the commander “this is my status, and how
+well I can perform the various tasks you might give to me”.  After this communication, the bidding, takes place the
+agent can then ask its commander “what do you want me to do now, what is my task?”.  If it receives a job to perform,
+it should act on it.  Here is an example of retrieving your task and doing something with it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script</span> <span class="n">void</span> <span class="n">DoJob</span><span class="p">(</span><span class="n">WsfRIPRJob</span> <span class="n">aJob</span><span class="p">)</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">aJob</span><span class="o">.</span><span class="n">IsValid</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">aJob</span><span class="o">.</span><span class="n">Name</span><span class="p">()</span><span class="o">==</span><span class="s2">&quot;jam type&quot;</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">already</span> <span class="n">jamming</span> <span class="n">the</span> <span class="n">target</span><span class="p">)</span>  <span class="o">//</span><span class="n">pseudo</span><span class="o">-</span><span class="n">code</span>
+    <span class="p">{</span>
+      <span class="n">WsfWeapon</span> <span class="n">jammer</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">Weapon</span><span class="p">(</span><span class="s2">&quot;jammer name&quot;</span><span class="p">);</span>
+      <span class="n">WsfTrack</span>  <span class="n">target</span> <span class="o">=</span> <span class="n">GetTrack</span><span class="p">(</span><span class="n">aJob</span><span class="o">.</span><span class="n">GetData</span><span class="p">(</span><span class="s2">&quot;target name&quot;</span><span class="p">));</span>
+      <span class="n">jammer</span><span class="o">.</span><span class="n">StartJamming</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">bandwidth</span><span class="p">,</span> <span class="n">target</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="n">end_script</span>
+
+<span class="n">on_update</span>
+  <span class="o">...</span>
+  <span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="o">=</span> <span class="n">GetRIPRCommanderProcessor</span><span class="p">()</span><span class="o">.</span><span class="n">GetJobFor</span><span class="p">(</span><span class="n">TIME_NOW</span><span class="p">,</span> <span class="n">PROCESSOR</span><span class="p">);</span>
+  <span class="n">DoJob</span><span class="p">(</span> <span class="n">job</span> <span class="p">);</span>
+  <span class="o">//</span><span class="n">you</span> <span class="n">might</span> <span class="n">also</span> <span class="n">need</span> <span class="n">some</span> <span class="n">script</span> <span class="n">to</span> <span class="n">stop</span> <span class="n">jamming</span> <span class="nb">any</span> <span class="n">previous</span> <span class="n">targets</span>
+<span class="n">end_on_update</span>
+</pre></div>
+</div>
+<p><em>NOTE -</em> Before this script block, the platform has already bid on his commander’s various jobs.  Now he queries for a
+job, and might receive a job to perform.</p>
+</section>
+<section id="but-a-jamming-platform-usually-jams-many-things-at-once">
+<h2>But a jamming platform usually jams many things at once!!!<a class="headerlink" href="#but-a-jamming-platform-usually-jams-many-things-at-once" title="Permalink to this headline">¶</a></h2>
+<p>This is fine, <a class="reference internal" href="ripr.html#ripr"><span class="std std-ref">RIPR</span></a> can accommodate.  In the simple examples above, the platform was making one bid on each job.
+His bid represented his total capability to perform the job as a platform.  The example script also showed the platform
+only receiving one job to perform.  How does an agent win multiple jobs and perform them?  He can do this by using the
+multi-channel RIPR feature.</p>
+<p><strong>Multi-Channel bidding -</strong> If a platform can perform multiple jobs in parallel, then he should bid on jobs &amp; win jobs
+in parallel.  One example of such an agent is an ground-based air-defense tracking radar.  The tracking radar is
+sophisticated enough to keep quality track reports on several potential threats.  How many threats he can keep track of
+is a function of his radar.  If his radar can handle three targets at once, then this platform should be providing
+three separate bids for each “track target” job.  Each bid represents a “slot” on the radar and that “slot” on the
+radar provides it’s bids through its own channel.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script_variables</span>
+  <span class="n">array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">array</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="n">end_script_variables</span>
+
+<span class="n">on_init</span>
+  <span class="n">channels</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="s2">&quot;track target&quot;</span><span class="p">);</span>  <span class="o">//</span><span class="n">slot</span> <span class="mi">1</span> <span class="n">of</span> <span class="n">radar</span>
+  <span class="n">channels</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="s2">&quot;track target&quot;</span><span class="p">);</span>  <span class="o">//</span><span class="n">slot</span> <span class="mi">2</span> <span class="n">of</span> <span class="n">radar</span>
+  <span class="n">channels</span><span class="o">.</span><span class="n">PushBack</span><span class="p">(</span><span class="s2">&quot;track target&quot;</span><span class="p">);</span>  <span class="o">//</span><span class="n">slot</span> <span class="mi">3</span> <span class="n">of</span> <span class="n">radar</span>
+  <span class="n">SetNumJobChannels</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">Size</span><span class="p">());</span>
+<span class="n">end_on_init</span>
+
+<span class="n">on_update</span>
+  <span class="n">foreach</span> <span class="p">(</span><span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">GetRIPRCommanderProcessor</span><span class="p">()</span><span class="o">.</span><span class="n">GetJobs</span><span class="p">())</span> <span class="o">//</span><span class="n">bid</span> <span class="n">on</span> <span class="nb">any</span> <span class="n">relevant</span> <span class="n">jobs</span> <span class="kn">from</span> <span class="nn">commander</span>
+  <span class="p">{</span>
+    <span class="o">//</span> <span class="s1">&#39;index&#39;</span> <span class="ow">is</span> <span class="n">also</span> <span class="n">the</span> <span class="n">platform</span><span class="s1">&#39;s channel index</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">GetNumJobChannels</span><span class="p">();</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>   <span class="o">//</span><span class="n">bid</span> <span class="n">through</span> <span class="n">channels</span>
+    <span class="p">{</span>
+      <span class="n">string</span> <span class="nb">type</span> <span class="o">=</span> <span class="n">channels</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nb">type</span> <span class="o">==</span> <span class="n">job</span><span class="o">.</span><span class="n">Name</span><span class="p">())</span>                                       <span class="o">//</span><span class="n">a</span> <span class="n">way</span> <span class="n">to</span> <span class="n">see</span> <span class="k">if</span> <span class="n">channel</span> <span class="ow">is</span> <span class="n">appropriate</span> <span class="k">for</span> <span class="n">job</span>
+      <span class="p">{</span>
+        <span class="n">double</span> <span class="n">bid</span> <span class="o">=</span> <span class="n">QueryBid</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>    <span class="o">//</span><span class="n">this</span> <span class="n">calls</span> <span class="n">the</span> <span class="n">agents</span> <span class="n">own</span> <span class="s2">&quot;query_bid&quot;</span> <span class="n">script</span> <span class="n">block</span>
+        <span class="n">job</span><span class="o">.</span><span class="n">BidJob</span><span class="p">(</span><span class="n">bid</span><span class="p">,</span> <span class="n">index</span><span class="p">);</span> <span class="o">//</span><span class="n">here</span> <span class="n">the</span> <span class="n">bid</span> <span class="ow">is</span> <span class="n">made</span> <span class="n">on</span> <span class="n">the</span> <span class="n">job</span><span class="p">,</span> <span class="k">for</span> <span class="n">channel</span> <span class="s1">&#39;index&#39;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">GetNumJobChannels</span><span class="p">();</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">WsfRIPRJob</span> <span class="n">job</span> <span class="o">=</span> <span class="n">cmdr</span><span class="o">.</span><span class="n">GetJobFor</span><span class="p">(</span><span class="n">TIME_NOW</span><span class="p">,</span> <span class="n">PROCESSOR</span><span class="p">,</span> <span class="n">index</span><span class="p">);</span>
+    <span class="n">DoJob</span><span class="p">(</span><span class="n">job</span><span class="p">,</span> <span class="n">index</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="o">...</span>
+<span class="n">end_on_update</span>
+</pre></div>
+</div>
+<p>You might ask yourself “why are the channels looped over twice?”.  The answer is because you want to make sure every
+possible bid has been made before you ask the commander who wins the job.  So each job is given a bid from each
+channel, and THEN you can ask what job each channel might have won (maybe no jobs).</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/ripr_resource_allocator.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="ripr_scenarios.html" title="RIPR Scenarios"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ripr_behavior_tree.html" title="RIPR Behavior Tree"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

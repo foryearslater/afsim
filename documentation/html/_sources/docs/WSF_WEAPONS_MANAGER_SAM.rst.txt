@@ -1,0 +1,64 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPONS_MANAGER_SAM
+-----------------------
+
+.. model:: processor WSF_WEAPONS_MANAGER_SAM
+
+**Derives From:** :model:`WSF_WEAPONS_MANAGER`
+
+**Script Classes:** :class:`WsfWeaponsManagerSAM`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_WEAPONS_MANAGER_SAM`
+      :model:`WSF_WEAPONS_MANAGER` Commands ...
+
+   end_processor
+
+Overview
+========
+
+:model:`WSF_WEAPONS_MANAGER_SAM` is the script class for the HELIOS-based GTIQBWeaponsManagerSAM port. It is a Weapons Manager for a SAM weapons unit. It manages all aspects of a SAM weapons unit engagement of an assigned target.  These aspects include, among others:
+
+* Verification that the target is able to be engaged by the selected weapon 
+* Verification that the target is located within or approaching the unit's engagement zone, if one exists 
+* Verification that the track on the target is of acceptable quality (i.e TTR) 
+
+The Weapons Manager SAM is also responsible for monitoring any assignments that are currently active and engaging the target.  This process includes:
+
+* Sending updates on the target's position to the launched missile so it can adjust flight path accordingly 
+* Receiving engagement results of any launched missiles 
+* Launching an additional second missile at the target if the assignment deems it necessary 
+* Setting a final state on the assignment (i.e. HAVCO) once the assignment has completed processing at the SAM unit 
+
+**Important:** All SAM launchers need this subsystem in order to function correctly and be able to engage targets of assignments.
+
+Method of Operation
+===================
+
+The Weapons Manager SAM takes the following actions for targets inside the missile engagement zone (MEZ). The algorithm loops through the assignment array. The algorithm considers the next assignment if the current assignment is complete, has failed, the target has been destroyed or is inactive, or the assignment has been canceled. The algorithm quits the loop if the SAM system is unavailable, or if missiles are not available. The algorithm assesses whether it is time for the next missile launch in a salvo. If it is, the next missile is launched and munitions are decremented if the user has set munitions decrementing. The algorithm assesses if the engagement is still viable by projecting whether the track will enter the MEZ, and will meet the munition minimum and maximum range, has a reasonable intercept time, intercept range, probability of kill, and launch time for a launch within the next 60 s. If these tests fail the engagement is no longer viable and the weapons manager reports CANTCO.
+
+The Weapons Manager SAM concludes by making track source tests. If the track source corresponds to a type set by the user for no engagement, the target is not engaged. For the remaining engagements, it is assessed whether it is time to launch. If it is time to launch, the launch command is sent and the available munitions are decremented if the user has set munitions decrementing. The final act is to calculate the time of launch for the next missile in a salvo. This launch is assessed in each subsequent pass until the next missile is launched.
+
+Script Interface
+================
+
+:model:`WSF_WEAPONS_MANAGER_SAM` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`.
+
+.. block:: WSF_WEAPONS_MANAGER_SAM
+
+Weapons Manager SAM Commands
+============================
+
+The Weapons Manager SAM model doesn't add any additional commands above what is provided by the :model:`WSF_WEAPONS_MANAGER` base class.
+

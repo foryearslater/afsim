@@ -1,0 +1,226 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.8.0:
+
+WSF 1.8.0 - 12 Dec 2013
+-----------------------
+
+General
+=======
+
+* The 'reports_spatial_domain' input, which had been an option in the sensor mode to set all tracks to the given
+  spatial domain, is now deprecated.  This input had been used as a work-around for providing a spatial domain.  It is
+  being removed both because the work-around is no longer necessary and because the meaning can be misinterpreted as an
+  option for the sensor to report tracks of the given domain.  Instead, to select reported tracks by domain one should
+  use the :command:`sensor.ignore_domain` input.
+
+Corrections
+===========
+
+* **(CR 9265)**  Track processors will now recognize and process local tracks updates from other track processors
+  that are internally linked.
+
+* **(CR 10316)** Fixed a problem in the :ref:`Sensor_Plot_Horizontal_Map` function, where
+  the orientation of the maps in downrange / crossrange format were incorrectly rotated.
+
+* **(CR 10328)** Fixed an input processing problem with :command:`radar_signature.bistatic_signature`
+  that have multiple frequencies.
+
+* **(CR 10449)**  :model:`WSF_ESM_SENSOR` now reports the emitter types in its associated tracks, along with a listing of
+  the signal indexes that make up the :class:`WsfTrack`. The methods to access emitter data are defined in
+  :ref:`Emitter Methods <WsfTrack.Emitter_Methods>`. Access to this list is similar to the current
+  :ref:`Signal Methods <WsfTrack.Signal_Methods>`.
+  The :model:`reported_emitter_type <WSF_ESM_SENSOR>` is used to define how the emitter type is reported.
+
+* **(CR 10481)** If a :command:`weapon` has a :command:`weapon.firing_interval` larger than a :command:`weapon.salvo_interval` no
+  longer causes subsequent weapons in a fired salvo to fail.  The larger interval is used.
+
+* **(CR 10522)** Fixed a problem where the waypoint movers (WSF_AIR_MOVER, WSF_GROUND_MOVER, etc...) would not
+  respect the maximum speed or altitude mover parameters when processing the first point of a route.
+
+* Fixed an issue with the jamming perceptions on Sensors and Comms using the jamming power after many of the
+  Electronic Warfare Effects were applied causing it to incorrectly think that there was/wasn't jamming perceived.
+
+* Fixed an issue in the WsfTrackManager where deletions from the raw track list and filtered raw track list, during
+  track purges, were causing a very intermittent problem.  This was due to the fact that the WsfTrackId was being used as
+  a parameter to delete a filtered raw track, but this parameter became invalid, because it was part of the already
+  deleted raw track.
+
+* Fixed an issue where the :model:`WSF_STATE_MACHINE` processor's variable 'STATE_MACHINE' was always null.
+
+* Corrected an issue in :command:`sensor_plot` :command:`sensor_plot.horizontal_map` where when using an ESM sensor
+  as the plotting sensor to detect a radar with a :model:`maximum_request_count  <WSF_RADAR_SENSOR>`
+  greater than 0 the sensor would not interact (i.e. detect) the radar. Issue was with an internal listener interface
+  that queues the ESM detections for tracking type radars during the track radar's detection attempt instead of through
+  the ESM systems normal detection process.
+
+* Corrected a problem where global spherical zones did not work.
+
+* Fixed a couple issues with how the :class:`WsfRouteFinder` handled impossible routes (completely blocked or perhaps the
+  target location inside of an avoidance region).  Added SetMaxArcLength() method which breaks up long portions of a turn
+  on the route provided with several waypoints along the arc.
+
+Enhancements
+============
+
+* Added :ref:`Auxiliary Data Methods <WsfTask.Auxiliary_Data_Methods>` to the :class:`WsfTask` object.
+
+* Added :command:`noise_cloud`.  This feature will generate fractal noise clouds that may be used to attenuate sensor and
+  comm signals.
+
+* Moved the :command:`behavior_tree` feature to the :model:`WSF_SCRIPT_PROCESSOR` processors.  A :command:`behavior` is defined
+  'globally' at the simulation level and is unique by name.
+
+   * The syntax for attaching behavior nodes to a :command:`behavior_tree` is changed, you now use "behavior_node
+     <name>" instead of "behavior <name> end_behavior".
+
+   * Now all processors that derive from the :model:`WSF_SCRIPT_PROCESSOR` can use behavior trees, including the
+     :model:`WSF_QUANTUM_TASKER_PROCESSOR` and the :model:`WSF_RIPR_PROCESSOR`.
+
+   * The script block ":model:`query_bid_type <WSF_RIPR_PROCESSOR>`" is specific to :model:`WSF_RIPR_PROCESSOR` and no
+     longer valid when defined inside of a behavior.  All example agents and training modules have been updated accordingly.
+
+   * The "PROCESSOR" variable for behavior script defaults to a :class:`WsfProcessor`.  You can cast the variable to a
+     different processor type if you attach the behavior to a behavior_tree on a processor derived from script processor.
+
+* When editing a behavior, at the processor level, now all behaviors of the given name on that processor's behavior
+     tree are edited not just the first one of that name found.
+
+* Added finite state machines to the :model:`WSF_SCRIPT_PROCESSOR <WSF_SCRIPT_PROCESSOR>`
+
+   * Any state in the state machine can have its own behavior_tree which is processed when the state is evaluated.
+
+* Added the new :model:`WSF_PERCEPTION_PROCESSOR` processor.  It provides a cognitive model of threat and asset
+  perception.
+
+   * The new :class:`WsfAssetPerception` object can be obtained from the :class:`WsfPerceptionProcessor` or from the owning
+     :ref:`WsfPlatform <WsfPlatform.Perception_Methods>`.
+
+* Added the new :model:`WSF_QUANTUM_TASKER_PROCESSOR` processor.  It provides more access to the various steps of
+  coordinated optimal tasking. Compatible with existing WSF_TASK_MANAGER processors, e.g. it can send receive task
+  messages.
+
+* Added script methods to :class:`WsfPlatform` and :class:`WsfWeapon` for weapon status, for example:
+
+   * int WeaponsActiveFor(WsfTrackId aTrackId)
+   * WsfPlatformList ActiveWeaponPlatformsFor(WsfTrackId aTrackId)
+
+* Added :class:`WsfMover` script SetTSPI_FileName(), to assist with run-time replacement of TSPI trajectory data files.
+
+* Added WsfObserver callback (and the Event Output logging) for MOVER_STAGED and MOVER_BURNED_OUT.
+
+* Updated :model:`WSF_GUIDANCE_COMPUTER` by adding the ability to switch phases upon obtaining autonomous sensor track of
+  the target.  Requires "next_phase when sensor_track_established" sequence in a phase...end_phase definition block.
+
+* Added Observable event PlatformCapabilityChanged.  This event indicates when a platform gains or loses the ability
+  to supply ammunition, fuel, vehicle recovery, vehicle repair, or automatic dependent surveillance broadcast.  A word is
+  contained within DIS Entity State PDUs that enumerate the abilities just mentioned, and the mapped word bits provide
+  Boolean values that can be examined for changes.  The event output item PLATFORM_CAPABILITY_CHANGED is also attached to
+  this event, to log such transitions.
+
+* Changed :model:`WSF_DIRECTION_FINDER_PROCESSOR`. Added field filter_bypass, which allows bypassing the Kalman filter.
+  This makes the output simply the triangulation intersection points.  Also added field maximum_time_difference, to allow
+  adjusting which non-synchronous measurements should be fused.  A high value, defaults to the original operation for
+  stationary targets.  Changed the diverge-bearing gate, to allow more measurements to fuse.
+
+* Added :command:`conditional_section` to conditionally include or exclude inputs.
+
+* Added new class WsfMTI_TableManager.  It contains some functionality previously in WsfRadarSensor. In
+  WsfRadarSensor, extracted MTI Table inner class into new WsfMTI_TableManager.  Generally renamed gmti to more general
+  mti.  Also added a feature to allow specify an external MTI table in csv format (speed vs attenuation).
+
+* Added script functions :class:`list_attr(), attr_count(), attr_name_at() <__BUILTIN__>` to enumerate an object's attributes.
+
+* Added the command :command:`signal_processor.mti_adjustment.mti_maximum_range` to :ref:`signal_processor.mti_adjustment` which specifies a maximum range
+  to be used with the MTI "tables" only. If the target is farther away, any MTI table will NOT be applied.
+
+* Added a bi-static error model. Search command :ref:`error_model.bistatic_error`. The error
+  model is based on paper "A Three-dimensional Bistatic Radar Target Position Measurement Error Model", R. K. Lynn.
+
+* In :command:`sensor_plot`, added the capability to evaluate required_jamming_power in both vertical and horizontal maps
+  now, instead of just horizontal.
+
+* Added the capability to plot a :command:`spherical_map` with a fixed
+  :command:`spherical_map.altitude` in lieu of the previous fixed range.
+
+* Finalized the Sensor Plot :ref:`Sensor_Plot_Clutter_Table` generation feature, which was previously
+  undocumented.
+
+* Extended the :ref:`clutter_model.surface_clutter_table` feature to optionally utilize site
+  specific information (as can be generated by :command:`Sensor Plot <clutter_table>`).
+
+* Added :model:`WSF_CUED_LASER_WEAPON` and the associated sensor, :model:`WSF_BEAM_DIRECTOR`.  These had been in a separate
+  library prior to this release.
+
+* Reworked :model:`WSF_HEL_LETHALITY` so that effects can be specified by platform type, platform type and region, or
+  category.   Each effect allows for a damage radius.  If no damage radius is specified, the energy and energy density
+  are computed using the full width of the beam (usually, measured from the center to the point where intensity is 1/e).
+  The legacy format is still supported, but it is deprecated.
+
+* Added :command:`weapon_effects.on_target_damaged` and
+  :command:`weapon_effects.on_target_killed` script options for :command:`weapon_effects`.  These scripts will
+  override the default weapon effects behavior (to apply damage to the target platform and remove the target platform,
+  respectively).  Thus, they are useful for applying nonstandard effects, such as destroying a sensor with a high-energy
+  laser.
+
+* Added the **default2** keyword to automatically configure DIS :command:`dis_interface.broadcast` and
+  :command:`dis_interface.multicast` interfaces on a second network controller for machines with two network interface
+  controllers.
+
+* Added new module, optional project, wsf_helcomes, which provides the non-exportable
+  helcomes fluence model.  This module allows interfacing WSF with the SAIC developed Army's
+  tool called HELCoMES (High Energy Laser Consolidated Modeling and Engagement Simulation).  This interfaces utilizes JNI
+  (Java Native Interface) and requires a JDK (Java Development Kit) installed to build and run.
+
+* Added in the capability to :command:`sensor_plot` to output
+  :ref:`jammer_to_mds <Sensor_Plot_Horizontal_Map>`
+
+* Added in the capability to :command:`sensor_plot` to utilize a script to manipulate and output from the sensor detection
+  data using the :ref:`Sensor_Plot_Horizontal_Map.Script_Variable` input commands and defining a script.
+
+* Added a way to output :class:`WsfDraw` output to a separate :command:`draw_file` that can be loaded by the WSF_IDE.
+
+* Added the ability to cause intentional stand-off-range fusing in the :model:`WSF_WEAPON_FUSE` to detonate upon
+  approach, prior to achieving point of closest approach.
+
+* Added :model:`WSF_TOWED_MOVER <WSF_TOWED_MOVER>` to the Predefined Mover Types.  A platform with this type of mover is
+  deployed by being launched from another platform.  The towed asset is reeled out at a specified rate for a specified
+  distance, and then once deployed, it will follow the course of the lead platform.  The towed asset can be reeled back
+  onto the lead platform by setting a reel in time and reel in rate.
+
+* Added :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` to the Predefined Communications Types.  The
+  communication system modifies constraints for communication-horizon limits in order to permit communications with
+  platforms, such as submarines, that operate below the surface.
+
+* Added support for :ref:`TADIL-J 2-0 <WsfTadilJ2_0I>` messages.
+
+* Added a script access method to query threats from a :class:`WsfThreatProcessor`.
+
+* Added two :command:`keywords <dis_interface>` options to set the orientation rate field in the DIS Entity State PDU.
+
+Developer Items
+===============
+
+* The primary software build utility for WSF is now CMake.  The existing set of project files for Windows and make
+  system and files for Linux will still operate, for unclassified builds only, for this release.  They will not be
+  supported after this release, and developers are encouraged to migrate to CMake.
+
+* Visual Studio 2012 builds are now supported.
+
+* Visual Studio 2005 builds are no longer supported.
+
+* Up-casting with UtScript is no longer allowed by default.
+  `Upcasting example:   WsfMessage msg = xyz;  WsfTrackMessage trackMessage = (WsfTrackMessage)msg;`
+  To enable upcasting for your type, you must either implement UtScriptClass::UpcastFromType() or set
+  UtScriptClass::mIsScriptAccessible=true and inherit your application class from the UtScriptAccessible class AND
+  implement GetScriptClassName().  Before this change, upcasting was unchecked and unsafe; upcasting is now safe, an
+  upcast failure results in a 'null' script object but will not crash.

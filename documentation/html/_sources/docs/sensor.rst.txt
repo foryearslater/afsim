@@ -1,0 +1,545 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Sensor:
+
+Sensor
+------
+
+.. command:: sensor
+   :block:
+
+Script Class: :class:`WsfSensor`
+
+Single mode sensor definition
+
+.. parsed-literal::
+
+   sensor <name> <base-type-name>
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :ref:`Common_Script_Interface` ...
+
+      ignore_ <category-name>
+      ignore_domain_ [ land | air | surface | subsurface | space ]
+      ignore_side_ <side>
+      ignore_same_side_
+      ignore_nothing_
+      message_length_ <data-size-value>
+      message_priority_ <integer-priority>
+      modifier_category_ <category-name>
+      mode_template_  ... end_mode_template
+      mode_ <mode-name> ... end_mode
+      selection_mode_ [ single | multiple ]
+      initial_mode_ <mode-name>
+      mode_select_delay_ <time-value>
+      script bool :command:`sensor.OnSensorDetectionAttempt` ...
+
+      :command:`Filter Commands <filter>` ...
+      `Common Mode Commands`_ ...
+      `Detection Scheduling Commands`_ ...
+      `Track Formation Commands`_ ...
+      `Track Information Reporting Commands`_ ...
+
+      ... sensor-specific mode commands ...
+   end_sensor
+
+   # Multiple mode sensor definition
+
+   sensor <name> <base-type-name>
+
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      `Commands`_ ...
+
+      mode_template_
+         `Common Mode Commands`_ ...
+         :command:`Filter Commands <filter>` ...
+         sensor-specific mode commands ...
+      end_mode_template
+
+      mode_ <mode-name-1>
+         `Common Mode Commands`_ ...
+         :command:`Filter Commands <filter>` ...
+         sensor-specific mode commands ...
+      end_mode
+
+      ... additional mode definitions
+    end_sensor
+
+Overview
+========
+
+A sensor provides the ability for a platform to detect other platforms or their constituent parts.
+
+Multiple Mode Considerations
+============================
+
+Most (but not all) sensors support the concept of 'modes'. A mode is a named set of operating characteristics of a
+sensor. Multiple modes do not have to be used. If a sensor implementation supports modes and an explicit mode is not
+defined, then any mode-related commands are assumed to belong to the implicitly defined mode named 'default'.
+
+If multiple modes are to be used, a 'mode_template' can be defined that specifies the characteristics that are common
+between all modes. A 'mode_template' does not have to be defined, but if it is it must be defined prior to the first
+'mode' command. If a 'mode_template' is used, the initial configuration for each mode is copied from the
+'mode_template' and then any additions or modifications to the mode should appear between the applicable 'mode' and
+'end_mode' commands.
+
+.. _Sensor.Commands:
+
+Commands
+========
+
+.. command:: ignore <category-name>
+
+   Indicates the sensor should ignore detection attempts against objects that are a member of the specified category. This
+   command may be specified multiple times to ignore multiple categories.
+
+.. command:: ignore_domain [ land | air | surface | subsurface | space ]
+
+   Indicates the sensor should ignore detection attempts against platforms or objects contained on platforms that are of
+   the specified spatial domain. This command may be specified multiple times to ignore multiple domain.
+
+.. command:: ignore_side <side>
+
+   Indicates the sensor should ignore detection attempts against platforms or objects contained on platforms that are of
+   the specified side. This command may be specified multiple times to ignore multiple sides.
+
+.. command:: ignore_same_side
+
+   Indicates the sensor should ignore detection attempts against platforms or objects contained on platforms that are on
+   the same side of the platform to which the sensor is attached.
+
+.. command:: ignore_nothing
+
+   Has the effect of canceling the effect of any previous ignore_, ignore_domain_, ignore_side_ and
+   ignore_same_side_ commands. This is useful if one wants to reuse a sensor definition with embedded 'ignore'
+   commands but wished to eliminate or change what is ignored.
+
+.. command:: message_length <data-size-value>
+
+   Specifies the logical length assigned to the track messages that are created from the sensor.
+
+   This command is available at both the sensor level (this command) and the sensor mode level. See message_length_
+   below.
+
+.. command:: message_priority <integer-priority>
+
+   Specifies the priority assigned to the track messages that are created from the sensor.
+
+   This command is available at both the sensor level (this command) and the sensor mode level. See
+   message_priority_ below.
+
+.. command:: modifier_category <category-name>
+
+   The category that maps to the :ref:`zone-based_attenuation` value defined in the :command:`zone_set`.  Setting this value tells
+   the sensor to evaluate zones for attenuation.
+
+.. command:: mode_template  ... end_mode_template
+
+   Defines the default values for the modes of the sensor. When a new mode is defined it is first populated with the
+   values from the mode template. This is useful when a sensor has multiple modes and the parameters for each mode are the
+   same with the exception of a few values.
+
+   .. note::
+      This command must appear before any mode_ command in the second.
+
+.. command:: mode <mode-name> ... end_mode
+
+   Defines a **mode**, which is nothing more than a selectable set of parameters. The initial or default values of a mode
+   are defined by the mode_template_ (if provided).
+
+.. command:: selection_mode [ single | multiple ]
+
+   Indicates if the sensor supports the simultaneous operation of multiple modes.
+
+   **Default** **single**
+
+.. command:: initial_mode <mode-name>
+
+   The operation of this command depends on if selection_mode_ is **single** or **multiple**.
+
+   If selection_mode_ is **single** then this defines the mode to be selected the **first** time the sensor is
+   turned on. If this command is not specified then the first mode that is defined will be selected. If the sensor is
+   subsequently turned off and turned back on, the sensor will resume the mode it was in when it was last turned off.
+
+   If selection_mode_ is **multiple** then this defines the mode to be selected whenever the sensor changes from the
+   'off' state to the 'on' state unless the scripting language is used to select a different mode while the sensor
+   is off. If this command is not defined then no sensor mode will be activated when the sensor
+   is turned on; it is the responsibility of the user to use the scripting language to select a mode.
+
+.. command:: mode_select_delay <time-value>
+
+   Specifies the delay when selecting modes.
+
+   .. note::
+      This input is operational only for the :model:`WSF_AGILITY_EFFECT` **mode_changing** functionality.
+
+   **Default** 0.0 seconds
+
+.. command:: OnSensorDetectionAttempt
+
+   .. parsed-literal::
+
+      script bool OnSensorDetectionAttempt(:class:`WsfPlatform` aTarget, :class:`WsfSensorInteraction` aInteraction)
+      ...
+      end_script
+
+   Defines an optional script that imposes additional detection constraints on a sensor model. 
+   This script is invoked immediately after a detection attempt occurs but prior to any SENSOR_DETECTION_ATTEMPT events in the :command:`observer`. 
+   As a result, the :class:`WsfSensorInteraction` parameter includes any relevant calculations from the sensor's inbuilt detection checks and represents what the result would have been if this script was not defined.
+
+   A boolean value **MUST** be returned from this script indicating whether the sensor detection should be accepted or denied. An accepted detection is not necessarily synonymous with a successful detection; it simply means that the existing sensor result, which could have failed due to other constraints, should be used. 
+
+.. _Sensor.Common_Mode_Commands:
+
+Common Mode Commands
+====================
+
+The remaining commands are applicable on a per-mode basis.
+
+.. command:: sensor_mode
+   :hidden:
+
+.. block:: sensor_mode
+
+.. command:: required_pd (0..1)
+
+   Specifies the constant 'required_pd' value to be used if the value of the global simulation command
+   :command:`use_constant_required_pd` was specified as **true**. This is applicable only
+   for sensors which implement probabilistic detectors (e.g., The optional Marcum-Swerling detector in
+   :model:`WSF_RADAR_SENSOR`).
+
+   **Default** 0.5
+
+.. command:: cue_mode [ fixed | azimuth | elevation | both | azimuth_and_elevation]
+
+   This command, along with azimuth_cue_limits_ and elevation_cue_limits_ can be used to limit the cueing
+   capabilities for a particular mode to something less than those which were defined by the
+   :command:`articulated part <_.articulated_part>`. For instance, a sensor may physically be able to cue in any direction but in a given
+   mode may only cue in azimuth.
+
+   * **fixed** - The sensor cannot be cued.
+   * **azimuth** - The sensor can be cued only in azimuth.
+   * **elevation** - The sensor can be cued only in elevation.
+   * **both** or **azimuth_and_elevation** - The system can be cued in both azimuth and elevation.
+
+   **Default** As defined by the :command:`_.articulated_part.slew_mode` command in the articulated part.
+
+.. command:: azimuth_cue_limits <angle-value> <angle-value>
+
+   Specifies the minimum and maximum angle about which the sensor can be cued in azimuth.  These values are applicable
+   only if **cue_mode** is **azimuth** or **both**.  The limits are specified in the subsystem coordinate frame.
+
+   **Default** As defined by the :command:`_.articulated_part.azimuth_slew_limits` command in the articulated part.
+
+.. command:: elevation_cue_limits <angle-value> <angle-value>
+
+   Specifies the minimum and maximum angle about which the sensor can be cued in elevation.  These values are applicable
+   only if **cue_mode** is **elevation** or **both**.  The limits are specified in the subsystem coordinate frame.
+
+   **Default** As defined by the :command:`_.articulated_part.elevation_slew_limits` command in the articulated part.
+
+.. command:: azimuth_cue_rate <angle-rate-value>
+.. command:: elevation_cue_rate <angle-rate-value>
+
+   Specifies the angular velocities to be employed when slewing the part to satisfy a cueing request. This is primarily
+   used for modeling systems that track single target. It is not used for scanning systems and should not be used for
+   multiple-target tracking systems.
+
+   The value must be greater than zero, and values greater than or equal to 1.0E+12 deg/sec will be treated as 'infinite'.
+   The values will be limited to the values specified by the :command:`_.articulated_part.azimuth_slew_rate` and
+   :command:`_.articulated_part.elevation_slew_rate` commands in articulated part (which default to 'infinite').
+
+   **Default** As defined by the :command:`_.articulated_part.azimuth_slew_rate` and :command:`_.articulated_part.elevation_slew_rate`
+   commands in the articulated part.
+
+.. command:: error_model <derived-name>
+
+             error_model *<base-name>* ...commands... end_error_model
+
+   Specify the error model. See :command:`error_model` for more information about the available error effects and how to configure the models.
+
+   **Default:** **none** (No error model)
+
+.. command:: solar_exclusion_angle <angle-value>
+
+   This sensor will not detect targets if the angle between its line-of-sight with the sun's limb and the target is less than this value.
+   
+   **Default:** no solar exclusion
+   
+.. command:: lunar_exclusion_angle <angle-value>
+
+   This sensor will not detect targets if the angle between its line-of-sight with the moon's limb and the target is less than this value.
+   
+   **Default:** no lunar exclusion
+   
+.. command:: target_solar_illumination_angle <angle-value> <angle-value>
+
+   Defines the bounds of solar illumination required for the target to be detected.
+
+   **Default:** No constraint
+   
+   .. note::
+      This command only works with passive IR sensors and passive visual sensors, as well as with :model:`WSF_GEOMETRIC_SENSOR`.
+
+.. command:: solar_elevation_at_target <angle-value> <angle-value>
+
+   Defines the bounds of solar elevation at the target's location required for the target to be detected.
+   
+   **Default:** No constraint
+   
+   .. note::
+      This command only works with passive IR sensors and passive visual sensors, as well as with :model:`WSF_GEOMETRIC_SENSOR`.
+
+.. command:: enable_moon_los_block <boolean-value>
+
+   If set to true, this sensor will not detect targets whose line-of-sight is blocked by the moon.
+   
+   **Default:** false
+
+.. _sensor_detection_scheduling_commands:
+
+Detection Scheduling Commands
+=============================
+
+These commands define the parameters that are used to determine when sensing chances are to occur.
+
+.. warning::
+
+   Not all sensors support all commands. For instance, a sensor whose product is a image does not support these commands. The :model:`WSF_COMPOSITE_SENSOR` is not integrated with many of these commands.
+
+.. command:: update_interval <time-value>
+
+   This value is required when the scheduler_ is assigned a scheduler-type of :ref:`scheduler_commands.physical_scan` or :ref:`scheduler_commands.sector_scan`. It is used in conjunction with the frame_time_ value defined within the final mode that is read in from the input file for the sensor in order to calculate and physically sweep sectors for radar detections.   For example, if the final frame-time value, which is read during the input loading sequence, is set to 20 sec, and if the update_interval is set to 2 sec, then 10 sectors are needed to sweep through 360 degrees during the 20-sec frame.  For this example, each sector would cover 36 degrees of azimuth during each 2-sec update_interval.
+
+.. note::
+   This keyword should be placed within the sensor-end_sensor block; not a mode block.
+
+.. command:: frame_time <time-value>
+
+   Specifies how long the sensor takes to perform one scan of its search volume.  How this parameter is actually used depends on the actual sensor implementation.  It also signifies how often a sensor detection is reported.
+
+.. command:: maximum_request_count <integer>
+
+   If this value is greater than zero then this mode only responds to explicit requests as initiated by :method:`WsfTaskManager::StartTracking <WsfTaskManager.StartTracking>`.
+
+.. command:: revisit_time <time-value>
+
+   If maximum_request_count_ is non-zero, this specifies how often the request should be revisited.
+
+.. command:: dwell_time <time-value>
+
+   If maximum_request_count_ is non-zero, this specifies how long the sensor will dwell or otherwise take to perform
+   a detection attempt associated with a request.
+
+.. command:: search_while_track
+
+   If maximum_request_count_ is non-zero, this indicates search mode requests can continue to be processed.
+
+.. command:: disables_search
+
+   If maximum_request_count_ is non-zero, this indicates that if this mode is selected then any detection attempts
+   by search modes will be blocked.
+
+.. command:: scheduler <scheduler-type> end_scheduler
+
+   .. parsed-literal::
+
+     scheduler :ref:`<scheduler-type> <scheduler_commands.available_schedulers>`
+        :ref:`Type Commands <scheduler_commands>`
+     end_scheduler
+
+   ***<scheduler-type>*** can be:
+
+.. include:: scheduler_types.txt
+
+.. command:: debug_scheduler
+
+   Enables output to the console window for scheduler data.
+
+   .. note::
+      This keyword will not work in the :model:`WSF_COMPOSITE_SENSOR` definition block, but it can work in the constituent sensors, which are used for :model:`WSF_COMPOSITE_SENSOR`, when the component sensors are identical.
+
+   .. note:: This command is valid for all scheduler types.
+
+.. _sensor_track_formation_commands:
+
+Track Formation Commands
+========================
+
+These commands define the criteria for establishing a track and the type and quality of information reported in the tracks produced by this sensor.
+
+.. note::
+   These commands are ignored for those sensors that do not produce tracks.
+
+.. command:: azimuth_error_sigma [ <angle-value> | <real-value> percent_of_true_range ]
+.. command:: elevation_error_sigma [ <angle-value> | <real-value> percent_of_true_range ]
+.. command:: range_error_sigma [ <length-value> | <real-value> percent_of_true_range ]
+.. command:: range_rate_error_sigma <speed-value>
+
+   Specifies the standard deviation for a Gaussian distribution for errors to be applied to position measurements from the sensor. The standard deviation may be specified as either an angle, length or speed value(as appropriate) or may be specified as a function of 'percent_of_true_range' for certain error types. In the latter case, the following formulas are used:
+
+   sigma(angle) = atan2(0.01 * value * R\ :sub:`true`, R\ :sub:`true`)
+
+   sigma(range) = 0.01 * value * R\ :sub:`true`
+
+   Where 'value' is the '<real-value>' specified in the command (in the range [0..100]) and 'R\ :sub:`true`' is the true range to the target.
+
+   **Default** 0 (no errors) for all
+
+.. command:: hits_to_establish_track <M> <N>
+
+   Indicates that <M> of the last <N> attempts to detect an object must be successful in order to establish a track.
+
+   **Default** 1 for both <M> and <N>.
+
+.. command:: hits_to_maintain_track <M> <N>
+
+   Once a track has been established, <M> of the last <N> attempts to detect an object must be successful in order to
+   maintain a track.
+
+   **Default** 1 for both <M> and <N>.
+
+.. command:: establish_track_probability [0 .. 1]
+
+   When the M/N establish track criteria is met (see hits_to_establish_track_), this is the probability that a track will be established.
+
+   **Default:** 1.0
+
+.. command:: maintain_track_probability [0 .. 1]
+
+   As long as the M/N maintain track criteria is met (see hits_to_maintain_track_), this is the probability that the track will be maintained.
+
+   **Default:** 1.0
+
+.. _sensor_track_information_reporting_commands:
+
+Track Information Reporting Commands
+====================================
+
+These commands determine the target information reported in a given sensor's track report.
+
+.. note::
+
+   If a filter (e.g., :model:`WSF_KALMAN_FILTER`, :model:`WSF_ALPHA_BETA_FILTER`) is being used, the reported
+   tracks are marked as being filtered, and reported position and velocity information (range, bearing, elevation,
+   location, and velocity) will be the filtered position and velocity.  If the :model:`Kalman Filter <WSF_KALMAN_FILTER>` is
+   used, a state covariance matrix is also available (see reports_state_covariance).
+
+.. command:: message_length <data-size-value>
+
+   Specifies the logical length of report messages from this sensor mode.
+
+   The message length is assigned as follows using the first value that results in a non-zero value.
+
+   * The value of the sensor mode **message_length** command (this command).
+   * The value of the sensor **message_length** command.
+   * The value the applicable :command:`message_table` entry.
+
+   **Default** 0
+
+.. command:: message_priority <integer-priority>
+
+   Specifies the priority to be assigned to the report messages that originate from this mode.
+
+   The message priority is assigned as follows using the first value that results in a non-zero value.
+
+   * The value of the sensor mode **message_priority** command (this command).
+   * The value of the sensor **message_priority** command.
+   * The value the applicable :command:`message_table` entry.
+
+   **Default** 0
+
+.. command:: reports_range
+
+   The slant range from the sensor to the target is reported.
+
+.. command:: reports_bearing
+
+   The bearing from the sensor to the target is reported.  This angle is measured in radians from the sensor's north
+   orientation, and it is in the range { -pi, pi }.
+
+.. command:: reports_elevation
+
+   The elevation angle from from the sensor to the target is reported.
+
+.. command:: reports_location
+
+   The location (latitude, longitude, altitude) of the target is reported.
+
+.. command:: reports_velocity
+
+   The velocity of the target is reported.
+
+.. command:: reports_range_rate
+
+   The range-rate of the target is reported.
+
+.. command:: reports_iff
+
+   The identify friend-or-foe (IFF) status is reported.
+
+.. command:: reports_side
+
+   The side of the target is reported.
+
+.. command:: reports_type
+
+   The type of the target is reported.
+
+.. command:: reports_signal_to_noise
+
+   The signal-to-noise ratio is reported.
+
+.. command:: reports_frequency
+
+   The frequency of the detected signal should be reported.
+
+.. command:: reports_pulsewidth | reports_pw
+
+   The pulse-width of the signal is reported.
+
+   .. note::
+      Also sets reports_frequency_.
+
+
+.. command:: reports_pulse_repetition_interval | reports_pri
+
+   The pulse-repetition interval of the signal is reported.
+
+   .. note::
+      Also sets reports_frequency_.
+
+
+.. command:: reports_other
+
+   Specifies what data elements will be reported in tracks from this sensor.
+
+.. command:: reports_nothing
+
+   Nothing is reported. This is the default behavior if no reporting flags are specified, and also has the effect of canceling any previous 'reports\ _' commands. This is useful if one wants to reuse an existing sensor
+   definition with embedded 'reports\ _' commands but needs to change what is reported, or in situations where only the detected platform is needed in generated tracks.
+
+.. command:: track_quality [0 .. 1]
+
+   Specifies the 'quality' of the track when produced from this mode.
+
+   **Default** 0.5
+
+.. command:: send_track_drop_on_turn_off <boolean-value>
+
+   Indicates if 'track drop' messages should be sent for each active track when the sensor is turned off.
+
+   **Default** off
+
+   .. note::
+      'track drop' messages are not sent if the platform that owns the sensor is deleted.

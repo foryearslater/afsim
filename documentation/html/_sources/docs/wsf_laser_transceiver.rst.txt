@@ -1,0 +1,506 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_LASER_TRANSCEIVER
+---------------------
+
+.. model:: comm WSF_LASER_TRANSCEIVER
+.. model:: comm WSF_LASER_XMTR
+.. model:: comm WSF_LASER_RCVR
+
+.. block:: WSF_LASER_TRANSCEIVER
+
+.. parsed-literal::
+
+     comm <name-or-type> :model:`WSF_LASER_TRANSCEIVER` | :model:`WSF_LASER_XMTR <WSF_LASER_TRANSCEIVER>` | :model:`WSF_LASER_RCVR <WSF_LASER_TRANSCEIVER>`
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+        ... :ref:`Antenna_Commands` ...
+        ... :command:`comm` Commands ...
+        ... :command:`_.transmitter` 
+        ...    standard :command:`_.transmitter` commands
+        ...    laser `transmitter commands`_
+        ... end_transmitter
+        ... :command:`_.receiver`
+        ...    standard :command:`_.receiver` commands
+        ...    laser `receiver commands`_
+        ... end_receiver
+        ... atmospheric_structure_
+        ... attenuation_
+        ... attenuation_loss_ | attenuation_transmission_factor_
+        ... aero_optic_loss_  | aero_optic_transmission_factor_
+        ... turbulence_loss_  | turbulence_transmission_factor_
+        ... show_link_budget_
+     end_comm
+
+.. note::
+
+   :model:`WSF_LASER_XMTR <WSF_LASER_TRANSCEIVER>` and :model:`WSF_LASER_RCVR <WSF_LASER_TRANSCEIVER>` are transmit-only and receive-only versions of :model:`WSF_LASER_TRANSCEIVER`.
+
+Overview
+========
+
+:model:`WSF_LASER_TRANSCEIVER` is a laser communications model, providing simulation of acquisition times, energy propagation, data transfer rates, and ability to maintain links.  The model accepts typical inputs as used in laser communications system design methodology, such that a specific top-level system design can be tested at the mission level.
+:model:`WSF_LASER_TRANSCEIVER` is capable of both transmitting and receiving using a :command:`_.transmitter` and :command:`_.receiver`. If a communication device is required to transmit or receive only, the :model:`WSF_LASER_XMTR <WSF_LASER_TRANSCEIVER>` and :model:`WSF_LASER_RCVR <WSF_LASER_TRANSCEIVER>` types are available. Both of these types are special cases of the :model:`WSF_LASER_TRANSCEIVER` type and therefore share the same commands that are listed below in the command section.
+
+For a more detailed look on how this and other communications work in AFSIM, see :doc:`analyst_ocd/communications_primer`. 
+
+Commands
+========
+
+.. note::
+   Many of the following commands specify fractional transmitted power, or alternatively, "losses" (db).  These are specified either as fractional or db-ratio values.  For fractional inputs, values should be greater than 0.0 and less than or equal to 1.0; for db-ratio inputs, values should be less than or equal to zero.
+
+.. command:: aero_optic_loss <db-ratio-value>
+.. command:: aero_optic_transmission_factor <real-value>
+
+   For laser communications devices on air platforms, specify the fraction of laser energy transmitted through turbulent air near the aircraft.
+   
+   Default: 1.0 (0 db)
+
+.. atmospheric_structure:
+.. include:: turbulence_commands.txt
+
+.. note:: If either turbulence_loss_ or turbulence_transmission_factor_ are specified, they will be used instead of the :doc:`turbulence<turbulence_model>` model.
+
+.. command:: attenuation < :command:`attenuation_model` name >
+   
+   Reference a model (typically :model:`WSF_OPTICAL_ATTENUATION`) for computing atmospheric attenuation.
+   
+   .. note:: Attenuation can alternatively be specified in the :command:`_.transmitter` block.
+   .. note:: If either attenuation_loss_ or attenuation_transmission_factor_ are specified, they will be used instead of the attenuation model.
+
+.. command:: attenuation_loss <db-ratio-value>
+.. command:: attenuation_transmission_factor <real-value>   
+
+   Specify the fraction of laser energy transmitted through the atmosphere from :command:`_.transmitter` to receiver.
+   
+   Default: 1.0 (0 db)
+
+   .. note:: This input is provided to enable validation of system link budgets (see show_link_budget_).  Otherwise, it is preferable to use an attenuation_ model.
+   
+.. command:: background_radiance <spectral-radiance-value>
+
+   Specify a background spectral radiance at the receiver aperture (see `Background Values for Wavelengths of Interest`_, below)
+   
+   Default: 0.0 watts/meters^2/steradian/meter
+
+   .. note:: This command has no effect if defined in a :model:`WSF_LASER_XMTR <WSF_LASER_TRANSCEIVER>`.
+
+.. command:: background_irradiance <spectral-irradiance-value>
+   
+   Specify a background spectral irradiance at the receiver aperture (see `Background Values for Wavelengths of Interest`_, below)
+
+   Default: 0.0 watts/meters^2/meter
+   
+   .. note:: This command has no effect if defined in a :model:`WSF_LASER_XMTR <WSF_LASER_TRANSCEIVER>`.
+
+.. command:: turbulence_loss <db-ratio-value>
+.. command:: turbulence_transmission_factor <real-value>   
+
+   Specify the fraction of laser energy transmitted that is not lost due to turbulence.
+   
+   Default: 1.0 (0 db)
+
+   .. note:: If neither of these commands is specified, turbulence_loss_ will be calculated as the ratio of the spot size due to diffraction alone, to that due to diffraction and turbulence.  The turbulent beam spread is calculated with the AFSIM :doc:`turbulence model<turbulence_model>`, configured with the provided atmospheric_structure_ .
+
+.. command:: show_link_budget <boolean-value>
+
+   If enabled, print a summary link budget when a message is transmitted.
+   
+   Default: disabled
+   
+   .. note:: This command can be useful when comparing a set of inputs against a link budget for a given system design.   
+
+Transmitter Commands
+====================
+
+The :command:`_.transmitter` block includes the standard :command:`_.transmitter` commands, plus commands that are specific to this comm device.
+The standard :command:`_.transmitter` commands utilized by :model:`WSF_LASER_TRANSCEIVER` follow:
+
+* :command:`_.transmitter.wavelength` - No default; must be specified.
+* :command:`_.transmitter.pulse_width` - No default; one of :command:`_.transmitter.pulse_width`, slot_width_, or slot_rate_ must be specified.
+* :command:`attenuation_model` - Specify the model for computing atmospheric attenuation (typically
+  :model:`WSF_OPTICAL_ATTENUATION`).
+
+The following commands are specific to :model:`WSF_LASER_TRANSCEIVER`:
+
+.. command:: average_power <power-value>
+
+   Specify the average output power of the :command:`_.transmitter`.  The :command:`_.transmitter` peak :command:`_.transmitter.power` will be calculated based on the modulation_type_-dependent duty cycle.
+
+.. command:: aperture_diameter <length-value>
+   
+   Defines the aperture diameter of the :command:`_.transmitter`. Changing this parameter controls the diffraction-induced beam
+   spread, affecting the beam size. The larger the aperture diameter, the smaller the beam on target, and the
+   greater the energy density (energy density ~ (aperture diameter^2)).
+   
+   Default: No default. Either aperture_diameter_ or beamwidth_ is required.
+
+   .. note:: When calculated from beamwidth_, aperture_diameter_ is defined to be :math:`\frac {4.0 \lambda} { \pi \theta_d }`, where :math:`\lambda` is the laser :command:`_.transmitter.wavelength`, and :math:`\theta_d` is the beamwidth_.
+
+.. command:: beamwidth <angle-value>
+   
+   Specifies the 'beam width' of the the transmitted beam.
+   
+   Default: No default. Either aperture_diameter_ or beamwidth_ is required.
+
+   .. note:: When calculated from aperture_diameter_, beamwidth_ is defined to be :math:`\frac {4.0\lambda} {\pi D}`, where :math:`\lambda` is the laser :command:`_.transmitter.wavelength`, and :math:`D` is the aperture_diameter_.
+
+.. command:: modulation_type < ook | ppm | dpsk >
+
+   Specify the `Modulation Type`_ to utilize when computing data transfer rate and duty cycle of the :command:`_.transmitter`.
+      
+   Default: ppm
+   
+.. command:: ppm_order <positive-integer>
+
+   When using the ppm modulation_type_, specify the ppm order.  This value must be greater than or equal to 2, and it is usually equal to a power of 2 (2, 4, 8, 16, etc.).
+   
+   Default: 16
+
+.. command:: slot_rate <frequency-value>
+.. command:: slot_width <time-value>
+
+   Specify the number of communication "slots" or possible pulse widths, per second; or alternately, specify the time width of a slot.  The two are reciprocals of one another.
+   
+   .. note:: slot_width_ is synonymous with :command:`_.transmitter.pulse_width`; however, slot_rate_ is not the same as either bit rate or :command:`_.transmitter.pulse_repetition_frequency` as these both depend on the modulation_type_.
+
+.. command:: optics_transmission_factor <real-value>
+.. command:: optics_loss <db-ratio-value>
+   
+   Defines the fraction of the transmitted laser light that passes through the :command:`_.transmitter` optics.  This factor typically takes into account optical element transmission and reflection losses.
+   
+   Default: 1.0 (0 db; no transmission loss)
+
+.. command:: wavefront_transmission_factor <real-value>
+.. command:: wavefront_loss <db-ratio-value>
+   
+   Specifies the fraction of laser light that passes through a the :command:`_.transmitter` optical path as a function of wavefront error (also, see wavefront_error_)
+   
+   Default: 1.0 (0 db; perfect diffraction-limited optics)
+
+.. command:: wavefront_error <real-value>
+   
+   Specify the wavefront error of the optical path in fractions of a wave.  If this value is specified, the value for wavefront_transmission_factor_ will be calculated according to the equation:
+
+   :math:`\exp(-(2 \pi W)^2)`
+
+   where :math:`W` is the wavefront error.
+   
+   Default: 0.0 (no wavefront error)
+
+.. command:: pointing_transmission_factor <real-value>
+.. command:: pointing_loss <db-ratio-value>
+   
+   Specify the fraction of laser light transmitted after pointing errors are considered.
+   
+   Default: 1.0 (0 db; no pointing error)
+   
+Receiver Commands
+=================
+
+The receiver is modeled as either a PIN photodiode (with detector_gain_ default of 1.0), or an avalanche photodiode (with detector_gain_ > 1.0).
+
+The :command:`_.receiver` block includes the standard :command:`_.receiver` commands, plus the following commands that are specific to this comm device:
+
+.. command:: aperture_diameter <length-value>
+   
+   Defines the diameter of the receiver (detector) aperture.
+   
+   Default: No default. Aperture diameter is required.
+
+.. command:: bandpass <length-value>
+
+   Specify the optical bandpass for transmission of light to the receiver.  It will typically be a very narrow value about the wavelength of the :command:`_.transmitter` laser wavelength.
+   
+   Default: 1 nanometer
+   
+.. command:: optics_transmission_factor <real-value>
+.. command:: optics_loss <db-ratio-value>
+   
+   Defines the fraction of the transmitted laser light that passes through the :command:`_.receiver` optics.  This factor typically takes into account obstructions in the optical path (e.g.,a secondary mirror), and optical element transmission and reflection losses.
+   
+   Default: 1.0 (0 db; no transmission loss)
+
+.. command:: quantum_efficiency <real-value>
+   
+   The fraction of the incident signal photons that is converted into photoelectrons.
+   
+   Default: 1.0 (100% Efficient)
+
+.. command:: responsivity <responsivity-value>
+
+   An alternative to quantum_efficiency_, responsivity is the number of photocurrent amps generated per watt of incident power.  It is related to 
+   quantum_efficiency_ through the relation:
+
+   :math:`\eta = \frac{E_{\lambda}} {q} R`,
+
+   where :math:`\eta` is the quantum_efficiency_, :math:`E_{\lambda} \equiv h c / \lambda` is the characteristic photon energy at laser wavelength :math:`\lambda`, :math:`q` is the electron charge, and :math:`R` is the responsivity,
+
+   Default: (Computed from quantum_efficiency_)
+
+.. command:: detector_gain <real-value>
+   
+   The gain of the detector.
+   
+   Default: 1.0
+
+.. command:: circuit_temperature <temperature-value>
+
+.. command:: circuit_capacitance <capacitance-value>
+
+.. command:: circuit_resistance <resistance-value>
+
+   These are optional commands used to compute the thermal noise component as described in the `Computation of Noise`_ section below. Circuit_temperature_ must be specified, along with either circuit_capacitance_ or circuit_resistance_.
+
+   Default: None.
+
+.. command:: dark_count_rate <frequency-value>
+
+.. command:: dark_current <current-value>
+   
+   These are optional commands used to specify the amplified "bulk" dark count term in background noise component as
+   described in the `Computation of Noise`_ section below).  One or the other may be specified depending on
+   preference.
+   
+   Default: None.
+
+.. command:: excess_noise_factor <real-value>
+
+   For an avalanche photodiode (APD) receiver, specify the excess noise factor (gain value), due to non-ideal amplification, when computing photoelectrons from amplified noise.
+   
+   Default: 1.0 (no additional effect)
+   
+.. command:: surface_dark_count_rate <frequency-value>
+
+.. command:: surface_dark_current <current-value>
+   
+   These are optional commands used to specify the non-amplified, or "surface" dark count term in background noise component as
+   described in the `Computation of Noise`_ section below).  One or the other may be specified depending on
+   preference.
+   
+   Default: None.
+
+   .. note:: Because surface dark current is not amplified, it can often be ignored in APD receivers with large gain.
+   
+Modulation Type
+================
+
+`Modulation type`_ determines :command:`_.transmitter` :command:`_.transmitter.duty_cycle` and :command:`data rate<comm.transfer_rate>` throughput.  Currently available modulation types are the following:
+
+* **On-Off Keying (OOK)**: Signal photons are transmitted during a bit interval if a 1-bit is sent, while no signal photons are transmitted during a bit interval if a 0-bit is sent.
+
+* **Pulse Position Modulation (PPM)**: For a given number of slots M, signal photons are sent during exactly one of the M slots. During each symbol period, :math:`log_2(M)\,` bits are transmitted. Because of this, M is usually a power of two. 
+
+  .. note:: PPM is often referred to as `M-ary` PPM, or M-PPM.  The case M=2 is sometimes distinguished as `Binary PPM`, or B-PPM.
+
+* **Binary Differential Phase Shift Keying (DPSK)**: If a 1-bit is transmitted, the :command:`_.transmitter` carrier phase is shifted by 180 degrees between bit intervals. If a 0-bit is transmitted there is no phase shift.
+
+Given a defined slot_width_ (:math:`t_{slot}\,`), the modulation types provide the following duty cycles and data rates:
+
+   +---------------------+-----------------------+------------------------------------------------------------+
+   | Modulation Type     | Duty Cycle            |      Data Rate (bps)                                       |
+   +=====================+=======================+============================================================+
+   | OOK                 | :math:`0.5`           |     :math:`1/t_{slot}`                                     |
+   +---------------------+-----------------------+------------------------------------------------------------+
+   | PPM                 | :math:`1/M`           |      :math:`log_2(M)/(M t_{slot})`                         |
+   +---------------------+-----------------------+------------------------------------------------------------+
+   | DPSK                |:math:`0.5`            |      :math:`1/ t_{slot}`                                   |
+   +---------------------+-----------------------+------------------------------------------------------------+
+
+Computation of Power Received from the Laser Pulse
+===================================================
+
+The computation of received laser power follows the optical link equation:
+
+   :math:`P_r =  P_t G_t L_t L_R L_{atm} G_r L_r\,`
+
+   .. note:: The terms 'loss` and 'transmission factor' are used interchangeably.  Typically, 'loss' is used when these factors are added together in decibel form (they are negative values).  The above equation does not use decibel form, but rather multiplies all terms together, in which case they are better described as 'transmission factors'.
+
+Where:
+
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`P_r\,`       | The received signal power.                                                             |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`P_t\,`       | The transmitted signal power.                                                          |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`G_t\,`       | The effective transmit antenna gain.                                                   |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`L_t\,`       | The efficiency loss associated with the transmitter.                                   |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`L_R\,`       | The free space range loss.                                                             |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`L_{atm}\,`   | The atmospheric-related loss.                                                          |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`G_r\,`       | The receive antenna gain.                                                              |
+   +---------------------+----------------------------------------------------------------------------------------+
+   | :math:`L_r\,`       | The efficiency loss associated with the receiver.                                      |
+   +---------------------+----------------------------------------------------------------------------------------+
+
+:math:`P_t` is the :command:`_.transmitter`'s (peak) :command:`_.transmitter.power`.  In the case that an average_power_ is defined,the :command:`_.transmitter` power is set to:
+
+   :math:`P_t = \frac {P_{ave}} {C}`
+
+where :math:`P_{ave}` is the average_power_ and :math:`C` is the duty cycle obtained from the modulation_type_.
+
+:math:`G_t` represents the ideal near-field intensity due to a plane wave at the transmitter:
+
+   :math:`G_t \equiv (\frac{\pi D_t} {\lambda})^2 = 4\pi A_t/\lambda^2`
+
+where :math:`D_t` is the (circular) transmitter aperture_diameter_, :math:`A_t` is the transmitter aperture area, and :math:`\lambda` is the laser :command:`_.transmitter.wavelength`.
+
+:math:`L_t`, the transmission losses, occur due to optics transmission losses, obscuration, and truncation; as well as to wavefront and pointing losses:
+
+   :math:`L_t = L_{t,optics} L_{wavefront} L_{pointing}`
+
+where :math:`L_{optics}` is the optics_transmission_factor_, :math:`L_{wavefront}` is the wavefront_transmission_factor_, and :math:`L_{pointing}` is the pointing_transmission_factor_.
+
+As noted, if a wavefront_error_ is specified, the wavefront_transmission_factor_ is calculated as follows:
+
+   :math:`\exp(-(2 \pi W)^2)`
+
+where :math:`W` is the wavefront_error_ in fractions of a wave.
+
+:math:`L_r` is the free-space range loss, defined to be:
+
+   :math:`L_r \equiv (\frac {\lambda} {4 \pi R})^2`
+
+where :math:`R` is the range from transmitter to receiver.
+
+:math:`L_{atm}` represents atmospheric attenuation (extinction), as well as losses due to turbulence and aero-optics:
+
+   :math:`L_{atm} = L_{atten} L_{turb} L_{ao}`
+
+where :math:`L_{atten}` is the attenuation_transmission_factor_, :math:`L_{turb}` is the turbulence_transmission_factor_, and :math:`L_{ao}` is the aero_optic_transmission_factor_.
+
+:math:`G_r`, the receiver gain, has an identical form as the transmitter gain:
+
+   :math:`G_t \equiv (\frac{\pi D_r} {\lambda})^2 = 4\pi A_r/\lambda^2`
+
+with :math:`D_r` being the (circular) aperture_diameter_ at the receiver, and :math:`A_r` being the associated area.
+
+:math:`L_r`, the receiver losses, occur due to optics transmission losses, obscuration, and truncation (optics_transmission_factor_):
+
+   :math:`L_r = L_{r,optics}`   
+
+Computation of Signal
+=====================
+
+The average number of signal electrons is calculated from the power incident at the receiver as follows:
+
+   :math:`N_{signal} = G \eta P_r t_{slot} / E_{\lambda}`
+
+where G is the detector_gain_ :math:`\eta` is the quantum_efficiency_ of the detector, :math:`t_{slot}` is the slot_width_, and :math:`E_{\lambda} \equiv h c / \lambda` is the characteristic photon energy at laser wavelength :math:`\lambda`.
+
+Computation of Noise
+====================
+
+The receiver noise comes about due to statistical fluctuations in the current.  These noise sources include:
+
+* Variations in current due to converted photons from:
+   * Background resolved sources (e.g., stars), calculated using the background_irradiance_ input.
+   * Background unresolved sources (e.g., scattered solar radiation), calculated using the background_radiance_ input.
+   * The transmitter (signal photons)
+* Thermal (Johnson) noise, calculated using the circuit_temperature_, and circuit_resistance_ or circuit_capacitance_ inputs.
+* Amplified ("bulk") dark current (shot noise), calculated using the dark_count_rate_ or dark_current_ inputs.
+* Non-amplified ("surface") dark current (shot noise), calculated using the surface_dark_count_rate_ or surface_dark_current_ inputs.
+
+For all but thermal noise, these fluctuations obey Poisson statistics: they are computed assuming that the variances of the noise current sources are equal to their mean values.
+
+Background photons incident on the detector are converted to photoelectrons in the same manner as the signal photons.  Thus, the average number of photons from background sources is
+
+   :math:`N_{back} = \eta L_{r,optics} (L_{e,\Omega,\lambda} \Omega_{fov} + E_{e,\lambda}) t_{slot} \Delta\lambda / E_{\lambda}`
+
+where :math:`L_{e,\Omega,\lambda}` is the background spectral radiance (background_radiance_), :math:`E_{e,\lambda}` is the background spectral irradiance (background_irradiance_), :math:`\Omega_{fov}` is the solid angle defined by the detector's field of view, and :math:`\Delta\lambda` is the optical filter bandpass_.
+
+The solid angle is computed as 
+
+   :math:`\Omega_{fov} \equiv \frac {\pi}{4} \theta_{fov}`, 
+
+where :math:`\theta_{fov}` is the full field-of-view angle (assumed circular; this computation uses a small angle approximation in :math:`\theta`).
+
+Shot noise variance due to signal and background photocurrent is equal to the number of electrons initially produced, subject to detector_gain_ and excess_noise_factor_:
+
+   :math:`\sigma_{signal}^2 = N_{signal} G F`
+
+   :math:`\sigma_{back}^2   = N_{back} G F`
+
+where :math:`F` is the excess_noise_factor_.
+
+Shot noise variance due to dark current consists of amplified and non-amplified contributors:
+
+   :math:`\sigma_{dark}^2 = (I_{dark,surface} + I_{dark,bulk} * G F) t_{slot} / q`
+
+where :math:`I_{dark,bulk}`, the amplified dark current, is provided by the dark_current_ (dark_count_rate_) input, and :math:`I_{dark,surface}` is the non-amplified dark current given by the surface_dark_current_ (surface_dark_count_rate_) inputs.
+   
+The thermal noise comes about due to thermal motion of electrons in a resistor.  Thermal noise variance due the following:
+
+   :math:`\sigma_{thermal}^2 = \frac {2 k T} {R_L q^2} t_{slot}`
+
+where :math:`T` is the circuit_temperature_, :math:`R_L` is the circuit_resistance_, and :math:`k` is Boltzmann's constant.
+
+Alternatively, the noise variance can be computed based on capacitance:
+
+   :math:`\sigma_{thermal}^2 =  \frac {k T C} {e^2}\,`
+
+where :math:`C\,` is the value of circuit_capacitance_, and :math:`e\,` is The value of the elementary charge (charge of an electron).
+
+Computation of Signal-To-Noise
+==============================
+
+Defining the total noise contribution to be the square root of the sum of the noise variances:
+
+   :math:`N_{noise} = \sqrt { \sigma_{signal}^2 + \sigma_{back}^2 + \sigma_{dark}^2 + \sigma_{thermal}^2}`
+
+The signal-to-noise ratio (SNR) is:
+
+   :math:`SNR = \frac {N_{signal} } {N_{noise} }`
+
+Background Values for Wavelengths of Interest
+=============================================
+
+The following table highlights some possible values for background_radiance_ and background_irradiance_ at some characteristic laser wavelengths:
+
++--------------------------------------------------------------------------------------+
+|                                   Irradiance :math:`W/m^2/\mu m`                     |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+| Wavelength :math:`\mu m` | Solar | Lunar | Mercury | Venus  | Mars/Jupiter | Saturn  |
++==========================+=======+=======+=========+========+==============+=========+
+|     0.53                 | 1842  |0.0027 | 1.8E-7  | 1.8e-6 | 2.8e-7       | 8.4e-8  |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+|     0.85                 |  940  |0.0015 | 9.5E-8  | 9.0e-7 | 1.5e-7       | 4.6e-8  |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+|     1.06                 |  748  |0.01   | 7.2E-8  | 7.1e-7 | 1.1e-7       | 3.2e-8  |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+|     1.3                  |  411  |0.00054| 3.7E-8  | 3.6e-7 | 5.6e-8       | 1.7e-8  |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+|     1.5                  |  204  |0.00024| 1.7E-8  | 1.6e-7 | 2.5e-8       | 7.5e-9  |
++--------------------------+-------+-------+---------+--------+--------------+---------+
+
+
++-----------------------------------------------------------------------------+
+|                                   Radiance :math:`W/m^2/sr/\mu m`           |
++--------------------------+----------------+--------------------+------------+
+| Wavelength :math:`\mu m` | Sunlit Clouds  | Sunlit Snow / Ice  | Starfield  |
++==========================+================+====================+============+
+|     0.53                 |   245          | 330                | 3.0e-6     |
++--------------------------+----------------+--------------------+------------+
+|     0.85                 |   180          | 220                | 1.4e-6     |
++--------------------------+----------------+--------------------+------------+
+|     1.06                 |   120          | 190                | 1.1e-6     |
++--------------------------+----------------+--------------------+------------+
+|     1.3                  |   50           | 140                | 6.0e-7     |
++--------------------------+----------------+--------------------+------------+
+|     1.5                  |   40           | 100                | 4.0e-7     |
++--------------------------+----------------+--------------------+------------+
+
+.. note:: Data from "Laser Communications in Space", Stephen G. Lambert & William L. Casey, Artech House, 1995, p. 155.

@@ -1,0 +1,123 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CYBER_TRACK_MANAGER_EFFECT
+------------------------------
+
+.. model:: cyber_effect WSF_CYBER_TRACK_MANAGER_EFFECT
+
+.. parsed-literal::
+
+   cyber_effect <effect_name> :model:`WSF_CYBER_TRACK_MANAGER_EFFECT`
+    
+      target_platform_ <platform-name>
+      target_platform_ <platform-type>
+      remove_target_platform_ <platform-name>
+      remove_target_platform_ <platform-type>
+      
+      inactive_track_purging_ <boolean-value>
+      inactive_raw_track_purging_ <boolean-value>
+      local_track_history_purging_ <boolean-value>
+      
+      # `Effect Event Scripts`_
+
+      script void OnEntry ... end_script
+      script void OnExit ... end_script
+      script bool OnTrack ... end_script
+      script bool OnRawTrack ... end_script
+      script bool OnTrackDrop ... end_script
+      
+   end_cyber_effect
+   
+Overview
+========
+
+:model:`WSF_CYBER_TRACK_MANAGER_EFFECT` is a cyber_effect that allows user customized behavior
+to be injected on the victim when the victim processes tracks via its master track manager.
+
+This effect is defined to affect any matching platform(s) or platform type(s) matching the user specified
+target_platform input parameters, and will only affect the platform's master track manager and any other objects
+(such as processors) utilizing the master track manager by extension.
+
+Multiple effects of this type acting at the same time on the same victim are processed in the order in which the effects were applied.
+This includes multiple effects of this type being used in a single cyber attack definition, in which the user should
+order the named effect in the desired order of precedence for the desired behavior.
+
+.. note:: This effect does NOT require user supplied data during a :method:`WsfPlatform.CyberAttack` initiation call.
+
+Commands
+========
+
+.. command:: target_platform <platform-name>
+.. command:: target_platform <platform-type>
+
+   Specifies either the explicit platform name or platform type that this effect is valid against.
+   
+.. command:: remove_target_platform <platform-name>
+.. command:: remove_target_platform <platform-type>
+
+   Useful for a derived effect type, these commands remove an explicit platform name or platform type that this effect is valid against.
+
+.. command:: inactive_track_purging <boolean-value>
+
+   Defines if this effect allows for inactive track purging during the lifetime of the effect.
+   
+   **Default** true
+
+.. command:: inactive_raw_track_purging <boolean-value>
+
+   Defines if this effect allows for inactive raw track purging during the lifetime of the effect.
+   
+   **Default** true
+   
+.. command:: local_track_history_purging <boolean-value>
+
+   Defines if this effect allows for local track history purging during the lifetime of the effect.
+   
+   **Default** true
+
+Effect Event Scripts
+^^^^^^^^^^^^^^^^^^^^
+
+The following scripts may be defined for this effect:
+
+.. parsed-literal::
+
+   script void OnEntry(WsfTrackManager aTrackManager)
+   end_script
+   
+   script void OnExit(WsfTrackManager aTrackManager)
+   end_script
+   
+   script bool OnTrack(WsfTrack aTrack, WsfTrackManager aTrackManager)
+   end_script
+   
+   script bool OnRawTrack(WsfTrack aTrack, WsfTrackManager aTrackManager)
+   end_script
+   
+   script bool OnTrackDrop(WsfTrackId aTrack, WsfTrackManager aTrackManager)
+   end_script
+
+The OnEntry script occurs only once, at the same time the effect begins on the victim.
+
+The OnExit script occurs only once, at the same time the effect ends on the victim (if the effect ends).
+
+The OnTrack script is ran any time a track is introduced to the track manager. Upon completion of any user defined
+script logic, the user must return true or false, where true indicates to allow the track to be processed by the
+master track manager, and false indicates to NOT allow the master track manager to receive this track.
+
+The OnRawTrack script is ran any time a raw track is introduced to the track manager. Upon completion of any user defined
+script logic, the user must return true or false, where true indicates to allow the raw track to be processed by the
+master track manager, and false indicates to NOT allow the master track manager to receive this raw track.
+
+The OnTrackDrop script is ran any time a track is expected to be dropped from the master track manager. 
+Upon completion of any user defined script logic, the user must return true or false, where true indicates to allow the 
+track to be dropped by the master track manager, and false indicates to NOT allow the master track manager to drop this track.

@@ -1,0 +1,1837 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+****************
+Coding Standards
+****************
+
+.. contents:: Table of Contents
+   :local:
+   :depth: 4
+
+Introduction
+============
+
+This document contains C++ coding standards and guidelines for the Advanced Framework for Simulation, Integration and Modeling (AFSIM). This standard is applicable to the AFSIM development efforts and applications developed using the framework.
+
+Principal goals of this document:
+
+* To provide consistency across AFSIM related software projects
+* To enhance comprehension, reliability, and maintainability of C++ software
+* To provide projects with the ability to develop a project-specific coding standard
+
+For any questions not addressed by this document, refer to the `C++ Core Guidelines <https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md>`_.
+
+.. note::
+  If there is a (G) after the rule number, then that item is a guideline and does not need to be followed as strictly as unmarked items.
+  
+  If there is a (F) after the rule number, then that item is automatically handled by clang-format (F\* for partial support).
+  
+Files
+=====
+
+Fi.1 - Include files in C++ shall have the file name extension ".hpp".
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fi.2 - Implementation files in C++ shall have the file name extension ".cpp".
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The purpose of these conventions are to provide a uniform interpretation of file names.  These rules will make it easier to create tools which base their behavior on the file name extension.
+
+Fi.3 - Only classes, structures, unions, and non-member operator functions shall be declared at file scope in a ".hpp" file.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fi.4 - Only classes, structures, unions, and inline (member or non-member operator) functions shall be defined at file scope in a ".hpp" file.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[Lakos, John, Large-Scale C++ Software Design. p. 77]
+
+Fi.5 - Data with external linkage shall be avoided at file scope.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaring variables with external linkage at file scope makes them global and pollutes the global namespace. In general, globally accessible data should be avoided. Where warranted at all, they should be contained within a class, struct, or namespace.
+
+Example:
+
+.. code:: c++
+
+ namespace Data
+ {
+    int i;
+ };
+
+[Lakos, John, Large-Scale C++ Software Design. p. 70]
+
+Fi.6 - Every include file shall contain a mechanism that prevents multiple inclusions of the file.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The easiest way to avoid multiple includes of files is by using an ``#ifndef #define`` block in the beginning of the file and an ``#endif`` at the end of the file.
+
+The ``#ifndef`` block shall use the full file name in CAPITAL letters followed by _HPP.
+
+The number of files included will be minimized, thus reducing compile time.  Also, some linkers get confused by multiple declarations.
+
+.. note::
+   The preprocessor directive ``#pragma once`` is non-standard and shall not be used.
+
+Example:
+
+.. code:: c++
+
+ #ifndef XYZ_HPP
+ #define XYZ_HPP
+
+ // The rest of the file
+
+ #endif // XYZ_HPP great for nested if's
+
+Fi.7 - The scope of include clauses should be minimized.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the include at the lowest possible level to minimize the number of changes to units.  For example, a header file should not specify an include that is only needed by the implementation file.
+
+Fi.8 (F) - An implementation file's corresponding header file should be the first file ``#include``'d.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition, declaration or implementation files shall list ``#include`` files in at least two blocks. The first block shall contain the system include files. The second block shall contain the local include files. Each of these blocks shall be listed in alphabetical order.
+
+Example:
+
+.. code:: c++
+
+ //*************************
+ // UtEntity.cpp
+ //*************************
+ #include "UtEntity.hpp"
+
+ #include <algorithm>
+ #include <cassert>
+ #include <cmath>
+ #include <iostream>
+
+ #include "UtDCM.hpp"
+ #include "UtEarth.hpp"
+ #include "UtEllipsoidalEarth.hpp"
+ #include "UtEntityPart.hpp"
+ #include "UtMath.hpp"
+ #include "UtMat3.hpp"
+ #include "UtVec3.hpp"
+
+Fi.9 - The directive ``#include "filename"`` shall be used for user-prepared include files.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fi.10 - The directive ``#include <filename>`` shall be used for include files from external libraries.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ISO C++ Standard specifies that file searches are performed in an implementation defined manner. The only item in terms of a search criteria that is defined in Standard is that if the ``#include " "`` search fails the directive shall be reprocessed as if it read ``#include < >``.
+
+Experience is that most compilers implement a search mechanism in that the ``#include < >`` notation causes the compiler to search its C++ Library directories and the ``#include " "`` causes the compiler to first search the user defined directories.
+
+Fi.11 - All necessary include files shall be explicitly defined within a given header file.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a file needs to be included to be used by a header file, it must be explicitly defined using the #include notation and should not be assumed to be secondarily included by one of the other included files.   This removes a dependency from the header file and makes the code more portable.
+
+Fi.12 - Absolute file path names shall not be specified in ``#include`` directives.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Avoiding the use of absolute paths permits more flexibility to reorganize directory structures without altering source files.  It also keeps the compilation process more portable; accommodating such things as the compilation of the same source code in different operating system environments.
+
+Fi.13 - Use the forward slash when specifying path names in ``#include`` directives.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+While some compilers will support both the forward slash and back slash, the ISO C++ Standard specifies that a forward slash should be used.  Therefore use of the forward slash makes code more portable.
+
+Fi.14 (G) - Definitions of classes that are only referred to via pointers (*) or references (&) shall not be included as include files and shall be forward declared.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In a header file, if you only have a pointer or reference to a class, it is not necessary to include that class' header file.  Instead, use a forward declaration to inform the compiler that the class exists.  This reduces dependencies for recompilation.
+
+Example:
+
+.. code:: c++
+
+ // file: PackableString.hpp
+
+ #ifndef PACKABLESTRING_HPP
+ #define PACKABLESTRING_HPP
+
+ #include "String.h"
+
+ class Buffer;
+ class PackableString : public String
+ {
+    public:
+       PackableString(const String& aS);
+       Buffer* Put(Buffer* aOutbufferPtr);
+       // ...
+ };
+
+ #endif
+
+ // file: PackableString.cpp
+
+ #include "PackableString.hpp"
+ // To be able to use Buffer-instances, Buffer.hpp MUST be included.
+ #include "Buffer.hpp"
+
+ Buffer* PackableString::Put(Buffer* aOutbufferPtr)
+ {
+    // ...
+ }
+
+Fi.15 (G) - The name of a file that contains a class declaration or definition should be the same name as the class and namespace(s) it contains.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+  By following this guideline along with Rule Id.7, which calls for class names to start with a prefix and/or namespace unique for the library, file names would also start with this prefix and/or namespace.
+
+Fi.16 (G) - An include file should not contain more than one (non-nested) class declaration.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fi.17 (G) - Implementation files should contain function definitions for only one (non-nested) class.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Placing implementation for only one class at a time in each implementation file creates more modular code and is easier to maintain.  If the implementation of a class is too complex, it may be a good idea to rethink the design of that class.
+Also, it is much easier for those who use and maintain classes if there is only one class definition in each file and if implementations of member functions in different classes are not present in the same file.  Nested classes are an exception and their definition or implementation can be included within the definition or implementation of another class.
+
+Fi.18 (G) - If a function is a friend of a class, the function declaration (prototype) should be included in the same header file as the class declaration.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The corresponding function definition should be contained in the class definition file. Refer to Cl.24 on the limitation of usage of friend.
+
+Fi.19 (G) - Logically-related global entities should be encapsulated into a unique class or namespace.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Placing logically-related entities into a unique class or namespace makes good use of C++ encapsulation to demonstrate to the reader of the code the relationship of the entities.
+
+Fi.20 - ``using`` directives should not reside at file scope.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   This used to only apply to included files. It now refers to all files, including implementation files.
+
+A ``using`` directive in a **header** file effectively places the contents of the associated namespace in file scope, which defeats the purpose of namespaces.
+
+Furthermore, some projects may decide to build their product by **including** implementation files.  If a particular implementation file has a global ``using`` directive then all files that are included after it, get built with the ``using`` directive.  The files built after the file with the ``using`` directive may behave differently with the ``using`` directive, which could result in negative consequences on the end product.
+
+Instead, either the ``using`` directive should be declared local or the namespace qualifier should be used wherever required.
+
+A preferred alternative is importing just the required items.
+
+.. code:: c++
+
+ using std::cout;
+ using std::endl;
+
+ int main()
+ {
+    cout << "Hello world!" << endl;
+    return 0;
+ }
+
+Good example in a header or 'included' implementation file:
+
+.. code:: c++
+
+ XTypes::Float64Min EContributors::GetLastUpdateTime (BObjectIdentifier& aContributor)
+ {
+    double lastUpdateTime = 0.0;
+    std::vector< EContributor* >::iterator i = FindContributor(aContributor);
+    if (i != mCcontainer.end())
+    {
+       lastUpdateTime = (*i)->GetTimeLastContributed();
+    }
+    return lastUpdateTime;
+ }
+
+Good example in a header or 'included' implementation file:
+
+.. code:: c++
+
+ XTypes::Float64Min EContributors::GetLastUpdateTime (BObjectIdentifier& aContributor)
+ {
+    using namespace std;
+
+    double lastUpdateTime = 0.0;
+    vector< EContributor* >::iterator i = FindContributor(aContributor);
+    if (i != mContainer.end())
+    {
+       lastUpdateTime = (*i)->GetTimeLastContributed();
+    }
+    return lastUpdateTime;
+ }
+
+Bad example in a header or 'included' implementation file:
+
+.. code:: c++
+
+ using namespace std;
+
+ XTypes::Float64Min EContributors::GetLastUpdateTime (BObjectIdentifier& aContributor)
+ {
+    double lastUpdateTime = 0.0;
+    vector< EContributor* >::iterator i = FindContributor(aContributor);
+    if (i != mContainer.end())
+    {
+       lastUpdateTime = (*i)->GetTimeLastContributed();
+    }
+    return lastUpdateTime;
+ }
+
+
+Identifiers
+===========
+
+Id.1 - Constants and enumerated values shall contain a leading, lowercase "c", followed by all capital letters with an underscore separating each word.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. admonition:: Exception
+
+   Values whose names have to be scoped (e.g. using ``enum class``) may begin with a capital letter and use camel case for subsequent words.
+
+Example:
+
+.. code:: c++
+
+ //Run-time initialization
+
+ //file.cpp
+ const int cSOME_CONST = 5;
+
+ //Object data member constants
+
+ class A
+ {
+    private:
+       const int cMY_CONST;
+ };
+
+Id.2 - The names of types and functions shall begin with an uppercase letter.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Id.3 - The names of local variables shall begin with a lowercase letter.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Variables begin with a lowercase letter because this is commonly done in C++ in industry.
+
+Lambda functions are local variables and shall follow this convention.
+
+.. admonition:: Exception
+
+ Variables that begin with an acronym (such as BOTSize, where BOT is an accepted acronym) are expected to begin with an uppercase letter.
+
+Id.4 - In names which consist of more than one word, the words shall be written together and each word that follows the first shall begin with an uppercase letter.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This method is commonly referred to as camel case and is common practice in C++ development.
+
+.. admonition:: Exception
+
+ If the last letter in a word/acronym is in uppercase, an underscore shall be used as a word/acronym separator.
+
+Example:
+
+.. code:: c++
+
+ int currentStream    = 1;
+ int currentIO_Stream = 1; // last character in currentIO is uppercase
+ void SomeMemberFunction();
+
+Id.5 - Two identifiers (such as a class name and an object name) shall never be distinguished by the use of uppercase and lowercase letters.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some development environments (including compilers, debuggers, and linkers) do not handle case differences well.  Also, avoiding this will save the  developer some headaches.
+
+Id.6 - Identifiers which begin with one or two underscores ('_' or '_ _') shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The use of two underscores ('_ _') in identifiers is reserved for the compiler's internal use according to the ISO C++ standard.
+Similarly, identifiers beginning with a single underscore followed by an uppercase letter, and all names at global scope beginning with an underscore are reserved.
+
+Underscores ('_') are often used in names of library functions (such as " _main" and "_exit"). In order to avoid collisions, do not begin an identifier with an underscore.
+
+Id.7 - The identifier of every globally visible item in a collection shall begin with a prefix or namespace that is unique for the collection (e.g. wsf, ut, wkf, ...).
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Using a collection prefix or namespace for globally visible symbols will reduce the likelihood of name collisions when multiple libraries are linked.
+Namespaces are preferred for new code, prefixes are typically used for old code and some namespaces.
+
+.. note::
+ The term "collection" (as used in this rule) is meant to represent a logical grouping of items.  It is not a C++ language term.
+
+There are many class libraries available for purchase and there may be tens of thousands of classes in a large project.  Because of this, it is important to be careful that name collisions do not occur. One way of preventing collisions is to have strict rules for assigning names and/or namespaces to globally visible objects (e.g. prefix or namespace).  In this way, classes from several different class libraries may be used at the same time.
+
+Names for the following types of items are to be prefixed and/or namespaced in a collection: Type names (classes, typedefs, enums, structs, unions, etc.), global variables and constants, function names (not member functions names), and preprocessor macros (``#define``).
+
+.. note::
+ By following this rule along with Rule Fi.15, which calls for file names to be the same as the class and/or namespace name, file names would also start with the library prefix or namespace.
+
+Example:
+
+.. code:: c++
+
+ namespace wsf
+ {
+    class ClassName
+    {
+       // ...
+    };
+ }
+
+Id.8 - Identifiers in lexically nested scopes should be distinct:  no identifier should be named the same as one in an outer enclosing scope.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Although this is permitted by C++ visibility rules, it is discouraged.  A reader must know where an identifier comes from in order to understand the software logic.  If identifiers are duplicated in nested scopes, it may not be immediately apparent which one is being used.
+
+Example:
+
+.. code:: c++
+
+ int someVar = 0;
+ for (int someVar = 3; someVar < count; ++someVar)
+ {
+    temp = temp + anArray[someVar];  // inner "someVar" blocks scope
+                                     // of outer "someVar"
+ }
+
+
+Id.9 - A class data member shall have a prefix of "m".
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ class Person
+ {
+    private:
+       int   mAge;
+       int*  mSizePtr;
+ }
+
+Id.10 - The names of formal arguments to functions shall have a prefix of "a".
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ int SetPoint(int x, int y);     // No!
+ int SetPoint(int aX, int aY);   // Good
+
+Id.11 - Acronyms shall be defined where they are first used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Defining acronyms makes the code more clear for other developers who may not be familiar with the subject area.
+
+Id.12 - Access functions (Accessors and Mutators) should have names which begin with "Get" and "Set" respectively.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Access functions which return (Accessors) or change (Mutators) member data should have consistent names so that the intent of the function is easily recognizable.  Using "Get" for an Accessor function and "Set" for a Mutator function is fairly standard.
+
+For accessors which return a boolean value, the prefixes "Is" and "Has" are also acceptable.
+
+Id.13 (G) - The convention VerbNoun should be used for member functions.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the convention VerbNoun as in the function ``DrawContent()``.
+
+Id.14 (G) - Boolean identifiers should reflect the "True" sense of the condition.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To avoid confusion with double-negatives and to promote consistency, a boolean identifier should, by itself, reflect the "True" sense of the condition.
+
+Example:
+
+.. code:: c++
+
+ bool partOn = true;         // clearer way to express boolean
+ bool partOnFalse = false;   // not as clear
+
+
+Whitespace
+==========
+
+Ws.1 (F) - Indents of three spaces shall be used.  Tabs shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Using multiples of 3 spaces for indentation seems a good practice used by many projects.  Spaces shall be used instead of tabs because some editors save "tab characters" instead of "space characters," resulting in the possibility of another editor expanding a "tab character" an amount different than 3 spaces.
+
+Ws.2 (F) - A continuation line shall be indented at least three spaces to the right from the indentation level of the beginning of the statement.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It may be desirable to indent further than three spaces for vertical alignment aesthetics.
+
+Ws.3 - There shall not be more than one C++ statement per line.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Human eyes can miss a C++ statement if it is placed before or after another statement on the line.
+
+Example:
+
+.. code:: c++
+
+ // following line contains more than one C++ statement - bad
+ a = 3; b = 4;
+
+Ws.4 (F) - Binary operators (``+``, ``=``, ``&&``, etc.), except for member access operators (``a.x``, ``b->y``, ``c::z``), shall have whitespace before and after them.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.5 (F) - Unary operators (someVar++, !someVar, etc.) shall not have white space between them and the variable on which they are operating.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.6 (F) - White space shall follow both commas and semi-colons.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.7 (F) - Colons shall always be followed by whitespace. Follow the following examples for placing whitespace before colons...
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: c++
+
+ class Derived : public Base        // Inheritance: whitespace
+ {
+    public:                         // Access specifier: no whitespace
+       enum Colors : short          // Enum base: whitespace
+       {
+          cRED,
+          cGREEN,
+          cBLUE,
+          cBLACK
+       };
+       explicit Derived(const std::vector<Colors>& aList)
+          : Base(aList)             // Class initializer: whitespace
+       {
+          label:                    // Label: no whitespace (Note: use of labels is discouraged (See Mi.4), but they are listed here for completeness.)
+
+          Colors appearance = (aList.empty() ? cBLACK : aList[0]);
+                                    // Ternary operator: whitespace
+
+          for (auto color : aList)  // Range-for: whitespace
+          {
+             switch (aColor)
+             {
+             case cRED:             // Case label: no whitespace
+                // ...
+                break;
+             default:               // Default label: no whitespace
+                // ...
+             }
+          }
+       }
+ };
+
+Ws.8 (F) - No white space shall be placed directly after a function name and before the left parenthesis.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.9 (F) - No white space shall be placed before or after the square brackets associated with arrays unless some sort of calculation is being evaluated that results in the array index, or the bracket pair ``[]`` is part of a ``delete[]`` statement.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.10 (F) - When declaring pointers and references, the ``*`` and ``&`` operators, respectively, shall appear next to the type names, followed by white space.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These characters should be written together with the types of variables instead of with the names of variables in order to emphasize that they are part of the type definition.  Instead of saying that ``\*i`` is an ``int``, say that ``i`` is an ``int\*``.
+
+Rule Va.3 plays hand-in-hand with this rule.  If multiple variables were allowed to be declared on the same line, the modifier ``\*``, placed with the type name, would only apply to the first variable and not to subsequent variables.  This, if it were allowed, could be easily misinterpreted!
+
+Example:
+
+.. code:: c++
+
+ unsigned char* Object::AsString()
+ {
+    // Something
+ };
+
+ unsigned char*  userName = 0;
+ int   sfBook = 42;
+ int&  anIntRef = sfBook;
+
+Example:
+
+.. code:: c++
+
+ // Not allowed - easily misinterpreted
+ unsigned char* i, j; // i is declared pointer to unsigned char
+                      // while j is declared unsigned char
+
+Ws.11 (F) - Braces (``{}``) which enclose a block shall be placed in the same column, on separate lines directly before and after the block.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. admonition:: Exception
+
+   In short blocks consisting of 0 or 1 statements, both braces may be placed on the same line.
+
+Ws.12 - The flow control primitives ``if``, ``else``, ``while``, ``for``, and ``do`` shall be followed by a block, even if it is an empty block.  The braces (``{}``) for the block shall not be indented, but the contents of the block shall be indented.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At times, everything that is to be done in a loop may be easily written on one line in the loop statement itself.  It may then be tempting to conclude the statement with a semicolon at the end of the line.  This may lead to misunderstanding since, when reading the code, it is easy to miss such a semicolon.  It is better to place an empty block after the statement to make completely clear what the code is doing.
+
+Example:
+
+.. code:: c++
+
+ // No block at all - no!
+ while ( /* Something */ );
+
+ // Empty block - better!
+ while ( /* Something */ )
+ {
+    // Empty
+ }
+
+In addition, even though C++ does not require the usage of the scope brackets for single statement structures, using them consistently (for single or multiple statement structures) is a good practice.  It guards against the possibility of a statement being added to a single statement structure and the programmer forgetting to add scope brackets.
+
+Example:
+
+.. code:: c++
+
+ // Do not do this:
+ if (flightStatus == PARKED)
+    engineStatus = OFF;
+
+ // Instead, do this:
+ if (flightStatus == PARKED)
+ {
+    engineStatus = OFF;
+ }
+
+Ws.13 (F) - The template keyword and formal parameter list that follows shall be placed on separate lines from the function or class declarations.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The function declaration line follows immediately after the generic parameter list line.
+
+Example:
+
+.. code:: c++
+
+ template<class ElementType, class ComparatorType>
+ ElementAverageType(ElementType    aInputElement,
+                    ComparatorType aInputComparator)
+ {
+    // ...
+ }
+
+Ws.14 (F) - There shall be a space between control flow primitives (``if``, ``while``, ``for``, ...) and the opening parenthesis.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ws.15 (G) (F) - White space should not follow an opening parenthesis or precede a closing parenthesis.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+White space directly within parentheses is usually unnecessary.  It can sometimes be useful to align and differentiate nested parentheses-groupings.
+
+Ws.16 (G) (F) - Minimize having two or more contiguous blank lines.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multiple, contiguous blank lines are seldom necessary and often look sloppy.  To separate "blocks" of code, use strategic comment blocks instead of multiple blank lines.
+
+Ws.17 (G) (F\*)- Vertical alignment should be used to enhance the readability of declarations, statements, expressions, parentheses, function parameters, and tactical and strategic comments.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ // Easy to read
+ int column          = FIRST_COLUMN;
+ int row             = FIRST_ROW;
+ char columnRowValue = 'A';
+
+ // Not as easy to read
+ int column = FIRST_COLUMN;
+ int row = FIRST_ROW;
+ char columnRowValue = 'A';
+
+Example:
+
+.. code:: c++
+
+ // Easy to read:
+ int MyComplicatedFunction(unsigned      aUnsignedValue,
+                           int           aIntValue,
+                           char          aCharPointerValue,
+                           int*          aIntPointerValuePtr,
+                           myClass*      aMyClassPointerValuePtr,
+                           unsigned int* aUnsignedPointerValuePtr);
+
+ // Not as easy to read:
+ int MyComplicatedFunction(unsigned aUnsignedValue,
+                           int aIntValue,
+                           char aCharPointerValue,
+                           int* aIntPointerValuePtr,
+                           myClass* aMyClassPointerValuePtr,
+                           unsigned int* aUnsignedPointerValuePtr);
+
+
+Ws.19 (G) - For readability, there should be a space after the // when writing comments.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception: Comments written for automatic documentation (e.g. with Doxygen) do not need to follow this guideline.
+
+Comments
+========
+
+Comments are often said to be either "strategic" or "tactical."  A strategic comment describes what a function or section of code is intended to do, and is placed before the function or code.  A tactical comment describes what a single line of code is intended to do and is often placed at the end of the line.
+
+Co.1 - The characters "//" shall be used as the comments markers, except where required for automatic documentation (e.g. with Doxygen).
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the characters ``//`` are consistently used for writing comments, then the combination ``/\* \*/`` may be used to make comments out of entire sections of code during the development and debugging phases.
+
+Example:
+
+.. code:: c++
+
+ //! A class describing a person.
+ class Person
+ {
+    private:
+       int   mAge;
+       int*  mSizePtr;    // Pointer
+ };
+
+Co.2 - Every class, function, and member function, except constructors, destructor, and private functions, shall be documented with a strategic comment block where they are declared.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Doxygen is used to automatically generate documentation. The strategic comment blocks should be detailed enough that another developer can reasonably be expected to use the components described without referring to the implementation.
+
+Co.3 - Within a header file, every function or member function that is defined in that file (except constructors, destructor, and private functions) shall be documented with a strategic comment block.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Co.4 (G) - Comments, especially strategic comments, should follow standard rules of grammar, such as complete sentences and correct punctuation.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since strategic comments usually consist of a few sentences or more, grammar rules should be followed to promote readability and consistency.
+
+Classes
+=======
+
+Cl.1 - A struct shall be used when all member data can vary independently. (CppCoreGuidelines C.2)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For consistency, if you have a logical grouping of member functions, do not use a structure instead of a class.  Structures shall contain only data members.
+
+Cl.2 - The public, protected, and private sections of a class shall be declared in that order.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cl.3 - The public, protected, and private keywords shall be indented, and the entities which appear under each section shall be further indented.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By placing the public section first, everything that is of interest to a user is gathered in the beginning of the class declaration.  The protected section may be of interest to designers when considering inheriting from the class.  The private section contains details that should have the least general interest.  Consistent indentations promote readability.
+
+Example:
+
+.. code:: c++
+
+ class SomeClass
+ {
+    public:
+       // whatever
+
+    protected:
+       // whatever
+
+    private:
+       // whatever
+ };
+
+Cl.4 - Before the public section of a class, the following entities may be declared: Q_OBJECT and its kin, private scoped types, and friends.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cl.5 - In a public section of a class, entities shall be declared in the following order: enumerated types, constructors, class destructor, member functions (non-operator), operator member functions, followed by other public objects.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cl.6 - In a protected section of a class, entities shall be declared in the following order: member functions (non-operator), operator member functions, followed by enumerated types.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cl.7 - In a private section of a class, entities shall be declared in the following order: member functions (non-operator), operator member functions, followed by class member data (including types, structures, and enumerated types).
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ordering of entities within each section promotes consistency.
+
+.. admonition:: Exception
+
+ In some cases, some entities (such as enumeration types) may need to be moved up within a section for compiling reasons.
+
+Cl.8 - Polymorphic classes shall have ``virtual`` destructors.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a class has virtual functions but does not have its destructor defined as ``virtual``, you run the risk of improperly destructing a derived object.  If ``delete`` is invoked on the derived object (as shown in the accompanying example), only the base object's destructor is called.  Declaring the base object's destructor ``virtual`` solves the problem.
+
+.. admonition:: Exception
+
+ Situations where run-time and memory are limited and where it can be determined that class inheritance will not take place or-if it does-that the application will destroy properly.
+
+Example:
+
+.. code:: c++
+
+ class Base
+ {
+    public:
+       ~Base();            // Destructor needs to be virtual!
+       // ...
+ };
+
+ class SubClass : public Base
+ {
+    public:
+       ~SubClass();
+       // ...
+ };
+
+ void FinishWithObject(Base* aObjectPtr)
+ {
+    delete aObjectPtr;   // this calls ~Base() no matter what the run-time
+                         // type of "aObject" is!!
+ }
+
+Cl.9 - An inherited non-virtual function should not be redefined.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a non-virtual function is redefined in a derived class, an unexpected behavior can result.  If a pointer of type pointer-to-base-class (not pointer-to-derived-class) is assigned to the address of the derived class, then invoking the redefined non-virtual function actually invokes the function from the base class!
+
+.. note::
+ References exhibit this same behavior as do pointers.
+
+Example:
+
+.. code:: c++
+
+ class ClassA
+ {
+    public:
+       void DoFunction();
+ };
+
+ class ClassB : public ClassA
+ {
+    public:
+       void DoFunction();                        // note that this inherited
+                                                 // non-virtual function is
+                                                 // being redefined!
+ };
+
+ void main()
+ {
+    ClassB objectOfClassB;                       // create an object of ClassB
+
+    ClassB* aClassB_TypePtr = &objectOfClassB;   // create ptr of derived class
+                                                 // type that points to the
+                                                 // derived class
+
+    aClassB_TypePtr->DoFunction();               // DoFunction(), as redefined
+                                                 // in ClassB, gets called (no
+                                                 // surprise)
+
+    ClassA* aClassA_TypePtr = &objectOfClassB;   // create ptr of base class type
+                                                 // that points to derived class
+
+    aClassA_TypePtr->DoFunction();               // DoFunction(), as defined in
+                                                 // ClassA, gets called, despite
+                                                 // pointing to ClassB!
+ }
+
+.. admonition:: Exception
+
+ In some cases where the base class cannot be modified, it may be acceptable to redefine a non-virtual funciton.
+
+Cl.10 - In an inherited virtual function, default parameters shall not be redefined.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Redefining a default parameter in an inherited virtual function can cause something unexpected to happen.  If a class pointer of type pointer-to-base-class (not pointer-to-derived-class) is assigned to the address of the derived class, then invoking the inherited virtual function without calling out the redefined default parameter is where things go wrong.  Instead of the redefined default parameter getting used for this function call, the default parameter value for the function call is taken from the base class.
+
+.. note::
+ References exhibit this same behavior as do pointers.
+
+Example:
+
+.. code:: c++
+
+ enum SeinfeldCharacter {cJERRY, cELAINE, cGEORGE, cKRAMER, cNEWMAN};
+
+ class ClassA
+ {
+    public:
+       virtual void DoFunction(SeinfeldCharacter name = cJERRY);
+ };
+
+ class ClassB : public ClassA
+ {
+    public:
+       void DoFunction(SeinfeldCharacter name = cNEWMAN) override;
+ };
+
+ void main()
+ {
+    ClassA objectOfClassA;                  // create an object of ClassA
+
+    ClassA* aClassA_Ptr = &objectOfClassA;  // create ptr of base class type that
+                                            // points to the base class
+
+    ClassB objectOfClassB;                  // create an object of ClassB
+
+    ClassA* aClassB_Ptr = &objectOfClassB;  // create ptr of base class type that
+                                            // points to the derived class
+
+    aClassA_Ptr->DoFunction();              // calls ClassA::DoFunction(cJERRY)
+                                            // (no surprise)
+
+    aClassB_Ptr->DoFunction();              // calls ClassB::DoFunction(cJERRY)
+                                            // instead of calling
+                                            // ClassB::DoFunction(cNEWMAN)
+ }
+
+Cl.11 - A member function that does not modify member data shall be declared ``const``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Member functions declared as ``const`` may not modify member data and are the only functions which may be invoked on a ``const`` object.  A ``const`` object declaration is excellent insurance that objects will not be modified (mutated) when they should not be.  A great advantage that is provided by C++ is the ability to overload functions with respect to their ``const``-ness.  (Two member functions may have the same name where one is ``const`` and the other is not).
+
+Cl.12 - If a class defines a destructor, copy constructor, or copy assignment operator, it should define all three.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The "Rule of 3/5/0" is common practice in C++ and is meant to prevent errors caused by unintentional use of default-provided special member functions.
+Typically when one of these special member functions are explicitly defined, the class is managing resources outside of itself.
+
+If move semantics are desired for the class, a move constructor and move assignment operator should also be defined.
+
+Cl.13 - If there are any pointers within a given class that point to memory allocated by this class, there shall be a defined copy constructor and assignment operator.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A default copy constructor or assignment operator copies all member data within a class, thus copying any pointers to entities such as dynamically allocated memory.  This results in two objects pointing to the same entity.  Worse yet, when one of the two objects goes out of scope, its destructor deletes the entity pointed to by both objects.
+
+Defining a copy constructor and assignment operator can overcome these problems.
+
+Inside these functions, either copy the pointed-to data structures so that every object has its own copy, or implement some kind of reference-counting scheme to keep track of how many objects are currently pointing to a particular data structure.
+
+.. admonition:: Exception
+
+ If copying/assignment is really never intended, techniques used in Rule Cl.17 can be used to ensure that copying/assignment does not occur.
+
+Cl.14 -  An assignment operator shall return a reference to ``\*this``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The return type of the ``operator=`` must be acceptable as an input to itself in the case where assignments are chained together.  This is because an assignment operator is right-associative, meaning that an assignment chain is parsed from the inside-out, with the return value of each assignment being used as input for the next outer assignment. (See example.) A common error is to have the ``operator=`` return void, which does not support assignment chains.
+
+Example:
+
+.. code:: c++
+
+ // built-in types allow assignment chaining, as shown here:
+
+ int x;
+ int y;
+ int z;
+ x = y = z = 0;
+
+ // to perform assignment chaining with user-defined types, the assignment
+ // operator must support this, as shown here:
+
+ class SomeString
+ {
+    public:
+       SomeString(const char* aValue = 0);
+       SomeString& operator=(const SomeString& aRhs)
+       {
+          // ...
+          return *this;   // return reference to left-hand object
+       }
+    private:
+       char* mData;
+ };
+ SomeString x;
+ SomeString y;
+ SomeString z;
+
+ x = y = z = "Hello";     // works because of assignment operator return value
+
+ // note: The form of the following expression is identical to the expression
+ // above. The parentheses illustrate how the expression is evaluated from the
+ // inside-out.
+
+ x = (y = (z = "Hello"));
+
+Cl.15 - An assignment operator shall assign to all data members.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Special care should be taken regarding a derived class's assignment operator(s): they need to also handle the assignment of base class members.
+
+Cl.16 - An assignment operator which frees previous resources allocated to the receiving object shall not do so if the object is being assigned to itself.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Problems may occur when an object gets assigned to itself (e.g., ``a = a``).  (Such an assignment would not usually occur explicitly but rather indirectly.)  An assignment operator typically frees resources allocated to the object before it can allocate the new resources associated with its new value.  This would cause problems when assigning an object to itself because the old resources are typically needed during the process of allocating the new ones.
+
+If the assignment operator detects that the object is being allocated to itself, this problem is avoided.  The assignment operator can efficiently skip over most of its code.
+
+Example:
+
+.. code:: c++
+
+ class SomeClass
+ {
+    public:
+       const SomeClass& operator=(const SomeClass& aSc);
+       // ...
+    private:
+       char* mSomeData;
+ };
+
+ // Assignment operator
+ const SomeClass& SomeClass::operator=(const SomeClass& aSc)
+ {
+    if (this != &sc)       // Is this the same object?
+    {
+       delete mSomeData;   // Okay to delete the data
+    }
+    return *this;
+ }
+
+Cl.17 - For cases where operations are declared solely to disable automatically generated compiler functions, the definitions (bodies) shall use the ``delete`` keyword.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since any use of these functions is not allowed, this allows these errors to be detected at compile time to improve testability.
+
+Example:
+
+.. code:: c++
+
+ class SomeClass
+ {
+    public:
+       SomeClass(const SomeClass&) = delete;
+ };
+
+Cl.18 - Use the keyword ``override`` when redefining a virtual function in a subclass.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Although the language does not require it, adding the keyword serves as a self-documenting reminder that the function is an override to superclass virtual function. Using this keyword will generate a compile time error notifying of any function signature differences.
+
+Cl.19 - Every class attribute shall have a value by the end of its class's construction, whether the value is a default or a real working value.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Consumers may call a supplier's public member functions prior to the class attributes of this function receiving values shortly after start up.  If the class attribute did not receive a value prior to the end of construction, the attribute will contain an 'unexpected' value.  If the 'unexpected' value is vastly different from the default or real working value, the start up software performance may be diminished.
+
+Cl.20 (G) - Public member data should not be specified in a class.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The use of public variables is discouraged for the following reasons:
+
+1. A public variable represents a violation of one of the basic principles of object-oriented programming, namely, encapsulation of data. For example, if there is a class of the type ``BankAccount``, in which ``accountBalance`` is a public variable, the value of this variable may be changed by any user of the class. However, if the variable has been declared private, its value may be changed only by the member functions of the class.
+2. An arbitrary function in a program can change public data which may lead to errors that are difficult to locate.
+3. If public data is avoided, its internal representation may be changed without users of the class having to modify their code. A principle of class design is to maintain the stability of the public interface of the class. The implementation of a class should not be a concern for its users.
+
+Cl.21 (G) - Protected member data should not be specified in a class.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The use of protected variables in a class is not recommended, since its variables become visible to its derived classes.  The names of types or variables in a base class may then not be changed since the derived classes may depend on them.  If a derived class, for some reason, must access data in its base class, one solution may be to make a special protected interface in the base class, containing functions which return private data.  This solution would not imply any degradation of performance if the functions may be defined inline.
+
+Cl.22 (G) - Use standard library containers or smart pointers when possible to avoid manually defining special member functions.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Using well-tested resource-managing types removes the need for manually defining destructors, copy/move constructors, and copy/move assignment operators. Defining these functions manually opens the door for errors.
+
+Cl.23 (G) - For concrete (non-abstract) classes, a ``protected`` constructor should be declared to limit the creation of objects to derived classes only, if this is desired.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In some cases, objects should not be constructed from a base class, only derived classes.  If someone were to attempt to create an object of a such a base class, an attempt to invoke the protected-declared constructor would result in a compile-time error, since the protected-declared constructor is unavailable.  Regarding the derived classes, however, the base class's protected-declared constructor is available.
+
+Cl.24 (G) - The ``friend`` mechanism should be avoided.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Good rationale should be presented to justify the need for the ``friend`` mechanism.
+
+Cl.25 (G) - Use default member initializers instead of a default constructor that only initializes data members.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Using default member initializers allows for a compiler-generated function.
+
+Example:
+
+.. code:: c++
+
+   class SomeClass1 { // BAD: doesn't use member initializers
+      public:
+         SomeClass1() :s{"default"}, i{1} { }
+         // ...
+      protected:
+         string s;
+         int i;
+   };
+
+   class SomeClass2 {
+      public:
+         // use compiler-generated default constructor
+         // ...
+      private:
+         string s = "default";
+         int i    = 1;
+   };
+
+Cl.26 (G) - Use a pointer member variable when the object relationship is dynamic.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A pointer member variable should be used when it can point to many different objects over time, or to no object at all.  A pointer member variable can be changed at will and can be set equal to ``nullptr`` when nothing is currently being contained.
+
+Cl.27 (G) - Use a reference member variable when the object relationship is static.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Member functions (other than constructors) can not change what a reference points to.  Reference member variables must be initialized by the constructor(s) of the class, and they can never be changed to refer to anything else.  While pointers could be used for all relationships, the use of references when possible is safer.
+
+.. admonition:: Exception
+
+ Use a constant pointer (not pointer-to-contant) when null is a valid value.
+
+Cl.28 (G) - Constructors and conversion operators should be marked as ``explicit`` when automatic conversion is not desired.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cl.29 (G) - In a template class definition, multiple potential definitions of overloaded functions should be avoided.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Overloaded functions within class templates can pose a problem.  If a function is overloaded, there may be a conflict if the element type appears explicitly in one of these.  After instantiation, there may end up two functions which, for example, have the type int as an argument.  The compiler may not complain about this, risking that the designer of the class does not notice it.  In cases where there is a risk for multiple definitions of member functions, this must be carefully documented.
+
+Example:
+
+.. code:: c++
+
+ template<class ET>
+ class Conflict
+ {
+    public:
+       void SomeFunction(int aA);
+       void SomeFunction(ET  aA);    // what if ET ends up being an int?
+ };
+
+The preferred approach is to use template specialization, ``std::enable_if``, or (with C++17) ``if constexpr``.
+
+Cl.30 (G) - Base your exception classes on one of the standard C++ classes.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This allows your exceptions to be handled in a way that is consistent with those generated by the system.
+
+If the efficiency of exception handling does not satisfy performance requirements, some alternate mechanism should be used to protect against items that can result in abnormal program termination such as divides by zero and square roots of negative numbers.
+
+Example of alternative to exception handling to protect against divide by zero:
+
+.. code:: c++
+
+ const cBAD_DIVISOR = 0.0;
+ const cGONSET_DEFAULT = 0.0;
+ if (mDeltaGonset != cBAD_DIVISOR)
+ {
+    myGonset = (mDownVelGonset - mDownVelPilot) / mDeltaGonset;
+ }
+ else
+ {
+    myGonset = cGONSET_DEFAULT;
+ }
+
+
+Functions
+=========
+
+Fn.1 - When declaring a function, if there are no formal parameters, empty parentheses shall be specified instead of ``(void)``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fn.2 - Unspecified function arguments (ellipsis notation) shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The use of such unspecified function arguments is not advised since the type checking is avoided.  Consider function overloading instead.
+
+.. note::
+   This rule does not prohibit the use of variadic templates or ``catch(...)``.
+
+Fn.3 - The names of formal arguments to functions shall be specified and shall be the same both in the function declaration and in the function definition.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The names of formal arguments shall be specified in both the function declaration and the function definition.  The name of an argument clarifies how the argument is used, reducing the need to include comments in, for example, a class declaration.
+
+.. admonition:: Exception
+
+ Parameter names in virtual functions in a derived class may be omitted when the parameter is not used in the function.  This prevents some compilers from giving warning messages.
+
+Example:  (Following the rule)
+
+.. code:: c++
+
+ // function declaration
+ int SetPoint(int, int);         // No!
+ int SetPoint(int aX, int aY);   // Good
+
+ // function definition
+ int SetPoint(int aX, int aY)
+ {
+    // ...
+ }
+
+Example: (Following the exception)
+
+.. code:: c++
+
+ class BaseClass
+ {
+    public:
+       virtual void PrintSum(int aA, int aB);
+ };
+
+ void BaseClass::PrintSum(int aA, int aB)
+ {
+    cout << aA + aB << endl;
+ };
+
+ class DerivedClass : public BaseClass
+ {
+    public:
+       void PrintSum(int aA, int) override;    // Second formal parameter name
+ };                                            // omitted since unused.  Note
+                                               // that formal parameter type must
+ void DerivedClass::PrintSum(int aA, int)      // still be included to match the
+ {                                             // prototype in the base class.
+    cout << aA << endl;
+ };
+
+Fn.4 - A pass by reference function parameter that is input only shall be declared as ``const`` in the argument list.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule assures the calling routine that the input-only parameter will not be modified by the function.
+
+.. admonition:: Exception
+
+ You may not be able to follow this rule if the input parameter is a pointer or reference to an object that comes from a library which is not const-correct.
+
+Fn.5 - Global data shall not be manipulated within a function in lieu of passing data through formal function parameters.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule is intended to reduce the amount of global data within a program.
+
+Fn.6 - A function shall never return a reference or a pointer to a temporary variable.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a function returns a reference or a pointer to a temporary variable, the memory to which it refers will already have been deallocated when this reference or pointer is used.  The compiler may or may not give a warning for this.  Examples of temporary variables include local variables but not static local variables.  Static local variables have permanent storage.
+
+Example:
+
+.. code:: c++
+
+ class String
+ {
+    public:
+       String(int aN);
+       ...
+ };
+
+ String* NumToString(int aN)    // No!  The returned pointer will be
+                                // meaningless after the function ends
+ {
+    String converted(aN);
+    return &converted;
+ }  // at this point "converted" is taken off stack and its destructor called!
+
+ int main()
+ {
+    int num = 2;
+    string* s;
+    s = NumToString(num);      // s points to memory already deallocated!
+ }
+
+Fn.7 - The preprocessor directive ``#define`` shall not be used to replace functions.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ // Example of problems with #define "functions"
+ #define SQUARE(x) ((x)*(x))
+ int a = 2;
+ int b = SQUARE(a++);      // b = (2 * 3) = 6;
+
+ // Inline functions are safer and easier to use than macros if you
+ // need an ordinary function that would have been unacceptable for
+ // efficiency reasons.
+ // They are also easier to convert to ordinary functions later on.
+ inline int Square(int aX)
+ {
+    return (aX * aX);
+ };
+
+ int c = 2;
+ int d = Square(c++);      // d = ( 2 * 2 ) = 4;
+
+Fn.8 - A non-member function intended to be used only within a single implementation file shall be declared as ``static`` or in an unnamed namespace.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule enforces that the function is "local" to the implementation file (i.e., not to be included in the implementation file's corresponding header file).
+
+Example:
+
+.. code:: c++
+
+ // myfile.cpp
+ static int UtilityFunction()
+ {
+    // ...
+ }
+
+ // OR
+ namespace
+ {
+    int UtilityFunction()
+    {
+       // ...
+    }
+ }
+
+Fn.9 (G) - For performance, function parameters shall not be passed by value any time the size of the variable is significantly larger than a pointer.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Copying values for function inputs and outputs can be a significant throughput consumer. Passing references results in a fixed size variable (a pointer) being copied regardless of the actual variable size. Typically, pointers require 8 bytes.  It is recommended that values larger than 16 bytes should be passed by reference. If the value is an input that should not be modified by the function, it should be passed by a constant reference.
+
+.. admonition:: Exception
+
+ Return values should be passed by value in those cases where either the supplier is returning a automatic variable (i.e. variable defined locally in the member function) or needs consumers to obtain their own copy due to concurrent access concerns.
+
+[Meyers, Scott, "High Performance C++ Programming" Tutorial, Conference on Object Oriented Technologies and Systems, 1997, also Lakos, Large-Scale C++ Software Design, p622]
+
+Fn.10 (G) - Whenever possible facilitate Return Value Optimization (RVO).
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Return Value Optimization (RVO) is a compiler optimization that avoids the creation and deletion of temporary objects when an object is being returned by value.  This optimization is invoked when a function is written to return constructor arguments instead of objects and that function is called in a context that allows the function's return location to be replaced with an object at the function's call site.  This is shown in the example below whereby the compiler can construct the object defined in ``operator\*``'s return expression directly inside the memory allotted for object ``c``.
+
+Example:
+
+.. code:: c++
+
+ // correct way to implement a function that
+ // returns an object
+ Rational operator* (Rational& aLhs,
+                     Rational& aRhs)
+ {
+    return Rational (aLhs.numerator * aRhs.numerator,
+                     aLhs.denominator * aRhs.denominator);
+ }
+
+ // the following illustrates how the function should be called to take advantage of RVO
+ Rational a = (3, 4);
+ Rational b = (5, 60);
+
+ Rational c = a * b;   // this also illustrates locality of declaration
+
+
+Variables and Constants
+=======================
+
+Va.1 - Constants shall be defined using ``const``, ``constexpr``, or ``enum``, never using the preprocessor directive ``#define``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The preprocessor performs a textual substitution for macros in the source code which is then compiled.  This has a number of negative consequences.  For example, if a constant has been defined using ``#define``, the name of the constant is not recognized in many debuggers.  If the constant is represented by an expression, this expression may be evaluated differently for different instantiations, depending on the scope of the name.
+
+Example:
+
+.. code:: c++
+
+ // Constants using macros
+ #define BUFSIZE 7            // No type checking
+
+ // Constants using const
+ const int cBUFSIZE = 7;      // Type checking takes place
+
+ // Constants using enums
+ enum SIZE { cBUFSIZE = 7 };  // Type checking takes place
+
+Example
+
+.. code:: c++
+
+ // declaration of const defined in another file
+ extern const char   cCONSTANTCHAR;
+ extern const string cFILENAME;
+
+Va.2 - The use of numeric values in code shall be avoided.  Symbolic values shall be used instead.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Numerical values in code should be viewed with suspicion.  They can be the cause of difficult problems if and when it becomes necessary to change a value.
+
+Once a constant is defined, make use of the constant wherever possible to ensure more maintainable code.  For example the same constant defined for specifying the size of an array, shall also be used as the end comparator in associated loops that traverse the array.
+
+.. admonition:: Exception
+
+ Certain numerical values may have a well established and clear meaning in a program, such as zero.   Such values may be used directly in code.
+
+Va.3 - Each variable of pointer or reference type shall be declared in a separate declaration statement.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This practice will eliminate errors caused by statements such as: ``char* a,b,c;`` which actually declares only one pointer (perhaps not what was intended).  In addition, it improves readability.
+
+Va.4 - Every variable that is declared shall be given a value before it is used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Va.5 - The ``volatile`` type keyword shall be used for any variable that may be changed by an operation external to the program in which it is defined.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These variables typically point to hardware addresses or are shared among multiple processes.  This prevents the compiler from caching the last known value of these variables or from optimizing the variables away.
+
+Va.6 - Code should not assume that static data members or global objects are initialized or destroyed in any special order.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ // module A
+ int someParam = 3;
+
+ // module B
+ int someOtherParam;
+ extern int someParam;
+ ...
+ someOtherParam = someParam;   // no guarantee that someParam has been initialized
+                               // yet in module A
+
+Va.7 - A pointer shall always be initialized to a valid value or ``nullptr`` when it is declared.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An uninitialized pointer can cause errors that are hard to track down and may change in nature at each execution.  Because they can cause non-deterministic behavior, pointers must always be initialized.
+
+Va.8 - The keyword ``nullptr`` shall be used in place of ``0`` and ``NULL`` to refer to the null pointer value.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Va.9 - C-style array semantics shall be avoided.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Va.10 (G) - Variables should be declared at the lowest possible scope.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaring variables at the lowest possible scope reduces the risk that unused variables will be declared and not used.  The usage of a variable can be more easily determined since the variable is closer to the code which uses it.
+
+Va.11 (G) - Follow locality of declaration for classes with associated constructors and a destructor.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Locality of declaration means to define variables close to their use.  This can avoid unnecessary object construction/destruction.
+
+Example:
+
+.. code:: c++
+
+ // efficient approach using locality of declaration
+
+ int Foo()
+ {
+    if (!someValidityCheck)
+    {
+       return 0;
+    }
+    Matrix m1;
+    Matrix m2;
+    // ok, do some work here using m1 and m2
+ }
+
+ // inefficient approach - compiler will unnecessarily call constructor
+ // and destructor for m1 and m2 when condition check fails
+
+ int Foo()
+ {
+    Matrix m1;
+    Matrix m2;
+
+    if (!someConditionCheck)
+    {
+       return 0;
+    }
+    // ok, do some work here using m1 and m2
+ }
+
+Va.12 (G) - If possible, initialization should be used instead of assignment.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Normally, the compiler gives a warning if a variable is uninitialized.  For the sake of consistency, initialization should be done in the Constructor.  Instances of a class are usually initialized even if no arguments are provided in the declaration (the empty constructor is invoked).  To declare a variable that has been initialized in another file, the keyword extern is always used.
+
+By initializing variables instead of assigning values to them before they are first used, the code is made more efficient since no temporary objects are created for the initialization.  For objects having large amounts of data, this can result in significantly faster code.
+
+For class objects with associated constructors, copy constructors, assignment operators, and a destructor, the initialization of the object with another object of its class is always more efficient than the equivalent assignment.
+
+Example:
+
+.. code:: c++
+
+ // efficient approach using locality of declaration
+ Matrix m1;
+ Matrix m2;
+ Matrix composite = m1 + m2;
+
+ // inefficient approach - results in the generation of a temporary matrix
+ // object
+ Matrix m1;
+ Matrix m2;
+ Matrix composite;
+ composite = m1 + m2;
+
+Va.13 (G) - For non-negative integer variables, ``unsigned`` should be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Unsigned integers are always zero or positive.  Using ``unsigned int`` over ``int``, where applicable, conveys information to the reader of the code.
+
+Va.14 - Use uppercase for alphabetic characters representing digits in bases above 10, for the character "E" used in scientific notation, and for literal type suffixes.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This capitalization convention is widely employed and preferred.
+
+Memory
+======
+
+Me.1 - ``malloc``, ``realloc``, and ``free`` shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In C, ``malloc``, ``realloc``, and ``free`` are used to allocate memory dynamically on the heap. This may lead to conflicts with the use of the ``new`` and ``delete`` operators in C++.
+
+Me.2 - Empty brackets (``[]``) shall be used for ``delete`` when deallocating arrays.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If an array having a type ``T`` is allocated, it is important to invoke ``delete`` in the correct way. Only writing ``delete a;`` will result in the destructor being invoked only for the first object of type ``T``. The correct way is to write ``delete[] a;`` since the destructor will then be invoked for all objects in the allocated array.
+
+Example:
+
+.. code:: c++
+
+ int n    = 7;
+ T* myT_Ptr = new T[n]; // T is a type with defined constructors and destructors
+
+ // No! Destructor only called for first object in array
+ delete myT_Ptr;
+
+ // OK. Destructor called for entire array
+ delete [] myT_Ptr;
+
+Me.3 - Allocated memory shall be deallocated.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ string MyFunc(const char* myArgument)
+ {
+    string* temp = new string(myArgument);
+    return *temp;
+    // temp is never deallocated and the user of myFunc cannot deallocate
+    // because a temporary copy of that instance is returned.
+ }
+
+Me.4 - Lambda functions shall not capture by reference values it can out live.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a variable goes out of scope while a lambda has a reference to it, the lambda can modify memory it shouldn't have access to. This can lead to difficult to find bugs.
+
+Me.5 - When a pointer now points to deallocated memory, the pointer shall be set to ``nullptr``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pointers that point to deallocated memory should be set to ``nullptr`` to prevent access to the released memory.
+
+.. admonition::Exception
+
+ When it can be guaranteed that the pointer will not be used again (e.g. in a destructor), this is unnecessary.
+
+Me.6 (G) - Prefer automatic storage over heap allocation.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Automatic storage is faster to use and eliminates all risk of memory leaks.
+
+Me.7 (G) - Use the RAII paradigm to manage all resources, including but not limited to memory, mutexes, and file handles.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Me.8 (G) - Use of ``new`` and ``delete`` should be avoided when possible.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Portability
+===========
+
+Po.1  Usage of items defined in the C++ Standard Library shall be accomplished via and consistent with the C++ library headers defined the ISO C++ Standard.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Adhering to the ISO C++ Standard makes the source code more portable and reduces maintenance.
+
+Po.2 - Aliases for predefined data types shall be used when size is critical.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Size is not critical when declaring an integer used to iterate a simple loop.  However, size is critical when a value is going across an interface to another computer.
+
+Different machines and compilers can implement the predefined data types differently. By including the standard header ``<cstdint>`` and using the aliases it defines, integer sizes will be consistent across machines.
+
+Po.3 - Code should not depend on underflow or overflow functioning in any special way.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Po.4 (G) - Code should not assume that ``char`` variables are either signed or unsigned.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ISO C++ Standard provides three character data types: ``char``, ``unsigned char``, and ``signed char``.  The ``char`` type either is signed or unsigned, depending on the compiler's implementation, so code should not assume that char variables are either signed or unsigned.
+
+Po.5 (G) - Code should not assume that pointers and integers have the same size.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Po.6 (G) - Code should not assume a certain representation of a data type in memory.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Po.7 (G) - Code should make no assumptions about the order of data member construction.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data members are constructed according to the order in the class declaration and are not dependent on their order in a constructor initialization list.  If they were, the compiler would be required to store a different order for each constructor.  It is best to make no assumptions about the order of data member construction.  In particular, pointer data members that depend on the value of other data members should be initialized to zero.
+
+Example illustrating code that relies on the order of data member construction.  In this example both ``mGeneralAlignStatusPtr`` and ``mCarrierAlignStatusPtr`` depend on the values of other data members being initialized first.  If this does not occur these pointers will contain some random initial value:
+
+.. code:: c++
+
+ AlignmentFactory::AlignmentFactory (ACAlignmentLogicalINS* aAlignmentLogicalDevice,
+                                     ACNIDC*                aCNIDC_Ptr)
+ // begin member initialization
+    :mAlignmentLogicalDevicePtr(aAlignmentLogicalDevice)
+    ,mCNIDC_Ptr(aCNIDC_Ptr)
+    ,mGeneralAlignStatusPtr(std::make_unique<GeneralAlignmentStatus>(mAlignmentLogicalDevicePtr))
+    ,mCarrierAlignStatusPtr(std::make_unique<CarrierAlignStatus>(mGeneralAlignStatusPtr))
+ // end member initialization
+ {
+ }
+
+Example illustrating code that does not make assumptions regarding the order of data member construction.  In this case the pointers that are dependent on the order of data member construction are initialized to zero in the member initialization list and assigned their actual values in the constructor.  This insures that the pointers are either assigned a valid value or a value of zero:
+
+.. code:: c++
+
+ AlignmentFactory::AlignmentFactory (ACAlignmentLogicalINS* aAlignmentLogicalDevice,
+                                    ACNIDC*                aCNIDC_Ptr)
+ // begin member initialization
+    :mAlignmentLogicalDevicePtr(aAlignmentLogicalDevice)
+    ,mCNIDC_Ptr(aCNIDC_Ptr)
+ // end member initialization
+ {
+    mGeneralAlignStatusPtr = std::make_unique<GeneralAlignmentStatus>(mAlignmentLogicalDevicePtr);
+    mCarrierAlignStatusPtr = std::make_unique<CarrierAlignStatus>(mGeneralAlignStatusPtr);
+ }
+
+Po.8 (G) - Pointer values should not be compared, other than testing for equality or inequality.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Assumptions about the order in which memory is allocated should be avoided.
+
+Type Safety
+===========
+
+Ts.1 - The C++ style of casting data types should be used instead of the "C" approach.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+While type casting in general should be avoided whenever possible, the recommended and discouraged forms of casting a non-pointer data type are shown in the example below.  The recommended form takes advantage of the built-in casting template functions built into the language.  The C++ standard has specific rules for these casting templates.  Conversion can be resolved at compile time for static_cast, const_cast, and reinterpret_cast, but dynamic_cast requires run-time type identification.  Thus violation of the casting rules can be flagged at compile time, or handled with explicit exception handlers in the case of a dynamic_cast during run time.  Not using the built-in casting templates may or may not invoke the same error checking and exception-handling support that the casting templates provide.
+
+Example:
+
+.. code:: c++
+
+ z = static_cast<double>(k);    // recommended form of casting
+ z = double(k);                 // discouraged form of casting
+ z = (double)k;                 // discouraged form of casting
+
+It should be noted that type conversions, particularly between integer and floating point types, may result in a function call on the run-time system.
+
+Ts.2 - When casting classes, implicit casting or ``static_cast`` shall be used to cast to a base class and ``dynamic_cast`` shall be used to cast to a derived class.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. admonition:: Exception
+
+ When casting to a ``virtual`` base class, use ``dynamic_cast``.
+
+Ts.3 - Requirements of template parameters shall be checked using ``static_assert`` statements.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For example, if ``T`` is required to have a default constructor, specify ``static_assert(std::is_default_constructible<T>::value, "Error text.");``
+
+.. note::
+   The SFINAE pattern may additionally be used to specify specialized behavior instead of failing to compile when certain conditions are not met.
+
+Ts.4 (G) - Explicit conversion of data types should be used over implicit conversion.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This rule ensures the reader of the code that casting was explicitly desired, relieving any doubt that the casting may be unintentional.
+
+.. admonition:: Exception
+
+ Derived class to base class casting may be done implicitly.
+
+Example:
+
+.. code:: c++
+
+ double b = 4.51;
+ int    j = 4;
+ double a = 0.0;
+
+ a = b / static_cast<double>(j);     // explicitly cast int to double
+
+Example:
+
+.. code:: c++
+
+ int someFunc(int someParam);
+ // ...
+ int   a = 0;
+ double b = 0.0;
+ b = 5.6;
+ a = someFunc(static_cast<int>(b));   // use explicit casting in function calls,
+                                      // too (note: converting a float to an
+                                      // integer implicitly invokes a truncation
+                                      // function; in this case the value passed
+                                      // to the function would equal 5)
+
+Example:
+
+.. code:: c++
+
+ // another example of implicit conversion to avoid:
+
+ classA
+ {
+    public:
+       classA(int aI);
+       classA operator+(const classA& aRhs);
+ };
+ // ...
+ classA objectA = 10;                   // one conversion
+ int tempObject = 3;
+ classA objectB = objectA + tempObject; // be careful: implicit
+                                        // typecasting of
+                                        // integer 3 through constructor
+                                        // of ClassA.
+
+Ts.5 (G) - A const should not be cast to a non-const.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to return a non-const temporary object, it sometimes happens that an explicit type conversion is used to convert const data to non-const via ``const_cast``.
+
+Ts.6 (G) - Type conversions should not be performed from a "longer" type to a "shorter" type.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When shortening floating point types, lack of precision may result due to lower-significant bits getting discarded.
+
+When shortening integer types, higher-significant bits may get discarded, resulting in a value nowhere near the original value.  Some compilers warn when shortening integer types, but others do not.
+
+If necessary, use ``ut::safe_cast`` for narrowing conversions on integral types.
+
+Ts.7 - Use caution to avoid object slicing when assigning / initializing polymorphic types.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because...
+
+1) Copy constructors take their arguments by reference, and...
+2) A reference-to-derived is implicitly convertible to reference-to-base...
+
+Assigning an instance-of-derived to an instance-of-base will result in only part of the instance-of-derived being copied. This is known as object slicing and should be avoided.
+
+Miscellaneous
+=============
+
+Mi.1 - The scope operator (::) shall be used whenever a global function or variable is referenced.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use of the scope operator will immediately indicate to the reader that one is referencing a global function or variable.
+
+Mi.2 - The code under a ``case`` label that deliberately omits a ``break`` statement shall provide a comment stating that the omission is deliberate.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a ``case`` label does not contain a ``break`` statement, execution will continue across ``case`` boundaries.  For this reason, under most conditions, the last statement of a ``case`` label is a ``break`` statement.  However, the ``break`` statement may be deliberately omitted for such circumstances as when a set of values are all to be handled by the same sequence of actions.
+
+Example:
+
+.. code:: c++
+
+ switch (tag)
+ {
+    case A:
+       SomeFunction();
+       // Deliberate omission of break statement
+
+    case B:
+       AnotherFunction();
+       break;      // Now we leave the switch-statement
+
+    default:
+       // ...
+    break;
+ }    // end switch (tag)
+
+Mi.3 - A ``switch`` statement shall always contain a ``default`` branch which handles unexpected cases.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mi.4 - The ``goto`` statement shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``goto`` breaks the control flow and can lead to code that is difficult to comprehend.  In addition, there are limitations for when ``goto`` can be used.  For example, it is not permitted to jump past a statement that initializes a local object having a destructor.
+
+.. admonition:: Exception
+
+ For code converted from other languages, e.g. FORTRAN, the use of ``goto`` may not be avoidable.
+
+Mi.5 - The comma operator shall not be used.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mi.6 (G) - Shift operations should not be used when an arithmetic operation is what is being performed conceptually.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Writing what is intended and allowing the optimizer to do its job results in more correct and more readable code.
+
+Mi.7 (G) - Use range-based ``for`` loops where possible.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mi.8 (G) - Parentheses should be used to clarify the order of evaluation for operators in expressions.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code:: c++
+
+ int i = a >= b && c < d && e + f <= g + h;              // No!
+ int j = (a >= b) && (c < d) && ((e + f) <= (g + h));    // Better
+
+Mi.9 (G) - In rational expressions dealing with ``float`` or ``double`` values, ``<=`` and ``>=`` should be used instead of ``==``.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This guideline should be followed when testing values for equality.  An exception is comparison to ``0.0``.
+
+Mi.10 (G) - Expressions should be pre-calculated whenever used in multiple calculations where performance is important.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pre-calculating expressions avoids redundantly calculating values and therefore reduces throughput requirements.
+
+Example:
+
+.. code:: c++
+
+ void bad()
+ {
+    int i = 0;
+    double x = 73.0;
+    for (i=0; i<10; ++i)
+    {
+       cout << sqrt(3.1415*i) + sqrt(x) << endl;
+    }
+ }
+ void good()
+ {
+    int i = 0;
+    double x = 73.0;
+    double sqrtOf = sqrt(x);
+    for (i=0; i < 10; ++i)
+    {
+       cout << sqrt(3.1415*i) + sqrtOf << endl;
+    }
+ }
+
+Mi.11 (G) - Standard Library functions and types shall be used over in-house implementations for similar functionality.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By using the components in the standard library, you can generally dispense with designing your own from-the ground-up mechanisms for stream I/O, strings, containers (including iteration and common manipulations), internationalization, numeric data structures, and diagnostics. These functions have already been reused significantly and have been designed for efficiency.
+
+Mi.12 (G) - Prefer using ``switch`` statements over ``if``-``else`` chains when given a choice.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+

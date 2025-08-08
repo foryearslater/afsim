@@ -1,0 +1,229 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Sensor_Plot_Horizontal_Coverage:
+
+Sensor Plot Horizontal Coverage
+-------------------------------
+
+**Navigation:** :command:`sensor_plot` > **horizontal_coverage**
+
+.. command:: horizontal_coverage ... end_horizontal_coverage
+   :block:
+
+   .. parsed-literal::
+
+    horizontal_coverage_
+ 
+        :ref:`sensor_plot.Stub_Definition_Commands`
+    
+        # `Sensor Control`_
+
+        mode_name_ ...
+        required_pd ...
+
+        # `Target Characteristics`_
+
+        target_platform_type_ ...
+        target_speed_ | target_mach_ ...
+        target_pitch_ ...
+        target_roll_ ...
+
+        # `Target Region`_
+
+        elevation_limits_ ...
+        elevation_step_ ...
+        maximum_range_ ...
+        small_range_step_ ...
+        large_range_step_ ... 
+
+        # `Output Selection`_
+
+        output_file_ ...
+        output_base_ ...
+        altitude_units_ ...
+        range_units_ ...
+        x_units_ ...
+        y_units_ ...
+        output_max_height_
+        output_max_range_
+
+    end_horizontal_coverage
+
+Overview
+========
+
+
+The **horizontal_coverage** command is used to produce a plot file which delineates the detection envelope in horizontal plane. The file is suitable for plotting with the program 'gnuplot'.
+
+To create a file, the following process should be followed:
+
+* Define a platform type of the type specified by the command target_platform_type_ **Default** **TARGET_PLATFORM_TYPE**) with the desired :command:`radar <radar_signature>`, :command:`infrared <infrared_signature>`, :command:`optical <optical_signature>` or :command:`acoustic <acoustic_signature>` signature depending on the type(s) of sensors being tested.
+* Define a platform type of **SENSOR_PLATFORM_TYPE** which contains the sensor to be used to detect the target. If the sensor named **TEST_SENSOR** is defined on the platform type then it will be used for the plot, otherwise the first sensor on the platform will be used. A warning will be issued if the sensor named **TEST_SENSOR** in not defined and there is more than one sensor on the platform type.
+* Define the **horizontal_coverage** input block with the desired arguments.
+
+Algorithm
+=========
+
+The algorithm operates by searching along an elevation angle to locate the maximum range at which the target can be detected. For each elevation angle, the follow process is followed:
+
+#. Set the current slant to the value of maximum_range_.
+#. If detected at the current slant range, go to step 4.
+#. Decrease the current slant range by large_range_step_. If greater than zero, go back to step 2 and try to detect the target again. Otherwise set it to zero and fall through to the next step.
+#. Increase the current slant range by 5 &times; large_range_step_
+#. If detected at the current slant range, go to step 7.
+#. Decrease the current slant range by small_range_step_. If greater than zero go back to step 5 and try to detect the target again. Otherwise set it zero and fall through to the next step.
+#.  Write the results for the current elevation angle to the output file.
+
+Output Format
+=============
+
+The output file has the following format::
+
+ <down-range> <cross-range> <x> <y> <ground-range> <altitude>
+
+Where:
+
+* <elevation>
+  The sample elevation angle.
+* <slant-range>
+  The slant range to the envelope edge.
+* <x>, <y>
+  The sensor relative X (horizontal) and Y (vertical) coordinates of the envelope edge.
+* <ground-range>, <altitude>
+  The ground range and altitude of the envelope edge
+
+This file can be plotted using the 'gnuplot' command::
+
+ plot "<file>" using 3:4 with lines
+
+Sensor Control
+==============
+
+.. command:: mode_name <mode_name>
+   
+   Specifies the name of the mode to be used if the sensor is a multi-mode sensor.
+    
+   **Default** The default mode of the sensor. This will be the value of the :command:`sensor.initial_mode` command of the sensor (if defined) or the first mode (if :command:`sensor.initial_mode` was not defined).
+
+.. command:: required_pd <pd-value>
+   
+   Specifies the probability of detection required to declare a successful detection.
+    
+   **Default** 0.5
+
+Target Characteristics
+======================
+
+.. command:: target_platform_type <target-platform-type>
+   
+   Specify the platform type to be used to represent the target.
+    
+   **Default** TARGET_PLATFORM_TYPE
+
+.. command:: target_speed <speed-value>
+.. command:: target_mach <real-value>
+   
+   Specify the speed at which the target is to be considered moving. This is only used if the sensor needs to performs Doppler processing. The speed may be specified using either an absolute speed (**target_speed**) or a Mach number (**target_mach**). If both are specified the last value takes precedence.
+
+   **Default** target_speed 250 m/s
+
+.. command:: target_pitch <pitch-value>
+   
+   Specify the target pitch angle.
+    
+   **Default** 0 degrees
+
+.. command:: target_roll <pitch-value>
+   
+   Specify the target roll angle.
+    
+   **Default** 0 degrees
+
+Target Region
+=============
+
+.. command:: elevation_limits <min-angle-value> <max-angle-value>
+   
+   Specifies the limits of the elevation angles to be sampled.
+    
+   **Default** -5.0 degrees 89.9 degrees
+
+.. command:: elevation_step <step-angle-value>
+   
+   {{Specifies the elevation step between successive elevation angle samples.
+    
+   **Default** 0.1 degrees
+
+.. command:: maximum_range <length-value>
+   
+   Specifies the maximum range at which the algorithm will start the search for the edge of the detection envelope. The value of **maximum_range** will be determined from the first of the following:
+   
+   * The value of this command if is has been specified.
+   * 1.5 * the defined maximum range of the sensor if the maximum range of the sensor has been defined (i.e. < 1.0E+9 kilometers).
+   * 2000 kilometers
+
+.. command:: large_range_step <length-value>
+   
+   Specifies the large step size to use in the envelope edge detection algorithm.
+    
+   **Default** 5000 meters
+
+.. command:: small_range_step <length-value>
+   
+   Specifies the small step size to use in the envelope edge detection algorithm.
+    
+   **Default** 100 meters
+
+Output Selection
+================
+
+.. command:: output_file <filename>
+   
+   Specifies the filename to which the results will be written. If not specified then the value of output_base_ will be used to create a file name.
+
+.. command:: output_base <string>
+   
+   If output_file_ is not specified then this value, along with the suffix '.vcd', forms the filename to which the results will be written. If a values is not specified then the type name of the sensor will be used.
+    
+   **Default** not specified
+
+.. command:: altitude_units <length-units>
+   
+   Specifies the units to be used for column 6 (altitude) in the output file.
+    
+   **Default** meters
+
+.. command:: range_units <length-units>
+   
+   Specifies the units to be used for column 2 (slant range) and column 5 (ground range) in the output file.
+    
+   **Default** meters
+
+.. command:: x_units <length-units>
+   
+   Specifies the units to be used for column 3 (X) in the output file.
+    
+   **Default** meters
+
+.. command:: y_units <length-units>
+   
+   Specifies the units to be used for column 4 (Y) in the output file.
+    
+   **Default** meters
+
+.. command:: output_max_height
+   
+   If specified, the program will write a message to standard output indicating the maximum height (altitude) at which the target was detected.
+
+.. command:: output_max_range
+   
+   If specified, the program will write a message to standard output indicating the maximum range at which the target was detected.

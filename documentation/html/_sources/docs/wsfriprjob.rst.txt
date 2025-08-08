@@ -1,0 +1,216 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfRIPRJob
+----------
+
+.. class:: WsfRIPRJob inherits WsfObject
+
+
+WsfRIPRJob is a class that can be used in script on a :model:`WSF_RIPR_PROCESSOR` or any class derived therefrom.  Jobs are
+used to represent tasks on a :ref:`Job_Board` and are generally touched by two kinds of entities.
+
+* Commanders create jobs, set their requirements, and set their priorities.
+
+::
+
+ // instantiate the job and call the Create method with various parameters
+ WsfRIPRJob newJob;
+ newJob = newJob.Create (PROCESSOR,
+                         newJobName,
+                         newJobDescription,
+                         newJobPriority,
+                         newJobMaxWinners);
+
+ // insert data or job requirements into the job so my subordinates can consider them
+ newJob.SetData("myDataKey1", myDataValue1);
+ newJob.SetData("myDataKey2", myDataValue2);
+
+ // add newJob to my job board
+ AddJob(newJob);
+
+* Subordinates view jobs, bid on them, and then query the :ref:`Job_Board` to see what job they have won.
+
+::
+
+ // fetch all the jobs from my commander's job board
+ Array<WsfRIPRJob> jobs = CommanderProcessor().GetJobs();
+
+ // loop through all the jobs
+ foreach (WsfRIPRJob aJob in jobs)
+ {
+  // bid myBid for each job, indicating currentProgress
+  aJob.BidJob(PROCESSOR, myBid, currentProgress);
+ }
+
+ // query the job board to fetch the job I actually won
+ WsfRIPRJob myCurrentJob = CommanderProcessor().GetJobFor(TIME_NOW, PROCESSOR);
+
+Jobs are removed from the job board when their progress reaches a value of 1 or when they are purposefully removed by
+the owner of the board.
+
+Methods
+=======
+
+
+.. method:: WsfRIPRJob Create(WsfRIPRProcessor aCreator, string aJobName, string aJobDescription, double aJobPriority, int aNumWinnersMax)
+   
+   Creates a job.  Be sure to call AddJob if you want to add your new job to the job board!
+
+   * aCreator is usually going to be *PROCESSOR*.
+   * aJobName can be used by bidding subordinates to identify the type of job and probably should **not** be unique.
+   * aJobDescription is for informational purposes.
+   * aJobPriority determines the order in which available jobs will be filled by bidders, and generally ranges from 0 to 1.
+   * aNumWinnersMax specifies the maximum number of subordinates who can win the job at the same time.
+
+::
+
+    // instantiate the job and call the Create method with various parameters
+    WsfRIPRJob newJob;
+    newJob = newJob.Create (PROCESSOR,
+                            newJobName,
+                            newJobDescription,
+                            newJobPriority,
+                            newJobMaxWinners);
+   
+    // add newJob to my job board
+    AddJob(newJob);
+
+.. method:: WsfRIPRProcessor Assigner()
+   
+   Returns the processor that created the job.
+
+.. method:: string Description()
+   
+   Returns the job's description.
+
+.. method:: string GetName()
+   
+   Returns the job's name.
+
+.. method:: void SetPriority(double aPriority)
+   
+   Sets the job's priority, generally between 0 and 1.
+
+.. method:: double Priority()
+   
+   Returns the job's priority.
+
+.. method:: void SetWinnersMin(int aMinWinners)
+   
+   Sets the minimum winners for this job. This job will not be assigned winners until the minimum requirement is met.
+
+.. method:: int WinnersMin()
+   
+   Returns the minimum number of winners the job requires.
+
+.. method:: void SetWinnersMax(int aMaxWinners)
+.. method:: void SetNumWinners(int aMaxWinners)
+   
+   Sets the maximum winners allowed for the job.
+
+.. method:: int WinnersMax()
+.. method:: int NumWinners()
+   
+   Returns the maximum number of winners the job allows.
+
+.. method:: int WinnersActual()
+   
+   Returns the number of RIPR agents that have currently won this job.
+
+.. method:: Array<WsfPlatform> Winners()
+   
+   Returns an array of platforms that have currently won this job.  These platforms contain a WsfRIPRProcessor that bid on
+   the job.
+
+.. method:: Map<string,Object> Data()
+   
+   Returns a map of the job's data.
+    Map<string, Object>jobData = aJob.Data();
+    string dataValue1 = (string)jobData["dataKey1"];
+    Object dataValue2 = jobData["dataKey2"];
+
+.. method:: void SetData(string aKey, Object aValue)
+   
+   Sets a key/value pair in the job's data.
+
+.. method:: double BestProgress()
+   
+   Returns the highest progress value of all the subordinates currently performing the job.
+
+.. method:: void SetProgress(WsfRIPRProcessor aProc, double aProgress)
+.. method:: void SetProgress(WsfRIPRProcessor aProc, int aChannelIndex, double aProgress)
+   
+   For job winner aProc, sets the progress level to aProgress.  Generally, this will be called by aProc itself to set its
+   own progress.  aProgress should be between 0 and 1.  If aChannelIndex is specified (for multichannel agents) the
+   progress is set for that channel, otherwise the progress for the default single channel [index of 0] is set.
+
+.. method:: double Progress(WsfRIPRProcessor aProc)
+.. method:: double Progress(WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Returns the progress value of aProc, between 0 and 1. If aChannelIndex is specified (for multichannel agents) the
+   progress for that channel is returned, otherwise the progress of the default single channel [index of 0] is returned.
+
+.. method:: void BidJob(WsfRIPRProcessor aProc, double aBid)
+.. method:: void BidJob(WsfRIPRProcessor aProc, double aBid, double aProgress)
+.. method:: void BidJob(WsfRIPRProcessor aProc, int aChannelIndex, double aBid)
+.. method:: void BidJob(WsfRIPRProcessor aProc, int aChannelIndex, double aBid, double aProgress)
+   
+   Makes a bid of aBid on the job for aProc.  If aProgress is specified the progress (completion level) of the job is set.
+    If aChannelIndex is specified (for multichannel agents) a bid is made for that channel, otherwise a bid for the
+    default single channel [index of 0] is made.
+
+.. method:: void UnbidJob(WsfRIPRProcessor aProc)
+.. method:: void UnbidJob(WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Removes aProc's bid on the job. If aChannelIndex is specified (for multichannel agents) the bid is removed for that
+   channel, otherwise the bid for the default single channel [index of 0] is removed.
+
+.. method:: void ClearBidders()
+   
+   Removes all bids for the job.
+
+.. method:: double GetBid(WsfRIPRProcessor aProc)
+.. method:: double GetBid(WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Returns aProc's bid for the job. If aChannelIndex is specified (for multichannel agents) the bid is returned for that
+   channel, otherwise the bid for the default single channel [index of 0] is returned.
+
+.. method:: int Rank(WsfRIPRProcessor aProc)
+.. method:: int Rank(WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Returns the ordinal rank of aProc's bid on the job.  That is, if aProc has the second highest bid for the job,
+   GetRank() will return 2.  If aChannelIndex is specified (for multichannel agents) the rank is returned for that
+   channel, otherwise the rank for the default single channel [index of 0] is returned.
+
+.. method:: int Id()
+   
+   Returns the job's ID number.  This number is unique throughout the whole simulation.
+
+.. method:: Set<int> DependenciesForJob()
+   
+   Returns a set of job IDs for jobs that this job is dependent on.
+
+.. method:: void DependencyAdd(int aDependedOnJobId)
+   
+   Makes this job dependent on aDependedOnJobId.
+
+.. method:: void DependencyRemove(int aDependedOnJobId)
+   
+   Makes this job not dependent on aDependedOnJobId.
+
+.. method:: bool DependencyCheck(int aDependedOnJobId)
+   
+   Returns true if this job is dependent on aDependedOnJobId.
+
+.. method:: int DependencyCount()
+   
+   Returns the number of jobs that this job depends on.

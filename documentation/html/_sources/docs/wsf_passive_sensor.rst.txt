@@ -1,0 +1,560 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_PASSIVE_SENSOR
+------------------
+
+.. model:: sensor WSF_PASSIVE_SENSOR
+
+**Script Classes:** :class:`WsfPassiveSensor`
+
+.. parsed-literal::
+
+   sensor <name> :model:`WSF_PASSIVE_SENSOR`
+      ... :ref:`Platform_Part_Commands` ...
+      ... Common :command:`sensor` Commands ...
+
+      reported_target_type_ .. end_reported_target_type
+      reported_emitter_type_ .. end_reported_emitter_type
+
+      unframed_detection_optimization_ ...
+      unframed_detection_coast_time_ ...
+
+      mode <name>
+        ... :ref:`Common Mode Commands <Sensor.Common_Mode_Commands>` ...
+        ... :ref:`Detection Scheduling Commands <sensor_detection_scheduling_commands>` ...
+        ... :ref:`Track Formation Commands <sensor_track_formation_commands>` ...
+        ... :ref:`Track Information Reporting Commands <sensor_track_information_reporting_commands>` ...
+        ... :ref:`Antenna_commands` ...
+        ... :command:`_.receiver` ... end_receiver
+
+        frequency_band_ ...
+           dwell_time_ ...
+           revisit_time_ ...
+
+        detection_sensitivity_ ...
+        continuous_detection_sensitivity_ ...
+        pulsed_detection_sensitivity_ ...
+        detection_sensitivities_ ... end_detection_sensitivities
+
+        detection_threshold_ ...
+        continuous_detection_threshold_ ...
+        pulsed_detection_threshold_ ...
+        detection_thresholds_ ... end_detection_thresholds
+
+        detection_probability_ ... end_detection_probability
+
+        scan_on_scan_model_ ...
+
+        azimuth_error_sigma_table_ ... end_azimuth_error_sigma_table
+        elevation_error_sigma_table_ ... end_elevation_error_sigma_table
+        range_error_sigma_table_ ... end_range_error_sigma_table
+
+        ranging_time_ ...
+        ranging_time_track_quality_ ...
+
+      end_mode
+
+   end_sensor
+
+Overview
+========
+
+:model:`WSF_PASSIVE_SENSOR` implements a basic passive RF detection sensor. This can be used to model things like RWR, SIGINT
+and ELINT sensors.
+
+The sensor uses two different detection methods to gather data for reporting:
+
+* **Framed** or sampling: The sensor looks at all transmitters within its frequency band whose emission patterns are
+  *regular*. This is how the sensor detects search radars. The sample interval for the sensor is specified by the
+  :command:`sensor_mode.frame_time` mode command.
+* **Unframed**: The sensor uses this method to detect transmitters within its frequency band whose emission patterns
+  are *irregular*. This would include tracking radars that employ electronic beam steering to track
+  multiple targets, and communications devices that transmit only when a message is being sent.
+
+The sensor combines the results from both detection methods to produce detection reports (:class:`WsfTrack`) for each target
+it detects. The detection reports for a given target are produced at intervals defined by the frame_time. Unframed
+detections that occur in between frame samples are reported at the next frame sample.
+
+Unframed detections of transient communication signals are reported for each frame sample in which the signal was
+present. That is, the transmission of a long message will be detected for the duration of the transmission. Note,
+however, that the detection results from the first sample are reported for subsequent samples of the same transmission
+(the assumption is being made that very little will change during the duration of transmission).
+
+.. block:: WSF_PASSIVE_SENSOR
+
+Commands
+========
+
+.. command:: reported_target_type  ... end_reported_target_type
+   :block:
+
+   Defines how the passive sensor reports target type information in tracks.
+
+   .. parsed-literal::
+
+      reported_target_type
+        default_time_to_declare_ ...
+        default_time_to_reevaluate_ ...
+        type_ <target_type>
+           ... type sub-commands ...
+        type_ <target_type>
+           ... type sub-commands ...
+        ...
+        default_type_
+           ... type sub-commands ...
+      end_reported_target_type
+
+
+   **Subcommands**
+
+   .. command:: default_time_to_declare <time-value>
+
+      Defines the duration of time after the initial detection that is required to make a determination of the target type.
+
+      Default: 0 sec
+
+   .. command:: default_time_to_reevaluate <time-value>
+
+      Defines the time interval used for reevaluating the identification of the target.  A value of 0 seconds indicates no
+      reevaluation will take place.
+
+      Default: 0 sec
+
+   .. command:: type <target_type>
+
+      Specifies the truth type to which the following subcommands apply.
+
+   .. command:: default_type
+
+      Specifies that the following type subcommands apply for any type not defined with the type command.
+
+      **Type SubCommands**
+
+      .. command:: time_to_declare <time-value>
+
+         Defines the duration of time after the initial detection that is required to make a determination of the target type.
+
+         Default: set by the default_time_to_declare command
+
+      .. command:: time_to_reevaluate <time-value>
+
+         Defines the time interval used for reevaluating the identification of the target.
+
+         Default: set using the default_time_to_reevaluate command
+
+      .. command:: report_type <type-name> emitter <emitter-name>
+
+         ::
+
+            report_type <type-name1>
+              emitter <emitter-type-1>
+              emitter <emitter-type-2>
+              ...
+              emitter <emitter-name-N>
+            report_type <type-type-2
+            ...
+
+         Defines the reporting type-name as the target type based on the listed emitter-type(s) being reported in the emitter
+         list. Currently exact matches between the emitter's defined for the report_type and a track's emitter list must happen
+         for the given report_type to be reported. If there are differences another report_type or the default_type will be
+         reported.
+
+      .. command:: report_type <type-name> <probability>
+
+         Defines the probability of reporting type-name as the target type.  The probability parameter is a value between 0.0
+         and 1.0.  Any number of report_type commands may be specified as long as the probability parameters add up to 1.0.  For
+         greater ease of use, the value remainder may be used as the probability parameter to specify whatever value is required
+         to add up to 1.0.
+
+      .. command:: report_truth
+
+         Specifies that the sensor will report the truth type.  This is only valid under the default_type command.
+
+.. block:: WSF_PASSIVE_SENSOR
+
+.. command:: reported_emitter_type  ... end_reported_emitter_type
+
+   Defines how the passive sensor reports emitter type information in tracks.
+
+   .. parsed-literal::
+
+      reported_emitter_type
+        default_time_to_declare_ ...
+        default_time_to_reevaluate_ ...
+        type_ <emitter_type>
+           ... type sub-commands ...
+        type_ <emitter_type>
+           ... type sub-commands ...
+        ...
+        default_type_
+           ... type sub-commands ...
+      end_reported_emitter_type
+
+   **Subcommands**
+
+   .. command:: default_time_to_declare <time-value>
+
+      Defines the duration of time after the initial detection that is required to make a determination of the emitter type.
+
+      Default: 0 sec
+
+   .. command:: default_time_to_reevaluate <time-value>
+
+      Defines the time interval used for reevaluating the identification of the emitter.  A value of 0 seconds indicates no
+      reevaluation will take place.
+
+      Default: 0 sec
+
+   .. command:: type <emitter_type>
+
+      Specifies the truth emitter type to which the following subcommands apply.
+
+   .. command:: default_type
+
+      Specifies that the following type subcommands apply for any type not defined with the type command.
+
+      **Type SubCommands**
+
+      .. command:: time_to_declare <time-value>
+
+         Defines the duration of time after the initial detection that is required to make a determination of the emitter type.
+
+         Default: set by the default_time_to_declare command
+
+      .. command:: time_to_reevaluate <time-value>
+
+         Defines the time interval used for reevaluating the identification of the emitter.
+
+         Default: set using the default_time_to_reevaluate command
+
+      .. command:: report_type <type-name> <probability>
+
+         Defines the probability of reporting type-name as the emitter type.  The probability parameter is a value between 0.0
+         and 1.0.  Any number of report_type commands may be specified as long as the probability parameters add up to 1.0.  For
+         greater ease of use, the value remainder may be used as the probability parameter to specify whatever value is required
+         to add up to 1.0.
+
+      .. command:: report_truth
+
+         Specifies that the sensor will report the truth type.  This is only valid under the default_type command.
+
+.. block:: WSF_PASSIVE_SENSOR
+
+.. command:: unframed_detection_optimization <boolean-value>
+
+   This command indicates if unframed detection optimization will be used. If enabled, once the sensor successfully
+   detects a given transmitter within a frame, subsequent attempts to detect the same transmitter in the same frame will
+   be suppressed. For instance, if multiple messages are sent from a single transmitter during the passive frame, the passive
+   sensor will only report on the first message that it can detect (if any). If the first message cannot be detected
+   because of transmitter antenna pointing, it will report the second message if it can be detected, an so on.
+
+   Default: true
+
+   .. note::
+
+      Use this if it is desired to have one ATTEMPT_TO_DETECT :command:`event_output` message for every
+      SENSOR_DETECTION_ATTEMPT or MESSAGE_DELIVERY_ATTEMPT message, or if it desired to report the absolute best detection
+      within the frame.
+
+.. command:: unframed_detection_coast_time <time-value>
+
+   If the passive sensor is running at a faster frame time than the sensors it is trying to detect, it may detect the
+   transmitter one frame and not the next. This can cause a lot of track creation and deletion. This value indicates how
+   long a successful detection from a transmitter will be reported.
+
+   Default: 2 seconds
+
+Passive-Specific Mode Commands
+==============================
+
+.. command:: frequency_band <lower-frequency> <upper-frequency>
+
+   Defines a band of frequencies this sensor can detect.  This command may be specified more than once if the sensor can
+   detect multiple bands.
+
+.. command:: dwell_time <time-value>
+
+.. command:: revisit_time <time-value>
+
+   These two commands pertain to the immediately preceding frequency_band_ and define how long the sensor dwells in
+   the band and the interval between dwells. These commands are effectively only when the scan_on_scan_model_ is
+   enabled and are used to determine the temporal probability that the sensor would be looking at the frequency of the
+   target emitter when a detection chance occurs.
+
+   If these commands are defined for any band in the sensor then they must be defined for all bands in the sensor.
+
+.. command:: continuous_detection_sensitivity <db-power>
+
+.. command:: pulsed_detection_sensitivity <db-power>
+
+.. command:: detection_sensitivity <db-power>
+
+   Defines the minimum signal strength that can be 'reliably' detected. If detection_probability_ is defined then
+   this is the signal strength that would result in a Pd of 0.5. If detection_probability_ is not defined then this
+   defines the signal strength for which a successful detection will be declared.
+
+   The first two forms set the detection sensitivity for continuous wave and pulsed signals, respectively. The last form
+   sets both sensitivities to the same value. If **continuous_detection_sensitivity** is used then
+   **pulsed_detection_sensitivity** must also be specified, and vice-versa. If no values for the detection thresholds or
+   sensitivities are specified then the detection_threshold_ criteria will be used to set the default value.
+
+   Default: See detection_threshold_.
+
+.. command:: detection_sensitivities ... end_detection_sensitivities
+   :block:
+
+   This command allows the definition of frequency-dependent or signal-type- and frequency-dependent detection
+   sensitivities.
+
+   To define a table that is only frequency-dependent (for both "continuous" and 'pulsed" signal-types)::
+
+      detection_sensitivities
+         frequency <frequency-value-1> <db-power-1>
+         frequency <frequency-value-2> <db-power-2>
+         frequency <frequency-value-n> <db-power-n>
+      end_detection_sensitivities
+
+   To define a table that is signal-type- and frequency-dependent::
+
+      detection_sensitivities
+         signal_type <signal-type-1>
+            frequency <frequency-value-1> <db-power-1>
+            frequency <frequency-value-2> <db-power-2>
+            frequency <frequency-value-n> <db-power-n>
+         signal_type <signal-type-2>
+            frequency <frequency-value-1> <db-power-1>
+            frequency <frequency-value-2> <db-power-2>
+            frequency <frequency-value-n> <db-power-n>
+      end_detection_sensitivities
+
+   **<signal-type>**
+      A string input of the signal-type the table is for, valid values are ["continuous" | "pulsed" | "both"].
+
+   **<frequency>**
+      A frequency value.
+
+   **<db-power>**
+      The received signal strength required for detection at the indicated frequency.
+
+   When defining a signal-type- and frequency-dependent table, the following rule(s) must be noted:
+
+   * Any 'frequency' entry that occurs before the first 'signal_type' entry is assumed to apply to the "both" (i.e.,
+     continuous and pulsed) signal-types. If a 'signal_type' is then entered the corresponding data entered before for that
+     signal-type will be cleared and the new data entered.
+
+   The process for determining sensitivity uses the following algorithm:
+
+   * If a signal-type-dependent table is being used, the signal-type of the received signal is used to locate the
+     appropriate signal-type-specific set of frequency entries.
+   * Frequencies greater than or equal *frequency-value-m* and less than *frequency-value-m+1* will use *db-power-m*
+   * Frequencies less than *frequency-value-1* will use *db-ratio-1*.
+   * Frequencies greater than or equal to *frequency-value-n* will use *db-power-n*.
+
+   .. note::
+
+      Entries will be sorted into increasing order of frequency.
+
+   .. note::
+
+      If detection_threshold_ and/or continuous_detection_threshold_ and/or
+      pulsed_detection_threshold_ and/or detection_thresholds_ and/or sensitivity_threshold and/or
+      continuous_sensitivities and/or pulsed_sensitivity_threshold and/or detection_sensitivities_ are
+      specified, the last one is used.
+
+   .. note::
+
+      If neither detection_threshold_ and/or continuous_detection_threshold_ and/or
+      pulsed_detection_threshold_ and/or detection_thresholds_ and/or detection_sensitivity_ and/or
+      continuous_detection_sensitivity_ and/or pulsed_detection_sensitivity_ and/or
+      detection_sensitivities_ are specified, the detection_threshold will assumed to be 3.0 dB for pulsed and
+      continuous signal-types
+
+.. block:: WSF_PASSIVE_SENSOR
+
+.. command:: continuous_detection_threshold <db-ratio>
+
+.. command:: pulsed_detection_threshold <db-ratio>
+
+.. command:: detection_threshold <db-ratio>
+
+   This is an alternative to detection_sensitivity_. It defines the minimum signal-to-noise ratio that can be
+   'reliably' detected. If detection_probability_ is defined then this is the signal-to-noise ratio that would
+   result in a Pd of 0.5. If detection_probability_ is not defined then this defines the signal-to-noise ratio for
+   which a successful detection will be declared.
+
+   The first two forms set the detection threshold for continuous wave and pulsed signals, respectively. The last form
+   sets both thresholds to the same value. If **continuous_detection_threshold** is used then
+   **pulsed_detection_threshold** must also be specified, and vice-versa. If no values for the detection thresholds or
+   sensitivities are specified then both thresholds will be set to 3.0 db to be consistent with old input files.
+
+   Default: 3.0 dB (if both **detection_threshold(s)** and **detection_sensitivity(s)** are not defined)
+
+.. command:: detection_thresholds ... end_detection_thresholds
+
+   This command allows the definition of frequency-dependent or signal-type- and frequency-dependent detection thresholds.
+
+   To define a table that is only frequency-dependent (for both 'continuous' and 'pulsed' signal-types)::
+
+      detection_thresholds
+         frequency <frequency-value-1> <db-ratio-1>
+         frequency <frequency-value-2> <db-ratio-2>
+         frequency <frequency-value-n> <db-ratio-n>
+      end_detection_thresholds
+
+   To define a table that is signal-type- and frequency-dependent::
+
+      detection_thresholds
+         signal_type <signal-type-1>
+            frequency <frequency-value-1> <db-ratio-1>
+            frequency <frequency-value-2> <db-ratio-2>
+            frequency <frequency-value-n> <db-ratio-n>
+         signal_type <signal-type-2>
+            frequency <frequency-value-1> <db-ratio-1>
+            frequency <frequency-value-2> <db-ratio-2>
+            frequency <frequency-value-n> <db-ratio-n>
+      end_detection_thresholds
+
+   **<signal-type>**
+      A string input of the signal-type the table is for, valid values are ["continuous" | "pulsed" | "both"].
+
+   **<frequency>**
+      A frequency value.
+
+   **<db-ration>**
+      The signal-to-noise ratio required for detection at the indicated frequency.
+
+   When defining a signal-type- and frequency-dependent table, the following rule(s) must be noted:
+
+   * Any 'frequency' entry that occurs before the first 'signal_type' entry is assumed to apply to the "both" (i.e.,
+     continuous and pulsed) signal-types. If a signal_type is then entered the corresponding data entered before for that
+     signal-type will be cleared and the new data entered.
+
+   The process for determining threshold uses the following algorithm:
+
+   * If a signal-type-dependent table is being used, the signal-type of the received signal is used to locate the
+     appropriate signal-type-specific set of frequency entries.
+   * Frequencies greater than or equal *frequency-value-m* and less than *frequency-value-m+1* will use *db-ratio-m*
+   * Frequencies less than *frequency-value-1* will use *db-ratio-1*.
+   * Frequencies greater than or equal to *frequency-value-n* will use *db-ratio-n*.
+
+   .. note::
+
+      Entries will be sorted into increasing order of frequency.
+
+   .. note::
+
+      If detection_threshold_ and/or continuous_detection_threshold_ and/or
+      pulsed_detection_threshold_ and/or detection_thresholds_ and/or sensitivity_threshold and/or
+      continuous_sensitivity_threshold and/or pulsed_sensitivity_threshold and/or
+      detection_sensitivities_ are specified, the last one is used.
+
+   .. note::
+
+      If neither detection_threshold_ and/or continuous_detection_threshold_ and/or
+      pulsed_detection_threshold_ and/or detection_thresholds_ and/or sensitivity_threshold and/or
+      continuous_sensitivity_threshold and/or pulsed_sensitivity_threshold and/or
+      detection_sensitivities_ are specified, the detection_threshold will assumed to be 3.0 dB for pulsed and
+      continuous signal-types
+
+.. block:: WSF_PASSIVE_SENSOR
+
+.. command:: detection_probability
+
+   Defines a function of probability of detection (Pd) versus received signal strength (expressed as a ratio of the
+   received power to the detection sensitivity). The table is defined as follows::
+
+      detection_probability
+         signal <db-ratio-1> pd <pd-value-1>
+         signal <db-ratio-2> pd <pd-value-2>
+         ...
+         signal <db-ratio-n> pd <pd-value-n>
+      end_detection_probability
+
+   **<db-ratio-n>**
+      The ratio of the received signal power to the detection sensitivity.
+
+   **<pd-value-n>**
+      The probability of detection associated with the ratio.
+
+   Signals that exceed the limits of the table will be clamped to the appropriate endpoint. Intermediate values will be
+   determined using linear interpolation.
+
+   If this function is not defined then a binary detector is used. The Pd will be 1.0 if the signal level is equal to or
+   exceeds the detection sensitivity.
+
+   Default: Function is not defined - the binary detector is used.
+
+   .. note::
+
+      If detection_threshold_ or detection_thresholds_ is used, the detection sensitivity will
+      be computed as the detection threshold times the noise power.
+
+.. command:: scan_on_scan_model <boolean-value>
+
+   Specifies if the Probabilistic Scan-On-Scan (PSOS) model should be employed. This model attempts to probabilistically
+   capture the temporal effects in which the passive sensor is scanning in frequency and the emitter may be scanning in angle.
+
+   If the model is **off**, detection attempts will assume the target emitter is pointed (as closely as possible) directly
+   at the passive sensor and that the passive sensor is currently attempting to detect the frequency at which the target emitter
+   is emitting. This often results in an overly optimistic detection results.
+
+   If the model is **on**, the detection attempts will probabilistically consider the fact that the target emitter may be
+   rotating and that the passive sensor may be scanning in frequency. The probabilistic frequency effects will be employed
+   only if dwell_time_ and revisit_time_ are specified for every frequency_band_.
+
+   Default: off
+
+.. command:: azimuth_error_sigma_table
+
+.. command:: elevation_error_sigma_table
+
+.. command:: range_error_sigma_table
+
+   These commands provide the ability to define error sigmas that are a function of the frequency of the received signal
+   instead of the fixed sigmas that are provided by the single-valued :command:`sensor_mode.azimuth_error_sigma`,
+   :command:`sensor_mode.elevation_error_sigma` and :command:`sensor_mode.range_error_sigma` commands. The points define a curve on a plot
+   whose x-axis is the log_10 of the frequency and the y-axis is the error sigma. Linear interpolation is used to derive
+   the values for intermediate frequencies. Signals whose frequencies are outside the range of the table use the value
+   from the appropriate endpoint (i.e., extrapolation is not performed).
+
+   The format of the command follows
+
+   ::
+
+      type_error_sigma_table
+         frequency <frequency-1> <error-sigma-1>
+         frequency <frequency-2> <error-sigma-2>
+         ...
+         frequency <frequency-n> <error-sigma-n>
+      end_type_error_sigma_table
+
+   *type* is **azimuth**, **elevation** or **range** and *<error-sigma>* is a sigma using the same format as the values in
+   :command:`sensor_mode.azimuth_error_sigma`, :command:`sensor_mode.elevation_error_sigma` and
+   :command:`sensor_mode.range_error_sigma` commands. Independent tables may be provided for each *type*.
+
+   .. note::
+
+         The entries must in order of monotonically increasing frequency.
+
+   .. note::
+
+         Providing a table will override any specification of its single-valued counterpart.
+
+.. command:: ranging_time <time-value>
+
+   Adds range information to any track generated by this sensor after the specified time has elapsed.  This basically
+   simulates that the system could triangulate and get the range after a sufficient period of time.
+
+.. command:: ranging_time_track_quality <quality-value>
+
+   If the ranging time is used to generate a track with range information, this parameter controls the track quality once
+   range is valid.  The quality-value must be non-negative.

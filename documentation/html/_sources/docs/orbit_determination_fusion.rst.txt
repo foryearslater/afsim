@@ -1,0 +1,91 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Orbit Determination Fusion
+--------------------------
+
+.. parsed-literal::
+
+   fusion_method orbit_determination
+      number_of_angle_measurements_   <int>
+      angles_only_linear_tolerance_   <length-value>
+      angles_only_maximum_iterations_ <int>
+      lambert_convergence_tolerance_  <real>
+      :command:`process_noise_sigmas_XYZ<orbit_determination_fusion.process_noise_sigmas_XYZ>` ...
+      propagator_ ... end_propagator
+      debug_
+      debug_filter_
+   end_correlation_method
+
+.. block:: orbit_determination_fusion
+
+Orbit determination fusion incorporates algorithms that fuse multiple sensor measurements to provide an initial estimate of a satellite's orbit, then continue to fuse subsequent measurements to update and refine the initial estimate.  Target measurements either from angles-only sensors, providing bearing-elevation tracks; or measurements that also provide range may be used.
+Once an orbit is initially determined, an :ref:`ORBIT_DETERMINATION_INITIATED` event is triggered.  On subsequent orbit determination updates, a :ref:`ORBIT_DETERMINATION_UPDATED` event is triggered.
+
+   .. note:: It is highly recommended to set :command:`retain track history<track_manager.retain_track_history>` *true* in the :command:`track manager<track_manager>` in order to accumulate sufficient measurements to initiate orbit determination.  Also, in order to manage the total number of measurements to be retained, set the :command:`track history retention interval<WSF_TRACK_PROCESSOR.track_history_retention_interval>` time in any track processor utilizing this fusion strategy.
+   
+   .. note:: The initial orbit determination algorithm employed is documented in *"Initial Orbit Determination Using Multiple Observations", Karimi and Mortari, Celest. Mech. Dyn. Astr. (2011) 109:167-180.*  Ongoing orbit determination is implemented with the :model:`WSF_ORBIT_DETERMINATION_FILTER`.
+
+.. command:: process_noise_sigmas_XYZ <X-value> <Y-value> <Z-value>
+
+   Defines the noise standard deviation used by the embedded :command:`filter<WSF_ORBIT_DETERMINATION_FILTER>`.  The values correspond with accelerations in the :ref:`entity coordinate system (ECS) <coordinate_systems>` of the tracked platform.
+
+   Default:  0 0 0
+
+.. command:: propagator <propagator-type> propagator-commands ... end_propagator
+
+   Specifies the :doc:`propagator` type that will be used in the :model:`WSF_ORBIT_DETERMINATION_FILTER` to track the target.
+   
+   Default: The tracked target's propagator type, if a truth target type is available from the track; otherwise, :model:`WSF_KEPLERIAN_PROPAGATOR`.
+   
+   .. note:: The initial state of the propagator will be provided using results of initial orbit determination and subsequent track updates; any provided initial state configuration (initial orbital elements or orbital state) of the propagator will be ignored.
+
+.. command:: number_of_angle_measurements <integer>
+
+   Specify the number of angles-only measurements to be collected before an angles-only initial orbit determination attempt is made.
+
+   .. note:: This value must be at least 3.
+
+   **Default** 5
+
+.. command:: angles_only_linear_tolerance <length-value>
+
+   Specify the linear tolerance required to converge to a solution with the angles-only initial orbit determination algorithm. Specifying a higher value makes it more likely that a valid solution will be found.
+
+   **Default** 10 meters
+
+.. command:: angles_only_maximum_iterations <integer>
+
+   Specify the maximum number of iterations for the angles-only initial orbit determination algorithm to find a solution.
+
+   .. note:: It is usually not necessary to set this value.
+
+   **Default** 200
+
+.. command:: lambert_convergence_tolerance <real>
+
+   Specify a unitless tolerance for convergence of the Lambert universal-variables algorithm of two locations and time.
+
+   **Default** 1.0e-12
+
+.. command:: debug
+
+   Prints debug information to *std::out*.
+
+.. command:: debug_filter
+
+   Specifies saving of filtering history information (see :command:`filter debug<WSF_ORBIT_DETERMINATION_FILTER.debug>`).
+
+.. command:: range_error_factor
+
+   Specify the factor that is used to compute the range error when fusing an angles-only track with an existing track (from which a range can be estimated).  This factor is multiplied times the estimated range to obtain the estimated range error.
+   
+   **Default** 0.05

@@ -1,0 +1,160 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Print_Sensor_Result:
+
+Print Sensor Result
+-------------------
+
+**Sensor Detection Attempt** and **Sensor Detection Changed** use PrintSensorResult to print sensor details.
+
+Format
+------
+
+.. parsed-literal::
+
+ Sensor: <name> Mode: <mode name | <none> Beam Index: <index>
+ :ref:`Print_EM_Interaction`
+ {sensor warning, if any}
+ Pd: <probability> << RequiredPd: <probability>  Detected: <binary>
+
+Breakdown
+=========
+
+Format ALL - "All formats begin with these fields"
+
+sensor: <name>
+    sensor name
+Mode: <mode name>
+    name of sensor mode, if valid, else "<none>"
+Beam Index: <index>
+    index of sensor beam
+    :ref:`Print_EM_Interaction` event_output goes here                                          |
+
+**sensor warnings**, may include:
+    Target_Concealed
+    Doppler_Limits_Exceeded
+    Velocity_Limits_Exceeded
+    Target_Deleted
+
+**Probability of Detection** statistics:
+
+Pd: <probability>
+    Probability of Detection
+RequiredPd: <probability>
+    Pd required for Xmtr/Rcvr to see target
+Detected:
+    0 (not detected) or 1 (detected)
+
+How it Appears in Output
+========================
+
+FORMATS - Examples
+******************
+
+receiver Masked by Horizon
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. parsed-literal::
+
+  sensor: ew-radar Mode: default Beam Index: 0 \
+  :ref:`Print_EM_Interaction`
+  Rcvr_Masked_By_Horizon \
+  Pd: 0 RequiredPd: 0.509842 Detected: 0
+
+Insufficient Signal
+^^^^^^^^^^^^^^^^^^^
+
+.. parsed-literal::
+
+  sensor: ew-radar Mode: default Beam Index: 0 \
+  :ref:`Print_EM_Interaction`
+  Insufficient_Signal \
+  Pd: 0 RequiredPd: 0.835712 Detected: 0
+
+No Warnings
+^^^^^^^^^^^
+
+.. parsed-literal::
+
+  sensor: ew-radar Mode: default Beam Index: 0 \
+  :ref:`Print_EM_Interaction`
+  Pd: 1 RequiredPd: 0.491776 Detected: 1
+
+How to Show **SENSOR DETECTION ATTEMPT** and **SENSOR DETECTION CHANGED** Event Messages
+========================================================================================
+
+.. parsed-literal::
+
+  :command:`event_output`
+    file replay.evt              # write event messages to file "replay.evt"
+    enable :ref:`docs/event/sensor_events:SENSOR_DETECTION_ATTEMPT`
+    enable :ref:`docs/event/sensor_events:SENSOR_DETECTION_CHANGED`
+  end_event_output
+
+  #------# Define comm type **IADS_EW_COMM**
+  comm IADS_EW_COMM :model:`WSF_COMM_TRANSCEIVER`
+    transfer_rate 56 kbits/sec
+  end_comm
+
+  #------# Define a commander :command:`platform.platform_type` **IADS_CMDR** that contains **ew-radar** sensor
+  :command:`platform.platform_type` IADS_CMDR :model:`WSF_PLATFORM`
+
+    # We have our own local acquisition sensor to supplement the reports we get from the EW network.
+    # For now this is simply another 2-D EW radar.
+
+    sensor ew-radar EW_RADAR_SENSOR
+      on
+      processor track-processor
+      ignore ignored-by-iads-radar
+    end_sensor
+
+  end_platform_type
+
+  #------# Define a radar :command:`platform.platform_type` **EW_RADAR** that contains **ew-radar** sensor
+  :command:`radar_signature` EW_RADAR_SIGNATURE
+    constant 10 m^2
+  end_radar_signature
+
+  :command:`platform.platform_type` EW_RADAR :model:`WSF_PLATFORM`
+
+    :command:`radar_signature`    EW_RADAR_SIGNATURE
+
+    sensor ew-radar EW_RADAR_SENSOR
+      processor collector
+      ignore ignored-by-iads-radar
+    end_sensor
+
+  end_platform_type
+
+  #------# Define a platform that uses **ew-radar** sensor
+  platform ew-e
+    commander iads-cmdr
+    category  ignored-by-iads-radar
+    comm      ew-net   network_name  ew-net    end_comm
+    sensor    ew-radar on end_sensor
+  end_platform
+
+  #------# Define a platform that
+  platform strike-11 F-18E
+    side blue
+    :command:`route`
+      position 39:56:48n 113:11:36w altitude 30000 ft msl
+        speed 500 kts
+        radial_acceleration 2.00 g
+      position 36:31:59n 114:54:35w altitude 30000 ft msl
+        speed 500 kts
+        radial_acceleration 2.00 g
+      position 40:03:04n 113:29:52w altitude 30000 ft msl
+        speed 500 kts
+        radial_acceleration 2.00 g
+    end_route
+  end_platform

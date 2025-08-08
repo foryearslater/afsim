@@ -1,0 +1,79 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Monte_Carlo_Iteration:
+
+Monte Carlo Iteration
+---------------------
+
+Overview
+========
+
+These commands collectively control the ability to perform a set of simulation runs in a single execution of the program, where each run starts with a different random number seed. This is often called "Monte Carlo iteration.'
+
+This concept can be thought of as a loop of the form:
+
+.. parsed-literal::
+
+   runNumber = initial_run_number_
+   while (runNumber <= final_run_number_)
+   {
+      SetSeed(random_seed[runNumber])
+      execute simulation
+      runNumber = runNumber + run_number_increment_
+   }
+
+Many WSF simulations support Monte Carlo integration and already implement the above concept in their code.
+
+Commands
+========
+
+.. command:: final_run_number <positive-integer>
+
+   Set the run number of the final run of the set.
+
+   **Default**: 1
+
+.. command:: generate_random_seeds <positive-integer>
+
+   This command causes a set of random number seeds to be generated for performing a set of simulation runs.  The value is used to specify the initial seed to be used for generating the random number seeds.  A vector of random number seeds will be generated when the first run is performed, with the number of seeds generated equal to the value of final_run_number_.  The random number generator for a particular run will be initialized at the start of using the random number seed associated with the current run number.
+
+   The default is to not generate random seeds, in which case the random number generator will not be initialized at the start of each run.
+
+.. command:: initial_run_number <positive-integer>
+
+   Set the run number of the initial run of the set. This command, along with final_run_number_ is useful for either repeating a specific run or it can be used with the run_number_increment_ to partition a Monte Carlo set among multiple computers (see run_number_increment_ for an example).
+
+   **Default**: 1
+
+.. command:: run_number_increment <positive-integer>
+
+   Set the increment for the runs to be executed. This command is useful for subdividing a large number of Monte Carlo iterations among multiple computers.
+
+   **Default**: 1
+
+   For example, if you wanted to run 1000 iterations using 3 computers::
+
+    final_run_number 1000
+    run_number_increment 3
+    initial_run_number <computer-number (1, 2, 3 )>
+
+   * The first computer will execute iterations 1, 4, 7, ..., 1000
+   * The second computer will execute iterations 2, 5, 8, ..., 998
+   * The third computer will execute iterations 3, 6, 9, ..., 999
+
+Related Commands and Options
+============================
+
+* :method:`WsfSimulation.RunNumber`: Get the simulation run number.
+* :command:`event_output file <event_output.file>`: Specify a run number in the simulation event output file.
+* :command:`csv_event_output file <csv_event_output.file>`: Specify a run number in the simulation csv event output file.
+* :command:`dis_interface record <dis_interface.record>`: Specify a run number in the DIS record file.

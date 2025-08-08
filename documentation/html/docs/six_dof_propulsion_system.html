@@ -1,0 +1,591 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SixDOF Propulsion System Definition &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Section Formation" href="six_dof_section.html" />
+    <link rel="prev" title="SixDOF Platform Mappings" href="six_dof_platform_mappings.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_section.html" title="Section Formation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_platform_mappings.html" title="SixDOF Platform Mappings"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sixdof-propulsion-system-definition">
+<span id="sixdof-propulsion-system-label"></span><h1>SixDOF Propulsion System Definition<a class="headerlink" href="#sixdof-propulsion-system-definition" title="Permalink to this headline">¶</a></h1>
+<p>The propulsion system includes thrust producers, such as turbojet engines, ramjets/scramjets, and
+rockets (both liquid-propellant and solid-propellant), fuel tanks (which are containers for
+fuel and or oxidizer) and fuel transfers (which define how fuel will be transferred between
+tanks).</p>
+<p>The <a class="reference internal" href="#propulsion_data">propulsion_data</a> block is used to define the propulsion system of a SixDOF object.
+There is a great deal of flexibility in the <a class="reference internal" href="#propulsion_data">propulsion_data</a> which allows a wide range of fuel
+system configurations. For example, the <a class="reference internal" href="#propulsion_data">propulsion_data</a> block for a Space Shuttle orbiter
+would include three SSME (engines), but no fuel tank or fuel transfer definitions. The
+<a class="reference internal" href="#propulsion_data">propulsion_data</a> block for a Space Shuttle external tank would include a fuel tank, but no
+engines or fuel transfer definitions. The fuel feed for each SSME (defined in the
+liquid_propellant_rocket blocks of the propulsion system of the orbiter) would identify the
+external tank fuel tank as their source of fuel. During runtime, the SSMEs would automatically
+draw fuel from the external tank’s fuel tank and when the external tank was jettisoned, the
+fuel flow would automatically be shutoff/terminated since there was no longer a connection.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Users may add a <a class="reference internal" href="wsf_six_dof_fuel.html#WSF_SIX_DOF_FUEL" title="WSF_SIX_DOF_FUEL"><span class="xref wsf wsf-model">WSF_SIX_DOF_FUEL</span></a> to further define the fuel system, augmenting the
+fuel data provided in the <strong>propulsion_data</strong> block of the <a class="reference internal" href="wsf_six_dof_mover.html#WSF_SIX_DOF_MOVER" title="WSF_SIX_DOF_MOVER"><span class="xref wsf wsf-model">WSF_SIX_DOF_MOVER</span></a>, and
+including support for things like <strong>bingo</strong> fuel states and other simple, top-level
+fuel-related data interaction.</p>
+</div>
+<dl class="command">
+<dt id="propulsion_data">
+propulsion_data … end_propulsion_data<a class="headerlink" href="#propulsion_data" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">propulsion_data
+
+   // <a class="reference internal" href="#engines-thrust-producers">Engines/Thrust Producers</a>
+   <a class="reference internal" href="#engine">engine</a> &lt;engine_type_name&gt; &lt;engine_base_type_name&gt;
+      <a class="reference internal" href="#rel_pos_x">rel_pos_x</a> ...
+      <a class="reference internal" href="#rel_pos_y">rel_pos_y</a> ...
+      <a class="reference internal" href="#rel_pos_z">rel_pos_z</a> ...
+      <a class="reference internal" href="#rel_yaw">rel_yaw</a> ...
+      <a class="reference internal" href="#rel_pitch">rel_pitch</a> ...
+      <a class="reference internal" href="#rel_roll">rel_roll</a> ...
+      <a class="reference internal" href="#fuel_feed">fuel_feed</a> ...
+   end_engine
+
+   // <a class="reference internal" href="#fuel-tank-definition">Fuel Tank Definition</a>
+   <a class="reference internal" href="#fuel_tank">fuel_tank</a> &lt;fuel_tank_name&gt;
+      <a class="reference internal" href="#max_fuel_quantity">max_fuel_quantity</a> ...
+      <a class="reference internal" href="#current_fuel_qty">current_fuel_qty</a> ...
+      <a class="reference internal" href="#max_flow_rate">max_flow_rate</a> ...
+      <a class="reference internal" href="#max_fill_rate">max_fill_rate</a> ...
+      <a class="reference internal" href="#max_xfer_rate">max_xfer_rate</a> ...
+      <a class="reference internal" href="#cg_full_x">cg_full_x</a> ...
+      <a class="reference internal" href="#cg_full_y">cg_full_y</a> ...
+      <a class="reference internal" href="#cg_full_z">cg_full_z</a> ...
+      <a class="reference internal" href="#cg_empty_x">cg_empty_x</a> ...
+      <a class="reference internal" href="#cg_empty_y">cg_empty_y</a> ...
+      <a class="reference internal" href="#cg_empty_z">cg_empty_z</a> ...
+   end_fuel_tank
+
+   // <a class="reference internal" href="#fuel-transfer">Fuel Transfer</a>
+   <a class="reference internal" href="#fuel_transfer">fuel_transfer</a> &lt;fuel_transfer_name&gt;
+      <a class="reference internal" href="#source_tank">source_tank</a> ...
+      <a class="reference internal" href="#target_tank">target_tank</a> ...
+   end_fuel_transfer
+
+             // Commands below for <a class="reference internal" href="wsf_rigid_body_six_dof_mover.html#WSF_RIGID_BODY_SIX_DOF_MOVER" title="WSF_RIGID_BODY_SIX_DOF_MOVER"><span class="xref wsf wsf-model">WSF_RIGID_BODY_SIX_DOF_MOVER</span></a> only
+
+   <a class="reference internal" href="#throttle_setting_mil">throttle_setting_mil</a> ...
+   <a class="reference internal" href="#throttle_setting_ab">throttle_setting_ab</a> ...
+   <a class="reference internal" href="#throttle_setting_reverser">throttle_setting_reverser</a> ...
+
+   <a class="reference internal" href="#throttle_setting_yaw">throttle_setting_yaw</a> ...
+   <a class="reference internal" href="#throttle_setting_pitch">throttle_setting_pitch</a> ...
+
+end_propulsion_data</pre>
+</dd></dl>
+
+</section>
+<section id="engines-thrust-producers">
+<h1>Engines/Thrust Producers<a class="headerlink" href="#engines-thrust-producers" title="Permalink to this headline">¶</a></h1>
+<p>Each engine (thrust producer) <strong>instance</strong> on the vehicle is defined by an “engine” block. However, before an instance of an engine may be specified, the engine <strong>type</strong> must be defined.</p>
+<p>Definitions of thrust producer types, including turbine-driven jet engines, ramjets/scramjets, liquid-propellant rocket engines, and solid-propellant rocket motors) are performed outside of a command:<cite>WSF_SIX_DOF_MOVER.vehicle_type</cite> block (but within a <a class="reference internal" href="six_dof_object_types.html#six_dof_object_types" title="six_dof_object_types"><span class="xref wsf wsf-command">six_dof_object_types</span></a> block). These define ‘types’ of engines which can then be referenced from within a <a class="reference internal" href="p6dof_propulsion_system.html#engine" title="engine"><span class="xref wsf wsf-command">engine</span></a> block within a <a class="reference internal" href="p6dof_propulsion_system.html#propulsion_data" title="propulsion_data"><span class="xref wsf wsf-command">propulsion_data</span></a> block within a <a class="reference internal" href="rigid_body_vehicle_type.html#rigid_body_vehicle_type" title="rigid_body_vehicle_type"><span class="xref wsf wsf-command">rigid_body_vehicle_type</span></a> or <a class="reference internal" href="point_mass_vehicle_type.html#point_mass_vehicle_type" title="point_mass_vehicle_type"><span class="xref wsf wsf-command">point_mass_vehicle_type</span></a> block. For more information about creating thrust producer types, see <a class="reference internal" href="six_dof_thrust_producer_types.html#sixdof-thrust-producer-types"><span class="std std-ref">SixDOF Thrust Producer Types</span></a>.</p>
+<p>The engine block defines how the engine is installed on a vehicle. The key parameters to include are relative position and attitude as well as the source of fuel. If no fuel
+source (fuel tank) is specified, the engine will not produce thrust, since it lacks fuel. The exception to this is a solid-propellant rocket motor, since its fuel tank is created on instantiation.</p>
+<dl class="command">
+<dt id="engine">
+engine<em> &lt;engine_type_name&gt;</em><em> &lt;engine_base_type_name&gt;</em> … end_engine<a class="headerlink" href="#engine" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">engine   TurbofanFighter   TURBOFAN_TYPE_V
+
+      // Engine Relative Position with Airframe
+      <a class="reference internal" href="#rel_pos_x">rel_pos_x</a> ...
+      <a class="reference internal" href="#rel_pos_y">rel_pos_y</a> ...
+      <a class="reference internal" href="#rel_pos_z">rel_pos_z</a> ...
+
+      // Engine Relative Attitude with Airframe
+      <a class="reference internal" href="#rel_yaw">rel_yaw</a> ...
+      <a class="reference internal" href="#rel_pitch">rel_pitch</a> ...
+      <a class="reference internal" href="#rel_roll">rel_roll</a> ...
+
+      // Fuel Source for Engine
+      <a class="reference internal" href="#fuel_feed">fuel_feed</a> ...
+
+end_engine</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_pos_x">
+rel_pos_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#rel_pos_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the x-location of the thrust point relative to the parent’s reference point using
+the parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_pos_y">
+rel_pos_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#rel_pos_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the y-location of the thrust point relative to the parent’s reference point using
+the parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_pos_z">
+rel_pos_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#rel_pos_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the z-location of the thrust point relative to the parent’s reference point using
+the parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_yaw">
+rel_yaw<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#rel_yaw" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the yaw of the thrust point about its reference point relative to the
+parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_pitch">
+rel_pitch<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#rel_pitch" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the pitch of the thrust point about its reference point relative to the
+parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="rel_roll">
+rel_roll<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#rel_roll" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the roll of the thrust point about its reference point relative to the
+parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_feed">
+fuel_feed<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_feed" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the name of the <a class="reference internal" href="#fuel_tank">fuel_tank</a> from which the engine will draw fuel.
+Note – This should not be defined for a solid-propellant rocket motor thrust producer,
+since its propellant is carried internally.</p>
+</dd></dl>
+
+</section>
+<section id="fuel-tank-definition">
+<h1>Fuel Tank Definition<a class="headerlink" href="#fuel-tank-definition" title="Permalink to this headline">¶</a></h1>
+<dl class="command">
+<dt id="fuel_tank">
+fuel_tank<em> &lt;fuel_tank_name&gt;</em> … end_fuel_tank<a class="headerlink" href="#fuel_tank" title="Permalink to this definition">¶</a></dt>
+<dd><p>The fuel tank block provides a means to define tank parameters including fuel quantity,
+transfer rates, and center of gravity (cg). Multiple tanks can be defined, if desired,
+or a single tank may be used for simplification. In addition, a propulsion system does
+not have to contain a fuel tank; engines may draw fuel from tanks located in subobjects,
+for example. Conversely, an external fuel tank object has a propulsion system that only
+contains a fuel tank – no engines are included.</p>
+<pre class="literal-block">fuel_tank &lt;string&gt;
+   <a class="reference internal" href="#max_fuel_quantity">max_fuel_quantity</a> ...
+   <a class="reference internal" href="#current_fuel_qty">current_fuel_qty</a> ...
+   <a class="reference internal" href="#max_flow_rate">max_flow_rate</a> ...
+   <a class="reference internal" href="#max_fill_rate">max_fill_rate</a> ...
+   <a class="reference internal" href="#max_xfer_rate">max_xfer_rate</a> ...
+   <a class="reference internal" href="#cg_full_x">cg_full_x</a> ...
+   <a class="reference internal" href="#cg_full_y">cg_full_y</a> ...
+   <a class="reference internal" href="#cg_full_z">cg_full_z</a> ...
+   <a class="reference internal" href="#cg_empty_x">cg_empty_x</a> ...
+   <a class="reference internal" href="#cg_empty_y">cg_empty_y</a> ...
+   <a class="reference internal" href="#cg_empty_z">cg_empty_z</a> ...
+end_fuel_tank</pre>
+<dl class="command">
+<dt id="fuel_tank.max_fuel_quantity">
+<span id="max_fuel_quantity"></span>max_fuel_quantity<a class="reference internal" href="argumenttypes.html#mass-value" title="mass-value"><em> &lt;mass-value&gt;</em></a><a class="headerlink" href="#fuel_tank.max_fuel_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the maximum quantity of fuel that can be contained in the tank.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.current_fuel_qty">
+<span id="current_fuel_qty"></span>current_fuel_qty<a class="reference internal" href="argumenttypes.html#mass-value" title="mass-value"><em> &lt;mass-value&gt;</em></a><a class="headerlink" href="#fuel_tank.current_fuel_qty" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the current quantity of fuel that is in the tank.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.max_flow_rate">
+<span id="max_flow_rate"></span>max_flow_rate<em> &lt;mass-transfer-value&gt;</em><a class="headerlink" href="#fuel_tank.max_flow_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the maximum flow rate that the tank can provide to the engine(s). For proper</dt><dd><p>operation, this flow rate should exceed the maximum demands than the engine(s) may demand.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.max_fill_rate">
+<span id="max_fill_rate"></span>max_fill_rate<em> &lt;mass-transfer-value&gt;</em><a class="headerlink" href="#fuel_tank.max_fill_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the maximum flow rate that the tank can accept from an outside source, such as</dt><dd><p>an in-flight refueling source.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.max_xfer_rate">
+<span id="max_xfer_rate"></span>max_xfer_rate<em> &lt;mass-transfer-value&gt;</em><a class="headerlink" href="#fuel_tank.max_xfer_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the maximum flow rate that the tank can accept from another tank or provide</dt><dd><p>to another tank.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_full_x">
+<span id="cg_full_x"></span>cg_full_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_full_x" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the x-location of the center of gravity (cg) of the fuel tank (when full)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_full_y">
+<span id="cg_full_y"></span>cg_full_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_full_y" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the y-location of the center of gravity (cg) of the fuel tank (when full)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_full_z">
+<span id="cg_full_z"></span>cg_full_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_full_z" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the z-location of the center of gravity (cg) of the fuel tank (when full)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_empty_x">
+<span id="cg_empty_x"></span>cg_empty_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_empty_x" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the x-location of the center of gravity (cg) of the fuel tank (when empty)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_empty_y">
+<span id="cg_empty_y"></span>cg_empty_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_empty_y" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the y-location of the center of gravity (cg) of the fuel tank (when empty)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.cg_empty_z">
+<span id="cg_empty_z"></span>cg_empty_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#fuel_tank.cg_empty_z" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is the z-location of the center of gravity (cg) of the fuel tank (when empty)</dt><dd><p>relative to the reference point of the carrying vehicle, in body coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="fuel-transfer">
+<h1>Fuel Transfer<a class="headerlink" href="#fuel-transfer" title="Permalink to this headline">¶</a></h1>
+<p>Typically, fuel transfers are defined within the <a class="reference internal" href="#propulsion_data">propulsion_data</a> block. However, when external tanks (in subobjects) are present, fuel transfers may be defined outside of the propulsion system block (but still within the <a class="reference internal" href="rigid_body_vehicle_type.html#rigid_body_vehicle_type" title="rigid_body_vehicle_type"><span class="xref wsf wsf-command">rigid_body_vehicle_type</span></a> or <a class="reference internal" href="point_mass_vehicle_type.html#point_mass_vehicle_type" title="point_mass_vehicle_type"><span class="xref wsf wsf-command">point_mass_vehicle_type</span></a> block).</p>
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer">
+<span id="fuel_transfer"></span>fuel_transfer<em> &lt;fuel_transfer_name&gt;</em> … end_fuel_transfer<a class="headerlink" href="#fuel_tank.fuel_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Regardless of whether a fuel transfer is defined within the <a class="reference internal" href="#propulsion_data">propulsion_data</a> block or a vehicle type block, a fuel transfer always consists of a source tank and a target tank. During runtime, the source tank will attempt to transfer fuel to the target tank, limited by the transfer rates of the two tanks.</p>
+<pre class="literal-block">fuel_transfer Fuel_Xfer
+   <a class="reference internal" href="#source_tank">source_tank</a> ...
+   <a class="reference internal" href="#target_tank">target_tank</a> ...
+end_fuel_transfer</pre>
+<p>Example fuel_transfer block :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">point_mass_vehicle_type</span> <span class="n">DropTank</span><span class="o">-</span><span class="mi">300</span> <span class="n">BASE_TYPE</span>
+        <span class="n">propulsion_data</span>
+           <span class="n">fuel_tank</span> <span class="n">DropTank</span>
+         <span class="o">...</span>
+           <span class="n">end_fuel_tank</span>
+        <span class="n">end_propulsion_data</span>
+<span class="n">end_point_mass_vehicle_type</span>
+
+<span class="n">point_mass_vehicle_type</span> <span class="n">FuelTransferExample</span> <span class="n">BASE_TYPE</span>
+   <span class="n">subobject</span> <span class="n">SubobjectTank</span> <span class="n">DropTank</span><span class="o">-</span><span class="mi">300</span>
+      <span class="o">...</span>
+   <span class="n">end_subobject</span>
+
+   <span class="n">fuel_transfer</span> <span class="n">DropTankToMainXfer</span>
+           <span class="n">source_tank</span> <span class="n">SubobjectTank</span><span class="o">.</span><span class="n">DropTank</span>
+           <span class="n">target_tank</span> <span class="n">MainFuelTank</span>
+   <span class="n">end_fuel_transfer</span>
+<span class="n">end_point_mass_vehicle_type</span>
+</pre></div>
+</div>
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.source_tank">
+<span id="fuel_transfer.source_tank"></span><span id="source_tank"></span>source_tank<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.source_tank" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source tank is defined by its string name. Source tanks can be access on sub-objects by referencing the sub-object by name, then the source tank name (as shown above).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.target_tank">
+<span id="fuel_transfer.target_tank"></span><span id="target_tank"></span>target_tank<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.target_tank" title="Permalink to this definition">¶</a></dt>
+<dd><p>The target tank is defined by its string name. Target tanks can be access on sub-objects by referencing the sub-object by name, then the target tank name (as shown above).</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="throttle-settings-rb6-only">
+<h1>Throttle Settings (RB6-only)<a class="headerlink" href="#throttle-settings-rb6-only" title="Permalink to this headline">¶</a></h1>
+<p>These define the control input for throttles, thurst vectoring controls, and thrust
+reversers. When these are defined in the <a class="reference internal" href="#propulsion_data">propulsion_data</a> block rather than the
+engine type definition, the definitions apply to <strong>all</strong> engines on the vehicle
+rather than only a particular engine. In most cases, defining in the
+<a class="reference internal" href="#propulsion_data">propulsion_data</a> block is best.</p>
+<blockquote>
+<div><dl class="command">
+<dt id="fuel_tank.fuel_transfer.throttle_setting_mil">
+<span id="fuel_transfer.throttle_setting_mil"></span><span id="throttle_setting_mil"></span>throttle_setting_mil<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.throttle_setting_mil" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the control_value defined in flight_controls that will be used to control the MIL (military) power throttle setting.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.throttle_setting_ab">
+<span id="fuel_transfer.throttle_setting_ab"></span><span id="throttle_setting_ab"></span>throttle_setting_ab<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.throttle_setting_ab" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the control_value defined in flight_controls that will be used to control the AB (afterburner) power throttle setting.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.throttle_setting_reverser">
+<span id="fuel_transfer.throttle_setting_reverser"></span><span id="throttle_setting_reverser"></span>throttle_setting_reverser<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.throttle_setting_reverser" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the control_value defined in flight_controls that will be used to control the thrust-reverser control setting.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.throttle_setting_yaw">
+<span id="fuel_transfer.throttle_setting_yaw"></span><span id="throttle_setting_yaw"></span>throttle_setting_yaw<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.throttle_setting_yaw" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the control_value defined in flight_controls that will be used to control the yaw thrust vectoring control setting.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="fuel_tank.fuel_transfer.throttle_setting_pitch">
+<span id="fuel_transfer.throttle_setting_pitch"></span><span id="throttle_setting_pitch"></span>throttle_setting_pitch<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#fuel_tank.fuel_transfer.throttle_setting_pitch" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the control_value defined in flight_controls that will be used to control the pitch thrust vectoring control setting.</p>
+</dd></dl>
+
+</div></blockquote>
+<p>Return to <a class="reference internal" href="six_dof_object_types.html"><span class="doc">six_dof_object_types</span></a>, <a class="reference internal" href="rigid_body_vehicle_type.html"><span class="doc">rigid_body_vehicle_type</span></a>, <a class="reference internal" href="point_mass_vehicle_type.html"><span class="doc">point_mass_vehicle_type</span></a></p>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/six_dof_propulsion_system.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_section.html" title="Section Formation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_platform_mappings.html" title="SixDOF Platform Mappings"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

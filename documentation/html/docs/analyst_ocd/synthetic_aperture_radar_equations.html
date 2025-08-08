@@ -1,0 +1,644 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Synthetic Aperture Radar (SAR) Image Formation Equations &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Task Processor Primer" href="task_processor_primer.html" />
+    <link rel="prev" title="Subsystem location, orientation, slewing and scanning" href="subsystem_location,_orientation,_slewing_and_scanning.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="task_processor_primer.html" title="Task Processor Primer"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="subsystem_location,_orientation,_slewing_and_scanning.html" title="Subsystem location, orientation, slewing and scanning"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="synthetic-aperture-radar-sar-image-formation-equations">
+<h1>Synthetic Aperture Radar (SAR) Image Formation Equations<a class="headerlink" href="#synthetic-aperture-radar-sar-image-formation-equations" title="Permalink to this headline">¶</a></h1>
+</section>
+<section id="references">
+<h1>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h1>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="comm_sensor_and_jamming_equations.html"><span class="doc">Communication, Sensor and Jamming Systems Equations</span></a></p></li>
+<li><p>‘Performance Limits for Synthetic Aperture Radar’, 2nd edition, Armin W. Doerry, Sandia National Laboratory Report SAND2006-0821.</p></li>
+<li><p>‘Synthetic Aperture Radar Mode Constraints’, 7-May-2007, Matthew J. Renaud (Boeing)</p></li>
+<li><p>‘Radar Handbook’, 2nd edition, Merrill Skolnik</p></li>
+</ol>
+</section>
+<section id="the-radar-range-equation">
+<h1>The Radar Range Equation<a class="headerlink" href="#the-radar-range-equation" title="Permalink to this headline">¶</a></h1>
+<p>The following equation is the standard equation used by WSF to compute the received power from a single pulse of a radio frequency signal that is transmitted, reflects of an object and is then received. This does not assume the transmitter and receiver are co-located, and does not account for any additional signal processing techniques such as pulse compression or integration of multiple pulses:</p>
+<p><img class="math" src="../../_images/math/49c5e4c22f3a50cf53ef14bb74aaadda78d48047.png" alt="P_r = P_{peak} \frac{G_x}{L_x} \frac{A_{xt}}{4{\pi}R_{xt}^2} \sigma \frac{A_{tr}}{4{\pi}R_{tr}^2} \frac{\lambda^2}{4{\pi}} \frac{G_r}{L_r} F_{40}F_{BW}F_{POL}"/></p>
+<p>where:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/544e79b5e7d1217a0fd77e978dfcacad849849ac.png" alt="P_{peak}"/></p></td>
+<td><p><strong>transmitter power</strong></p></td>
+<td><p>The peak transmitted power</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/cefc603e5658facb747581f9567192993f21c7ab.png" alt="\lambda"/></p></td>
+<td><p><strong>transmitter frequency</strong> or <strong>wavelength</strong></p></td>
+<td><p>The wavelength of the radiated signal</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/e57d507eceec302fa49f1db53db767177273d585.png" alt="G_{x} / G_{r}"/></p></td>
+<td><p><strong>transmitter / receiver antenna_pattern</strong></p></td>
+<td><p>The gain of the transmitter and receiver antennas</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/45f7eade04c8d08cb1ce5a6fea1f9c5615e888e8.png" alt="L_{x} / L_{r}"/></p></td>
+<td><p><strong>transmitter / receiver internal_loss</strong></p></td>
+<td><p>The internal losses within the transmitter and receiver</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/d7fd96e09d581a1f02cb430b1b0f5183e22f5701.png" alt="A_{xt} / A_{tr}"/></p></td>
+<td><p><strong>transmitter attenuation_model</strong></p></td>
+<td><p>The one-way atmospheric attenuation factor (0..1) computed by the attenuation mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/f10c838718105a4d8a5a5be01aa790205bb9cbab.png" alt="R_{xt} / R_{tr}"/></p></td>
+<td><p>Computed</p></td>
+<td><p>The range from the transmitter-to-target and target-to-receiver.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/b52df27bfb0b1e3af0c2c68a7b9da459178c2a7d.png" alt="\sigma"/></p></td>
+<td></td>
+<td><p>The radar cross section of the target (which could be the target or a ‘resolution cell’).</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/7ad70254c060f43457de48e17dd60541551896cf.png" alt="F_{40}"/></p></td>
+<td><p><strong>transmitter propagation_model</strong></p></td>
+<td><p>The pattern propagation factor that accounts for the constructive and destructive interference between the direct and indirect reflections.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/b1657593b55e4192f68905cbfb59496eb31598a0.png" alt="F_{BW}"/></p></td>
+<td></td>
+<td><p>The factor that accounts for bandwidth mismatches between the bandwidth of the transmitted signal and the bandwidth of the receiver. This is primarily for interactions between radar transmitters and passive RF receivers, or jammers and radar receivers. It is not intended to capture the effects of non-ideal matched filters in a system.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/00d653363248bd69d6849a1f425469d451110a7f.png" alt="F_{POL}"/></p></td>
+<td><p><strong>transmitter / receiver polarization</strong></p></td>
+<td><p>The factor that accounts for the polarization mismatch of the transmitted signal and the receive antenna.</p></td>
+</tr>
+</tbody>
+</table>
+<p>For a SAR, the transmitter and receiver are co-located, so <img class="math" src="../../_images/math/d3b562bb722d735ef1b03aca4ee352f6b415b2a5.png" alt="R = R_{xt} = R_{tr}"/> and <img class="math" src="../../_images/math/096465b7c592ade0b709a29a5458ed06583eb77d.png" alt="A = A_{xt} = A_{tr}"/>. Also, the gain of the transmit and receive antennas will be assumed identical, so <img class="math" src="../../_images/math/2c975b2480e8dff9563e7c6d2cf5c785ca94814a.png" alt="G = G_t = G_r"/>. Furthermore, the following will be assumed:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>There are no indirect signals to interfere with the main signal. Therefore <img class="math" src="../../_images/math/fae145d09f7eb5af688adca33807b056d51dd06f.png" alt="F_{40} = 1"/>.</p></li>
+<li><p>The bandwidth of the receiver has been established to capture the full bandwidth of the transmitted signal. Therefore, <img class="math" src="../../_images/math/128919bc91bc713c4d76d552f9311ef1ad7d0d3a.png" alt="F_{BW} = 1"/>.</p></li>
+<li><p>The polarization of the received signal is the same as the polarization of the transmitted signal. Therefore, <img class="math" src="../../_images/math/acdd2f1b9388a3f94c06786ed37d47f4196de87f.png" alt="F_{POL} = 1"/>.</p></li>
+</ul>
+</div></blockquote>
+<p>If we also define the total atmospheric attenuation loss as:</p>
+<div class="math">
+<p><img src="../../_images/math/91818f14e8fecdedbc327eb84641b9a36c1019d9.png" alt="L_{atm} = \frac{1}{A_{xt} A_{tr}} = \frac{1}{A^2}"/></p>
+</div><p>With the above assumptions, we get the familiar equation for power received from a single pulse, where the transmitter and receiver are co-located:</p>
+<div class="math">
+<p><img src="../../_images/math/142b2a3dfdbd3e412d039a4618bb4829b5a55ab6.png" alt="P_r = P_{peak} \times \frac{G^2{\lambda^2} \sigma}{(4\pi)^3R^4L_{x}L_{r}L_{atm}}"/></p>
+</div><p>This is the same as equation (1) in reference 2, noting that:</p>
+<div class="math">
+<p><img src="../../_images/math/7c428b78d20419d1c9567bebc8853436b8ea2c70.png" alt="L_{radar} = L_{x}L_{r}"/></p>
+</div><p>and that equation (8) has been used to replace <img class="math" src="../../_images/math/4b8b0ce8f1e3eb414330c39b864a30df8edf5203.png" alt="A_{e}"/>:</p>
+<div class="math">
+<p><img src="../../_images/math/6635111b836804471bcf842c925757c72bccf460.png" alt="A_{e} = \frac{G_A\lambda^2}{4{\pi}}"/></p>
+</div><p>Further note that reference 2 goes on to represent the effective aperture as a product of the actual aperture area multiplied by an ‘aperture efficiency’. We will not perform that step here and assume that any aperture efficiency has been represented in the WSF antenna_pattern.</p>
+<p>The received signal must compete with the noise present within the system. WSF computes noise power using the following:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/9630132210b904754c9ab272b61cb527d12263ca.png" alt="k"/></p></td>
+<td><p>Internal constant</p></td>
+<td><p>Boltzmann’s constant (1.3806505E-23 J/deg-K)</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/338663be4e0b46c883ca7219abefd218e1700e55.png" alt="B_N"/></p></td>
+<td><p><strong>receiver bandwidth</strong></p></td>
+<td><p>The bandwidth of the receiver. If the bandwidth was not specified AND if the transmitter pulse_width is specified, the bandwidth will be computed as (1 / pulse_width) (i.e. a matched filter will be assumed).</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/ce54fbe3e7309d5acc105984eb637f75f2781959.png" alt="F_N"/></p></td>
+<td><p><strong>receiver noise_figure</strong></p></td>
+<td><p>The receiver noise figure (default 1.0)</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/3bfb3a64189a14b2704f4610827762d5e3145114.png" alt="N"/></p></td>
+<td><p>Computed</p></td>
+<td><p>The noise power.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/0a8fbd200b8e764709edf00ecf6774345ee38c95.png" alt="T_0"/></p></td>
+<td><p>Internal constant</p></td>
+<td><p>The standard temperature (290 deg-K)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The receiver noise at the antenna port is computed as:</p>
+<div class="math">
+<p><img src="../../_images/math/3ec11a94d28052e2314bce097740dc389f7e299a.png" alt="N = kT_0B_NF_N"/></p>
+</div><p>(Note: Section 2.6 in reference 1 describes other forms of computing the noise power, but these are primarily for surface-based systems.)</p>
+<p>The signal-to-noise ratio for a single pulse at the antenna port is then:</p>
+<div class="math">
+<p><img src="../../_images/math/f1acae27ed6f14a2e3ad7c4b99b7dd8bb4aa5d07.png" alt="SNR_{ant} = \frac{P_r}{N} = P_{peak} \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0B_NF_N}"/></p>
+</div><p>(This is the same as equation (5) in reference 2, with the substitutions noted above.)</p>
+<p>A SAR utilizes two signal processing techniques to increase the effective SNR in the image.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><img class="math" src="../../_images/math/498262df21f0630a6605cec727139455e36da246.png" alt="G_a ="/> SNR gain due to azimuth processing (coherent pulse integration).</p></li>
+<li><p><img class="math" src="../../_images/math/f32e2b1fc146d656e3c39ac772d574bed373d5fc.png" alt="G_r ="/> SMR gain due to range processing (pulse compression)</p></li>
+</ul>
+</div></blockquote>
+<p>This will result in the signal-to-noise ratio a target within the image to be:</p>
+<div class="math">
+<p><img src="../../_images/math/5c5af3f9fc4dca817434a826b03cf77125a5fec2.png" alt="SNR_{image} = SNR_{ant} G_a G_r = \frac{P_r}{N} = P_{peak} \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} G_a G_r"/></p>
+</div><p>(This is the same as equation (11) in reference 2, with the substitutions noted above.)</p>
+</section>
+<section id="azimuth-processing-gain-coherent-pulse-integration">
+<h1>Azimuth Processing Gain (Coherent Pulse Integration)<a class="headerlink" href="#azimuth-processing-gain-coherent-pulse-integration" title="Permalink to this headline">¶</a></h1>
+<p>The creation of a SAR image involves the collection of a large number of pulses coherently over some duration of time that is suitable for producing an image of the desired quality.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/e31ba26653dbf909a323f454841f374d6ce6fdbd.png" alt="f_p"/></p></td>
+<td><p><strong>transmitter pulse_repetition_frequency</strong></p></td>
+<td><p>The pulse repetition frequency</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/1015fc433b0d76cfe91028658d896ed58054f465.png" alt="K_a"/></p></td>
+<td><p><strong>doppler_filter_broadening_factor</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/ccfc6cba19c9370da35f7b183d9e737b3843b8ea.png" alt="K_d"/></p></td>
+<td><p><strong>doppler_foldover_margin_factor</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/45df71fce1f0e84583d8fe37a9641ac76cb7cbdd.png" alt="t_D"/></p></td>
+<td><p><strong>dwell_time</strong> or computed</p></td>
+<td><p>The dwell time, or image collection time.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/89faadd3e9cafb562808f1f8b3cbc39ce24b21c3.png" alt="\delta_a"/></p></td>
+<td><p><strong>resolution</strong> or computed</p></td>
+<td><p>The desired azimuth resolution.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/e4762cec46619bf7781cae62216214f909395368.png" alt="V"/></p></td>
+<td></td>
+<td><p>The vehicle velocity vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/81ff075ce66d3fcc3820518c1d4596b71a9c0ca3.png" alt="\theta_{sq}"/></p></td>
+<td><p>computed</p></td>
+<td><p>The ‘squint angle’, defined as the angle between the velocity vector and the line-of-sight vector to the center of the image area.    Note: In some documents this will be measured as the angle-of-broadside, causing the use sin() and cos() to be reversed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/a5d48d901f189c594863f183d561b6e5145bb6fe.png" alt="n_{image}"/></p></td>
+<td><p>Computed</p></td>
+<td><p>The total number of pulses collected in forming the image</p></td>
+</tr>
+</tbody>
+</table>
+<p>Equation (5) from Reference 3 is used to compute the dwell time from the desired cross range/azimuth resolution:</p>
+<div class="math">
+<p><img src="../../_images/math/97a871cf15a641c3936fcc66b6feed0f84a5d799.png" alt="t_D = \frac{{\lambda}K_a R}{2V\delta_a \sin(\theta_{sq})}"/></p>
+</div><p>Note that WSF lets the user specify either the desired resolution or dwell time. In the later case WSF will use the above equation to solve for the achievable resolution given the dwell time.</p>
+<p>The azimuth gain is the total number of pulses collected, which is just the collection time times the pulse repetition frequency:</p>
+<div class="math">
+<p><img src="../../_images/math/d8d47b38002b5740731b8777a1c51e869a4ca5b9.png" alt="G_a = n_{image} = t_D f_p = \frac{{\lambda}K_a Rf_p}{2V\delta_a \sin(\theta_{sq})}"/></p>
+</div></section>
+<section id="range-processing-gain-pulse-compression">
+<h1>Range Processing Gain (Pulse Compression)<a class="headerlink" href="#range-processing-gain-pulse-compression" title="Permalink to this headline">¶</a></h1>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/7f28dc418c3494058329513bb48068ecfb43f6b8.png" alt="\tau_u"/></p></td>
+<td><p><strong>transmitter pulse_width</strong></p></td>
+<td><p>The uncompressed pulse width.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/6c74a23ef1a2fc94f6232389ee2b4cfc1c243455.png" alt="\frac{\tau_u}{\tau_c}"/></p></td>
+<td><p><strong>transmitter pulse_compression_ratio</strong></p></td>
+<td><p>The pulse compression ratio.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The range processing gain due to pulse compression is:</p>
+<div class="math">
+<p><img src="../../_images/math/06e0d0e0ec84d6f8a43018bc865a38c1ec96badf.png" alt="G_r = \frac{\tau_u}{\tau_c}"/></p>
+</div></section>
+<section id="various-forms-of-the-signal-to-noise-equation">
+<h1>Various Forms of the Signal-to-Noise Equation<a class="headerlink" href="#various-forms-of-the-signal-to-noise-equation" title="Permalink to this headline">¶</a></h1>
+<p>Substituting the results for <img class="math" src="../../_images/math/38550b6c8b78602fe18ed4bc72997d2d3719aec5.png" alt="G_a"/> and <img class="math" src="../../_images/math/7b98722260306da607db691cec74a88dbb49fa53.png" alt="G_r"/> into the equation for <img class="math" src="../../_images/math/593856f93d3da43ab97596269d1994a20060cca3.png" alt="SNR_{image}"/>:</p>
+<div class="math">
+<p><img src="../../_images/math/1f04cb8eb942e3064a060e587f04b3e62d202225.png" alt="SNR_{image} &amp;= P_{peak}  \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} G_a G_r \\
+            &amp;= P_{peak}  \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} \frac{{\lambda}K_a Rf_p}{2V\delta_a \sin(\theta_{sq})} \frac{\tau_u}{\tau_c}"/></p>
+</div><p>This is the form used by WSF to compute the return from an object with a radar cross section of <img class="math" src="../../_images/math/b52df27bfb0b1e3af0c2c68a7b9da459178c2a7d.png" alt="\sigma"/>. This could be a target or a resolution cell.</p>
+<p>Additional forms of the equation are often seen in the literature. The remainder of this section will show how the above equation is equivalent.</p>
+<p>In the case of a matched filter:</p>
+<div class="math">
+<p><img src="../../_images/math/28f70c28ba2a03b8dfd44005ad43a5c4c18c3018.png" alt="B_N = \frac{1}{\tau_c}"/></p>
+</div><p>Substituting:</p>
+<div class="math">
+<p><img src="../../_images/math/1a0e94a5d9d15502b74c8a9da07d28b10d392e38.png" alt="SNR_{image} &amp;= P_{peak}  \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{\tau_c}{kT_0 B_N F_N} \frac{K_a f_p}{2V\delta_a \sin(\theta_{sq})} \frac{\tau_u}{\tau_c} \\
+            &amp;= P_{peak}{\tau_u}f_p \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})} \\
+            &amp;= P_{avg} \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})}"/></p>
+</div><p>Where average power is defined to be:</p>
+<div class="math">
+<p><img src="../../_images/math/151ce71b71160e3062839360ecbc37d62fa89f2b.png" alt="P_{avg} = P_{peak} \tau_u f_p"/></p>
+</div><p>One form of interest is when the target is a bare resolution cell (i.e.: the ground). This is sometimes called the ‘clutter-to-noise ratio’, or CNR. Equation (23) of reference 2 defines the area of the resolution cell as:</p>
+<div class="math">
+<p><img src="../../_images/math/a3cee6301f94c6cf32819dd22fd200e52d1015af.png" alt="\sigma = \sigma^0 \delta_a \delta_{rg} = \sigma^0 \delta_a  \frac{\delta_r}{\cos(\psi_g)}"/></p>
+</div><p>where:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/d122767c103dce96d4f287b42938e506c148ee72.png" alt="\sigma^0"/></p></td>
+<td><p><strong>backscatter_coefficient</strong></p></td>
+<td><p>The backscatter coefficient</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/3b12845f80639a67968b9290d7d4f10de33753fb.png" alt="\delta_r"/></p></td>
+<td></td>
+<td><p>Range resolution (as computed from the effective pulse width)</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/2b5cf9fd9459f8300e31a4e610129876bdcb5aec.png" alt="\delta_{rg}"/></p></td>
+<td></td>
+<td><p>Range resolution in the ground plane</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/f2129cfdb0060dd6c9112a742d718d65537872e1.png" alt="\psi_g"/></p></td>
+<td></td>
+<td><p>Grazing angle. The angle between the line-of-sight vector and the plane tangent to the surface at the point being viewed.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Substituting:</p>
+<div class="math">
+<p><img src="../../_images/math/e8d28543caec6f40395c93d4d555033e0a947bfc.png" alt="SNR_{image} &amp;= P_{avg} \frac{G^2 \lambda^3}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \sigma^0 \delta_a  \frac{\delta_r}{\cos(\psi_g)} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})} \\
+            &amp;= P_{avg} \frac{G^2 \lambda^3}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{\sigma^0 \delta_r}{\cos(\psi_g)} \frac{1}{kT_0 F_N} \frac{K_a}{2V\sin(\theta_{sq})}"/></p>
+</div><p>which is basically equivalent to the myriad of forms presented in Appendix B of reference 2 (however they always assumed broadside collection, so <img class="math" src="../../_images/math/7ac636c14ddbf948e05788baab14e52828dc83a3.png" alt="\sin(\theta_{sq})"/> was always 1).</p>
+</section>
+<section id="creation-of-wsf-pseudo-images">
+<h1>Creation of WSF Pseudo-Images<a class="headerlink" href="#creation-of-wsf-pseudo-images" title="Permalink to this headline">¶</a></h1>
+<p>WSF does not produce true images, but rather produces pseudo-images that indicate the objects that are in the image, the number of resolution cells (pixels) occupied by the object, and the intensity of the object.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>The user cues the system to the desired location and turns the system on. The model constructs a list of the targets that could potentially be in the image. The target list will encompass targets that are slightly outside the image region in order to account for the fact that a target may move into the image.</p></li>
+<li><p>At periodic intervals (defined by ‘frame_time’, default of 1 second), the model compute and accumulate data for each of the targets from step 1. The results of these detection results will be accumulated, much as a SAR accumulates pulses. If the target is obscured by terrain during a given sample, it will not have any contributing pulses defined during that interval.</p></li>
+<li><p>At some point, the SAR will be turned off. At that point the model will take the accumulated results and produce the pseudo-image (WsfImage) and send a message containing the image (WsfImageMessage) to those who have subscribed.</p></li>
+</ol>
+</div></blockquote>
+<p>The following variables will be used in the following section:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>WSF source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/d397458e445a840fa10ea4bbad4af9a425acb3e8.png" alt="t_F"/></p></td>
+<td><p><strong>frame_time</strong></p></td>
+<td><p>The update interval between samples when forming the image.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/7eba8eb0d99dde9f91862a43dfa7a9d5a21d6ad2.png" alt="n_{actual}"/></p></td>
+<td></td>
+<td><p>The actual number of pulses integrated. This may be different from n_image if the sensor was turned off before or after the required time.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/c5cd86f2f871317917757f17c6627aefa8e5c7f4.png" alt="t_{sample}"/></p></td>
+<td></td>
+<td><p>The length of the sample. This will be t_F for all but the final sample.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/dc9ec83f430cb60bdb71e29cf6de5edefc3f8346.png" alt="n_{sample}"/></p></td>
+<td></td>
+<td><p>The number of pulses received during a sample.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/fbdff9c3ef9e54bc4925cbb2519257e11c06c303.png" alt="P_{sample}"/></p></td>
+<td></td>
+<td><p>The received signal from a specific target during a sample.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/391b388a8ff5a4b0f8ba81ed088119ac59d37f84.png" alt="NP_{sample}"/></p></td>
+<td></td>
+<td><p>The number of resolution cells (pixels) covered by a specific target during a sample.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/17598e1c017cd362cfd5e78244e4f63140533f66.png" alt="\sigma_{opt}"/></p></td>
+<td><p><strong>optical_signature</strong></p></td>
+<td><p>The optical signature of the target.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/9b6c123432ee67e23a05f992eaddd8a409daa893.png" alt="P_{sum}"/></p></td>
+<td></td>
+<td><p>The sum of the sampled received signals for a specific target.</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/3b5986abf1c318833c4d68dfc776e61f4f358f52.png" alt="NP_{sum}"/></p></td>
+<td></td>
+<td><p>The sum of the sampled pixel counts for a specific target.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/e6f06131148a7d3d25c33adb6839b9320c4523a3.png" alt="N_{seen}"/></p></td>
+<td></td>
+<td><p>The number of samples in which a specific target was visible (not obscured by the terrain).</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/42657d64cd7d33e046b64f84a3df29da327daef1.png" alt="P_{ref}"/></p></td>
+<td></td>
+<td><p>The reference signal that corresponds to a zero intensity in the output image. This would typically be minimum clutter-to-noise ratio.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/307d35d0443eb702f63e3694e0dbb083a91fddc6.png" alt="P_{range}"/></p></td>
+<td></td>
+<td><p>A normalizing value used to scale the received signals into a range of [0..1].</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../../_images/math/b96ae0808ec882abd4346cd781aebda242d70473.png" alt="CNR"/></p></td>
+<td></td>
+<td><p>The expected signal-to-noise ratio of a return from single resolution cell.</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../../_images/math/1364d54f5b366a8f82276e3257aa942c2fec33db.png" alt="CNR_{min}"/></p></td>
+<td><p><strong>detection_threshold</strong></p></td>
+<td><p>The minimum acceptable value for CNR for an image to be declared</p></td>
+</tr>
+</tbody>
+</table>
+<p>Step 1 computes the anticipated dwell time (<img class="math" src="../../_images/math/45df71fce1f0e84583d8fe37a9641ac76cb7cbdd.png" alt="t_D"/>) and the number of pulses to be collected (<img class="math" src="../../_images/math/a5d48d901f189c594863f183d561b6e5145bb6fe.png" alt="n_{image}"/>). In addition, it calculates the anticipated value of <img class="math" src="../../_images/math/b96ae0808ec882abd4346cd781aebda242d70473.png" alt="CNR"/></p>
+<p>For each samples in step 2, the number of pulses received during the sample interval is:</p>
+<div class="math">
+<p><img src="../../_images/math/91bbf4790906e54a7215ad86b310b42a9c816018.png" alt="n_{sample} = f_p t_{sample}"/></p>
+</div><p>The number of resolution cells (pixels) occupied by the target for a given sample is just projected area of the target (optical cross section) divided by the size of a resolution cell:</p>
+<div class="math">
+<p><img src="../../_images/math/68d42565fa3e338789e5075812a0d39114d3edd0.png" alt="NP_{sample} = \frac{\sigma_{opt}}{\delta_a \delta_r}"/></p>
+</div><p>The received power <strong>per resolution cell</strong> from the target during the sample interval is:</p>
+<div class="math">
+<p><img src="../../_images/math/07a3445afefe37cac8eda7fdf298e08e425ae3e3.png" alt="P_{sample} = \frac{SNR_{image}}{N} \frac{n_{sample}}{n_{image}} \frac{1}{NP_{sample}}"/></p>
+</div><p>Note that the noise has been removed from the accumulation. This must be done to account for the possibility that in some samples the target may not be visible, or that the actual dwell time may be longer or shorter what was initially computed. The other terms account for the fact that the internal routine that calculates <img class="math" src="../../_images/math/593856f93d3da43ab97596269d1994a20060cca3.png" alt="SNR_{image}"/> computes the return for the entire target for the expected dwell time.</p>
+<p>For each sample of a target in which the target is not obscured by terrain, the following is performed:</p>
+<div class="math">
+<p><img src="../../_images/math/66bb62275eaae2eb9aa77580d8ea1ae006c9f461.png" alt="N_{seen} = N_{seen} + 1"/></p>
+</div><div class="math">
+<p><img src="../../_images/math/68dbd4e93bb807e2b2e7eceb7f062ffbb4546341.png" alt="P_{sum} = P_{sum} + P_{sample}"/></p>
+</div><div class="math">
+<p><img src="../../_images/math/fff7a649533656a388f4fbc379556a179d6df141.png" alt="NP_{sum} = NP_{sum} + NP_{sample}"/></p>
+</div><p>In step 3, the <strong>achieved</strong> clutter to noise ratio must be computed. It is done at this point because the actual number of pulses collected is now known (the user may choose to turn the system off before or after the time required).</p>
+<div class="math">
+<p><img src="../../_images/math/643a5135ca727514786e12af84a5fd2607094b12.png" alt="CNR_{actual} = CNR \frac{n_{actual}}{n_{image}}"/></p>
+</div><p>If <img class="math" src="../../_images/math/a0c18ed0f893ba972588b10745782aac85d16558.png" alt="CNR_{actual}"/> is greater than or equal to <img class="math" src="../../_images/math/1364d54f5b366a8f82276e3257aa942c2fec33db.png" alt="CNR_{min}"/>, the image will be declared to be acceptable and will contain the targets as processed below. If image is declared to be unacceptable, the image will be produced with no targets.</p>
+<p>The reference signal level will be defined to be:</p>
+<div class="math">
+<p><img src="../../_images/math/635f7d548a5bd6d1d7ffde5575b9f62834b2db64.png" alt="P_{ref} = \frac{CNR_{actual}}{N}"/></p>
+</div><p>If the image is declared to be acceptable, the following will be produced for each target:</p>
+<p>The number of pixels (resolution cells) occupied by the target. This will just be the average of the pixel counts from each sample where there target was not obscured by terrain:</p>
+<div class="math">
+<p><img src="../../_images/math/392ee82323c9147864f4452df04311df9cf7afb5.png" alt="NP = \frac{NP_{sum}}{N_{seen}}"/></p>
+</div><p>The intensity of the pixel is then computed. The integrated return from a resolution cell (aka, clutter cell) represents the ‘zero’ intensity, or the return that will return a pixel value of zero.</p>
+<div class="math">
+<p><img src="../../_images/math/34afe04c66baa78e3647abc8dfa8d4f8a847bbee.png" alt="I = \frac{P_{sum} - P_{ref}}{P_{range}}"/></p>
+</div><p>A value less than zero is clamped to zero, while values greater than one are clamped to one.</p>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/synthetic_aperture_radar_equations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="task_processor_primer.html" title="Task Processor Primer"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="subsystem_location,_orientation,_slewing_and_scanning.html" title="Subsystem location, orientation, slewing and scanning"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

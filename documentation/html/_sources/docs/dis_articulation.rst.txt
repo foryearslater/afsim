@@ -1,0 +1,139 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _DIS_Articulation:
+
+DIS Articulation
+----------------
+
+Updating the simulation from input DIS articulation
+===================================================
+
+Articulated part records that are a part of entity state PDUs received by a WSF application may be used to update
+the state of the WSF platform that reflects the state of (shadows) the external entity.  This allows locally 
+modeled sensors to utilize the proper signature when they perform detection chances against the shadow platform.
+
+Reflecting signature updates using articulated parts requires two sets of input:
+
+* Additions to the :command:`platform` for the shadow platform that define script variables and scripts. This
+  information will be used by the :command:`dis_interface` to inform the platform when a change has been received. (Note that
+  this information can be included even for platforms that aren't externally controlled. It is simply ignored for local
+  platforms.)
+
+* Additional :command:`dis_interface` commands that define the identification of the parts to be tracked and how to inform
+  the platform that a change has been received.
+
+Following is a trivial example in which a 737 has landing gear. When an articulation update is received, variables will 
+get updated and scripts called so the platform can changes its signature as needed.
+
+Following is the additional platform_type data (all extraneous data has been omitted). 'writeln' statements may be
+omitted if desired
+
+::
+
+ platform_type 737 WSF_PLATFORM
+    script_variables
+       double landing_gear_state    = 0.0;
+    end_script_variables
+
+    script void landing_gear_state_changed()
+       writeln("T=",TIME_NOW," ",Name()," landing_gear_state_changed");
+       writeln("  landing gear state: ", landing_gear_state);
+       if (landing_gear_state    == 0.0)
+       {
+          writeln(" Change signature to landing_gear_up");
+          SetRadarSigState("landing_gear_up");
+       }
+       else
+       {
+          writeln(" Change signature to landing_gear_down");
+          SetRadarSigState("landing_gear_down");
+       }
+    end_script
+ end_platform
+
+Following is the additional :command:`dis_interface` data::
+
+ dis_interface
+    entity_type 737           1:2:225:57:1:7:0
+
+    entity_appearance
+       type 737 articulation 3087 landing_gear_state   landing_gear_state_changed
+    end_entity_appearance
+ end_dis_interface
+
+The DIS standard defines articulated part 3072 as the base parameter type value for the landing gear. 
+In this example, the 'rotation' parameter is being used to signify an appearance change, which
+means 15 must be added to the base parameter type value. Thus, the resulting parameter types value is 3087 (3072 +
+15). A rotation value of zero indicates the landing gear is up while a non-zero value indicates it
+is down.
+
+The processing of received articulated parts records proceeds as follows:
+
+* If the record does not have the 'change' flag set, ignore the record.
+* If an entity_appearance articulation entry does not exists for the platform and parameter value, ignore the record.
+* Update the script variable specified on the entity_appearance articulation entry and store the script name to be
+  called upon completion of processing of all the records.
+* Once all articulation records have been processed, invoke the scripts that correspond to the variables that were
+  changed. If multiple variables were changed that referenced the same script, the script will only be called once.
+
+In this example, if an entity state is received in which parameter 3087 is marked as changed, the script
+variable 'landing_gear_state' will be set to the received values. Then, the script 'landing_gear_state_changed' 
+will be called.
+
+DIS Output
+==========
+
+
+Any WSF articulated part (:command:`comm` or :command:`sensor`) can be included on the DIS entity state PDU.  In
+addition, explicit parts can be defined for articulations not associated with a platform's system (:command:`visual_part`). 
+Parts are controlled using the :command`_.articulated_part`.
+
+A defined articulation then be included in the DIS output by explicitly including it in the :command:`dis_interface`, as
+showing in the example below.
+
+::
+
+ dis_interface
+    articulated_part 737 landing_gear 1
+       publish azimuth
+    end_articulated_part
+
+    articulated_part 737 landing_gear 2
+       parent 1
+       publish elevation
+    end_articulated_part
+ end_dis_interface
+
+The articulated_part block includes three parameters.
+
+* A platform_type that will include the articulation in its entity state PDUs.
+* The name of the articulated part on the platform_type.
+* An ID to associate with the part in the DIS entity state PDU.
+
+Contained within the block are a number of commands.
+
+* The parent command informs DIS that a part is attached to another part.  This will allow an articulation to inherit
+  its parent's movements.
+* The publish command informs DIS that a part will publish a particular piece of information.  These include:
+ 
+ * x - The x component of the part's position.
+ * y - The y component of the part's position.
+ * z - The z component of the part's position.
+ * x_rate - The rate of change in the x component of the part's position.
+ * y_rate - The rate of change in the y component of the part's position.
+ * z_rate - The rate of change in the z component of the part's position.
+ * azimuth - The rotation about the part's z-axis.
+ * elevation - The rotation about the part's y-axis.
+ * rotation - The rotation about the part's x-axis.
+ * azimuth-rate - The rate of motion about the part's z-axis.
+ * elevation-rate - The rate of motion about the part's y-axis.
+ * rotation-rate - The rate of motion about the part's x-axis.

@@ -1,0 +1,137 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+behavior
+--------
+
+.. contents::
+   :local:
+   :depth: 4
+
+.. command:: behavior
+   :block:
+
+   .. parsed-literal::
+
+      behavior_ <type-name>
+        script_variables ... end_script_variables
+        on_init          ... end_on_init
+        on_message       ... end_on_message
+        precondition     ... end_precondition
+        on_new_execute   ... end_on_new_execute
+        on_new_fail      ... end_on_new_fail
+        execute          ... end_execute
+        <finite state machine inputs>
+        <zero or more nodes>
+      end_behavior
+
+Overview
+========
+
+A behavior (also called a behavior node or a leaf node) is one of the two basic node types used by a :command:`behavior_tree`.  A behavior is defined globally at the simulation level.  Every behavior defined in a scenario must be given a unique name.  Once a behavior is defined, any behavior tree can use it, by referencing it by name.
+
+Behavior Mode of Operation
+==========================
+
+Behavior nodes themselves can have child nodes of any type; child nodes are executed after the behavior performs its execute script.  Behavior nodes can also have a finite state machine (FSM) on them, one per behavior node.  To implement the FSM, define states with transition rules inside the behavior block.  The transition rules are defined using the :ref:`WSF scripting language <script>`.  The FSM is evaluated after the child nodes of a behavior are executed.
+
+In summary, a behavior node processes itself in this order:
+
+* The behavior node's on_init script block is run when the owning processor initializes in the simulation
+* The behavior_tree has to traverse to the node when it updates (the node's position in the tree determines if this happens)
+* The node's precondition script block is run
+* If the precondition returns false, and the node was ran last time, then:
+
+  * The node's on_new_fail script is run
+
+* If the precondition returns successful, then:
+
+  * If the node was not ran last time, it's on_new_execute script is run
+  * The node's execute script block is run (if exists)
+  * The node's children nodes are run (if exist)
+  * The node's finite state machine is run (if exists), current state evaluated and zero or one state transitions made
+
+Behavior Node Components
+========================
+
+.. command:: behavior  <type-name> ... end_behavior
+
+   The following script blocks comprised the guts of a behavior:
+
+.. command:: on_init ... end_on_init
+
+   Behaviors have an on_init script block to help them initialize any necessary member variables or perform any
+   preprocessing.
+
+.. command:: on_message ... end_on_message
+
+   Behaviors can received and process messages.  Be sure the comm is linked to the processor that the behavior is on.  See the :model:`script processor on_message section <WSF_SCRIPT_PROCESSOR>` for more information on using this feature.
+
+   ::
+
+    behavior test_node
+      on_message
+        default
+          script
+            writeln("received message ", MESSAGE.Type(), " from ", MESSAGE.Originator());
+          end_script
+      end_on_message
+    end_behavior
+
+.. command:: precondition ... end_precondition
+
+   Every behavior must have a precondition script block that returns either a true/false Boolean value or a real number. Some parent nodes will check a behavior's precondition and use its return value as a real number and some will use its return value as a Boolean number.  If a precondition returns true/false and it's used a real number, then "true" equates to 1.0 and "false" equates to 0.0.  If a precondition returns a real number and it's used as a Boolean than 0.0 equates to "false" and everything else equates to "true."  Any tree or node that owns this behavior uses the precondition to determine whether or not that behavior will execute, and subsequently how the whole tree will be traversed and processed on each update.  The node types that use real numbers are :command:`behavior_tree.priority_selector` and :command:`behavior_tree.weighted_random` connector nodes.
+
+.. command:: on_new_execute ... end_on_new_execute
+
+   If a behavior node is run and was not ran last update, then this script block is run.
+
+.. command:: on_new_fail ... end_on_new_fail
+
+   If a behavior node is not run and was ran last update, then this script block is run.
+
+.. command:: execute ... end_execute
+
+   If a behavior node is traversed to by the tree, and its precondition returns a value that the parent node uses to select it for execution, then the behavior's execute script is performed.  This script block should be significant, it is what the behavior exists for.
+
+.. command:: show_state_evaluations
+
+   Indicates that information about state evaluations should be written to standard output. This essentially shows the true or false status of the evaluation of each next_state block.
+
+.. command:: show_state_transitions
+
+   Indicates that information about state transitions should be written to standard output.
+
+.. command:: state <state-name>
+
+   Defines a state in a state machine with the name <state-name>.  Notice that states can have their own behavior tree within them; it is updated when the state is evaluated.
+
+   .. parsed-literal::
+
+    state <state-name>
+      on_entry
+         :ref:`... Script Body ... <script>`
+      end_on_entry
+      on_exit
+         :ref:`... Script Body ... <script>`
+      end_on_exit
+      next_state <next-state-name-1>
+         :ref:`... Script Body ... <script>`
+      end_next_state
+      next_state <next-state-name-n>
+         :ref:`... Script Body ... <script>`
+      end_next_state
+      :command:`behavior_tree`
+         *... :command:`Behavior Tree Commands <behavior_tree>` ...*
+      end_behavior_tree
+    end_state
+
+.. include:: _behavior.wsf_mil.txt

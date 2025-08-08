@@ -1,0 +1,152 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+console_output
+--------------
+
+.. command:: console_output ... end_console_output
+   :block:
+   
+   .. parsed-literal::
+   
+      console_output
+         file_ <file-name> ... end_file
+         
+         preset_      [ none | low | medium | high ]
+         
+         fatal_       <boolean-value>
+         error_       <boolean-value>
+         warning_     <boolean-value>
+         info_        <boolean-value>
+         debug_       <boolean-value>
+         developer_   <boolean-value>
+         type_        <string> <boolean-value>
+         
+         single_line_    <boolean-value>
+         force_flushing_ <boolean-value>
+      end_console_output
+
+Overview
+========
+
+The :command:`console_output` block allows the user to specify the content and format of the console output.
+
+The following types of messages may be displayed in the console:
+
+.. csv-table:: **Console Output Types**
+   :widths: auto
+
+   "fatal",     "Indicates that the simulation has encountered an unrecoverable error."
+   "error",     "Indicates that an error has occurred. The simulation may continue to run, but any results after this point may not be valid."
+   "warning",   "Indicates that something unexpected has occurred."
+   "info",      "General information about the simulation's state."
+   "debug",     "Any information enabled by debug flags."
+   "developer", "Information intended for developers."
+
+Additional types may be specified, but require WSF plugins written specifically to take advantage of this feature.
+
+Each of the different message types can be written via script using variations of :method:`writeln<__BUILTIN__.writeln>`.
+
+.. note::
+   These settings only take effect after the entire scenario has been loaded. Until then, the console uses the default settings.
+
+Commands
+========
+
+.. command:: file <file-name> ... end_file
+
+   Specifies a file to write output to.
+   As many different files with different settings may be specified as needed.
+   The file block may contain any of the commands from the console_output_ block, except for other file blocks.
+
+.. command:: preset [ none | low | medium | high ]
+
+   Overrides the current output types with the preset.
+   
+   * none   = (no output)
+   * low    = fatal, error, warning
+   * medium = fatal, error, warning, info
+   * high   = fatal, error, warning, info, debug
+
+.. command:: fatal <boolean-value>
+
+   Enables or disables fatal output. Fatal output is prefixed with ``***** FATAL:``.
+   
+   **Default** on
+   
+.. command:: error <boolean-value>
+
+   Enables or disables error output. Error output is prefixed with ``***** ERROR:``.
+   
+   **Default** on
+   
+.. command:: warning <boolean-value>
+
+   Enables or disables warning output. Warning output is prefixed with ``***** WARNING:``.
+   
+   **Default** on
+
+.. command:: info <boolean-value>
+
+   Enables or disables info output. Info output has no prefix.
+   
+   **Default** on
+
+.. command:: debug <boolean-value>
+
+   Enables or disables debug output. Debug output has no prefix.
+   
+   **Default** on
+
+   .. note:: In order for script debug messages to be output, :command:`_.script_commands.script_debug_writes` must be enabled.
+
+.. command:: developer <boolean-value>
+
+   Enables or disables developer output. Developer output is prefixed with ``***** DEVELOPER:``.
+   
+   **Default** off
+
+.. command:: type <string> <boolean-value>
+
+   Enables or disables the output of a custom type. Custom type output has no prefix, unless it is paired with a type that has one.
+   In general, this command is only useful if a WSF plugin is written specifically to take advantage of it.
+   
+   **Default** off
+
+.. command:: single_line <boolean-value>
+
+   Sets the output to single-line or multi-line format. In multi-line format, each piece of information is displayed on a separate line. Nested information is indented from the previous line. Example::
+
+      ***** WARNING: Failed FireSalvo for track.
+          T = 700
+          Platform: sam-1
+          Weapon: sam
+          Track Id: sam-1.2
+
+   Single-line format is intended to be as compact as possible. All related information is shown on the same line and separated by punctuation. Example::
+
+   ***** WARNING: Failed FireSalvo for track. T = 700; Platform: sam-1; Weapon: sam; Track Id: sam-1.2;
+
+   **Default** off (multi-line)
+
+.. command:: force_flushing <boolean-value>
+
+   Enables or disables automatic flushing of output to the console after every log entry.
+
+   Whenever logging output is occurring at a very fast pace, the I/O flushing at the end of every log entry can cause a significant bottleneck to overall performance of the application.
+
+   Regardless of the value of this field, all fatal, error, and warning messages will always be flushed immediately.
+
+   **Default** on
+
+   .. note::
+
+      If forced flushing is turned off, and the executable crashes, it's possible for some logged entries to be lost and not appear in the console/file.

@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF_ORBIT_DETERMINATION_FILTER &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF_ORBITAL_CONJUNCTION_PROCESSOR" href="wsf_orbital_conjunction_processor.html" />
+    <link rel="prev" title="WSF_OPTICAL_SIGNATURE" href="wsf_optical_signature.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_orbital_conjunction_processor.html" title="WSF_ORBITAL_CONJUNCTION_PROCESSOR"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_optical_signature.html" title="WSF_OPTICAL_SIGNATURE"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-orbit-determination-filter">
+<h1>WSF_ORBIT_DETERMINATION_FILTER<a class="headerlink" href="#wsf-orbit-determination-filter" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER">
+filter WSF_ORBIT_DETERMINATION_FILTER<a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<pre class="literal-block">filter &lt;name&gt; <a class="reference internal" href="#WSF_ORBIT_DETERMINATION_FILTER" title="WSF_ORBIT_DETERMINATION_FILTER"><span class="xref wsf wsf-model">WSF_ORBIT_DETERMINATION_FILTER</span></a>
+   ... <a class="reference internal" href="#commands">Commands</a> ...
+end_filter</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of an Unscented Kalman Filter (UKF) for orbital determination and tracking.
+Like the Kalman Filter, the WSF_ORBIT_DETERMINATION_FILTER accepts input locations (from range, bearing, elevation, or
+location measurements), and it produces an estimate of the tracked target’s location and velocity, as well as a state
+and covariance.
+Unlike the WSF_KALMAN_FILTER, the WSF_ORBIT_DETERMINATION_FILTER filter produces state
+and covariance estimates appropriate for orbital motion.  It provides these estimates differently depending on whether the filter is stabilized (typically, after three measurements have been received).  Before stabilization, the filter relies on either a linear extrapolation (used when explicitly added in a <a class="reference internal" href="filter.html#filter" title="filter"><span class="xref wsf wsf-command">filter</span></a> definition), or an explicit orbital propagation of the filtered state (used internally in <a class="reference internal" href="orbit_determination_fusion.html"><span class="doc">Orbit Determination Fusion</span></a>).  Once the filter stabilizes, state and covariance predictions are computed through a nonlinear (unscented) transform using orbital propagators.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This filter is used by the <a class="reference internal" href="orbit_determination_fusion.html"><span class="doc">orbit determination</span></a> track fusion method.  Do not combine use of this filter in a <a class="reference internal" href="track_manager.html#track_manager" title="track_manager"><span class="xref wsf wsf-command">track_manager</span></a> definition with the <a class="reference internal" href="orbit_determination_fusion.html"><span class="doc">orbit determination</span></a> fusion method.</p>
+</div>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.process_noise_sigmas_XYZ">
+<span id="process_noise_sigmas_XYZ"></span>process_noise_sigmas_XYZ<em> &lt;X-value&gt;</em><em> &lt;Y-value&gt;</em><em> &lt;Z-value&gt;</em><a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.process_noise_sigmas_XYZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the filter’s noise standard deviation for the three directions.  The values correspond with accelerations in the
+<a class="reference internal" href="coordinate_systems.html#coordinate-systems"><span class="std std-ref">entity coordinate system (ECS)</span></a> of the tracked platform.</p>
+<p>Default:  0 0 0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.propagator">
+<span id="propagator"></span>propagator<em> &lt;propagator-type&gt;</em> propagator-commands … end_propagator<a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.propagator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the <a class="reference internal" href="propagator.html"><span class="doc">propagator</span></a> type that will be used to track the target.</p>
+<p>Default: The tracked target’s propagator type, if a truth target type is available from the track; otherwise, <a class="reference internal" href="wsf_keplerian_propagator.html#WSF_KEPLERIAN_PROPAGATOR" title="WSF_KEPLERIAN_PROPAGATOR"><span class="xref wsf wsf-model">WSF_KEPLERIAN_PROPAGATOR</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The initial state of the propagator will be provided using provided track updates; any provided initial state configuration (initial orbital elements or orbital state) of the propagator will be ignored.</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.range_measurement_sigma">
+<span id="range_measurement_sigma"></span>range_measurement_sigma<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.range_measurement_sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the standard deviation that is applied to the measurement’s range prior to filtering.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This input is usually not needed.  It is only used if there is no range error on the associated
+track.</p>
+</div>
+<p>Default:  0 m</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.bearing_measurement_sigma">
+<span id="bearing_measurement_sigma"></span>bearing_measurement_sigma<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.bearing_measurement_sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the standard deviation that is applied to the measurement’s bearing prior to filtering.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>his input is usually not needed.  It is only used if there is no bearing error on the associated
+track.</p>
+</div>
+<p>Default:  0 deg</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.elevation_measurement_sigma">
+<span id="elevation_measurement_sigma"></span>elevation_measurement_sigma<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.elevation_measurement_sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the standard deviation that is applied to the measurement’s elevation prior to filtering.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This input is usually not needed.  It is only used if there is no elevation error on the associated
+track.</p>
+</div>
+<p>Default:  0 deg</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_ORBIT_DETERMINATION_FILTER.debug">
+<span id="debug"></span>debug<a class="headerlink" href="#WSF_ORBIT_DETERMINATION_FILTER.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified, writes filtered measurements data and filter performance data to the file <strong>KFILT_DEBUG.out</strong>.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_orbit_determination_filter.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_orbital_conjunction_processor.html" title="WSF_ORBITAL_CONJUNCTION_PROCESSOR"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_optical_signature.html" title="WSF_OPTICAL_SIGNATURE"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

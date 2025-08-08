@@ -1,0 +1,66 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_NUMBER_OF_GAPS_MOE
+----------------------
+
+.. model:: moe WSF_NUMBER_OF_GAPS_MOE
+
+   .. parsed-literal::
+
+      :command:`moe` <name> :model:`WSF_NUMBER_OF_GAPS_MOE`
+         subtype_ ...
+         output_ ...
+      end_moe
+
+Overview
+========
+
+:model:`WSF_NUMBER_OF_GAPS_MOE` computes quantities related to the number of coverage
+gaps experienced by a grid point. This measure operates on gaps, which are
+intervals during which the grid point has no access to any of the free
+assets.
+
+Computation Subtype
+===================
+
+.. command:: subtype <sub-type> [[<minimum-duration> <maximum-duration>] <sample-span>]
+
+   Specify the computation subtype. 
+
+   :model:`WSF_NUMBER_OF_GAPS_MOE` has the following subtype that takes no parameter:
+
+   * **total** - The measured value will be the total number gaps in the entire coverage interval for the grid point in question.
+   
+   :model:`WSF_NUMBER_OF_GAPS_MOE` has three subtypes that take only the <sample-span> parameter:
+   
+   * **minimum_per** - The measured value will be the minimum number of gaps within a sample for the grid point in question. If the coverage interval fits entirely within one sample, then this is the same as the total number of gaps.
+   * **maximum_per** - The measured value will be the maximum number of gaps within a sample for the grid point in question. If the coverage interval fits entirely within one sample, then this is the same as the total number of gaps.
+   * **mean_per** - The measured value will be :math:`\frac{the total number of gaps}{coverage interval duration / sample span}` for the grid point in question.
+   
+   The <sample-span> parameter defines the duration of the samples taken for
+   these three subtypes. 
+
+   .. note:: There are subtle differences in how these subtypes actually use this parameter. **minimum_per** and **maximum_per** tie this duration to midnight, UTC, such that if <sample-span> had a value of 1 day, each sample would occur from midnight to consecutive midnight, UTC. If <sample-span> had a value of 6 hours, the samples would occur from midnight to 0600, 0600 to 1200, 1200 to 1800, or 1800 to midnight. One consequence of this is that, for these two subtypes, the only valid values for <sample-span> are those that can be expressed as 1/n days, where n is a positive integer. This is so that samples always remain aligned with each calendar day (midnight to consecutive midnight, UTC). The smallest acceptable value is 1 second. **mean_per**, however, does not tie <sample-span> to the callendar, and as a result, will accept any positive duration as a value. For instance, suppose the value of <sample-span> is 1 day. If the coverage interval starts at 1200, Jan 1, and lasts until 1200, Jan 2, the **minimum_per** and **maximum_per** subtypes would account for 2 days (Jan 1 and Jan 2), but the **mean_per** subtype would only account for one day, because the interval was actually only 24 hours long. 
+
+   :model:`WSF_NUMBER_OF_GAPS_MOE` supports the following subtype that takes two
+   input parameters specifying the minimum and maximum duration of gaps that should
+   be counted, respectively:
+
+   * **in_span** - The measured value will be the total number gaps in the entire coverage interval with a duration of at least <minimum-duration> and at most <maximum-duration> for the grid point in question.
+   
+   :model:`WSF_NUMBER_OF_GAPS_MOE` supports the following subtype that takes three
+   input parameters specifying, in this order, the minimum and maximum duration of gaps that should
+   be counted, followed by the sample span as described above:
+   
+   * **in_span_per** - The measured value will be :math:`\frac{the total number of gaps}{coverage interval duration / sample span}` where gaps are only counted if they have a duration of at least <minimum-duration> and at most <maximum-duration> for the grid point in question.
+
+.. include:: common_measure_commands.txt

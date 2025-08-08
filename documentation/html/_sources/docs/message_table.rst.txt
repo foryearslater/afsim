@@ -1,0 +1,99 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+message_table
+-------------
+
+.. command:: message_table ... end_message_table
+   :block:
+
+   .. parsed-literal::
+
+    message_table
+       comm_type <comm-type-1>
+          # ... `Message Size Commands`_ for <comm-type-1>, formatted as follows:
+
+          type ...
+             subtype ...
+             subtype ...
+
+          type ...
+             subtype ...
+             subtype ...
+
+          default ...
+
+       comm_type <comm-type-2>
+          ... `Message Size Commands`_ for <comm-type-2>
+
+       comm_type <comm-type-n>
+          ... `Message Size Commands`_ for <comm-type-n>
+
+       default_comm_type
+          ... `Message Size Commands`_ for other comm types
+
+    end_message_table
+
+Overview
+========
+
+The **message_table** block is used to assign a size to a message where a message size was not defined at the time the
+message was initially transmitted (One way of providing this is to use the :method:`WsfMessage.SetSizeInBits` or
+:method:`WsfMessage.SetSizeInBytes` script methods). If a message size was not defined, the :command:`message_table` will be
+consulted using the following algorithm. The first step for which a value is defined will be used:
+The process of determining the message size will use the first of the following which results in a defined size:
+
+* Use the entry from the matching 'comm_type' block with a matching 'type' and 'subtype'.
+* Use the entry from the matching 'comm_type' block with a matching 'type'
+* Use the 'default' entry from the matching 'comm_type' block.
+* Use the entry from the 'default_comm_type' block with a matching 'type' and 'subtype'.
+* Use the entry from the 'default_comm_type' block with a matching 'type'.
+* Use the 'default' entry from the 'default_comm_type' block.
+
+.. note::
+   The message size is only assigned when first transmitted. It will not be changed if it is subsequently
+   relayed.
+
+Device Commands
+===============
+
+.. command:: comm_type <comm-type>
+
+   Introduces a block of type_, sub_type and default_ commands that define the message sizes and
+   optional priorities for messages that originate from :command:`comm` devices of the specified *<comm-type>*.
+
+.. command:: default_comm_type
+
+   Introduces a block of type_, sub_type and default_ commands that define the message sizes and
+   optional priorities for messages that originate from :command:`comm` devices that do not have a corresponding comm_type_
+   entry.
+
+Message Size Commands
+=====================
+
+.. command:: type <message-type> <data-size-value> [priority <integer-priority-value>]
+
+   Specifies the size and optional priority for a message of the specified type.
+
+   .. note::
+      The **type** command can be repeated as necessary.
+
+.. command:: default <message-type> <data-size-value> [priority <integer-priority-value>]
+
+   Specifies the default size and optional priority for messages that did not have an applicable **type** command.
+
+.. command:: subtype <message-sub-type> <data-size-value> [priority <integer-priority-value>]
+
+   Specifies the size and optional priority for a message of the specified sub-type, and the most recently specified type
+   (or default).
+
+   .. note::
+      This command may be repeated as necessary.

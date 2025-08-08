@@ -1,0 +1,86 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _ScriptVariables:
+
+Script Variables
+----------------
+
+script_variables - Define variables that can be shared between scripts
+======================================================================
+
+The script_variables command allows users to declare a set of variables that are accessible to scripts within a given
+context.  For example, if the script_variables command is used inside the platform command, then all scripts defined
+within that platform have access to the variables that were are defined. In addition, child contexts such as script
+processors, task managers, state machines can access these variables by using the 'extern' keyword. The syntax to
+define variables is exactly the same as used inside of the script command because it uses the same compiler.
+
+Command Template
+^^^^^^^^^^^^^^^^
+
+::
+
+ script_variables
+    variable declaration or variable assignment 
+ end_script_variables
+
+Examples
+^^^^^^^^
+
+Examples of how variables can be defined in the script_variables command:
+
+::
+
+ platform_type MY_PLATFORM_TYPE WSF_PLATFORM
+    script_variables
+
+       int mMyInt = 9;
+
+       int mMyDouble = 1.23456;
+
+       Array<string> mMyArray = Array<string>();
+       mMyArray[0] = 'hello';
+       mMyArray[1] = 'world';
+
+       mMyDouble = -mMyDouble;
+
+       mMyInt = mMyDouble + 100;
+
+    end_script_variables
+
+    on_initialize
+       writeln("mMyInt=", mMyInt);    // The on_initialize script can access the mMyInt variable
+                                      // that was defined in current context (i.e. the platform).
+    end_on_initialize
+
+    processor script-processor-1 WSF_SCRIPT_PROCESSOR
+       on_initialize
+          extern int mMyInt;          // To access the mMyInt variable defined by the parent platform the
+                                      // script processor must first extern it.
+          writeln("mMyInt=", mMyInt);
+       end_on_initialize
+    end_processor
+
+    processor script-processor-2 WSF_SCRIPT_PROCESSOR
+       script_variables
+          int mMyInt = 12;            // If a child context (i.e. the script processor) defines a script variable
+                                      // with the same name as a variable in the parent's context (i.e. the platform)
+                                      // it creates its own copy that is independent of the parents.
+       end_script_variables
+
+       on_initialize
+          writeln("mMyInt=", mMyInt); // This will print 12.
+       end_on_initialize
+    end_processor
+ end_platform
+
+As shown, one can declare and assign variables using the same syntax as in a script.  Function and script calls, as
+well as branching (e.g., if, else) and looping logic (e.g., for, while) are prohibited.

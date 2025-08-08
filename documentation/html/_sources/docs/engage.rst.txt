@@ -1,0 +1,520 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _engage:
+
+engage
+======
+
+.. contents::
+   :local:
+
+Overview
+--------
+
+ENGAGE is a WSF application that is used to evaluate the effectiveness of surface weapon (and conversely, the vulnerability of the target).
+
+Command Line
+------------
+
+engage file <sub>1</sub> [ file<sub>2</sub> ... file<sub>n</sub> ]
+
+Where the arguments are the names of files that contain:
+
+ * Run and output_rate input block(s) that define the configurations and outputs.
+ * Definitions for weapon, target, launcher, and optional sensor(s) required for the function to be performed.
+
+
+.. _engage.ScriptMethods:
+
+Script Methods
+--------------
+
+WsfSimulation Methods
+*********************
+
+Typical usage is to sort the different runs along with target, site and monte-carlo repetition numbers when writing out to screen or to file, (e.g. observer output files).
+
+.. parsed-literal::
+
+    write_ln("Run Number: ", WsfSimulation.RunNumber(),
+             " Target Number: ", WsfSimulation.TargetNumber(),
+             " SiteNumber: ", WsfSimulation.SiteNumber(),
+             " RepNumber: ", WsfSimulation.Repetition());
+
+.. method:: int RunNumber()
+
+   Returns the current run number.
+
+   .. parsed-literal::
+
+     WsfSimulation.RunNumber()
+
+.. method:: int TargetNumber()
+
+   Returns the current target number for the run.
+
+   .. parsed-literal::
+
+     WsfSimulation.TargetNumber()
+
+.. method:: int SiteNumber()
+
+   Returns the current site number for the run.
+
+   .. parsed-literal::
+
+     WsfSimulation.SiteNumber()
+
+.. method:: int RepetitionNumber()
+
+   Returns the current mote-carlo repetition number for the run.
+
+   .. parsed-literal::
+
+     WsfSimulation.RepetitionNumber()
+
+.. _engage.Commands:
+
+Commands
+--------
+
+.. command:: thread_count <integer>
+
+   Specifies the number of threads in the thread pools to be used to complete the SWEET tasks in parallel.
+
+.. command:: run ... end_run
+   :block:
+
+   .. parsed-literal::
+
+    run
+       ... :ref:`engage.Run_Commands` ...
+    end_run
+
+   .. note:: Multiple run blocks may be input into a single executable for serial processing of each run block.
+
+.. block:: engage
+
+.. command:: output_rate <rate-table-name> ... end_output_rate
+   :block:
+
+   .. parsed-literal::
+
+    output_rate <rate-table-name>
+       ... :ref:`engage.Output_Rate_Commands` ...
+    end_output_rate
+
+   Specifies an output_rate configuration by name (*<rate-name>*) to be used with the output block of the run input block command. Multiples blocks with different names may be defined.
+
+   .. note:: ''default'' as the <rate-name> will setup a default rate table used by all output blocks not specifying and output_rate to be used explicitly.
+
+.. block:: engage
+
+.. command:: output_template <template-name> ... end_output_template
+   :block:
+
+   .. parsed-literal::
+
+       output_template <template-name>
+          ... :ref:`engage.Output_Template_Commands` ...
+       end_output_template
+
+   Specifies an output_template configuration by name (*<template-name>*) to be used with the output block of the run input block command. Multiples blocks with different names may be defined.
+
+.. _engage.Run_Commands:
+
+Run Commands
+------------
+
+.. command:: center_location <latitude-value> <longitude-value>
+
+   Specifies the center location of this run.
+
+   **Default** 0.0n 0.0e
+
+.. command:: event_output_file_base_name <string>
+
+   This value, along with the suffix '.evt', forms the filename to which the results will be written. If a values is not specified then the event output is not written.
+
+   .. note:: The :command:`event_output` block will also need be input for this functionality to output properly.
+
+   **Default** not specified
+
+.. command:: perform_flyouts <boolean-value>
+
+   Specifies if flyouts should be performed.
+
+   **Default** true
+
+.. command:: record_file_base_name <string>
+
+   This value, along with the suffix '.rep', forms the filename to which the results will be written. If a values is not specified then the record file is not written.
+
+   **Default** not specified
+
+.. command:: repetition_count <integer>
+
+   Specifies the number of monte-carlo repetitions to run for this configuration.
+
+   **Default** 1
+
+.. _engage.Site_Configuration_Commands:
+
+Site Configuration Commands
+***************************
+
+.. command:: launcher_type <platform-type-name>
+
+   Specifies the launcher platform type name for the run.
+
+   **Default** LAUNCHER_TYPE
+
+.. command:: tracker_type <platform-type-name>
+
+   Specifies the tracker platform type name for the run.
+
+   **Default** TRACKER_TYPE
+
+.. command:: sites ... end_sites
+   :block:
+
+   Specifies a list of site using the following commands multiple times:
+
+   .. command:: xyz <length-value> <length-value> <length-value>
+
+      Specifies the site's x, y, z location.
+
+   .. command:: heading <angles-value>
+
+      Specifies the site's heading.
+
+      **Default** 90.0 degrees
+
+   .. command:: speed <speed-value>
+
+      Specifies the site's speed in the direction of the heading.
+
+      **Default** 0.0 m/s
+
+.. block:: engage
+
+.. command:: site_grid ... end_site_grid
+   :block:
+
+   Specifies a site grid configuration using the following commands:
+
+   .. command:: down_range from <length-value> to <length-value> by <length-value>
+
+      Specifies the site grid's downrange start, end and step respectively.
+
+   .. command:: cross_range from <length-value> to <length-value> by <length-value>
+
+      Specifies the site grid's crossrange start, end and step respectively.
+
+   .. command:: target_speed <speed-value>
+
+      Specifies the target's speed.
+
+   .. command:: target_altitude <length-value>
+
+      Specifies the target's altitude.
+
+.. block:: engage
+
+.. _engage.Target_Configuration_Commands:
+
+Target Configuration Commands
+*****************************
+
+.. command:: target_type <platform-type-name>
+
+   Specifies the target platform type name for the run.
+
+   **Default** TARGET_TYPE
+
+.. command:: use_target_path
+
+   Specifies to use the targets defined flight path.
+
+   **Default** Use default flight characteristics
+
+.. command:: target_grid ... end_target_grid
+   :block:
+
+   Specifies a target grid configuration using the following commands:
+
+   .. command:: down_range from <length-value> to <length-value> by <length-value>
+
+      Specifies the target grid's downrange start, end and step respectively.
+
+   .. command:: cross_range from <length-value> to <length-value> by <length-value>
+
+      Specifies the target grid's crossrange start, end and step respectively.
+
+   .. command:: altitude <length-value>
+
+      Specifies the target's altitude.
+
+   .. command:: speed <speed-value>
+
+      Specifies the target's speed.
+
+.. block:: engage
+
+.. command:: simple_path ... end_simple_path
+   :block:
+
+   Specifies a target simple path configuration using the following commands:
+
+   .. command:: x <length-value>
+
+      Specifies the target path start x position.
+
+      **Default** 10000 m
+
+   .. command:: y <length-value>
+
+      Specifies the target path start y position.
+
+      **Default** 0 m
+
+   .. command:: z <length-value>
+
+      Specifies the target path start z position.
+
+      **Default** 5000 m
+
+   .. command:: heading <length-value>
+
+      Specifies the target path heading.
+
+      **Default** 270 degrees
+
+   .. command:: speed <speed-value>
+
+      Specifies the target path speed.
+
+      **Default** 134 m/s
+
+.. block:: engage
+
+.. command:: flight_path ... end_flight_path
+   :block:
+
+   Specifies a flight path using the following input format:
+
+   # (Time) (X, Y, Z Position) (X, Y, Z Velocity) (Pitch) (Roll) (Yaw) <time-value>
+
+   <(x,y,z)> <length-unit> <(Vx, Vy, Vz)> <speed-unit> <angle-value> <angle-value> <angle-value>
+
+   .. parsed-literal::
+
+    flight_path
+       # (Time) (X Y Z Position) (X Y Z Velocity) (Pitch) (Roll) (Yaw)
+        0.0 sec    0.0    50.0 100.0 m 200.0   0.0 0.0 m/sec 0.0 0.0 90.0 deg
+       10.0 sec 2000.0    50.0 100.0 m 200.0   0.0 0.0 m/sec 0.0 0.0 90.0 deg
+       10.1 sec 2020.0    70.0 100.0 m   0.0 200.0 0.0 m/sec 0.0 0.0  0.0 deg
+      110.1 sec 2020.0 20070.0 100.0 m   0.0 200.0 0.0 m/sec 0.0 0.0  0.0 deg
+    end_flight_path
+
+.. block:: engage
+
+.. command:: flight_route ... end_flight_route
+   :block:
+
+   Specifies a flight route using the following input format:
+
+   (X Y Z Position) (Speed)
+
+   <(x,y,z)> <length-unit> <speed-value>
+
+   .. parsed-literal::
+
+    flight_route
+       # (X, Y, Z Position) (Speed)
+       0.0        0.0 100.0 m 200.0 m/sec
+       2000.0     0.0 100.0 m 200.0 m/sec
+       2020.0    20.0 100.0 m 200.0 m/sec
+       2020.0 20020.0 100.0 m 200.0 m/sec
+    end_flight_route
+
+.. note:: The use of use_target_path_, target_grid_, simple_path_, flight_path_ and flight_route_ are mutually exclusive and the last one in the input processing stack is used.
+
+.. _engage.Output_Commands:
+
+Output Commands
+***************
+
+.. block:: engage
+
+.. command:: output ... end_output
+   :block:
+
+   Specifies the output data that is to be output. The output block can be defined multiple times within the run input block to tailor output to user needs. The following commands are available:
+
+   .. command:: file <file-name>
+
+      Specifies the output filename to output the data of the run to.
+
+   .. command:: phase [<all | acquiring | tracking | flying>]
+
+      Specifies the phase of the run in which to output data per the given phases above.
+
+   .. command:: event_output <boolean-value>
+
+      Specifies to output event data.
+
+   .. command:: summary_output <boolean-value>
+
+      Specifies to output run summary data.
+
+   .. command:: rate_table_name <rate-table-name>
+
+      Specifies the rate table to use by name, as specified by output_rate_ command.
+
+   .. command:: items .. end_items
+
+      Specifies the items in which to be output and format of those items per the following format:
+
+      variable <variable-name> units <variable-units> format <formatting-value>
+
+      <variable-name>
+         Specifies the variable name to be output. Valid values are specified by category are:
+
+         * time, weapon_flight_time
+         * target_x, target_y, target_z
+         * target_vx, target_vy, target_vz
+         * target_ax, target_ay, target_az
+         * weapon_x, weapon_y, weapon_z
+         * weapon_vx, weapon_vy, weapon_vz
+         * weapon_ax, weapon_ay, weapon_az
+         * weapon_speed, weapon_mach, weapon_gee_force
+         * weapon_to_target_range
+
+      <variable-units>
+         Specifies the units for the <variable-name> entered to be output. Valid units are checked based on variable name.
+
+      <formatting-value>
+         Specifies the formatting in the string syntax following the ANSI C standard.
+
+      .. parsed-literal::
+
+       items
+          variable weapon_flight_time format "%.2f"
+          variable target_x units km format " %7.3f"
+          variable target_y units km format " %7.3f"
+          variable target_z units m format " %7.1f"
+          variable weapon_x units km format " %7.3f"
+          variable weapon_y units km format " %7.3f"
+          variable weapon_z units m format " %7.1f"
+          variable weapon_to_target_range units m format " %7.1f"
+       end_items
+
+   .. command:: events .. end_events
+      :block:
+
+      Specifies the events that are to be enable or disables per the following commands:
+
+      .. parsed-literal::
+       events
+          disable_ [ <event-name> | all ]
+          enable_ [ <event-name> | all ]
+       end_events
+
+      .. command:: disable [ <event-name> | all ]
+      .. command:: enable [ <event-name> | all ]
+
+      Specifies the names of the events to be included or excluded in the event log.  These commands are typically specified multiple times to select the events of interest.  By default all events start out as being disabled.  The commands are processed in order of appearance with each successive command selecting or deselecting events as appropriate.
+
+      .. note:: Be careful about using **enable all**.  This can generate a lot of output and the addition of new events in the future could result in enormous amounts of output.
+
+
+      The valid values for *event-name* are as follows:
+
+      .. toctree::
+         :maxdepth: 1
+         :glob:
+
+         engage_event/*
+
+.. block:: engage
+
+.. _engage.Output_Rate_Commands:
+
+Output Rate Commands
+--------------------
+
+.. command:: time <time>
+
+   Specifies the time at which the output will be written.
+
+   **Default** 0.0 sec
+
+.. command:: period <time>
+
+   Specifies the period in which to output the data for the specified output.
+
+   **Default** 0.5 secs
+
+.. _engage.Output_Template_Commands:
+
+Output Template Commands
+------------------------
+
+**TBD**
+
+.. _engage.Pk_Table_Generation_Commands:
+
+Pk Table Generation Commands
+----------------------------
+
+.. command:: enable_Pk_table_generation <boolean-value>
+
+   Enables the generation of Pk tables for the associated run. Note that Pk table generation is only viable with a site grid, and will effectively be disabled for a target grid regardless of this value.
+
+   **Default** false
+
+.. command:: Pk_table_target_type <string>
+
+   Sets the name of the target when generating the Pk table directory hierarchy and table headers.
+
+   **Default** "DEFAULT"
+
+.. command:: Pk_table_site_type <string>
+
+   Sets the name of the site when generating the Pk table directory hierarchy and table headers.
+
+   **Default** "DEFAULT
+
+.. command:: Pk_table_output_directory <string>
+
+   The path location to output the generated Pk table data hierarchy
+
+   **Default** "."
+
+.. command:: Pk_output_length_units <length-value>
+
+   Converts all output values to use this unit for Pk table generation and directory hierarchy.
+
+   **Default** "m"
+
+.. command:: Pk_output_speed_units <speed-value>
+
+   Converts all output speed values to use this unit for Pk table generation and directory hierarchy.
+
+   **Default** "m/s"
+
+.. command:: enable_Pk_table_periodic_flush <boolean-value>
+
+   Instead of writing all Pk table data when generation is complete, data may be output when all data points associated with an target altitude has completed processing. This allows the possibility of retaining partial Pk data during very long generation routines in the case of an aborted or interrupted process. This will have no effect on the output process unless multiple altitude values are utilized.
+
+    **Default** false

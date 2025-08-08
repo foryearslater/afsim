@@ -1,0 +1,115 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_STRAIGHT_LINE_MOVER
+-----------------------
+
+.. model:: mover WSF_STRAIGHT_LINE_MOVER
+
+    .. parsed-literal::
+
+     mover :model:`WSF_STRAIGHT_LINE_MOVER`
+
+        :ref:`Platform_Part_Commands` ...
+
+        // `Mover Commands`_
+
+        update_interval_ ...
+        update_time_tolerance_ ...
+
+        // `Straight Line Mover Commands`_
+
+        average_speed_ ...
+        tof_and_speed_ ...
+        maximum_lateral_acceleration_ ...
+        guidance_mode_ ...
+        guide_to_truth_ ...
+
+     end_mover
+
+Overview
+========
+
+:model:`WSF_STRAIGHT_LINE_MOVER` implements a mover for a :model:`WSF_EXPLICIT_WEAPON` that flies in a (more or less) straight
+line from the launch point to intercept a target track.  The user is relieved of the need to specify weapon mass
+properties, propulsion, or aerodynamics tables, but with a resulting loss of fidelity.  The target track must be
+provided by some WsfSensor or WsfProcessor type that populates the Current Target on the WsfPlatform, as obtained from
+its WsfTrackManager.  This mover will implement either a constant average speed, or a speed table which is linearly
+interpolated versus time of flight for the weapon.    Optionally, the user may specify a maximum lateral g limit which
+will limit the magnitude of any initial or final maneuvering acceleration.
+
+.. note::
+
+    No provision is made for flight termination in the event of either a target hit or miss, or for lethality
+    determination.  The firing :model:`WSF_EXPLICIT_WEAPON` will normally supply the :command:`platform.weapon_effects` to be used,
+    and a processor of type :model:`WSF_WEAPON_FUSE` (or derived from it) will generally terminate the flight and invoke the
+    weapon effect.
+
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+   will be called only when it is necessary to determine the position of the containing platform.
+
+   Default: 0 seconds unless overridden by the specific mover implementation.
+
+.. command:: update_time_tolerance <time-value>
+
+   When a position update is requested by the simulation, if the time since the previous update is less than or equal to
+   this value then the mover will ignore the update.
+
+   Default: Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is
+   appropriate for the implementation.
+
+   .. note::
+
+         A mover implementation may choose to ignore this command.
+
+Straight Line Mover Commands
+============================
+
+.. command:: average_speed <speed value>
+
+   Specifies the weapon's average speed that will be used for the duration of flight.
+
+.. command:: tof_and_speed  ... end_tof_and_speed
+
+   Specifies the weapon's speed versus time profile that will be used.  The time values must be in increasing numerical
+   order. ::
+
+      tof_and_speed
+         0.0 sec   1500 kts
+         10.0 sec  1200 kts
+         20.0 sec  1000 kts
+      end_tof_and_speed
+
+.. command:: maximum_lateral_acceleration <acceleration value>
+
+    Specifies the weapon's maximum lateral acceleration that will be used for weapon maneuvers.
+
+.. command:: guidance_mode  [ lead_pursuit | pure_pursuit ]
+
+    Specifies the weapon's guidance mode.  Using **lead_pursuit**, the velocity vector will always be aimed toward the
+    current target track if stationary, and if the track is moving, will be extrapolated as necessary for a predicted time
+    to intercept, mimicking proportional navigation guidance.  Using **pure_pursuit**, the velocity vector will always be
+    aimed toward the current target track.
+
+    Default: pure_pursuit
+
+.. command:: guide_to_truth <boolean-value>
+
+    Specifies if the perceived target location (as defined by the current target track) or the truth target location should
+    be used in the guidance computations.
+
+    Default: false
+

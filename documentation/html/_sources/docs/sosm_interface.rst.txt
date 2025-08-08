@@ -1,0 +1,311 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+sosm_interface
+--------------
+
+.. command:: sosm_interface ... end_sosm_interface
+   :block:
+
+   .. parsed-literal::
+
+    sosm_interface
+
+       show_status_ *<boolean-value>*
+
+       # Cache control commands
+
+       cache_directory_ *<directory-name>*
+       ignore_cache_files_ *<boolean-value>*
+       write_cache_files_ *<boolean-value>*
+
+       # Load SOSM definitions and associate with WSF types
+
+       load_atmosphere_ *<sosm-atmosphere-type>* from *<file-name>*
+       load_sensor_ *<sosm-sensor-type>* from *<file-name>*
+       load_target_ *<sosm-target-type>* from *<file-name>*
+       map_sensor_type_ *<wsf-sensor-type>* *<sosm-sensor-type>*
+       map_target_type_ *<wsf-platform-type>* *<sosm-target-type>*
+       default_atmosphere_ *<type-name>*
+
+       # Use of fast detection mode
+
+       fast_detection_mode_ *<boolean-value>*
+
+       # Debugging commands
+
+       debug_level_ *<integer>*
+       spectral_print_format_ ...
+       show_iripp_data_
+
+    end_sosm_interface
+
+Overview
+========
+
+The commands in sosm_interface control the interface between WSF and the Spectral Optical Sensing Model (SOSM). SOSM is a reasonably high-fidelity model suitable for analysis of infrared systems in a mission-level simulation environment. SOSM uses a spectral representation of sensors, targets and the atmosphere, allowing it to more realistically model the interactions between sensor and target.
+
+The characteristics of the sensors, targets and atmosphere are maintained in separate files specific to SOSM. sosm_interface contains commands to load the definitions into SOSM and control the mapping of WSF sensor and target types to associated SOSM types. See :ref:`SOSM_Overview` for more information.
+
+.. _sosm_interface.WSF_SOSM_SENSOR:
+
+WSF_SOSM_SENSOR
+===============
+
+   Defining a sensor to use SOSM :ref:`WSF_SOSM_SENSOR <sosm_interface.commands>`:
+
+   .. parsed-literal::
+
+    sensor <sensor-type> WSF_SOSM_SENSOR
+       ... :ref:`Platform_Part_Commands` ...
+       ... :ref:`Articulated_Part_Commands` ...
+       :command:`sensor` Commands ...
+       mode <mode-name>
+          :command:`sensor_mode` commands ...
+          ... :ref:`Antenna_Commands` ...
+          sosm_sensor_type_ <sosm-sensor-type>
+
+          ranging_time_ ...
+          ranging_time_track_quality_ ...
+       end_mode
+    end_sensor
+
+.. _sosm_interface.commands:
+
+sosm_interface Commands
+=======================
+
+.. command:: show_status <boolean-value>
+
+   Indicates if progress messages should be shown while loading files.
+
+   **Default** false
+
+.. command:: cache_directory <directory-name>
+
+   Specifies the name of the directory to which cached binary files (produced as the result of enabling
+   write_cache_files_) are to be written.
+
+   **Default** ./sosm_cache
+
+.. command:: ignore_cache_files <boolean-value>
+
+   Indicates if the binary cache files created as a result of the write_cache_files_ or fast_detection_mode_
+   commands should be used. If true, any cached files will be ignored and all data will be read from the original text
+   files.
+
+   **Default** false (cached binary files will be used if present)
+
+   .. note::
+      If 'ignore_cache_files true' is specified, 'write_cache_files false' will be assumed unless
+      subsequently set to true. If you want to suppress reading the existing cache files and create new ones, you must first
+      specify 'ignore_cache_files true' followed by 'write_cache_files true'.
+
+   .. note::
+      If the model determines that the text file is more recent than the cached binary file, it will ignore
+      the cached binary file and use the corresponding text file.
+
+
+.. command:: write_cache_files <boolean-value>
+
+   Indicates if binary files for tables read from text files or generated as a result of enabling
+   fast_detection_mode_ should be written to the cache directory. Subsequent runs that use the same data will read
+   the data from the cache directory instead of reading the original text data or regenerating the fast detection mode
+   tables.
+
+   Use of cache files is highly recommended. For example, reading large atmospheric tables from cache is about 2 orders of
+   magnitude faster than reading them from text files.
+
+   **Default** true
+
+.. command:: load_atmosphere <sosm-atmosphere-type> from <file-name>
+
+   Loads the SOSM atmosphere definition from the specified file and associates it with the name specified by
+   *<sosm-atmosphere-type>*. See :model:`SOSM_atmosphere_model` for directions on how to create atmosphere definitions.
+
+   The standard WSF distribution includes several atmospheres generated using MODTRAN for wavelengths in the range 6680
+   cm-1 (~1.5um) to 240 cm-1 (~41.67um) using a 20 cm-1 sample interval:
+
+    sosm/modtran/us_std_day.txt             US Standard - Day
+    sosm/modtran/us_std_night.txt           US Standard - Night
+    sosm/modtran/mid_lat_summer_day.txt     Mid-Latitude Summer - Day
+    sosm/modtran/mid_lat_summer_night.txt   Mid-Latitude Summer - Night
+    sosm/modtran/mid_lat_winter_day.txt     Mid-Latitude Winter - Day
+    sosm/modtran/mid_lat_winter_night.txt   Mid-Latitude Winter - Night
+
+   All of the atmospheres included in the standard distribution were generated with the following non-default MODTRAN
+   options:
+
+   * Multiple Scattering (Card 1, IMULT=1)
+   * Spectral Lambertian surfaces (Card 1, SURREF='LAMBER', 'farm')
+   * CO2 mixing ratio of 365.0 ppmv as recommended by the manual (Card 1A, CO2MX=365.0)
+   * RURAL extinction, VIS = 23km (Card 2, IHAZE=1)
+
+   .. note::
+      The first atmosphere that is loaded is defined to be the 'default' atmosphere unless
+      default_atmosphere_ is provided.
+
+
+.. command:: load_sensor <sosm-sensor-type> from <file-name>
+
+   Loads the SOSM sensor definition from the specified file and associates it with the name specified by
+   *<sosm-sensor-type>*.
+
+   See :ref:`SOSM_sensor_model` for directions on creating a sensor model definitions.
+
+   .. note::
+      This command should be repeated for each definition required by the simulation.
+
+
+.. command:: load_target <sosm-target-type> from <file-name>
+
+   Loads the SOSM target model definition from the specified file and associates it with the name specified by
+   *<sosm-target-type>*.
+
+   See :ref:`SOSM_target_model_table` and :ref:`SOSM_target_model_simple` for directions on creating a target model definitions.
+
+   .. note::
+      This command should be repeated for each definition required by the simulation.
+
+
+.. command:: map_sensor_type <wsf-sensor-type> <sosm-sensor-type>
+
+   Indicates the SOSM sensor type *<sosm-sensor-type>* should be used when WSF wants to create an instance of
+   WSF_SOSM_SENSOR of type *<wsf-sensor-type>*.
+
+   When an instance of WSF_SOSM_SENSOR is created, WSF must determine the corresponding SOSM sensor definition to be
+   used. It does this as follows:
+
+   * If provided, use the value from sosm_sensor_type_ in the sensor mode definition.
+   * For each level in the sensor hierarchy
+
+    * Check the map_sensor_type_ list for an entry where *<sensor-type>:<sensor-mode>* matches the value of **<wsf-sensor-type>** in the entry.
+    * Check the map_sensor_type_ list for an entry where *<sensor-type>* matches the value of *<wsf-sensor-type>* in the entry.
+    * Check the load_sensor_ list for an entry where *<sensor-type:sensor-mode>* matches the value of **<sosm-sensor-type>** in the entry.
+    * Check the load_sensor_ list for an entry where *<sensor-type>* matches the value of *<sosm-sensor-type>* in the entry.
+
+   .. note::
+      Except for very trivial test cases, it is recommended that the user always include a default mapping
+      as follows so that every WSF WSF_SOSM_SENSOR will have a corresponding SOSM sensor type:
+
+    map_sensor_type WSF_SOSM_SENSOR *<sosm-sensor-type>*
+
+.. command:: map_target_type <wsf-platform-type> <sosm-target-type>
+
+   Indicates that the SOSM target type *<sosm-target-type>* should be used when WSF wants to perform a detection attempt
+   on an WSF platform type of *<wsf-platform-type>*.
+
+   When WSF is going to perform a detection attempt on a target, it must determine the SOSM target type to be used. For
+   each level in the inheritance hierarchy of the WSF target platform, the platform type is used as follows:
+
+   * Check the map_target_type_ list for an entry where *<platform-type>* matches the value of *<wsf-target-type>* in the entry.
+   * Check the load_target_ list for an entry where *<platform-type>* matches the value of *<sosm-target-type>* in the entry.
+
+   .. note::
+      Except for very trivial test cases, it is recommended that the user always include a default mapping
+      as follows so that every WSF platform type will have a corresponding SOSM target type:
+
+    map_target_type WSF_PLATFORM *<sosm-target-type>*
+
+.. command:: default_atmosphere <sosm-type-name>
+
+   Specifies the SOSM atmosphere type to be used when an SOSM sensor definition does not explicitly refer to a specific
+   atmosphere type.
+
+   **Default** The *<sosm-type-name>* from the first load_atmosphere_ command.
+
+.. command:: fast_detection_mode <boolean-value>
+
+   Indicate if 'fast_detection_mode' should be used. 'fast_detection_mode' is a special operating mode that is used to
+   reduce computational overhead at the expense of a small loss in fidelity. Use of this mode is typically warranted when
+   running real-time.
+
+   When 'fast_detection_mode' is not active, the detection model must compute and sum the effects of each wavenumber bin
+   within the spectral response of the sensor. Depending on the sensor, this can be 10's to 100's of bins. When
+   'fast_detection_mode' is enabled the detection model will precompute the spectral interaction between the sensor and
+   the atmosphere and the sensor and the target and then use this data during detection opportunities to eliminate the
+   iteration over the wavenumber bins.
+
+   If write_cache_files_ is true, the precomputed tables will be written to the cache directory where they can be
+   reused for future runs.
+
+   **Default** false
+
+.. command:: debug_level <integer>
+
+   Specifies the level of debugging information to be printed.
+
+    * debug_level = 0; No debugging information will be produced.
+    * debug_level = 1; Display integrated information.
+    * debug_level > 1; Display integrated  and spectral information.
+
+.. command:: spectral_print_format [ wavenumber | wavelength]
+
+   Specifies the output format for spectral data when debug_level_ is greater than 1.
+
+   **Default** wavenumber
+
+.. command:: show_iripp_data
+
+   If specified, spectral detection data will be produced in a format similar to IRIPP 'spec' data.
+
+
+.. model:: sensor WSF_SOSM_SENSOR
+
+.. command:: sosm_sensor_type <sosm-sensor-type>
+
+   An optional command that specifies the SOSM sensor type to be used. See map_sensor_type_ for how this is used.
+
+   **Default** The type name of the sensor.
+
+.. command:: ranging_time <time-value>
+
+   Adds range information to any track generated by this sensor after the specified time has elapsed.  This basically
+   simulates that the system could triangulate and get the range after a sufficient period of time.
+
+.. command:: ranging_time_track_quality <quality-value>
+
+   If the ranging time is used to generate a track with range information, this parameter controls the track quality once
+   range is valid.  The quality-value must be non-negative.
+
+
+Example
+=======
+
+::
+
+ sosm_interface
+    load_atmosphere_type DEFAULT from us_std_day.txt
+    load_sensor_type     IRST    from demo_irst.txt
+    load_target_type     TARGET  from demo_target.txt
+ end_sosm_interface
+
+ platform_type TARGET WSF_PLATFORM
+    # Platforms of this type will use the SOSM target definition loaded from
+    # demo_target.txt (a result of the **load_target_type TARGET from demo_target.txt**
+    # command in the **sosm_interface** block defined above).
+     ...
+ end_platform_type
+
+ sensor IRST WSF_SOSM_SENSOR
+    # This sensor will use the SOSM sensor definition loaded from demo_irst.txt
+    # (a result of the **load sensor_type IRST from demo_irst.txt** command in
+    # the **sosm_interface** block defined above.
+     ...
+ end_sensor
+
+ platform_type SENSOR WSF_PLATFORM
+    ...
+    sensor irst IRST
+       on
+    end_sensor
+ end_platform_type
+

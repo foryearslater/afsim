@@ -1,0 +1,67 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COVERAGE_TIME_MOE
+---------------------
+
+.. model:: moe WSF_COVERAGE_TIME_MOE
+
+   .. parsed-literal::
+
+      :command:`moe` <name> :model:`WSF_COVERAGE_TIME_MOE`
+         subtype_ ...
+         output_ ...
+      end_moe
+
+Overview
+========
+
+:model:`WSF_COVERAGE_TIME_MOE` computes quantities related to the coverage time of
+a grid point. This measure operates on access intervals, which are intervals within
+the coverage interval during which the grid point has access to at least one of the
+free assets.
+
+Computation Subtype
+===================
+
+.. command:: subtype <sub-type> [<parameter>]
+
+   Specify the computation subtype. 
+
+   :model:`WSF_COVERAGE_TIME_MOE` has the following subtypes that take no parameter:
+
+   * **total** - The measured value will be the total access duration for the grid point in question.
+   * **percent** - The measured value will be the access duration for the grid point in question as a percentage of the whole coverage interval.
+   
+   Each subtype with the 'per' suffix, unless otherwise specified, measures values
+   in terms of seconds per user-defined sample or percentage of a sample.
+   These require a parameter which defines the duration of the samples taken for
+   these eight subtypes.
+   
+   * **maximum_per** - The measured value will be the maximum total access duration of a single calendar sample for the grid point in question.
+   * **maximum_percent_per** - The measured value will be the maximum access duration of a single calendar sample for the grid point in question as a percentage of a sample.
+   * **minimum_per** - The measured value will be the minimum total access duration of a single calendar sample for the grid point in question.
+   * **minimum_percent_per** - The measured value will be the minimum access duration of a single calendar sample for the grid point in question as a percentage of a sample.
+   * **mean_per** - The measured value will be the mean access duration per sample for the grid point in question. This does *not* use the number of calendar samples, but rather the duration of the coverage interval in samples to calculate the mean.
+   * **mean_percent_per** - The measured value will be the mean access duration of a single sample for the grid point in question as a percentage of the whole coverage interval's duration. This does *not* use the number of calendar samples, but rather the duration of the coverage interval in samples to calculate the mean.
+   * **standard_deviation_per** - The measured value will be the standard deviation of the access durations of each calendar sample for the grid point in question.
+   * **standard_deviation_percent_per** - The measured value will be the standard deviation of the access durations of each calendar sample for the grid point in question as a percentage of a sample.
+
+   .. note:: There are subtle differences in how these subtypes actually use this parameter. **minimum_per**, **minimum_percent_per**, **maximum_per**, and **maximum_percent_per** tie this duration to midnight, UTC, such that if the given value is 1 day, each sample would occur from midnight to consecutive midnight, UTC. If <sample-span> had a value of 6 hours, the samples would occur from midnight to 0600, 0600 to 1200, 1200 to 1800, or 1800 to midnight. One consequence of this is that, for these two subtypes, the only valid values for <sample-span> are those that can be expressed as 1/n days, where n is a positive integer. This is so that samples always remain aligned with each calendar day (midnight to consecutive midnight, UTC). The smallest acceptable value is 1 second. These will be called 'calendar samples'. The **mean_per**, **mean_percent_per**, **standard_deviation_per**, and **standard_deviation_percent_per** subtypes, however, do not tie <sample-span> to the calendar, and as a result, will accept any positive duration as a value. For instance, suppose the value of <sample-span> is 1 day. If the coverage interval starts at 1200, Jan 1, and lasts until 1200, Jan 2, minimum and maximum would account for 2 days - Jan 1 and Jan 2 - but mean would only account for 1, because the interval was actually only 24 hours long.
+   
+   :model:`WSF_COVERAGE_TIME_MOE` supports the following subtypes that take an
+   input parameter specifying the minimum number of free assets that the grid point
+   must have access to in order to count the interval:
+
+   * **total_time_above** - The measured value will be the total duration with access to at least <parameter> free assets for the grid point in question.
+   * **percent_time_above** - The measured value will be the access duration with access to at least <parameter> free assets for the grid point in question as a percentage of the whole coverage interval.
+
+.. include:: common_measure_commands.txt

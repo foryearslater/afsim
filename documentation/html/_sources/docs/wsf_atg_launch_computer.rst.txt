@@ -1,0 +1,89 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ATG_LAUNCH_COMPUTER
+-----------------------
+
+.. model:: launch_computer WSF_ATG_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_ATG_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      ... :ref:`WSF_ATG_LAUNCH_COMPUTER Commands<WSF_ATG_LAUNCH_COMPUTER.Commands>` ...
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_ATG_LAUNCH_COMPUTER` implements a launch computer for a guided air-to-ground weapon cruising in approximately
+level flight.  The object must have one or more Launch Acceptable Regions (LARs) defined (a moving Zone shape,
+specified relative to the launch aircraft location) that specifies the engagement geometry and flight conditions under
+which the weapon is expected to be able to hit the target.  When there are multiple LARs defined, the launch computer
+will attempt to choose the LAR that most closely matches the current engagement conditions.  In any case, if the
+current launch conditions do not precisely match the specified LAR engagement values, then linear sensitivities will
+try to adjust the LAR center to compensate.  (For instance, if the launch speed is higher than the LAR-defined launch
+speed, the LAR will be be adjusted forward by some amount, to account for the fact that a faster weapon release will
+allow the weapon to fly further downrange to hit a target.)  After the compensation, then the current tracked target
+location will be examined to be inside the adjusted LAR or not.  If inside the LAR, the target location is attainable
+with the weapon, so weapon release may be attempted.
+
+The :command:`weapon_tools<weapon_tools>` application assists with creation of launch computers of this type.
+(See :command:`ATG_LAR_AND_LC_GENERATOR`).
+
+.. note::
+
+   If more than one LAR is defined, :command:`weapon.update_interval` must be specified and nonzero on the parent weapon to allow the launch computer to have an accurate internal state.
+
+.. block:: WSF_ATG_LAUNCH_COMPUTER
+
+.. _WSF_ATG_LAUNCH_COMPUTER.Commands:
+
+Commands
+========
+
+.. command:: debug_lars
+
+   Enables debug output during run time for all LARs defined in the launch computer.
+
+.. command:: launch_acceptable_region <name> ... end_launch_acceptable_region
+
+   .. command:: debug
+   
+      Enables debug output during run time for a single LAR.
+   
+   .. command:: delta_altitude <length-value>
+
+      Difference in altitude between the launch platform and target platform.  A positive value indicates the launch platform is above the target (as expected for an air-to-ground engagement).
+
+   .. command:: launch_speed <speed-value>
+
+      Speed of the launch platform.
+
+   .. command:: sensitivity_range_per_10m_altitude <length-value>
+
+      Additional forward offset applied to the LAR (in meters) to compensate for an altitude that is 10 meters higher than
+      the nominal value, specified by delta_altitude_.
+
+   .. command:: sensitivity_range_per_10ms_velocity <length-value>
+
+      Additional forward offset applied to the LAR (in meters) to compensate for a launch velocity that is 10 meters/sec
+      higher than the nominal value, specified by launch_speed_.
+
+   .. command:: sensitivity_range_per_percent_gradient <length-value>
+
+      Additional forward offset applied to the LAR (in meters) to compensate for a flight path angle gradient above the
+      horizontal.
+      
+   .. command:: use_zone <global-zone-name> as <zone-name>
+
+      Specifies the zone that defines the LAR.

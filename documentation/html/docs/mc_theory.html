@@ -1,0 +1,581 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Mover Creator Theory &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Mover Creator User’s Guide" href="mc_users_guide.html" />
+    <link rel="prev" title="Mover Creator Standard Vehicle Templates" href="mc_standard_vehicles.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="mc_users_guide.html" title="Mover Creator User’s Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mc_standard_vehicles.html" title="Mover Creator Standard Vehicle Templates"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="mover-creator-theory">
+<h1>Mover Creator Theory<a class="headerlink" href="#mover-creator-theory" title="Permalink to this headline">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This document should contribute to the user’s understanding of the equations which make up Mover Creator’s predictions for aerodynamic coefficients and mass distribution.</p>
+<p>Mover Creator produces vehicles for the <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-command">WSF_P6DOF_MOVER</span></a>, <a class="reference internal" href="wsf_rigid_body_six_dof_mover.html#WSF_RIGID_BODY_SIX_DOF_MOVER" title="WSF_RIGID_BODY_SIX_DOF_MOVER"><span class="xref wsf wsf-command">WSF_RIGID_BODY_SIX_DOF_MOVER</span></a>, and <a class="reference internal" href="wsf_guided_mover.html#WSF_GUIDED_MOVER" title="WSF_GUIDED_MOVER"><span class="xref wsf wsf-command">WSF_GUIDED_MOVER</span></a>, and so estimates coefficients for aerodynamic forces as well as moments.
+In some cases, the derivatives of these coefficients are also provided in order to provide realistic aerodynamic damping effects.
+In producing these coefficients, Mover Creator attempts to consider multiple variables for each component, such as angles of attack, Mach number, and control surface deflection angle.</p>
+<p>Given a user-provided total vehicle mass, Mover Creator apportions mass to components based on their relative sizes.
+The locations of these components, as well as their own intrinsic moments of inertia, contribute to the vehicle’s center of mass and to its whole-vehicle moment of inertia tensor.</p>
+</section>
+<section id="list-of-symbols">
+<h2>List of Symbols<a class="headerlink" href="#list-of-symbols" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-left">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 83%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Definition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/></p></td>
+<td><p>angle of attack (in this document, with respect to the component, rather than the vehicle)</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/7138dad9ac96835665b17f5817eacfcaa9b834c9.png" alt="\beta"/></p></td>
+<td><p>angle of side slip (again, with respect to the component)</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e82abc3a2baee6c7c0b80ec9f855ef56367164c5.png" alt="S_{wet}"/></p></td>
+<td><p>wetted surface area of a component</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/e3a73f508385e4f39f22ebcb01c6d3911fd13e04.png" alt="S_{ref}"/></p></td>
+<td><p>reference surface area (in this document, of a component)</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/7ff07b7f7f59a72f1785435e30602684f63d8fee.png" alt="c_{L}"/></p></td>
+<td><p>lift coefficient, specific to a single component</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/30120475a73e40532292d8b01106d8d4c0fd36ba.png" alt="c_{L_{\textnormal{baseline}}}"/></p></td>
+<td><p>tabulated lift coefficient for a wing section</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/a0ad762465aa0f83d96223392ce8a005cc31e53d.png" alt="c_{m}"/></p></td>
+<td><p>zero-lift pitching moment coefficient, specific to a single component</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/ba1ed0e7c0d801b80e6d793947de213a5d565ce4.png" alt="c_{m_{\textnormal{baseline}}}"/></p></td>
+<td><p>tabulated pitching moment coefficient for a wing section</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/272a2a226327c028df854af9c8e7b4cfff242f1b.png" alt="c_{D}"/></p></td>
+<td><p>drag coefficient, specific to a single component</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/a571ce78b3beb73f6d4555d0a29e9a6da3a5fcc3.png" alt="c_{D_{\textnormal{baseline}}}"/></p></td>
+<td><p>tabulated drag coefficient for a wing section</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/684d47eec158ea7fd8746a52abc59b57f28214a2.png" alt="c_{D_{i}}"/></p></td>
+<td><p>coefficient of drag induced by lift or side force</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/760b1a621cc713a4e388da84620ef5d3f7d63f78.png" alt="c_{D_{f}}"/></p></td>
+<td><p>coefficient of drag from skin friction</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/40ccde833ca6a1316f28f2dfdde38aadc694cbb5.png" alt="c_{D_{\textnormal{shape}}}"/></p></td>
+<td><p>coefficient of drag from wave drag effects particular to a body’s shape</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/b3d447b3963c54360cfecfebc1ad7c8358ab4ba5.png" alt="c_{f}"/></p></td>
+<td><p>skin friction coefficient</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/60f4822f02b44d931c5d0595da71dcf34e270437.png" alt="e"/></p></td>
+<td><p>Oswald efficiency factor for lifting surfaces</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/dc9a2b40586fd1a983dea23b8747e95dd2cbc87c.png" alt="e_{1}"/></p></td>
+<td><p>airfoil-specific factor for transonic drag efficiency</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/4abba779877abb276b98ccb2b4ba9bf2e41947ab.png" alt="M"/></p></td>
+<td><p>Mach number</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/133534f94352957769d6619159e696c214883576.png" alt="M_{\textnormal{peak}}"/></p></td>
+<td><p>Mach number where wave drag is at its peak for a given surface and incidence angle</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/efa31ce14c58ff4349e7190417bb91c8ce0fd4e2.png" alt="M_{dd}"/></p></td>
+<td><p>Mach number where drag diverges from subsonic drag as wave drag is introduced</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/a08a9a7d87e0c98dd86d0723c16c9bd05eb5a4d9.png" alt="f_{M}"/></p></td>
+<td><p>factor to account for Mach effects over lifting surfaces</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/677b0d7e42138f12edcc7f3c2a782fcbd47e0cdf.png" alt="f_{\textnormal{peak}}"/></p></td>
+<td><p><img class="math" src="../_images/math/a08a9a7d87e0c98dd86d0723c16c9bd05eb5a4d9.png" alt="f_{M}"/> at <img class="math" src="../_images/math/133534f94352957769d6619159e696c214883576.png" alt="M_{\textnormal{peak}}"/></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/8a34ee4864440a68c6676a059b408cac879f509e.png" alt="f_{\infty}"/></p></td>
+<td><p><img class="math" src="../_images/math/a08a9a7d87e0c98dd86d0723c16c9bd05eb5a4d9.png" alt="f_{M}"/> as <img class="math" src="../_images/math/5f7d02335ef45711e89bec4889e8f868b0604e48.png" alt="M \rightarrow \infty"/></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/98891437485daef1d4a7377d3bf9f1d4cb4e1b8a.png" alt="AR"/></p></td>
+<td><p>aspect ratio</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/68132fbd6f413bd35c80cc0f70f464cb95921a0c.png" alt="Re"/></p></td>
+<td><p>Reynolds number</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/394c3564cb3bbcf9144af52af489f026d26ea132.png" alt="\frac{t}{c}"/></p></td>
+<td><p>lifting surface thickness-to-chord ratio</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/65e60d95fc7bc06725cb967be10982e4bf310122.png" alt="\Lambda"/></p></td>
+<td><p>lifting surface sweep angle, at a specific chord fraction if subscripted, at the leading edge otherwise</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/7466d075f38e01c1bb177621d29b6bb982df0125.png" alt="\Delta c_{l}"/></p></td>
+<td><p>change in a lifting surface’s 2D (section) lift coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/58c5f8325d28b1f3501fd7262afa41578d2872f2.png" alt="\Delta C_{L}"/></p></td>
+<td><p>change in a lifting surface’s 3D (surface) lift coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/c27ad88f3d5115eafc4822cd1934c45169f325e0.png" alt="\Delta C_{D}"/></p></td>
+<td><p>change in a lifting surface’s drag coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/31a2fdfaaef92a6bf6fe63390a7b1b6acd753a34.png" alt="\Delta C_{m}"/></p></td>
+<td><p>change in a lifting surface’s pitching moment coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/8a0edeffbe6c982466a4aa051cfce538b02c9351.png" alt="\Delta x_{c.p.}"/></p></td>
+<td><p>change in a lifting surface’s center of pressure from control surface deflection</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/21267844e7a7d9632acbd03f9b332995195e4552.png" alt="c_{l_{\alpha}}"/></p></td>
+<td><p>2D lift curve slope</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/598996fccfce51355be15fe57d1f3eb8f7bcee88.png" alt="\frac{c_{f}}{\bar{c}}"/></p></td>
+<td><p>ratio between the mean chord of a control surface and the mean chord of its parent fixed surface</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/94acc70450e7a57b8d4cb541a54cda774a3dfe84.png" alt="\frac{b_{f}}{b}"/></p></td>
+<td><p>ratio between the span of a control surface and the span of its parent fixed surface</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/652b9d8b65c10aed0fdcdbde47396c879ed5bd33.png" alt="\delta"/></p></td>
+<td><p>control surface deflection angle</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/3f35c893e4d804d96451705f03b20e26070d0b31.png" alt="\delta_{\alpha_{\textnormal{eff}}}"/></p></td>
+<td><p>change in effective <img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/> from spoiler deflection</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/56e27f16889f57e126b2c70af66c44bf1dd74a68.png" alt="\left[ \frac{c_{l_{\delta}}}{\left( c_{l_{\delta}} \right) _{\textnormal{theory}}} \right]"/></p></td>
+<td><p>empirical ratio between observed and theoretical slope of <img class="math" src="../_images/math/542ba58bf046459d9b45194d99b552628a1837f9.png" alt="c_{l}"/> with respect to <img class="math" src="../_images/math/652b9d8b65c10aed0fdcdbde47396c879ed5bd33.png" alt="\delta"/></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/cc1c1e46642a3647ecbc57835e4b2579e07bc72d.png" alt="\left( c_{l_{\delta}} \right) _{\textnormal{theory}}"/></p></td>
+<td><p>theoretical slope of <img class="math" src="../_images/math/542ba58bf046459d9b45194d99b552628a1837f9.png" alt="c_{l}"/> with respect to <img class="math" src="../_images/math/652b9d8b65c10aed0fdcdbde47396c879ed5bd33.png" alt="\delta"/></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/b506dfb7064b4eaca91bd52cb81dde02c4e87a6e.png" alt="K'"/></p></td>
+<td><p>correction factor to account for <img class="math" src="../_images/math/598996fccfce51355be15fe57d1f3eb8f7bcee88.png" alt="\frac{c_{f}}{\bar{c}}"/></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/1ee17c981cb9d0ccbf07063b8b0da0ac49f90596.png" alt="K_{b}"/></p></td>
+<td><p>correction factor to account for <img class="math" src="../_images/math/94acc70450e7a57b8d4cb541a54cda774a3dfe84.png" alt="\frac{b_{f}}{b}"/></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/38a3cf93659fcaabce5e015c42b9035c31f1e242.png" alt="\left( \frac{C_{L_\alpha}}{c_{l_{\alpha}}} \right)"/></p></td>
+<td><p>ratio between 3D and 2D undeflected lift curve slopes</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/71427687d2d1ffbea4871031939b6f7149bded2e.png" alt="\left[ \frac{(\alpha_{\delta})_{C_{L}}}{(\alpha_{\delta})_{c_{l}}} \right]"/></p></td>
+<td><p>ratio between changes in effective <img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/> from control deflection between 3D surfaces and 2D sections</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/d8aea3aa21e39f83d9bed91d7c2fd93f90fab9a1.png" alt="\Delta C_{D_{i}}"/></p></td>
+<td><p>change in a lifting surface’s lift-induced drag coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/9911b31858282c66c221dd2d30a14de611aee2eb.png" alt="\Delta C_{D_{p}}"/></p></td>
+<td><p>change in a lifting surface’s profile drag coefficient from control surface deflection</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/2ba04feaa629adefdefaf5da44893be65aca41ef.png" alt="C'_{L_{\delta}}"/></p></td>
+<td><p>reference supersonic slope of <img class="math" src="../_images/math/c05e18c5d5f0b7093f791859f3ad398268a212a4.png" alt="C_{L}"/> with respect to <img class="math" src="../_images/math/652b9d8b65c10aed0fdcdbde47396c879ed5bd33.png" alt="\delta"/>, assuming a flat plate and a full-span control surface</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/34d137cf01c787ecda732761c3f95b0f65a6c3e9.png" alt="\gamma"/></p></td>
+<td><p>ratio of specific heats, assumed equal to 1.4 for Earth’s atmosphere</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/3d893447461c56a181a1d6c57d4b4cd304b1b8e3.png" alt="\phi_{TE}"/></p></td>
+<td><p>approximated angle of the surface cross-section trailing edge</p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/046f3d36fbf333c94de47015b695d2b68f15a683.png" alt="\frac{C_{D_{w}}}{C_{D_{w, \delta=0}}}"/></p></td>
+<td><p>ratio between the wave drag of the deflected surface and that of the undeflected surface</p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/79a3d439d28652c547386f39b555d90d3aaf102d.png" alt="r"/></p></td>
+<td><p>assumed surface roughness ratio</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="aerodynamic-prediction">
+<h1>Aerodynamic Prediction<a class="headerlink" href="#aerodynamic-prediction" title="Permalink to this headline">¶</a></h1>
+<section id="surfaces-and-wings">
+<h2>Surfaces and Wings<a class="headerlink" href="#surfaces-and-wings" title="Permalink to this headline">¶</a></h2>
+<p>Baseline <a class="reference internal" href="mc_geometry.html#wing"><span class="std std-ref">wing</span></a> (and other <a class="reference internal" href="mc_geometry.html#surfaces"><span class="std std-ref">surfaces</span></a>) lift, drag, and pitching moment coefficients are provided as tabulated data as a function of <img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/>.
+Drag coefficient is modified according to Mach number <a class="footnote-reference brackets" href="#mason" id="id1">1</a> <a class="footnote-reference brackets" href="#nasa67" id="id2">2</a> and Reynolds number; pitching moment coefficient is modified according to aspect ratio.
+Side force coefficient is neglected.</p>
+<div class="math" id="equation-wing-cl">
+<p><span class="eqno">(1)<a class="headerlink" href="#equation-wing-cl" title="Permalink to this equation">¶</a></span><img src="../_images/math/b49ad1acdd426cc1901c8930692f695bda5c14bd.png" alt="c_{L} &amp;= c_{L_{\textnormal{baseline}}}"/></p>
+</div><div class="math" id="equation-wing-cd">
+<p><span class="eqno">(2)<a class="headerlink" href="#equation-wing-cd" title="Permalink to this equation">¶</a></span><img src="../_images/math/30c9cb0c9f5d710e2490619635de0fad6ad75ee1.png" alt="c_{D} &amp;= c_{D_{\textnormal{baseline}}} f_{M} + c_{D_{i}} + 2 c_{D_{f}}
+
+     c_{D_{i}} &amp;= \frac{c_{L}^{2}}{\pi e AR}
+
+     Re &gt; 500000: c_{D_{f}} &amp;= \frac{1.328}{\sqrt{Re}}
+
+     Re \leq 500000: c_{D_{f}} &amp;= \frac{0.0307}{\sqrt[7]{Re}}
+
+     \textnormal{transonic: } f_{M} &amp;= 1 + \frac{df}{dM} (M - M_{dd})
+
+     \textnormal{supersonic: } f_{M} &amp;= e^{ln(f_{\textnormal{peak}} - f_{\infty}) + M_{\textnormal{peak}} - M} + f_{\infty}
+
+     M_{dd} &amp;= M_{dd_{0}} + \max \left(0, \frac{1}{3} e_{1} \sin|\Lambda| - \frac{1}{2} \frac{t}{c} \sin^{2}|\Lambda| \right)
+
+     M_{dd_{0}} &amp;= e_{1} - \frac{1}{2} \frac{t}{c} - 0.02
+
+     M_{\textnormal{peak}} &amp;= M_{dd} + 0.125 \cos^{3}|\Lambda| + 0.01
+
+     f_{\textnormal{peak}} &amp;= 4 - 3 \sin|\Lambda|
+
+     f_{\infty} &amp;= 0.6 f_{peak} + 0.4
+
+     \frac{df}{dM} &amp;= \frac{f_{\textnormal{peak}} - 1}{M_{\textnormal{peak}} - M_{dd}}"/></p>
+</div><div class="math" id="equation-wing-cm">
+<p><span class="eqno">(3)<a class="headerlink" href="#equation-wing-cm" title="Permalink to this equation">¶</a></span><img src="../_images/math/3aa7cedb409af1f58b4fc0ad166b908a59363264.png" alt="c_{M} &amp;= c_{M_{\textnormal{baseline}}} \frac{AR}{AR + 2}"/></p>
+</div><p>The center of pressure for surfaces sits at quarter-chord up to Mach 0.9, at half-chord at Mach 1.9, and is linearly interpolated between the two.</p>
+</section>
+<section id="control-surfaces">
+<h2>Control Surfaces<a class="headerlink" href="#control-surfaces" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="mc_geometry.html#control-surfaces"><span class="std std-ref">Control surfaces</span></a> can be modeled as either “full-flying” unbroken pieces which rotate about a point at the control surface’s root chord (think missile control fins), or as “hinged” surfaces, where a section of the surface at the trailing edge deflects up or down about a spanwise hinge (think aircraft rudders).
+The full-flying case is relatively straightforward – the deflection angle can be treated as a shift in the angle of attack.
+For hinged control surfaces, the calculus can be more complicated.</p>
+<p>Mover Creator uses equations and curve fits taken from the USAF DATCOM to model hinged control surfaces.
+One key difference is the definition of the transonic regime.
+DATCOM describes Mach 0.6 through 1.2 as transonic, but Mover Creator uses the method listed in <a class="reference internal" href="#equation-wing-cd">(2)</a>.
+As a compromise, hinged surfaces assume a transonic region that starts at Mach 0.8 and ends at <img class="math" src="../_images/math/76028efe9e7ce03bcd2b1d9d87454c930f88439e.png" alt="\frac{1.02}{\cos \Lambda_{LE}}"/>.</p>
+<p>Lift effects are informed by sections 6.1.1 and 6.1.4 of the DATCOM, and drag effects are informed by section 6.1.7.</p>
+<section id="subsonic">
+<h3>Subsonic<a class="headerlink" href="#subsonic" title="Permalink to this headline">¶</a></h3>
+<p>For subsonic conditions, a 2D lift increment is computed, then modified to account for sweep angle, aspect ratio, and chord and span fraction.</p>
+<div class="math" id="equation-panel-cl2d-subsonic">
+<p><span class="eqno">(4)<a class="headerlink" href="#equation-panel-cl2d-subsonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/c00c47f77e56e4489dd861acf0ec47908629fcbe.png" alt="\textnormal{spoilers: } \Delta c_{l} &amp;= -c_{l_{\alpha}} \delta_{\alpha_{\textnormal{eff}}}
+
+\textnormal{plain flaps: } \Delta c_{l} &amp;= \delta \left[ \frac{c_{l_{\delta}}}{\left( c_{l_{\delta}} \right) _{\textnormal{theory}}} \right] \left( c_{l_{\delta}} \right) _{\textnormal{theory}} K'"/></p>
+</div><p>The inputs to these functions are themselves functions of control surface dimensions, represented by curve fits of DATCOM Figures 6.1.1.1-52, 6.1.1.3-12a-b, 6.1.1.3-13a, 6.1.1.3-39a-b, and 6.1.1.3-40.
+For both spoilers and flaps, the 3D lift coefficient increment can be produced from the 2D increment.</p>
+<div class="math" id="equation-panel-cl3d-subsonic">
+<p><span class="eqno">(5)<a class="headerlink" href="#equation-panel-cl3d-subsonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/9cf1f8847d157d42981ad9673afe7cf66029b13d.png" alt="\Delta C_{L} &amp;= \Delta c_{l} \left( \frac{C_{L_\alpha}}{c_{l_{\alpha}}} \right) \left[ \frac{(\alpha_{\delta})_{C_{L}}}{(\alpha_{\delta})_{c_{l}}} \right] K_{b}"/></p>
+</div><p>The missing pieces for this modification are taken from curve fits of DATCOM Figures 6.1.6.1-14 and 6.1.6.1-15.</p>
+<p>Subsonic drag increment consists of two components – profile drag and induced drag.</p>
+<div class="math" id="equation-panel-cd-subsonic">
+<p><span class="eqno">(6)<a class="headerlink" href="#equation-panel-cd-subsonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/24e3ffdaa43598b4398c23e559c719b38c4eeaf4.png" alt="\Delta C_{D} &amp;= \Delta C_{D_{i}} + \Delta C_{D_{p}}"/></p>
+</div><p>The induced drag calculation employs a finite element span loading method, which could be used to provide more sophisticated pitching moment calculations at a later phase of development.
+This method is fairly involved for the scope of this document and so will not be repeated here – instead, it can be found in section 6.1.7A of the DATCOM.
+Profile drag is more straightforward and is constructed by a curve fit of DATCOM Figure 6.1.7.22.</p>
+</section>
+<section id="supersonic">
+<h3>Supersonic<a class="headerlink" href="#supersonic" title="Permalink to this headline">¶</a></h3>
+<p>For the supersonic case, the slope of the 3D lift coefficient increment is calculated directly.</p>
+<div class="math" id="equation-panel-cl-supersonic">
+<p><span class="eqno">(7)<a class="headerlink" href="#equation-panel-cl-supersonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/9b64ea62e5cd5ac11ede2c58dd0fb6f8f4eb289d.png" alt="\frac{dC_{L}}{d\delta} &amp;= \left( 1 - \frac{C_{2}}{C_{1}} \phi_{TE}  \right) C'_{L_{\delta}} \frac{S_{f}}{S}
+
+     C_{1} &amp;= \frac{2}{\sqrt{M^{2} - 1}}
+
+     C_{2} &amp;= \frac{(\gamma + 1) M^{4} - 4 (M^{2} - 1)}{2 (M^{2} - 1)^{2}}"/></p>
+</div><p>The <img class="math" src="../_images/math/2ba04feaa629adefdefaf5da44893be65aca41ef.png" alt="C'_{L_{\delta}}"/> value is found as a function of Mach number and trailing edge sweep angle from a curve fit of DATCOM Figure 6.1.4.1-25.</p>
+<p>For supersonic drag, the increment is considered as an increment of wave drag alone.
+The DATCOM prescription in section 6.1.7C assumes a flat plate and presents a singularity near <img class="math" src="../_images/math/8448af3bc24e5f454f7dbebb98ee0af1af25e7f3.png" alt="\alpha=0"/>, so the implementation is simplified and modified to account for surface thickness.</p>
+<div class="math" id="equation-panel-cd-supersonic">
+<p><span class="eqno">(8)<a class="headerlink" href="#equation-panel-cd-supersonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/5e9440bfba6051b3c57aafaea8ac87386a0afd40.png" alt="\frac{C_{D_{w}}}{C_{D_{w, \delta=0}}} &amp;= \left( 1 - \frac{c_{f}}{\bar{c}} \right) + \frac{c_{f}}{\bar{c}} \frac{ \alpha^{2} + \left( \frac{t}{c} \right) ^{2}}{(\alpha + \delta)^{2} + \left( \frac{t}{c} \right) ^{2}}"/></p>
+</div></section>
+<section id="additional-information">
+<h3>Additional Information<a class="headerlink" href="#additional-information" title="Permalink to this headline">¶</a></h3>
+<p>Data in the transonic regime is interpolated between the subsonic and supersonic values.</p>
+<p>Moment coefficient deltas are computed as a result of two different phenomena.
+First, the changes in lift and drag on each component create different moments about the center of gravity as a matter of course.
+Secondly, per DATCOM section 6.1.2., a component-intrinsic moment coefficient delta can be estimated based on the change in lift coefficient.</p>
+<div class="math" id="equation-panel-cm">
+<p><span class="eqno">(9)<a class="headerlink" href="#equation-panel-cm" title="Permalink to this equation">¶</a></span><img src="../_images/math/05d233ca50b86f7e7d9f897c6fcf1f903b2a0853.png" alt="\Delta C_{m} &amp;= \Delta C_{L} (0.25 - \Delta x_{c.p.})
+
+     \Delta x_{c.p.} &amp;= 0.5 - 0.25 \frac{c_{f}}{\bar{c}}"/></p>
+</div></section>
+</section>
+<section id="speed-brakes">
+<h2>Speed Brakes<a class="headerlink" href="#speed-brakes" title="Permalink to this headline">¶</a></h2>
+<p>Similar to lifting control surfaces, <a class="reference internal" href="mc_geometry.html#speed-brake"><span class="std std-ref">speed brakes</span></a> are computed as a full-flying surface.
+Speed brakes are modeled very simply, similar to a flat plate for both the subsonic and supersonic cases. <a class="footnote-reference brackets" href="#nicolai2010" id="id3">4</a>
+The lift (or side force, depending on how the brake is installed) is reduced by half, assuming that the suction pressure of the flat plate is eliminated.</p>
+<p>An additional assumption places stall at 10 degrees of wind-relative angle of attack and keeps lift constant beyond that stall angle.
+Zero-lift moment coefficient is assumed negligible prior to stall, stepping to a stabilizing <img class="math" src="../_images/math/bfd486dfabe357a9ba4514987ca487df94ef22b0.png" alt="C_{m}"/> of 0.075.</p>
+<p>Note that in the following equations, alpha is the angle of attack of the deflected brake, not the angle of attack of the vehicle.
+For speed brakes, the transonic region is between Mach 0.8 and Mach 1.2.</p>
+<section id="id4">
+<span id="docs/mc_theory:speed brakes:Subsonic"></span><h3>Subsonic<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<div class="math" id="equation-speedbrake-cl-subsonic">
+<p><span class="eqno">(10)<a class="headerlink" href="#equation-speedbrake-cl-subsonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/0c21da1b8c12e7bf81820f24b619c8e75f8f28bc.png" alt="c_{L_{\alpha}} &amp;= \frac{1}{2} \left( \frac{\pi}{2} \frac{AR}{\sqrt{1 - M^{2}}} \right)"/></p>
+</div><div class="math" id="equation-speedbrake-cd-subsonic">
+<p><span class="eqno">(11)<a class="headerlink" href="#equation-speedbrake-cd-subsonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/31149fc704df226f2eddce79f4c8855ee96a593f.png" alt="c_{D} &amp;= 0.8 \left( 1 - \cos 2 \alpha \right)"/></p>
+</div></section>
+<section id="id5">
+<span id="docs/mc_theory:speed brakes:Supersonic"></span><h3>Supersonic<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<div class="math" id="equation-speedbrake-cl-supersonic">
+<p><span class="eqno">(12)<a class="headerlink" href="#equation-speedbrake-cl-supersonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/fce75ed79d1ed23bdd1baefff3ef5107e680d278.png" alt="c_{L_{\alpha}} &amp;= \frac{1}{2} \left( \frac{4}{\sqrt{M^{2} - 1}} \right)"/></p>
+</div><div class="math" id="equation-speedbrake-cd-supersonic">
+<p><span class="eqno">(13)<a class="headerlink" href="#equation-speedbrake-cd-supersonic" title="Permalink to this equation">¶</a></span><img src="../_images/math/59026d49e15f8a34f8e4a07e3e59ab5d4c8dd1da.png" alt="c_{D} &amp;= c_{D_{\textnormal{subsonic}}} + c_{L} \alpha^{2}"/></p>
+</div></section>
+</section>
+<section id="bodies-and-nacelles">
+<h2>Bodies and Nacelles<a class="headerlink" href="#bodies-and-nacelles" title="Permalink to this headline">¶</a></h2>
+<p>For <a class="reference internal" href="mc_geometry.html#bodies"><span class="std std-ref">bodies</span></a> and <a class="reference internal" href="mc_geometry.html#nacelle"><span class="std std-ref">nacelles</span></a>, the drag coefficient is modified according to Mach number, based on the shape of the leading section.</p>
+<div class="math" id="equation-body-cl">
+<p><span class="eqno">(14)<a class="headerlink" href="#equation-body-cl" title="Permalink to this equation">¶</a></span><img src="../_images/math/c2c48703a75f78ea6e2813d1cb2909bc39416f97.png" alt="c_{L} &amp;= \sin(2 \alpha) \cos|\beta|"/></p>
+</div><div class="math" id="equation-body-cy">
+<p><span class="eqno">(15)<a class="headerlink" href="#equation-body-cy" title="Permalink to this equation">¶</a></span><img src="../_images/math/d5ac5e0ca39563deae42b9e7f88643eb91f2ec16.png" alt="c_{Y} &amp;= -\sin(2 \beta) \cos|\alpha|"/></p>
+</div><div class="math" id="equation-body-cd">
+<p><span class="eqno">(16)<a class="headerlink" href="#equation-body-cd" title="Permalink to this equation">¶</a></span><img src="../_images/math/06b45fc5bbc652b89ef644bf8d5c27c439cd5416.png" alt="c_{D} &amp;= c_{D_{\textnormal{shape}}} + c_{D_{\alpha,\beta}} + c_{D_{i,L}} + c_{D_{i,Y}} + c_{D_{f}}
+
+     c_{D_{\alpha,\beta}} &amp;= \sin^{2} \alpha (\cos^{2}\beta + 1) + \sin^{2} \beta (\cos^{2}\alpha + 1)
+
+     c_{D_{i,L}} &amp;= \frac{c_{L}^{2}}{\pi}
+
+     c_{D_{i,Y}} &amp;= \frac{c_{Y}^{2}}{\pi}
+
+     c_{D_{f}} &amp;= c_{f} \frac{S_{wet}}{S_{ref}}
+
+     r &amp;= \frac{0.001}{l_{\textnormal{inches}}}
+
+     Re &gt; 51 r^{-1.039}: c_{f} &amp;= 0.032 r^{0.2}
+
+     Re \leq 51 r^{-1.039}, Re &lt; 50000: c_{f} &amp;= \frac{1.328}{\sqrt{Re}}
+
+     Re \leq 51 r^{-1.039}, Re \geq 50000: c_{f} &amp;= \frac{0.0307}{\sqrt[7]{Re}}"/></p>
+</div><p>The shape factor <img class="math" src="../_images/math/40ccde833ca6a1316f28f2dfdde38aadc694cbb5.png" alt="c_{D_{\textnormal{shape}}}"/> uses reference drag coefficient values at different Mach numbers for the various leading section shapes. <a class="footnote-reference brackets" href="#jpl64" id="id6">3</a>
+From these reference points, in combination with fineness (<img class="math" src="../_images/math/f33bfe3007f77ae2c7719bbd1072ff2898e41f1b.png" alt="\frac{l}{d}"/>) values, a spline is constructed to approximate the drag rise in the transonic region.</p>
+<p>Zero-lift pitching moment is neglected, and the center of pressure is placed near the center of mass.
+As a result, bodies of rotation contribute little to no aerodynamic moment, other than incidental torques generated by drag acting on bodies located offset from the vehicle center of mass.</p>
+</section>
+<section id="dishes">
+<h2>Dishes<a class="headerlink" href="#dishes" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="mc_geometry.html#dish"><span class="std std-ref">Dishes</span></a>, like those found atop AWACS fuselages, are modeled relatively simply.</p>
+<div class="math" id="equation-dish-cl">
+<p><span class="eqno">(17)<a class="headerlink" href="#equation-dish-cl" title="Permalink to this equation">¶</a></span><img src="../_images/math/55a4ac46d62f5c329048d4f4eceb3921878d0b9a.png" alt="c_{L} &amp;= 2 \alpha \cos|\beta|"/></p>
+</div><div class="math" id="equation-dish-cy">
+<p><span class="eqno">(18)<a class="headerlink" href="#equation-dish-cy" title="Permalink to this equation">¶</a></span><img src="../_images/math/20982ae0a6d6c981a2e14db7437ff1ff00de61b8.png" alt="c_{Y} &amp;= 2 \beta \cos|\alpha|"/></p>
+</div><div class="math" id="equation-dish-cd">
+<p><span class="eqno">(19)<a class="headerlink" href="#equation-dish-cd" title="Permalink to this equation">¶</a></span><img src="../_images/math/230eb915f63d792621bfcca579abcffe766182eb.png" alt="c_{D} &amp;= 0.3 + \sqrt{\alpha^{2} + \beta^{2}}"/></p>
+</div><p>As with cylindrical bodies, the intrinsic moment contribution from dishes is neglected.</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="mason"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>W.H. Mason, “Configuration Aerodynamics”, Chapter 7: Transonic Aerodynamics of Airfoils and Wings.</p>
+</dd>
+<dt class="label" id="nasa67"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p>NASA SP-367 “Introduction to the Aerodynamics of Flight”. Chapter V: Transonic Flow.</p>
+</dd>
+<dt class="label" id="jpl64"><span class="brackets"><a class="fn-backref" href="#id6">3</a></span></dt>
+<dd><p>JPL, “Aerodynamic Characteristics of Blunt Bodies”.</p>
+</dd>
+<dt class="label" id="nicolai2010"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd><p>Nicolai, Leland M. &amp; Carichner, Grant E. “Fundamentals of Aircraft and Airship Design”. Vol I – Aircraft Design.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/mc_theory.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="mc_users_guide.html" title="Mover Creator User’s Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mc_standard_vehicles.html" title="Mover Creator Standard Vehicle Templates"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

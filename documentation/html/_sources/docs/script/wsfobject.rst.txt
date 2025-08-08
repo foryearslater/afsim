@@ -1,0 +1,82 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfObject
+---------
+
+.. class:: WsfObject  
+
+Methods
+=======
+
+.. method:: string Name()
+   
+   Returns the object's name as a string.
+   
+   .. parsed-literal::
+
+      script void PrintPlatformName(WsfPlatform aPlatform)
+        WsfPlatform mMyPlatform = PLATFORM;
+        writeln("The platform\'s name is ", aPlatform.Name());
+        writeln("The platform\'s name is ", mMyPlatform.Name());
+      end_script
+
+.. method:: string Type()
+   
+   Returns the object's type as a string.
+
+   .. parsed-literal::
+
+      script void PrintPlatformType(WsfPlatform aPlatform)
+        writeln("The platform\'s type is ", PLATFORM.Type());
+      end_script
+   
+.. method:: string BaseType()
+
+   Returns the object's base type as a string. The base type of an object is the type from which the object derives.
+
+.. method:: bool IsA_TypeOf(string aType)
+   
+   Returns true if aType is an ancestor of the object.
+
+.. method:: bool IsValid()
+   
+   Returns true if the object reference does indeed refer to a valid object. Many methods may return "null' references if
+   the requested object does not exist (e.g., :method:`PLATFORM.Sensor('radar-1') <WsfPlatform.Sensor>` will return a "null
+   reference' if the platform does not have a sensor with the name 'radar-1'). This method allows you to test a reference
+   to make sure it is "valid' (not "null') before attempting to use it.
+   
+   .. parsed-literal::
+
+      execute at_time 0.1 seconds relative
+        WsfPlatform commander = PLATFORM.Commander();
+        if (commander.IsValid() && commander.CategoryMemberOf("ATC_COMM"))
+        {
+          cEVALUATE_EMCON_TURN_OFF = true;
+        }
+      end_execute
+
+.. method:: bool ProcessInput(string aCommands)
+   
+   Call ProcessInput on the current object passing the current command(s).  Returns true if the command(s) were handled
+   properly.
+
+   .. warning:: This method may not work with all commands, especially post-initialization.
+   
+   .. parsed-literal::
+
+      processor test WSF_SCRIPT_PROCESSOR
+        execute at_time 2 min relative
+           WsfProcessor computer = PLATFORM.Processor("computer"); # must have a processor named "computer"
+           computer.ProcessInput("g_bias 2.0");
+           computer.ProcessInput("proportional_navigation_gain 6.0");
+        end_execute
+      end_processor

@@ -1,0 +1,352 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _P6DOF_Propulsion_System_Label:
+
+P6DOF Propulsion System Definition
+==================================
+
+The propulsion system includes thrust producers, such as jet engines, ramjets/scramjets, and
+rockets (both liquid-propellant and solid-propellant), fuel tanks (which are containers for
+fuel and or oxidizer) and fuel transfers (which define how fuel will be transferred between
+tanks).
+
+The propulsion_data_ block is used to define the propulsion system of a **P6DOF** object.
+There is a great deal of flexibility in the propulsion_data_ which allows a wide range of fuel
+system configurations. For example, the propulsion_data_ block for a Space Shuttle orbiter
+would include three SSME (engines), but no fuel tank or fuel transfer definitions. The
+propulsion_data_ block for a Space Shuttle external tank would include a fuel tank, but no
+engines or fuel transfer definitions. The fuel feed for each SSME (defined in the 
+liquid_propellant_rocket blocks of the propulsion system of the orbiter) would identify the
+external tank fuel tank as their source of fuel. During runtime, the SSMEs would automatically
+draw fuel from the external tank's fuel tank and when the external tank was jettisoned, the 
+fuel flow would automatically be shutoff/terminated since there was no longer a connection.
+   
+.. note::
+
+   Users may add a :model:`WSF_P6DOF_FUEL` to further define the fuel system, augmenting the
+   fuel data provided in the **propulsion_data** block of the :model:`WSF_P6DOF_MOVER`, and
+   including support for things like **bingo** fuel states and other simple, top-level 
+   fuel-related data interaction.
+
+.. command:: propulsion_data ... end_propulsion_data
+   
+   .. parsed-literal::
+
+    propulsion_data
+   
+       // `Engines/Thrust Producers`_
+       engine_ <engine_type_name> <engine_base_type_name>
+          rel_pos_x_ ...
+          rel_pos_y_ ...
+          rel_pos_z_ ...
+          rel_yaw_ ...
+          rel_pitch_ ...
+          rel_roll_ ...
+          fuel_feed_ ...
+       end_engine
+   
+       // `Fuel Tank Definition`_   
+       fuel_tank_ <fuel_tank_name>
+          max_fuel_quantity_ ...
+          current_fuel_qty_ ...
+          max_flow_rate_ ...
+          max_fill_rate_ ...
+          max_xfer_rate_ ...
+          cg_full_x_ ...
+          cg_full_y_ ...
+          cg_full_z_ ...
+          cg_empty_x_ ...
+          cg_empty_y_ ...
+          cg_empty_z_ ...
+       end_fuel_tank
+   
+       // `Fuel Transfer`_   
+       fuel_transfer_ <fuel_transfer_name>
+          source_tank_ ...
+          target_tank_ ...
+       end_fuel_transfer
+
+       throttle_setting_mil_ ...
+       throttle_setting_ab_ ...
+       throttle_setting_reverser_ ...
+
+       throttle_setting_yaw_ ...
+       throttle_setting_pitch_ ...
+       
+    end_propulsion_data
+
+
+
+Engines/Thrust Producers
+========================
+
+Each engine (thrust producer) **instance** on the vehicle is defined by an "engine" block.
+However, before an instance of an engine may be specified, the engine **type** must be defined.
+
+Definitions of thrust producer types (including jet engines [turbojets and turbofans], 
+ramjets/scramjets, liquid-propellant rocket engines, and solid-propellant rocket motors) are
+performed outside of a :command:`p6dof_object_type` block (but still within a 
+:command:`p6dof_object_types` block). These define 'types' of engines which can then be
+referenced from within a :command:`engine` block within a :command:`propulsion_data` block
+within a :command:`p6dof_object_type` block. For more information about creating 
+**thrust producer types**, see :ref:`P6DOF_Thrust_Producer_Types`.
+    
+The engine block defines how the engine is **installed** on a vehicle. The key parameters
+to include are relative position and attitude as well as the source of fuel. If no fuel
+source (fuel tank) is specified, the engine will not produce thrust, since it lacks fuel.
+The exception to this is a solid-propellant rocket motor, since its propellant is carried
+internally.
+
+.. command:: engine  <engine_type_name> <engine_base_type_name> ... end_engine
+
+   .. parsed-literal::
+
+    engine   TurbofanFighter   P6DOF_JET_ENGINE
+
+          // Engine Relative Position with Airframe
+          rel_pos_x_ ...
+          rel_pos_y_ ...
+          rel_pos_z_ ...
+
+          // Engine Relative Attitude with Airframe
+          rel_yaw_ ...
+          rel_pitch_ ...
+          rel_roll_ ...
+
+          // Fuel Source for Engine
+          fuel_feed_ ...
+
+    end_engine
+
+.. command:: rel_pos_x <length-value>
+
+   This is the x-location of the thrust point relative to the parent's reference point using
+   the parent's body coordinate system.
+
+.. command:: rel_pos_y <length-value>
+
+   This is the y-location of the thrust point relative to the parent's reference point using
+   the parent's body coordinate system.
+
+.. command:: rel_pos_z <length-value>
+
+   This is the z-location of the thrust point relative to the parent's reference point using
+   the parent's body coordinate system.
+
+.. command:: rel_yaw <angle-value>
+
+   This specifies the yaw of the thrust point about its reference point relative to the
+   parent's body coordinate system.
+
+.. command:: rel_pitch <angle-value>
+
+   This specifies the pitch of the thrust point about its reference point relative to the
+   parent's body coordinate system.
+
+.. command:: rel_roll <angle-value>
+
+   This specifies the roll of the thrust point about its reference point relative to the
+   parent's body coordinate system.
+
+.. command:: fuel_feed <string>
+
+   This specifies the name of the fuel_tank_ from which the engine will draw fuel.
+   Note -- This should not be defined for a solid-propellant rocket motor thrust producer,
+   since its propellant is carried internally.
+
+   
+Fuel Tank Definition
+====================
+
+.. command:: fuel_tank <fuel_tank_name> ... end_fuel_tank
+   :block:
+   
+   The fuel tank block provides a means to define tank parameters including fuel quantity,
+   transfer rates, and center of gravity (cg). Multiple tanks can be defined, if desired,
+   or a single tank may be used for simplification. In addition, a propulsion system does
+   not have to contain a fuel tank; engines may draw fuel from tanks located in subobjects,
+   for example. Conversely, an external fuel tank object has a propulsion system that only
+   contains a fuel tank -- no engines are included.
+   
+   .. parsed-literal::
+
+    fuel_tank <string>
+       max_fuel_quantity_ ...
+       current_fuel_qty_ ...
+       max_flow_rate_ ...
+       max_fill_rate_ ...
+       max_xfer_rate_ ...
+       cg_full_x_ ...
+       cg_full_y_ ...
+       cg_full_z_ ...
+       cg_empty_x_ ...
+       cg_empty_y_ ...
+       cg_empty_z_ ...
+    end_fuel_tank
+
+   .. command:: max_fuel_quantity <mass-value>
+      
+      This is the maximum quantity of fuel that can be contained in the tank.
+
+   .. command:: current_fuel_qty <mass-value>
+      
+      This is the current quantity of fuel that is in the tank.
+
+   .. command:: max_flow_rate <mass-transfer-value>
+      
+      This is the maximum flow rate that the tank can provide to the engine(s). For proper
+	  operation, this flow rate should exceed the maximum demands than the engine(s) may demand.
+
+   .. command:: max_fill_rate <mass-transfer-value>
+      
+      This is the maximum flow rate that the tank can accept from an outside source, such as
+	  an in-flight refueling source.
+
+   .. command:: max_xfer_rate <mass-transfer-value>
+      
+      This is the maximum flow rate that the tank can accept from another tank or provide
+	  to another tank.
+
+   .. command:: cg_full_x <length-value>
+      
+      This is the x-location of the center of gravity (cg) of the fuel tank (when full)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+   .. command:: cg_full_y <length-value>
+      
+      This is the y-location of the center of gravity (cg) of the fuel tank (when full)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+   .. command:: cg_full_z <length-value>
+      
+      This is the z-location of the center of gravity (cg) of the fuel tank (when full)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+   .. command:: cg_empty_x <length-value>
+      
+      This is the x-location of the center of gravity (cg) of the fuel tank (when empty)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+   .. command:: cg_empty_y <length-value>
+      
+      This is the y-location of the center of gravity (cg) of the fuel tank (when empty)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+   .. command:: cg_empty_z <length-value>
+      
+      This is the z-location of the center of gravity (cg) of the fuel tank (when empty)
+	  relative to the reference point of the carrying vehicle, in body coordinates.
+
+Fuel Transfer
+=============
+
+Typically, fuel transfers are defined within the propulsion_data_ block. However, when
+external tanks (in subobjects) are present, fuel transfers may be defined outside of 
+the propulsion system block (but still within the :command:`p6dof_object_type` block).
+
+.. command:: fuel_transfer <fuel_transfer_name> ... end_fuel_transfer
+   :block:
+
+   Regardless of whether a fuel transfer is defined within the propulsion_data_ block
+   or the :command:`p6dof_object_type` block, a fuel transfer always consists of a 
+   source tank and a target tank. During runtime, the source tank will attempt to
+   transfer fuel to the target tank, limited by the transfer rates of the two tanks.
+
+   .. parsed-literal::
+
+      fuel_transfer Fuel_Xfer
+         source_tank_ ...
+         target_tank_ ...
+      end_fuel_transfer
+   
+   Example fuel_transfer block :
+   
+   .. parsed-literal::
+
+         p6dof_object_type DropTank-300 P6DOF_BASE_TYPE
+  	    propulsion_data
+	       fuel_tank DropTank
+                  ...
+	       end_fuel_tank
+	    end_propulsion_data
+         end_p6dof_object_type
+   
+         p6dof_object_type FuelTransferExample P6DOF_BASE_TYPE
+            subobject SubobjectTank DropTank-300
+               ...
+            end_subobject
+      
+            fuel_transfer DropTankToMainXfer
+	       source_tank SubobjectTank.DropTank
+	       target_tank MainFuelTank
+            end_fuel_transfer
+         end_p6dof_object_type
+
+   .. command:: source_tank <string>
+      
+      The source tank is defined by its string name.  Source tanks can be access on
+	  sub-objects by referencing the sub-object by name, then the source tank name
+	  (as shown above).
+
+   .. command:: target_tank <string>
+      
+      The target tank is defined by its string name.  Target tanks can be access on
+	  sub-objects by referencing the sub-object by name, then the target tank name
+	  (as shown above).      
+            
+      
+Throttle Settings
+=================
+
+These define the control input for throttles, thurst vectoring controls, and thrust
+reversers. When these are defined in the propulsion_data_ block rather than the
+engine type definition, the definitions apply to **all** engines on the vehicle
+rather than only a particular engine. In most cases, defining in the
+propulsion_data_ block is best.
+
+   .. command:: throttle_setting_mil <string>
+      
+      This specifies the control_value defined in flight_controls that will be used
+	  to control the MIL (military) power throttle setting. This can be done at the
+	  engine-level or in the propulsion_data_ of the :doc:`p6dof_object_type`,
+	  although in most cases, defining in the propulsion_data_ block is best.
+      
+   .. command:: throttle_setting_ab <string>
+      
+      This specifies the control_value defined in flight_controls that will be used
+	  to control the AB (afterburner) power throttle setting. This can be done at
+	  the engine-level or in the propulsion_data_ of the :doc:`p6dof_object_type`,
+	  although in most cases, defining in the propulsion_data_ block is best.
+      
+   .. command:: throttle_setting_reverser <string>
+      
+      This specifies the control_value defined in flight_controls that will be used
+	  to control the thrust-reverser control setting. This can be done at the
+	  engine-level or in the propulsion_data_ of the :doc:`p6dof_object_type`,
+	  although in most cases, defining in the propulsion_data_ block is best.
+      
+   .. command:: throttle_setting_yaw <string>
+      
+      This specifies the control_value defined in flight_controls that will be used
+	  to control the yaw thrust vectoring control setting. This can be done at the
+	  engine-level or in the propulsion_data_ of the :doc:`p6dof_object_type`,
+	  although in most cases, defining in the propulsion_data_ block is best.
+      
+   .. command:: throttle_setting_pitch <string>
+      
+      This specifies the control_value defined in flight_controls that will be used
+	  to control the pitch thrust vectoring control setting. This can be done at the
+	  engine-level or in the propulsion_data_ of the :doc:`p6dof_object_type`,
+	  although in most cases, defining in the propulsion_data_ block is best.
+      
+      
+Return to :doc:`p6dof_object_types` or :doc:`p6dof_object_type`

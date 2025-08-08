@@ -1,0 +1,305 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RADAR_SENSOR
+----------------
+
+.. contents::
+   :local:
+   :depth: 4
+
+.. model:: sensor WSF_RADAR_SENSOR
+
+    .. parsed-literal::
+
+     sensor <name> WSF_RADAR_SENSOR
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+        ... :ref:`sensor Commands <Sensor.Commands>` ...
+
+        show_calibration_data_
+        mode *<name>*
+           ... :ref:`Sensor Mode Commands <Sensor.Common_Mode_Commands>` ...
+           ... WSF_RADAR_SENSOR `Mode Commands`_ ...
+
+           beam 1
+              :ref:`Antenna_Commands` ...
+              :command:`_.transmitter`
+                ... transmitter commands ...
+              end_transmitter
+              :command:`_.receiver`
+                ... receiver commands ...
+              end_receiver
+              ... `Beam Commands`_ ...
+           end_beam
+           beam *<n>*
+              :ref:`Antenna_Commands` ...
+              :command:`_.transmitter`
+                ... transmitter commands ...
+              end_transmitter
+              :command:`_.receiver`
+                ... receiver commands ...
+              end_receiver
+              ... `Beam Commands`_ ...
+           end_beam
+        end_mode
+     end_sensor
+
+Overview
+========
+
+:model:`WSF_RADAR_SENSOR` provides a baseline radar implementation. It is capable of representing a wide variety of radar systems including simple single mode early warning radars all the way to complex multiple-mode radars for target detection chances.
+
+A radar definition consists of one or more modes where each mode consists of one or more beams. The 'mode' and 'end_mode' commands that enclose a mode definition may be omitted if the radar has only one mode. The 'beam' and 'end_beam' commands that enclose a beam definition may be omitted if a mode has only one beam.
+
+Multiple Beam Considerations
+============================
+
+If a sensor uses multiple beams, the following considerations should be observed:
+
+* Beam numbers must be in strictly increasing numerical order with no gaps. That is, beam 2 must follow beam 1, beam 3 must follow beam 2, etc.
+* The definition for the first beam (beam 1) provides the initial definition for each subsequent beam. Commands that appear between the beam/end_beam block for the subsequent beams can provide additions or modifications to the initial definition.
+* If the sensor has multiple-modes, the number of beams for each must be the same (this restriction may be removed in a future release).
+
+Sensor Level Commands
+=====================
+
+.. command:: show_calibration_data
+
+   Write information about the characteristics of the radar to standard output. This will include the one square meter detection range as well as any other values that may need to be derived.
+
+.. _WSF_RADAR_SENSOR.Mode_Commands:
+
+Mode Commands
+=============
+
+.. command:: transmit_only
+
+.. command:: receive_only
+
+   Indicate that only the transmitter or receiver will be used.
+
+   .. note::
+      For bistatic interactions where transmitter masking is not of concern please set :command:`_.receiver.check_transmitter_masking` to 'off' or 'false'.
+
+.. command:: compute_measurement_errors [ true | false ]
+
+   If true, measurement errors will be computed using standard radar error model equations. If false, measurement errors will be computed using the common sensor error model.
+
+   Default: false
+
+.. command:: override_measurement_with_truth [ true | false ]
+
+   This command will compute the measurement errors and report the errors in the track, but will report the truth location in the track instead of using the location with the measurement errors applied. This is typically used for testing trackers.
+
+   Default: false
+
+.. command:: frequency_select_delay <time-value>
+
+   Specifies the delay when selecting between different frequencies as defined on the :command:`_.transmitter`.
+
+   .. note::
+
+         This input is only operational for the :model:`WSF_AGILITY_EFFECT` **frequency_changing** functionality.
+
+   Default: 0.0 seconds
+
+.. command:: maintain_track_measurement_history <boolean-value>
+
+   If true, the mode will maintain a track's history of measurements produced from successful detections.
+
+   Default: false
+
+.. _WSF_RADAR_SENSOR.Beam_Commands:
+
+Beam Commands
+=============
+
+.. command:: doppler_resolution <speed-value>
+
+   Defines the target Doppler speed resolution (i.e., opening or closing speed) capability of the radar.
+
+   Default: 0.0
+
+   .. note::
+
+       This input is currently only used in computing range-rate measurement errors associated of this sensor. The compute_measurement_errors_ must be set to true and the :command:`sensor_mode.reports_range_rate` must be specified to enable the range-rate error computation.
+
+.. command:: adjustment_factor <dbratio-value>
+
+   A method of adjusting a beam's detection capability.  Positive value increase the sensor's detection capability.
+
+   Default: 0.0 dB
+
+.. command:: operating_loss <dbratio-value>
+
+   Defines the beam's operating loss.
+
+   Default: 0.0 dB
+
+   .. note::
+
+         Loss should be entered as positive value.
+
+.. command:: integration_gain <dbratio-value>
+
+   Defines the integration gain when using the binary detector (detection_threshold_). This is not applicable when using the Swerling detector (swerling_case_) or detection_probability_.
+
+   Default: 0.0 dB
+
+.. command:: detection_threshold <dbratio-value>
+
+   An alternative method of defining the receiver's detection threshold.  The value can be entered here for readability of the input file.
+
+   Default: 3.0 dB
+
+.. command:: swerling_case  [ 0 | 1 | 2 | 3 | 4 ]
+
+   Indicates that the Marcum-Swerling detector model is to be used and specifies the 'case' to be used.
+
+   Default: The default is to use the binary detector with a detection threshold defined by detection_threshold_
+
+.. command:: number_of_pulses_integrated <integer-value>
+
+   Specifies the number of pulses the Marcum-Swerling detector integrates.
+
+   Default: 1
+
+.. command:: probability_of_false_alarm <pfa>
+
+   Specifies the false alarm probability.
+
+   Default: 1.0e-6
+
+.. command:: detector_law  [ linear | square | log ]
+
+   Specifies the type of Marcum-Swerling detector.
+
+   Default: linear
+
+.. command:: no_swerling_case
+
+   Specifies not to use a Marcum-Swerling detector.  Detections will be based on the detection_threshold_.  This is
+   the default configuration.
+
+.. command:: detection_probability
+
+   Defines a function of probability of detection (Pd) versus received signal-to-noise ratio (more specifically, it is really the signal-to-interference ratio, which includes the effects of receiver noise, interference and unsuppressed clutter). This is an alternative to using the Swerling detector (swerling_case_) or the binary detector (detection_threshold_). The table is defined as follows::
+
+    detection_probability
+       signal_to_noise <db-ratio-1> pd <pd-value-1>
+       signal_to_noise <db-ratio-2> pd <pd-value-2>
+       ...
+       signal_to_noise <db-ratio-n> pd <pd-value-n>
+    end_detection_probability
+
+   <db-ratio-n>
+    The signal-to-noise ratio of the received signal.
+   <pd-value-n>
+    The probability of detection associated with the ratio.
+
+   There must be at least two entries and the ratios must be monotonically increasing. Signals that exceed the limits of the table will be clamped to the appropriate endpoint. Intermediate values will be determined using linear interpolation between 'dB' values.
+
+   Default: The default is to use the binary detector with a detection threshold defined by detection_threshold_.
+
+.. command:: post_lockon_detection_threshold_adjustment <dbratio-value>
+
+   Defines a value by which the detection threshold will be adjusted once a 'locked-on' state has been achieved for the current mode of the sensor. This is typically used with tracking sensors to indicate that the detection threshold is less once a locked-on state has been achieved. The value is typically a negative 'dB' value, although it can be 0 dB or greater if that is what is desired.
+
+   Default: 0 dB
+
+.. command:: post_lockon_adjustment_delay_time <time-value>
+
+   Defines the time that must elapse from when a sensor declares that a 'locked-on' state has been achieved before applying the post_lockon_detection_threshold_adjustment_.
+
+   Default: 0.0 seconds
+
+.. command:: one_m2_detect_range <length-value>
+
+.. command:: range_product <area-value>
+
+.. command:: loop_gain <dbratio-value>
+
+   Alternative methods to specify a radar beam's detection capability.  If specified, the receiver's noise value will be calibrated to yield the specified detection range.
+
+.. command:: look_down_factor <dbratio-value>
+
+   Defines a beam's look-down loss.  The ratio will adjust the received signal power for targets that are located below the beam's antenna.
+
+   Default: 1.0
+
+.. command:: prf_factor <dbratio-value>
+
+   Defines a factor that represents the detection difference for a beam that uses interleaved HPRF and MPRF waveforms.
+   The prf_factor_ is applied to the received signal power if the absolute value of the target closing speed is less
+   than the ownship velocity.
+
+   Default: 1.0
+
+.. command:: clutter_model <derived-name>
+
+**clutter_model *<base-name>* ...commands... end_clutter_model**
+
+   Specify the clutter model. See :command:`clutter_model` for more information about the available clutter effects and how to configure the models.
+
+   Default: **none** (No clutter)
+
+.. command:: clutter_attenuation_factor <dbratio-value>
+
+   Specifies a constant value in the range [ 0 .. 1 ] by which the clutter returned will be multiplied to create an 'attenuated clutter return.'  If the signal_processor type mti_processor is supplied and this value is not provided, a clutter attenuation value will be computed.
+
+   Default: 1.0 absolute (i.e., No clutter attenuation)
+
+.. command:: signal_processor <type-name> ...commands... end_signal_processor
+
+   Specifies the signal processor identified by <type-name> form the following list:
+
+   .. include:: radar_signal_processor_types.txt
+
+.. command:: error_model_parameters ... end_error_model_parameters
+   :block:
+   
+   :ref:`error_model.radar_sensor_error`
+
+   Error model parameter overrides to be used by the :ref:`error_model.radar_sensor_error` to calculate the error in lieu of using default receiver / transmitter data.
+   
+   .. command:: azimuth_beamwidth <angle-value>
+   
+      Specifies the azimuth beamwidth to be used by the error_model.
+
+      Default: Receiver azimuth beamwidth.
+
+   .. command:: elevation_beamwidth <angle-value>
+
+      Specifies the elevation beamwidth to be used by the error_model.
+
+      Default: Receiver elevation beamwidth.
+   
+   .. command:: pulse_width <time-value>
+
+      Specifies the pulse width to be used by the error_model.
+
+      Default: Transmitter pulsewidth, corrected by pulse compression ratio.
+   
+   .. command:: receiver_bandwidth <frequency-value>
+
+      Specifies the receiver bandwidth to be used by the error_model.
+
+      Default: Receiver bandwidth.
+   
+   .. command:: doppler_resolution <speed-value>
+
+      Specifies the doppler resolution to be used by the error_model.
+
+      Default: Beam Doppler resolution.
+   
+.. end::
+.. include:: _wsf_radar_sensor.wsf_mil.txt

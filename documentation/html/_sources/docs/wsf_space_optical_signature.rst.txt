@@ -1,0 +1,252 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SPACE_OPTICAL_SIGNATURE
+----------------------------
+
+.. model:: optical_signature WSF_SPACE_OPTICAL_SIGNATURE
+
+.. parsed-literal::
+
+   optical_signature *<signature-name>* :model:`WSF_SPACE_OPTICAL_SIGNATURE`
+      state_ *<state-name>* | default
+         ... `Surface Commands`_
+      state_ ...
+      high_resolution_eclipse_ ...
+   end_optical_signature
+
+Overview
+========
+
+:model:`WSF_SPACE_OPTICAL_SIGNATURE` is an implementation of :command:`optical_signature` that dynamically computes
+the signature based on the position of the platform, Sun and Earth at the time of the request. In particular, the
+computed signature is the result of three components:
+
+* Solar reflection - the reflection of the Sun's radiation off the platform towards the sensor. This will occur only if
+  the Sun is visible from the platform.
+* Earth reflection - the reflection of the Earth's radiation off the platform towards the sensor. This consists of
+  two parts:
+
+  * The reflection of the Sun off the Earth
+  * The radiation of the Earth itself.
+
+* Platform thermal emissions - the platform heats up when exposed to the Sun and cools down when not.
+
+.. note::
+
+   This model provides all of the components needed by the optical and visual detection modes :model:`WSF_EOIR_SENSOR`
+   and :model:`WSF_IRST_SENSOR`, as well as the components needed by the visual detection of :model:`WSF_OPTICAL_SENSOR`.
+   In particular, this model also provides any signature that would otherwise be provided by :command:`platform.infrared_signature`
+   and :command:`platform.inherent_contrast`. Any signature provided by those commands will be ignored if this model is used.
+
+.. note::
+
+   At the current time all reflection assumes Lambertian diffuse reflection. Flares due to specular reflection off
+   solar panels will be not occur.
+
+.. block:: WSF_SPACE_OPTICAL_SIGNATURE
+
+Commands
+========
+
+.. command:: state  [ <state-name> | default ]
+
+   Indicates that the following table definition will be used when the platform is in the signature state *<state-name>*.
+   If **default** is specified then the subsequent table will be used if the platform is in a signature state that
+   does not match any of the states defined in the signature.
+
+   If a **state** command is not specified, then the signature has one state that applies to all signature states.
+
+.. note::
+
+   The use of multiple states in this model is experimental and should be used at your own risk.
+
+.. command:: high_resolution_eclipse <boolean-value>
+
+   This command enables a more accurate computation of the eclipse state of the platform. This affects both the modeled temperature for the surfaces that make up the signature, and the amount of incident solar radiation.
+
+   When this option is disabled, platforms having this signature that have a space mover will use an approximate calculation of eclipse times to determine when the surfaces will begin changing from their unlit (minimum_temperature_) to lit (maximum_temperature_) values. When this option is enabled, it will instead check the eclipsing state for each interaction.
+
+   When this is disabled, the incident solar radiation is either zero when in umbral shadow, or the full value when not in umbral shadow. When this option is enabled, the incident solar illumination also takes intermediate values when the surfaces are in the penumbral shadow region. The differences in these two modes is most notable far from the Earth.
+
+   .. note:: Enabling this feature will impact runtime because it will perform more calculations per interaction. However, for platforms that are in non-elliptical orbits, or which are far from the Earth, this mode will give more accurate results.
+
+   **Default:** disabled
+
+Surface Commands
+================
+
+These commands provide a means to define simple three-dimensional shapes that approximate the surface of the platform.
+The radiation is reflected off or emitted from each surface towards the observer. Each surface is considered independently
+and obscuration of one surface by another is not considered (thus one does not need to define the location of the surface).
+Another key point is that the actual dimensions of a surface are not important, but rather the area of the surface and
+its normal vector. This is important when aggregating surfaces, as discussed next.
+
+The number of shapes that define a platform should be kept to a minimum. For instance, the ISS has eight large solar panels
+with a total surface area of 2500 m^2. Assuming all articulate nearly equally, it is sufficient to define one surface (
+using 'box' or 'plane' surface) with an area of 2500 m^2.
+
+All surfaces with the exception of the 'sphere' are orientable.
+
+Common Surface Commands
+^^^^^^^^^^^^^^^^^^^^^^^
+
+All surfaces share the following commands:
+
+.. command:: reflectance <real-value>
+
+   **Default:** 1.0
+
+.. command:: temperature_change_rate <real-value> <temperature-units>/<time-units>
+
+   Specifies the time rate of change of the surface. When the Sun is no longer visible then the temperature of the surface
+   starts to decrease until it reaches minimum_temperature_. When the Sun is subsequently visible then the temperature of
+   the surface starts to increase until it reaches maximum_temperature_.
+
+   **Default:** 0.1 k/sec
+
+.. command:: minimum_temperature <temperature-value>
+
+   Specifies the minimum temperature to which the surface will decrease when not illuminated by the Sun.
+
+   **Default:** 173.15 k
+
+.. command:: maximum_temperature <temperature-value>
+
+   Specifies the maximum temperature to which the surface will increase when illuminated by the Sun.
+
+   **Default:** 373.15 k
+
+Orientable Surface Commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Most surfaces (with the exception of the 'sphere') can be oriented. Each surface has its own coordinate system that
+exactly parallels the :ref:`part coordinate system (PCS) <PCS>`. The dimensions or area of surface are initially
+defined in the :ref:`entity coordinate system <ECS>` and the orientation commands specify the orientation of the
+surface. The rotated frame is the part coordinate system and all cuing (if requested) is performed relative to this
+system.
+
+.. command:: yaw <angle-value>
+
+   Specifies the yaw angle of the surface with respect to the entity to which it is attached.
+
+   **Default:** 0.0 degrees
+
+.. command:: pitch <angle-value>
+
+   Specifies the pitch of the surface with respect to the entity to which it is attached.
+
+   **Default:** 0.0 degrees
+
+.. command:: roll <angle-value>
+
+   Specifies the roll of the surface with respect to the entity to which it is attached.
+
+   **Default:** 0.0 degrees
+
+.. command:: cue_to <cue-target>
+
+   Specify the vector with which the PCS X axis will be aligned, subject to the azimuth_cue_limits_ and
+   elevation_cue_limits_ defined below.
+
+   At the current time the only valid values for <cue-target> is
+
+      * sun
+
+   **Default:** none
+
+   .. note:: azimuth_cue_limits_ and/or elevation_cue_limits_ must be specified for cueing to occur.
+
+   .. note::
+
+      Cueing is most often used to position solar panels, but note that in real life the position is accomplished
+      orienting the panels and the platform. Depending on the attitude control of the platform, it may be necessary
+      to allow cueing in both directions to mimic the platform attitude changes.
+
+.. command:: azimuth_cue_limits <min-angle-value angle-value> <max-angle-value angle-value>
+
+   Specify the absolute minimum and maximum angle about which the surface can be cued in azimuth (rotated about the PCS
+   Z axis) when performing cue_to_ operations.
+
+   The limits are specified in the part coordinate system (PCS) and must be in the range [ -180 deg .. 180 deg ].
+
+   **Default:** 0 deg 0 deg (azimuth cueing is not performed)
+
+.. command:: elevation_cue_limits <min-angle-value angle-value> <max-angle-value angle-value>
+
+   Specify the absolute minimum and maximum angle about which the surface can be cued in elevation (rotated about the PCS
+   Y axis) when performing cue_to_ operations.
+
+   The limits are specified in the part coordinate system (PCS) and must be in the range [ -180 deg .. 180 deg ].
+
+   **Default:** 0 deg 0 deg (elevation cueing is not performed)
+
+Box Shape
+^^^^^^^^^
+
+.. parsed-literal::
+
+   surface box
+      size_ ...
+      ... `Orientable Surface Commands`_
+      ... `Common Surface Commands`_
+   end_surface
+
+A 'box' shape is a short-cut for defining the six faces that define a box.
+
+.. command:: size <length-value> <length-value> <length-value>
+
+   Defines the size of a box. The first value is the dimension along the :ref:`part coordinate system (PCS) <PCS>` X axis,
+   the second is the dimension along the PCS Y axis, and the third is the dimension along the PCS Z axis.
+
+   Note that one of the dimensions may be zero. This is provided so that two-sided objects like solar panels or SAR antennas
+   may be defined.
+
+   **Default:** 1 meter (each direction)
+
+Plane Shape
+^^^^^^^^^^^
+
+.. parsed-literal::
+
+   surface plane
+      area_ ...
+      ... `Orientable Surface Commands`_
+      ... `Common Surface Commands`_
+   end_surface
+
+A 'plane' shape represent a plane with the specified area. Unless otherwise changed by the yaw_, pitch_ and roll_ commands,
+the normal to the plane is  the :ref:`part coordinate system (PCS) <PCS>` X axis.
+
+Note that reflections only occur against normal to the face represented by the rotated X axis.
+
+.. command:: area <area-value>
+
+   Defines the area of the plane.
+
+   **Default:** 1 m^2
+
+Spherical Shape
+^^^^^^^^^^^^^^^
+
+.. parsed-literal::
+
+   surface sphere
+      radius_ ...
+      ... `Common Surface Commands`_
+   end_surface
+
+.. command:: radius <length-value>
+
+   Defines the radius of the sphere.
+
+   **Default:** 1 meter
+

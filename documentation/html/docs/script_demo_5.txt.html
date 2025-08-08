@@ -1,0 +1,668 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Script demo 5.txt &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="script_demos" href="script_demos.html" />
+    <link rel="prev" title="Script demo 4.txt" href="script_demo_4.txt.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demos.html" title="script_demos"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_4.txt.html" title="Script demo 4.txt"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="script-demo-5-txt">
+<h1>Script demo 5.txt<a class="headerlink" href="#script-demo-5-txt" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>################################################################################
+#                           Script Demo 5
+#
+# This is a script example that demonstrates many of the features
+# of the scripting language. It is not a lesson in tactics.
+# It is similar to Script Demo 2, however, it incorporates logic to &quot;fly to&quot; a
+# target location and bomb the target. The route to the target is not
+# hardcoded as in Script Demo 2.
+# In this scenario we have:
+# a) an air platform with a &#39;perfect&#39; ESM device which gives the precise
+#    location of an emitter.
+# b) another air platform that is acting as a strike platform.
+# c) a ground platform that is an enemy threat radar which turns on after 5
+#    min.
+#
+# The air platform will detect the threat radar and send a track to the striker
+# which will drop bombs on it.
+################################################################################
+
+event_output
+   file output/script_demo_5.evt
+   enable all
+end_event_output
+
+script_interface
+   # debug
+end_script_interface
+
+dis_interface
+  record output/script_demo_5.rep
+  mover_update_timer 5.0 sec
+  entity_position_threshold    10 m  # default is 1 m
+  heartbeat_timer 5.0 sec
+end_dis_interface
+
+# tps-1d
+antenna_pattern TPS-1D_RADAR_ANTENNA
+  constant_pattern
+     peak_gain  28 dB
+     azimuth_beamwidth  4 deg
+     elevation_beamwidth  10 deg
+  end_constant_pattern
+end_antenna_pattern
+
+sensor TPS-1D_SENSOR WSF_RADAR_SENSOR
+  frame_time  10 sec
+  location  0.0 0.0 -30 ft
+  scan_mode  azimuth
+  minimum_range    0 nm
+  maximum_range  160 nm
+  transmitter
+     antenna_pattern TPS-1D_RADAR_ANTENNA
+     antenna_tilt  5 deg
+     power  500 kw
+     pulse_width                 2.0e-6 sec
+     pulse_repetition_frequency  400 hz
+     frequency  1285 mhz
+  end_transmitter
+  receiver
+     antenna_pattern TPS-1D_RADAR_ANTENNA
+     antenna_tilt  5 deg
+     bandwidth  1 mhz
+     internal_loss  19 dB
+  end_receiver
+  swerling_case  1
+  number_of_pulses_integrated  44
+  detector_law  square
+  probability_of_false_alarm  1.0e-6
+  azimuth_error_sigma  0.5 deg
+  elevation_error_sigma  0.0 deg
+  range_error_sigma  1.2 nm
+  filter WSF_ALPHA_BETA_FILTER
+    alpha  0.6
+    beta   0.2
+  end_filter
+  hits_to_establish_track  3 5
+  hits_to_maintain_track  1 3
+  reports_location
+  reports_signal_to_noise
+  reports_range
+  reports_bearing
+end_sensor
+
+#From GBU.txt
+processor GBU_GUIDANCE_COMPUTER WSF_GUIDANCE_COMPUTER
+  proportional_navigation_gain  10.0
+  velocity_pursuit_gain         10.0
+  g_bias                         1.0
+  max_commanded_g              25.0 g
+  guidance_delay                0.0 sec
+  time_between_GPS_fixes      600.0 sec
+  IMU_drift_rate                0.0 m/s
+  update_interval               0.5 s
+end_processor
+
+processor CONTACT_FUSE WSF_GROUND_TARGET_FUSE
+   proximity_cancel_on_loss_of_target
+end_processor
+
+aero GBU_1000_LB_AERO WSF_AERO
+  reference_area      1.078 ft2 # 14.06 in dia
+  cd_zero_subsonic    0.100
+  cd_zero_supersonic  0.40
+  mach_begin_cd_rise  0.800
+  mach_end_cd_rise    1.200
+  mach_max_supersonic 2.000
+  cl_max             10.400    # unknown
+  aspect_ratio        4.000    # unknown
+end_aero
+
+aero GBU_1000_LB_PENETRATOR_AERO WSF_AERO
+  reference_area      1.078 ft2 # 14.06 in dia
+  cd_zero_subsonic    0.100
+  cd_zero_supersonic  0.40
+  mach_begin_cd_rise  0.800
+  mach_end_cd_rise    1.200
+  mach_max_supersonic 2.000
+  cl_max             10.400    # unknown
+  aspect_ratio        4.000    # unknown
+end_aero
+
+platform_type GBU_1000_LB WSF_PLATFORM
+  icon gbu-15
+  mover WSF_GUIDED_MOVER
+    aero GBU_1000_LB_AERO
+    mass 1015.0 lbm
+    update_interval 0.5 s
+  end_mover
+  processor guidance_computer GBU_GUIDANCE_COMPUTER
+  end_processor
+  processor detonator CONTACT_FUSE
+  end_processor
+end_platform_type
+
+platform_type GBU_1000_LB_PENETRATOR WSF_PLATFORM
+  icon gbu-15
+  mover WSF_GUIDED_MOVER
+    aero GBU_1000_LB_PENETRATOR_AERO
+    mass 1015.0 lbm
+    update_interval 0.5 s
+  end_mover
+  processor guidance_computer GBU_GUIDANCE_COMPUTER
+  end_processor
+  processor detonator CONTACT_FUSE
+  end_processor
+end_platform_type
+
+weapon_effects GBU_1000_LB_EFFECT WSF_SPHERICAL_LETHALITY
+  allow_incidental_damage
+  minimum_radius   30.0 m
+  maximum_radius   35.0 m
+  maximum_damage   1.0
+  minimum_damage   0.1
+  threshold_damage 0.2
+  exponent         1.0
+end_weapon_effects
+#################################################################################
+#                           Define the weapon types
+#################################################################################
+weapon GBU_1000_LB WSF_EXPLICIT_WEAPON
+   launched_platform_type GBU_1000_LB
+   weapon_effects         GBU_1000_LB_EFFECT
+   category               1000_POUNDER
+   category               glide_bomb_unit
+end_weapon
+
+weapon GBU_1000_LB_PENETRATOR WSF_EXPLICIT_WEAPON
+   launched_platform_type GBU_1000_LB_PENETRATOR
+   weapon_effects         GBU_1000_LB_EFFECT
+   category               1000_POUNDER
+   category               penetrator
+   category               glide_bomb_unit
+end_weapon
+
+processor GBU_1000_LB_LAUNCH_COMPUTER WSF_TASK_PROCESSOR
+#   script_debug_writes on
+#   show_state_transitions
+#   show_task_messages
+
+   script_variables
+      string WEAPON_NAME               = &quot;jdam-1000&quot;;
+      int SALVO_SIZE                   = 1;
+      # the following variable is used internally and should not be modified by the
+      # user
+      string mShootTaskStr      = &quot;Shoot&quot;;
+   end_script_variables
+
+    script bool InInterceptEnvelopeOf(WsfWeapon aWeapon)
+       bool canIntercept = false;
+       double maxRng = 8000;
+       double minRng = 300;
+       WsfTrackId id = TRACK.TrackId();
+       double targetrange = PLATFORM.SlantRangeTo(TRACK);
+       if ((targetrange &gt; minRng) &amp;&amp; (targetrange &lt; maxRng))
+       {
+         canIntercept = true;
+         writeln(&quot;Target is in range to intercept&quot;);
+       }
+       return canIntercept;
+   end_script
+
+   script bool HaveWeapons()
+      WsfWeapon weapon = PLATFORM.Weapon(WEAPON_NAME);
+      bool haveWeapons = false;
+      if (weapon.QuantityRemaining() &gt;= SALVO_SIZE)
+      {
+          haveWeapons = true;
+      }
+      return haveWeapons;
+   end_script
+
+   script bool LaunchWeapon()
+      WsfWeapon   weapon;
+      weapon = PLATFORM.Weapon(WEAPON_NAME);
+      bool canInterceptNow = false;
+      if (HaveWeapons())
+      {
+         canInterceptNow = InInterceptEnvelopeOf(weapon);
+      }
+      bool launched = false;
+      if (canInterceptNow)
+      {
+         launched = FireAt(TRACK, mShootTaskStr, weapon, SALVO_SIZE);
+         if (launched)
+         {
+            writeln_d(&quot;*** T=&quot;, TIME_NOW, &quot; &quot;, PLATFORM.Name(), &quot; &quot;,
+                      TRACK.TargetName(), &quot; R=&quot;, PLATFORM.SlantRangeTo(TRACK),
+                      &quot; FIRE!!!!&quot;);
+         }
+      }
+      return launched;
+   end_script
+
+
+# State Machine
+# Very simple state machine
+  evaluation_interval GOHOME 2.0 sec
+  state GOHOME  # Goes back to Loiter if out of weapons
+      next_state ENGAGE
+         bool weaponavail = true;
+         if (! HaveWeapons())
+         {
+             weaponavail = false;
+             PLATFORM.ReturnToRoute();
+             writeln(&quot;Turning off launch computer&quot;);
+             PROCESSOR.TurnOff();
+         }
+         return weaponavail;
+      end_next_state
+   end_state
+
+   evaluation_interval ENGAGE 2.0 sec
+   state ENGAGE  # Engages and fires the weapon if it can
+      next_state GOHOME
+         bool launched = false;
+         if (InInterceptEnvelopeOf(PLATFORM.Weapon(WEAPON_NAME)))
+         {
+             writeln_d(&quot;Trying to launch weapon &quot; );
+             launched = LaunchWeapon();
+         }
+         return launched;
+      end_next_state
+   end_state
+end_processor
+################################################################################
+# Define the platform type for notional EW radar site.
+platform_type EW_RADAR_SITE WSF_PLATFORM
+
+   sensor ew-radar-1 TPS-1D_SENSOR
+      processor track-proc
+   end_sensor
+
+   processor track-proc WSF_TRACK_PROCESSOR
+   end_processor
+
+end_platform_type
+
+################################################################################
+// Define the platform type for the notional AWACS.
+
+platform_type AWACS WSF_PLATFORM
+   mover WSF_AIR_MOVER
+     maximum_radial_acceleration .5 g
+     maximum_linear_acceleration .5 g
+   end_mover
+   comm rcvr-1 WSF_RADIO_RCVR
+      frequency 1200 mhz
+   end_comm
+   comm xmtr-1 WSF_RADIO_XMTR
+      frequency 1200 mhz
+   end_comm
+   // The &#39;perfect&#39; ESM device.  It can perfectly locate any transmitter in L-band
+   sensor esm-1 WSF_ESM_SENSOR
+      on
+      frame_time 5 sec
+      frequency_band 1000 mhz 2000 mhz    // L-band
+      reports_location
+      reports_frequency
+      processor track-proc
+      ignore no_awacs_esm
+   end_sensor
+   processor track-proc WSF_TRACK_PROCESSOR
+      update_interval 2 sec
+      report_to GOOD_GUYS subordinates via xmtr-1
+   end_processor
+end_platform_type
+################################################################################
+# Define the platform type for the notional F-18.
+platform_type F-18 WSF_PLATFORM
+   category no_awacs_esm
+
+   mover WSF_AIR_MOVER
+     maximum_radial_acceleration 2 g
+     maximum_linear_acceleration 2 g
+   end_mover
+
+   comm rcvr-1 WSF_RADIO_RCVR
+      frequency 1200 mhz
+      processor track-proc
+      processor attack-proc
+   end_comm
+
+   comm xmtr-1 WSF_RADIO_XMTR
+      frequency 1200 mhz
+   end_comm
+
+   processor track-proc WSF_TRACK_PROCESSOR
+   end_processor
+
+   processor attack-proc WSF_SCRIPT_PROCESSOR
+      on_message
+         type WSF_TRACK_MESSAGE
+            script
+               WsfTrackMessage trackMsg = (WsfTrackMessage)MESSAGE;
+               WsfTrack        track    = trackMsg.Track();
+               WsfTrackId      trackId  = track.TrackId();
+               double     targetLat     = track.Latitude();
+               double     targetLon     = track.Longitude();
+               if (TIME_NOW &lt; 50.0)
+               {
+                  writeln(&quot;Received track message from &quot;, trackId.OwningPlatform());
+               }
+
+               // If we aren&#39;t attacking then start the &#39;attack&#39;
+               WsfProcessor launchComputer = PLATFORM.Processor(&quot;jdam-1000-launch-computer&quot;);
+               if (! launchComputer.IsTurnedOn())
+               {
+                  writeln(&quot;Starting attack at T=&quot;, TIME_NOW);
+                  launchComputer.TurnOn();
+                  PLATFORM.GoToLocation(targetLat, targetLon);
+               }
+            end_script
+
+         type default
+            script
+               writeln(&quot;Received message of type &quot;, MESSAGE.Type());
+            end_script
+      end_on_message
+   end_processor
+
+   weapon jdam-1000 GBU_1000_LB
+   end_weapon
+
+   processor jdam-1000-launch-computer GBU_1000_LB_LAUNCH_COMPUTER
+     off
+     #on
+     update_interval 2 sec
+   end_processor
+end_platform_type
+
+################################################################################
+# And now the scenario
+
+platform threat-ew-1 EW_RADAR_SITE
+   side red
+   position 39:31:42.42n 91:38:35.111w
+
+   sensor ew-radar-1
+      off
+   end_sensor
+
+   execute at_time 5 minutes absolute
+      PLATFORM.TurnSensorOn(&quot;ew-radar-1&quot;);
+   end_execute
+
+end_platform
+
+platform awacs-1 AWACS
+   side blue
+   command_chain GOOD_GUYS SELF
+
+   sensor esm-1
+     on
+   end_sensor
+   execute at_time 5 minutes absolute
+     # PLATFORM.TurnSensorOn(&quot;esm-1&quot;);
+   end_execute
+
+   route
+      label awacs_loiter
+      position 39n 90w altitude 30000 ft speed 450 kts
+      position 40n 90w
+      position 40n 89:30w
+      position 39n 89:30w
+      goto awacs_loiter
+   end_route
+end_platform
+
+platform strike-1 F-18
+   side blue
+   command_chain GOOD_GUYS awacs-1
+   route
+      label Loiter_Cap
+      position 38:42:04.0n 90:32:08.0w altitude 15000 ft agl speed 250 kts
+      position 38:48:00.0n 90:31:20.0w altitude 15000 ft agl speed 270 kts
+      position 38:52:12n 90:30:36w altitude 15000 ft speed 400 kts
+      position 39:02:36n 90:25:18w altitude 15000 ft
+      position 38:59:48n 90:10:48w
+      position 38:50:18n 90:06:42w altitude 11000 ft speed 250 kts
+      position 38:37:48.0n 90:13:12.0w altitude 11000 ft agl speed 120 kts
+      goto Loiter_Cap
+   end_route
+
+   weapon jdam-1000
+      quantity 4
+      firing_interval 4 sec
+   end_weapon
+  heading 6 deg
+end_platform
+
+end_time 3000 sec
+</pre></div>
+</div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/script_demo_5.txt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="script_demos.html" title="script_demos"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="script_demo_4.txt.html" title="Script demo 4.txt"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

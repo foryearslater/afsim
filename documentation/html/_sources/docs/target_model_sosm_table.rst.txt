@@ -1,0 +1,284 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _SOSM_target_model_table:
+
+SOSM target model table
+-----------------------
+
+This page describes the process for creating a 'table' 'target_model' that can been loaded with the
+:command:`sosm_interface load_target <sosm_interface.load_target>` command.
+
+Creating the target model is a three step process:
+
+* Acquire raw spectral infrared signature data. This is generally accomplished by using an infrared prediction model
+  like IRIMAGE. (See `Executing IRIMAGE`_)
+
+* Convert the raw spectral infrared signature data created in the first step to a format that can be read by SOSM. (See
+  `Converting IRIMAGE 'kio3' Files`_)
+
+* Create the SOSM target definition file that specifies how the signature files created in the second step are to be
+  used during a simulation. (See `Creating the Target Definition File`_)
+
+A pair of Perl scripts have been provided with the standard WSF distribution that assists in using IRIMAGE to
+complete the first two steps.
+
+Executing IRIMAGE
+=================
+
+
+IRIMAGE is typically run by an IR signature analyst. This process can take a great deal of time (days to weeks
+depending on the number of cases desired). If you need to complete this step yourself then continue reading.
+
+A Perl script *execute_irimage.pl* is included with the standard WSF distribution in the directory *sosm/irimage*.
+This script facilitates executing IRIMAGE over a range of conditions. To execute the script:
+
+ *<path-to-wsf>*/sosm/irimage/execute_irimage.pl *<basename>*
+
+Where *<basename>* is the base name of the target type, and perhaps Mach number. For instance *su-35_m12* might be used
+for a SU-35 at Mach 1.2.
+
+This script takes two files:
+
+*<basename>*.def
+   Contains commands that define the mach number, altitudes and bands for which data will be generated.
+
+*<basename>*.iri
+   Contains the template of the IRIMAGE input needed to run this the mach number in question.
+
+The script then invokes IRIMAGE for each altitude and band for the given mach number and produces a '.kio3' file for
+each case.
+
+The files 'su-35_m12.def' and 'su-35_m12.iri' are provided as examples in the *sosm/irimage* directory.
+
+Converting IRIMAGE 'kio3' Files
+===============================
+
+
+Once IRIMAGE has been run to create the necessary 'kio3' files, the files must be converted into the format that can be
+used by SOSM. This can be accomplished using the 'kio3_to_sosm.pl' script that is supplied with each WSF release in
+the directory *sosm/irimage*.
+
+The first thing that needs to be done is to create a file named 'kio3_to_sosm.txt' in the same directory that contains
+the 'kio3' files. A template for this file in supplied with each WSF release in the directory *sosm/irimage*. After
+copying the file, edit the copy and update the information as directed in the comments at the end of the file. In most
+cases all that will need to be provided is security classification information in the third line.
+
+After that is complete, execute the following command::
+
+ *<path-to-wsf>*/sosm/irimage/kio3_to_sosm.pl *.kio3
+
+This will take each file of the form::
+
+ *<basename>*.kio3
+
+and produce four files:
+ *<basename>*.bda          Projected area of the body
+ *<basename>*.bdi          Radiant intensity of the body
+ *<basename>*.pla          Projected area of the plume
+ *<basename>*.pli          Radiant intensity of the plume
+
+These files should be copied the directory where the SOSM target definition will be created.
+
+Creating the Target Definition File
+===================================
+
+
+The target definition file defines under what simulation conditions which signature files should be used. This can best
+be documented by example, but first the commands will be documented.
+
+.. parsed-literal::
+
+ target_model_ **table**
+    state_ *<state-name-1>*
+
+       # ----- State selection control
+
+       altitude_range_      *<lower-length-value> <upper-length-value>*
+       mach_range_          *<lower-mach> <upper-mach>*
+       speed_range_         *<lower-speed-value> <upper-speed-value>*
+       throttle_range_      *<lower-value> <upper-value>*
+
+       # ----- Band Definitions
+
+       band_ *<band-name-1>*
+
+          # ----- Body and plume definition using implied file extensions
+
+          body_and_plume_   *<file-base>*     # reads .bda, .bdi, .pla and .pli
+          body_             *<file-base>*     # reads .bda and .bdi
+          plume_            *<file-base>*     # reads .pla and .pli
+
+          # ----- Body and plume definition using explicit files
+
+          body_area_        *<file-name>*
+          body_intensity_   *<file-name>*
+          plume_area_       *<file-name>*
+          plume_intensity_  *<file-name>*
+       **end_band**
+
+       band_ *<band-name-n>*
+          ... band-definition ...
+       **end_band**
+
+    **end_state**
+
+    state_ *<state-name-n>*
+       ... state-definition ...
+    **end_state**
+ **end_target_model**
+
+Target Definition Commands
+==========================
+
+.. block:: _.target_model_sosm_table_commands
+
+.. command:: target_model table ... end_target_model
+   
+   Introduces a target model definition that uses tables. **table** is required.
+
+.. command:: state <state-name> ... end_state
+   
+   A *state* identifies a set of target conditions to which the associated signature applies. The altitude_range_,
+   mach_range_, speed_range_ and throttle_range_ define the target conditions to which the state
+   applies. The contained band_ blocks define the associated signature files.
+   
+   *<state-name>* is simply a user-definable name for the state. It has no other purpose other than to uniquely identify
+   the state within the target definition.
+   
+   .. note::
+      Every target definition must have at least one state.
+
+   .. note::
+      The order of state_ definitions is important. For each detection chance, the target conditions
+      are used to select the appropriate state_. The list of states is searched in the order they are defined, and the
+      first one that matches the target conditions is used. If no state matches the current target conditions, the last state
+      defined is used.
+
+
+.. command:: altitude_range <lower-length-value> <upper-length-value>
+   
+   Defines the range of altitudes for which the enclosing state_ applies.
+    
+   **Default** No limits - altitude is not a criteria
+
+.. command:: mach_range <lower-mach> <upper-mach>
+.. command:: speed_range <lower-speed-value> <upper-speed-value>
+   
+   Defines the range of speeds for which the enclosing state_ applies. The range can be defined in either terms of
+   Mach number or absolute speed.
+
+.. command:: throttle_range <lower-value> <upper-value>
+   
+   Defines the throttle range for which the enclosing state_ applies.
+
+.. command:: band <band-name> ... end_band
+   
+   Every state_ must have one or more **band** blocks that define the signature files that apply to the specific
+   bands. *<band-name>* is simply a user-definable string that identifies the band. The actual range of wavelengths to
+   which the the enclosed files apply is determined by the file contents.
+   
+   Body area/intensity must be specified. Plume area/intensity is not required if a plume is not present.
+   
+   The signature files to be used can be loaded by the following commands:
+
+.. command:: body_and_plume <base-name>
+.. command:: body <base-name>
+.. command:: plume <base-name>
+
+   Load signature files using the assumed suffixes (.bda and .bdi for body, .pla and .pli for plume).
+   
+   * **body_and_plume** reads the signature files for both the body and the plume (*<base-name>*.bda, *<base-name>*.bdi,
+     *<base-name>*.pla and *<base-name>*.pli).
+   
+   * **body** reads only the signature files for the body (*<base-name>*.bda and *<base-name>*.bdi).
+   
+   * **plume** reads only the signature files for the plume (*<base-name>*.pla and *<base-name>*.pli).
+
+.. command:: body_area <file-name>
+.. command:: body_intensity <file-name>
+.. command:: plume_area <file-name>
+.. command:: plume_intensity <file-name>
+   
+   Load signature files without using the assumed suffixes.
+
+Example
+^^^^^^^
+
+Assume we are creating a definition for a new fighter call F-XX and that the first two steps have been executed for the
+following conditions:
+
+ * Two Mach numbers 0.8 and 1.2
+ * Three altitudes, 30000 feet, 35000 feet and 40000 feet.
+ * Two sensor bands, MWIR (3-5 um) and LWIR (8-12 um).
+
+This will result in having 12 sets of files, which will be assumed to be named as follows::
+
+ f-xx_30k_m08_lwir.*
+ f-xx_30k_m08_mwir.*
+ f-xx_30k_m12_lwir.*
+ f-xx_30k_m12_mwir.*
+ f-xx_35k_m08_lwir.*
+ f-xx_35k_m08_mwir.*
+ f-xx_35k_m12_lwir.*
+ f-xx_35k_m12_mwir.*
+ f-xx_40k_m08_lwir.*
+ f-xx_40k_m08_mwir.*
+ f-xx_40k_m12_lwir.*
+ f-xx_40k_m12_mwir.*
+
+Furthermore, assume a directory 'f-xx' has been created.
+
+The target definition file *f-xx.txt* would then look like::
+
+ target_model table
+    state 30k_m08
+       altitude_range 0 ft 32500 ft
+       mach_range     0.0 1.0
+       band lwir body_and_plume f-xx_30k_m08_lwir end_band
+       band mwir body_and_plume f-xx_30k_m08_mwir end_band
+    end_state
+
+    state 30k_m12
+       altitude_range 0 ft 32500 ft
+       mach_range     1.0 10.0
+       band lwir body_and_plume f-xx_30k_m12_lwir end_band
+       band mwir body_and_plume f-xx_30k_m12_mwir end_band
+    end_state
+
+    state 35k_m08
+       altitude_range 32500 ft 37500 ft
+       mach_range     0.0 1.0
+       band lwir body_and_plume f-xx_35k_m08_lwir end_band
+       band mwir body_and_plume f-xx_35k_m08_mwir end_band
+    end_state
+
+    state 35k_m12
+       altitude_range 32500 ft 37500 ft
+       mach_range     1.0 10.0
+       band lwir body_and_plume f-xx_35k_m12_lwir end_band
+       band mwir body_and_plume f-xx_35k_m12_mwir end_band
+    end_state
+
+    state 40k_m08
+       altitude_range 37500 ft 42500 ft
+       mach_range     0.0 1.0
+       band lwir body_and_plume f-xx_40k_m08_lwir end_band
+       band mwir body_and_plume f-xx_40k_m08_mwir end_band
+    end_state
+
+    state 40k_m12
+       altitude_range 37500 ft 42500 ft
+       mach_range     1.0 10.0
+       band lwir body_and_plume f-xx_40k_m12_lwir end_band
+       band mwir body_and_plume f-xx_40k_m12_mwir end_band
+    end_state
+ end_target_model

@@ -1,0 +1,232 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfTargetPoint
+--------------
+
+.. class:: WsfTargetPoint
+
+The :class:`WsfTargetPoint` is used to specify the target of a targeting-class
+maneuver (:class:`WsfTargetManeuver`, :class:`WsfInterceptManeuver`, and
+:class:`WsfRendezvousManeuver`). Target points for these maneuvers consist
+of a base target and an optional offset. The base target specifies the
+platform or other point that is used as the target of the maneuver. Optionally,
+that base target can be modified by an offset so that the targeting operation
+will not end at the same place as the base target, but near to the base target.
+
+In addition to the kinematic (position and velocity) offset, the :class:`WsfTargetPoint`
+also supports two forms of offset in time. The first, called an offset time, gives time
+time after the end of the maneuver at which the given kinematic offset will
+be achieved. The second, called a lag time, will instead target a point that is
+behind the target on its orbit. For example, a lag time of one hour for a rendezvous
+will maneuver onto the target's orbit, but will be one hour behind the target.
+
+Methods
+=======
+
+.. method:: WsfTargetPoint ConstructFromTrack(WsfTrackId aTrackId)
+
+   This static method creates a :class:`WsfTargetPoint` that has the state
+   represented by the given :class:`WsfTrackId` as its base target.
+
+.. method:: WsfTargetPoint ConstructFromLibrationPoint(WsfLibrationPointSystem aLP_System, WsfLibrationPointSelection aLP_Point)
+
+   This static method creates a :class:`WsfTargetPoint` that has the given
+   :class:`WsfLibrationPointSelection` of the given :class:`WsfLibrationPointSystem`
+   as its base target.
+
+.. method:: WsfTargetPoint ConstructFromKinematicState(Vec3 aPositionECI)
+            WsfTargetPoint ConstructFromKinematicState(Vec3 aPositionECI, Vec3 aVelocityECI)
+
+   This static method creates a :class:`WsfTargetPoint` that has the given
+   kinematic state as its base target. If only the *aPositionECI* is supplied,
+   the base target will have a zero velocity.
+
+.. method:: bool HasTrackTarget()
+
+   Return if this object was created with a track base target.
+
+.. method:: bool HasLibrationPointTarget()
+
+   Return if this object was created with a libration point base target.
+
+.. method:: bool HasKinematicStateTarget()
+
+   Return if this object was created with a kinematic state base target.
+
+.. method:: bool HasPositionOffset()
+
+   Return if this object has a defined position offset.
+
+.. method:: bool HasVelocityOffset()
+
+   Return if this object has a defined velocity offset.
+
+.. method:: bool HasOffsetTime()
+
+   Return if this object has an offset time specified.
+
+.. method:: bool HasLagTime()
+
+   Return if this object has a lag time specified.
+
+.. method:: WsfOrbitalReferenceFrame PositionOffsetFrame()
+
+   Return a :class:`WsfOrbitalReferenceFrame` instance giving the frame in which
+   any position offset is specified. This method only gives a meaningful return value
+   if :method:`WsfTargetPoint.HasPositionOffset` returns true for this object.
+
+.. method:: Vec3 PositionOffset()
+
+   Return the position offset specified for this object (in meters). This offset is in the frame
+   given by :method:`WsfTargetPoint.PositionOffsetFrame`, and is only meaningful if
+   :method:`WsfTargetPoint.HasPositionOffset` returns true for this object.
+
+.. method:: WsfOrbitalReferenceFrame VelocityOffsetFrame()
+
+   Return a :class:`WsfOrbitalReferenceFrame` instance giving the frame in which
+   any velocity offset is specified. This method only gives a meaningful return
+   value if :method:`WsfTargetPoint.HasVelocityOffset` returns true for this
+   object.
+
+.. method:: Vec3 VelocityOffset()
+
+   Return the velocity offset specified for this object (in meters per second).
+   This offset is in the frame given by :method:`WsfTargetPoint.VelocityOffsetFrame`,
+   and is only meaningful if :method:`WsfTargetPoint.HasVelocityOffset` returns
+   true for this object.
+
+.. method:: double OffsetTime()
+
+   Return the offset time specified for this object in seconds. This offset is
+   only meaningful if :method:`WsfTargetPoint.HasOffsetTime` returns true for
+   this object.
+
+.. method:: double LagTime()
+
+   Return the lag time specified for this object in seconds. This lag time is
+   only meaningful if :method:`WsfTargetPoint.HasLagTime` returns true for this
+   object.
+
+.. method:: WsfLibrationPointSystem LibrationPointSystem()
+
+   Return the :class:`WsfLibrationPointSystem` that this object specifies as
+   a base target. The return value of this method is only meaningful if
+   :method:`WsfTargetPoint.HasLibrationPointTarget` returns true for this
+   object.
+
+.. method:: WsfLibrationPointSelection LibrationPointSelection()
+
+   Return the :class:`WsfLibrationPointSelection` that this object specifies
+   as a base target. The return value of this method is only meaningful if
+   :method:`WsfTargetPoint.HasLibrationPointTarget` returns true for this
+   object.
+
+.. method:: WsfTrackId TrackId()
+
+   Return the :class:`WsfTrackId` that this object specifies as a base target.
+   The return value of this method is only meaningful if
+   :method:`WsfTargetPoint.HasTrackTarget` returns true for this object.
+
+.. method:: Vec3 KinematicStateTargetPosition()
+
+   Return the ECI position of the kinematic state that this object specifies as
+   a base target. The returned value will be in units of meters, and will only be
+   meaningful if :method:`WsfTargetPoint.HasKinematicStateTarget` returns true
+   for this object.
+
+.. method:: Vec3 KinematicStateTargetVelocity()
+
+   Return the ECI velocity of the kinematic state that this object specifies as
+   a base target. The returned value will be in units of meters per second, and
+   will only be meaningful if :method:`WsfTargetPoint.HasKinematicStateTarget`
+   returns true for this object.
+
+.. method:: void ClearPositionOffset()
+
+   Clear any position offset specified on this object. After this method returns,
+   :method:`WsfTargetPoint.HasPositionOffset` will return false for this object.
+
+.. method:: void SetPositionOffset(Vec3 aOffset, WsfOrbitalReferenceFrame aFrame)
+
+   Set the position offset in meters for this object to the given value for the given frame.
+   After this method returns, :method:`WsfTargetPoint.HasPositionOffset` will
+   return true for this object. Only the values returned by
+   :method:`WsfOrbitalReferenceFrame.NTW` and :method:`WsfOrbitalReferenceFrame.RIC`
+   are acceptable inputs for the second argument, *aFrame*.
+
+.. method:: void ClearVelocityOffset()
+
+   Clear any velocity offset specified on this object. After this method returns,
+   :method:`WsfTargetPoint.HasPositionOffset` will return false for this object.
+
+.. method:: void SetVelocityOffset(Vec3 aOffset, WsfOrbitalReferenceFrame aFrame)
+
+   Set the velocity offset in meters per second for this object to the given value for the given frame.
+   After this method returns, :method:`WsfTargetPoint.HasVelocityOffset` will
+   return true for this object. Only the values returned by
+   :method:`WsfOrbitalReferenceFrame.NTW` and :method:`WsfOrbitalReferenceFrame.RIC`
+   are acceptable inputs for the second argument, *aFrame*.
+
+.. method:: void ClearOffsetTime()
+
+   Clear any offset time specified on this object. After this method returns,
+   :method:`WsfTargetPoint.HasOffsetTime` will return false for this object.
+
+.. method:: void SetOffsetTime(double aOffsetTime)
+
+   Set the offset time in seconds for this object to the given value. After this
+   method returns, :method:`WsfTargetPoint.HasOffsetTime` will return true for this
+   object.
+
+.. method:: void ClearLagTime()
+
+   Clear any lag time specified on this object. After this method returns,
+   :method:`WsfTargetPoint.HasLagTime` will return false for this object.
+
+.. method:: void SetLagTime(double aLagTime)
+
+   Set the lag time in seconds for this object to the given value. After this
+   method returns, :method:`WsfTargetPoint.HasLagTime` will return true for this
+   object.
+
+Deprecated Methods
+==================
+
+The following methods are all deprecated, and will be removed in a future
+release.
+
+.. method:: bool HasOffset()
+
+   Return if this object has a defined position offset.
+
+.. method:: WsfTargetOffsetFrame OffsetFrame()
+
+   Return a :class:`WsfTargetOffsetFrame` instance giving the frame in which
+   any position offset is specified. This method only gives a meaningful return value
+   if :method:`WsfTargetPoint.HasOffset` returns true for this object.
+
+.. method:: Vec3 Offset()
+
+   Return the position offset specified for this object. This offset is in the frame
+   given by :method:`WsfTargetPoint.OffsetFrame`, and is only meaningful if
+   :method:`WsfTargetPoint.HasOffset` returns true for this object.
+
+.. method:: void ClearOffset()
+
+   Clear any position offset specified on this object. After this method returns,
+   :method:`WsfTargetPoint.HasOffset` will return false for this object.
+
+.. method:: void SetOffset(Vec3 aOffset, WsfTargetOffsetFrame aFrame)
+
+   Set the position offset for this object to the given value for the given frame.
+   After this method returns, :method:`WsfTargetPoint.HasOffset` will
+   return true for this object.

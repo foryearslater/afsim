@@ -1,0 +1,77 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.10.0:
+
+WSF 1.10.0 - 20 Mar 2015
+------------------------
+
+General
+=======
+
+* The "reports_state_covariance" sensor mode input is now deprecated. State covariances will only be valid at the sensor level if a Kalman Filter is present. Likewise, measurement covariances will be valid at the sensor level if valid errors exist for range, az, and el. This change prevents the inconsistency of assuming that a sensor can report state covariance when not enough user inputs were provided to enable the calculation.
+
+Corrections
+===========
+
+* Corrected an issue with :model:`WSF_GEOMETRIC_SENSOR` minimum_range input not being used in the detection calculations properly.
+* Fixed an issue where 'file_path' command would revert to being relative to the working directory instead of relative to the current file in some circumstances.
+* Corrected the problem where the :command:`attenuation_model.simple.attenuation_factor` in the :ref:`attenuation_model.simple` attenuation model did not work.
+* **(1.9.5 Release and newer)** Fixed a problem with the :command:`wsf_weapon_server` where the client application would often crash after firing a remote weapon.
+* **(1.9.4 Release and newer)** Fixed a problem where lethal regions defined in :model:`WSF_HEL_LETHALITY` (for instance, SU-27 IRST) were not being recognized properly.  This problem did not exist in Version 1.8.  Functionally related, another problem was fixed in the :model:`WSF_INTERSECT_PROCESSOR` that caused the simulation to crash upon completion.
+* **(1.9.4 Release and newer)** Fixed an issue with checking false target interactors on a :model:`WSF_RF_JAMMER` that may not have a valid :command:`electronic_attack` pointer causing a segmentation fault with :model:`WSF_OTH_RADAR_SENSOR` and :model:`WSF_RADAR_SENSOR`.
+* **(1.9.4 Release and newer)** Fixed a segmentation fault issue at startup in :command:`sensor_plot` when using the variable 'jamming_power_required'.
+* **(CR 10971)** Fixed problem with slave ESM sensors in TDOA calculations erroneously detecting targets with insufficient S/N.
+* **(CR 10974)** **(1.9.1 Release and newer)** Fixed problem when running the simulation with :command:`multi_threading`, issue was with the random number generator not being thread safe and after the snapshotting updates went in issues became apparent.
+* **(CR 10985)** **(1.9.1 Release and newer)** Fixed an issue with the :model:`WSF_SLC_EFFECT` and :model:`WSF_SLB_EFFECT` where the auxiliary antenna pattern wasn't being used for all polarizations due to using the radar receivers polarization as the aux receivers polarization instead of setting the default polarization.
+* **(CR 11004)** **(1.9.2 Release and newer)** Fixed an issue in :command:`sensor_plot` where the **script_variable** command was not working due to snapshotting updates.
+* **(CR 11005)** **(1.9.3 Release and newer)** Fixed an issue with the calculation of Free-Space Path loss equation using the transmitter frequency as the center frequency of the calculation resulting in an incorrect frequency in the case of a wideband jamming signal not centered on the receiver's frequency. This issue would also be relevant to other systems where the transmitter and receiver do not have a matching center frequency. The receive frequency is now used to calculate the power density and then the polarization and bandwidth mismatch effects are applied for non-passive (i.e. non ESM and RWR (wideband)) sensors. For ESM and wideband passive sensors the transmit frequency is still used as before.
+* **(CR 11010)** **(1.9.2 Release and newer)** Fixed a possible divide by zero for some fuel transfers in P6DofPropulsionSystem.
+* **(CR 11027)** **(1.9.4 Release and newer)** Fixed an issue with :model:`WSF_RF_JAMMER` using the :command:`_.transmitter.powers` vs frequency tables getting overridden during runtime. This issue was due to the power distribution routines overwriting the table during power dividing amongst the beams and spots. The fix for this issue was to use the duty-cycle setting for this instead of setting the power, which is a more robust solution when dealing with EM systems.
+* **(CR 10162)** Fixed an issue where az and el errors reported by sensors were incorrectly being stored as bearing/elevation errors in a track.  This was not a problem for ground-based sensors with default orientation (for instance, most IADS radars), but would cause issues with oriented sensors or sensors mounted on non-level platforms.
+* **(CR 11054)** Corrected a problem where calling SwapMover (platform script method) did not initialize the mover, causing the platform to become immobilized.
+* **(CR 11055)** Fixed issues with :model:`WSF_SPACE_MOVER` where the :command:`oblate_earth <WSF_SPACE_MOVER.oblate_earth>` input (J2 propagation) was not working properly.  Also ensured that the start epoch is set to the start of the simulation if none is provided by other inputs.
+* Corrected a problem that sometimes prevented a frame-stepped simulation to run to completion.
+* Changed the :class:`WsfPlatform` and :class:`WsfPlatformPart` script method **SetDamageFactor** to **DamageFactor** via overloading with an input to set and no input to get value.
+* Properly set the task type for quantum tasks created by the simple generators (the simple_weapon generator creates "WEAPON" tasks, etc...)
+* Fixed a bug with the allocator_extra_tasks and allocator_extra_assets on the :model:`WSF_QUANTUM_TASKER_PROCESSOR` where it would allocate roughly half of the extra and then stop.
+
+Enhancements
+============
+
+* Added the :model:`WSF_BRAWLER_MOVER` types.  Most useful when using the "evaluate" methods on the :class:`WsfBrawlerPlatform` from script.  See the "brawler_demo" for various examples of use for BRAWLER replicated agents.
+* Rearchitected the :model:`WSF_MOBILITY_AND_FIREPOWER_LETHALITY` model to permit lethalities to be defined specific to a given threat type.   Also permitted Pk of the model to be degraded in the face of explicit countermeasures, such as flares, chaff, or obscurants.
+* Rearchitected the :model:`WSF_EXCHANGE_PROCESSOR` to be derived from script processor, and added a script interface to control Reserve() and Request() details and timing (for Offerors/Suppliers, and Receivers/Requestors, respectively).
+* Multiple runtime improvements to the :command:`weapon_tools` :model:`AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR`. Results tables are not generated as the simulation is running instead of at the end only. Also, memory management issues causing large memory usage have been partially resolved (i.e. lowered significantly).
+* Added in the ability to define multiple :command:`_.transmitter.pulse_repetition_intervals` or :command:`_.transmitter.pulse_repetition_frequencies` in the :command:`_.transmitter`. If multiple PRIs/PRFs are defined the base return when getting the PRF or PRI through scripting will return the average PRI/PRF.
+* Added capability to Get/Set :ref:`two line elements <docs/wsf_space_mover:Orbital Element Commands>` in script, using the :class:`WsfSpaceMover` script object.  Note that extracted TLEs contain current orbital elements, and so do not represent a "true" TLE, which contain averages of some values.
+* Moved the :model:`WSF_RADAR_SENSOR` mti_adjustment and mti_processor capabilities to a :command:`WSF_RADAR_SENSOR.signal_processor` implementation.
+* Added in new :command:`WSF_RADAR_SENSOR.signal_processor` types to include :ref:`signal_processor.pulse_doppler`, :ref:`signal_processor.moving_target_indicator` and :ref:`signal_processor.moving_target_detector`.
+* **(CR 10945)** Added **SENSOR_TRACK_COASTED** event to :command:`observer` and :command:`event_output` to specify when a detection was missed and track was coasted for that detection attempt.
+* **(CR 11028)** **(1.9.4 Release and newer)** Changed the way in which the :command:`_.transmitter.power` for :command:`_.transmitter` use the frequency when calculating the power. Before the center frequency of the transmitter was used for power calculations within interactions between :command:`_.receiver` and :command:`_.transmitter`, now for power calculations in interactions if the receiver has a frequency it is used to calculate antenna gain and power from the power vs. frequency table.
+* Measurement covariances can be retrieved from :class:`WsfTrack` that are products of sensors, assuming valid errors are defined in range, az, and el.  As with Kalman Filter state covariances, measurement covariances are displayed in the :command:`event_output` using the :command:`event_output.print_track_covariance` option.
+* Quantitative track quality information is now available by default, without the need to set the :command:`quantitative_track_quality` flag.  A separate :method:`WsfTrack.Quality` method provides this datum, if available, based on measurement or state covariances.  If not enough data are available to compute a quantitative quality, the standard :method:`WsfTrack.TrackQuality` is returned.
+* Added UPLINK_INITIATED and UPLINK_DROPPED :command:`observer` events.
+* Added :model:`WSF_UPLINK_PROCESSOR` processor type, which all uplinks channel through.  Easier control of uplinks through it's script object: :class:`WsfUplinkProcessor`.
+* **(CR 11053)** Added ability edit states of the finite state machine on a script processor.  Added the ability to edit behaviors on the behavior_tree inside of a state. E.G. **edit state <state name> edit behavior <behavior name> ... end_behavior end_state**.
+* Added the :command:`WSF_QUANTUM_TASKER_PROCESSOR.update_assignments` command in the :model:`WSF_QUANTUM_TASKER_PROCESSOR`. Useful for when task data updates regularly and task updates should be sent to the assigned assets.
+* Added script methods to :class:`WsfQuantumTaskerProcessor` to match names of legacy :class:`WsfTaskManager` methods, like "ReceivedTaskList()" and "AssignedTaskList()".
+
+Developer Items
+===============
+
+ * The reporting flags for sensor modes have been slightly reworked so that there is an instance of these flags for what we ask the sensor mode to report, and an instance that describes the sensor mode capabilities (what it can actually report).  Sensor mode definitions are now responsible for calling SetCapabilities(...) for data that the mode is capable of reporting.  As the default value is to have the capability to report everything, this is especially important when the sensor cannot report certain data.  The reporting flags are also now referenced differently; for example:
+
+  * `mReportOther = true;                  // old way to set that the mode reports "other" data`
+  * `mReportingFlags.mReportOther = true;  // new way`
+
+ * Measurement covariances are now computed whenever possible during sensor detections.
+ * Added basic capability to process XML tags using UtInput.

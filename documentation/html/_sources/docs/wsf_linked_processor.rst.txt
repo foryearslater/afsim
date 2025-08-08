@@ -1,0 +1,50 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_LINKED_PROCESSOR
+--------------------
+
+.. model:: processor WSF_LINKED_PROCESSOR
+
+.. parsed-literal::
+
+ processor <name> :model:`WSF_LINKED_PROCESSOR`
+    ... :command:`processor` commands ...
+    :ref:`Platform_Part_Commands` ...
+    ... :ref:`External_Link_Commands` ...
+ end_processor
+
+Overview
+========
+
+:model:`WSF_LINKED_PROCESSOR` is a processor with :command:`_.platform_part.internal_link` (to other
+processors) and :ref:`external links <External_Link_Commands>` (to other platforms through :command:`comm`).  Although this type
+has limited utility, many other processor types are derived from it, and similarly, have links.
+
+One simple use is a radar post in which the radar reports are to be sent directly to the commander. In this case one
+would have something like:
+
+.. parsed-literal::
+
+   platform_type RADAR_POST WSF_PLATFORM
+      comm datalink :model:`WSF_COMM_TRANSCEIVER`
+         ...
+      end_comm
+
+      sensor radar :model:`WSF_RADAR_SENSOR`
+         ...
+         internal_link router
+      end_sensor
+
+      processor router :model:`WSF_LINKED_PROCESSOR`
+         external_link commander via datalink
+      end_processor
+   end_platform_type

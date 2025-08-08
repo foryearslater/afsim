@@ -1,0 +1,127 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSixDOF_ManeuverConstraint
+----------------------------
+
+.. class:: WsfSixDOF_ManeuverConstraint
+
+Overview
+========
+
+Maneuver constraints specify the conditions under which a maneuver will begin
+executing, and when a maneuver will be considered to be completed. A constraint
+can be executed multiple times during the lifetime of a maneuver. Each 
+:class:`WsfSixDOF_Maneuver` can support one entry and one exit constraint.
+
+Creation Methods
+================
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_TIME(double aTime)
+
+   Return a constraint that will become satisfied only once the given 
+   absolute time is reached.
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_RELATIVE_TIME(double aRelativeTime)
+
+   Return a constraint that will become satisfied the given time after the
+   assignment time of the constraint. The assignment time of the constraint is
+   the time at which the associated maneuver becomes pending (for an entry
+   constraint) or completing (for an exit constraint). 
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_ROLL_ANGLE(double aRollAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain roll
+   angle in degrees.
+
+   The constraint is considered satisfied when the mover's roll angle crosses
+   over aRollAngleDeg or is observed within 0.01 radians of aRollAngleDeg.
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_PITCH_ANGLE(double aPitchAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain pitch
+   angle in degrees.
+
+   The constraint is considered satisfied when the mover's pitch angle crosses
+   over aPitchAngleDeg or is observed within 0.01 radians of aPitchAngleDeg.
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_HEADING(double aHeadingDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain
+   heading in degrees.
+
+   The constraint is considered satisfied when the mover's heading angle crosses
+   over aHeadingDeg or is observed within 0.005 radians of aHeadingDeg.
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_ALTITUDE(double aAltitudeMeters)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain 
+   altitude in meters.
+
+   The constraint is considered satisfied when the mover's altitude crosses
+   over aAltitudeMeters or is observed within 50 meters of aAltitudeMeters.
+
+.. method:: WsfSixDOF_ManeuverConstraint AT_FLIGHT_PATH_ANGLE(double aPathAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain
+   flight path angle in degrees.
+
+   The constraint is considered satisfied when the mover's flight path angle crosses
+   over aPathAngleDeg or is observed within 0.01 radians of aPathAngleDeg.
+
+.. method:: WsfSixDOF_ManeuverConstraint SCRIPT(string aSatisfied, string aNextEvaluation)
+
+   Return a constraint that will use the named user-supplied scripts in the 
+   global context to perform the work of the constraint. The first script
+   will be executed to determine if the constraint is satisfied. If not, then
+   the second script will be executed to determine the next time to perform the
+   evaluation test. Both scripts need to take two arguments: the first, a
+   double, is the assignment time of the constraint; the second, a
+   :class:`WsfSixDOF_Mover` is the mover to which the associated maneuver is
+   assigned. The first script should return a boolean value indicating if
+   the constraint is satisfied. The second script should return a double
+   giving the time that the constraint should next be evaluated.
+
+   For example, to reproduce the behavior of the constraints returned by
+   :method:`WsfSixDOF_ManeuverConstraint.AT_RELATIVE_TIME`, one could use the
+   following scripts:
+
+   ::
+
+      script_variables
+         double aRelativeTime = 3.0;
+      end_script_variables
+
+      script bool AtRelativeTimeEvaluator(double aAssignTime, WsfSixDOF_Mover aMover)
+         return TIME_NOW >= aAssignTime + aRelativeTime;
+      end_script
+
+      script double AtRelativeTimeNextEvaluation(double aAssignTime, WsfSixDOF_Mover aMover)
+         return aAssignTime + aRelativeTime;
+      end_script
+
+      ...
+
+      WsfSixDOF_ManeuverConstraint constraint = WsfSixDOF_ManeuverConstraint.SCRIPT("AtRelativeTimeEvaluator", "AtRelativeTimeNextEvaluation");
+
+      ...
+
+General Methods
+===============
+
+.. method:: string Type()
+
+   Return the type of the constraint.

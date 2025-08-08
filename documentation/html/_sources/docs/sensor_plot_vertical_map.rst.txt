@@ -1,0 +1,185 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+sensor_plot_vertical_map
+------------------------
+
+**Navigation:** :command:`sensor_plot` > **vertical__map**
+
+.. command:: vertical_map ... end_vertical_map
+   :block:
+
+   .. parsed-literal::
+
+    vertical_map_
+
+      :ref:`sensor_plot.Stub_Definition_Commands`
+
+      # `Sensor Control`_
+
+      mode_name_ ...
+
+      # `Jammer Control`_
+
+      jammer_to_signal_reference_ ...
+      jamming_platform_name_ ...
+
+      target_platform_type_
+      target_speed_ | target_mach_
+      target_heading_
+      target_yaw_
+      target_pitch_
+      target_roll_
+
+      # `Target Region`_
+
+      ground_range_limits_ ...
+      ground_range_step_ ...
+      altitude_limits_ ...
+      altitude_step_ ...
+
+      # `Output Selection`_
+
+      variable_ ...
+      script_variable_ ...
+      detection_reference_ ...
+
+      pd_map_file_ ...
+      header_line_1_ ...
+      header_line_2_ ...
+      header_line_3_ ...
+      output_column_limit_ ...
+
+      gnuplot_file_ ...
+      gnuplot_player_file_ ...
+
+    end_vertical_map
+
+Overview
+========
+
+The **vertical_map** command is used to generate a plot file of target detectability at the intersection points of a vertical rectangular mesh. Two types of plot files can be produced:
+
+* A 'pd map' file for the program 'plotview' to show a typical ground range/altitude plot.
+* A file suitable for plotting with the program 'gnuplot'.
+
+To create a file, the following process should be followed:
+
+* Define a platform type of the type specified by the command target_platform_type_ (Default: **TARGET_PLATFORM_TYPE**) with the desired :command:`radar <radar_signature>`, :command:`infrared <infrared_signature>`, :command:`optical <optical_signature>` or :command:`acoustic <acoustic_signature>` signature depending on the type(s) of sensors being tested.
+* Define a platform type of **SENSOR_PLATFORM_TYPE**, which contains the sensor to be used to detect the target.
+* Define the **vertical_map** input block with:
+
+  * ground_range_limits_ and altitude_limits_ (and optionally ground_range_step_ and altitude_step_ commands to define the mesh of sample points.)
+  * An optional target_speed_ command to specify the target speed.
+  * Output selection commands.
+
+Sensor Control
+==============
+
+.. command:: mode_name <mode_name>
+
+   Specifies the name of the mode to be used if the sensor is a multi-mode sensor.
+
+   **Default** The default mode of the sensor. This will be the value of the :command:`sensor.initial_mode` command of the sensor (if defined) or the first mode (if :command:`sensor.initial_mode` was not defined).
+
+Jammer Control
+==============
+
+.. command:: jammer_to_signal_reference <db-ratio-value>
+
+   Specifies the jammer-to-signal (J/S) reference to be used when plotting the '**required_jamming_power**' variable.
+
+   **Default** 0.0 db
+
+.. command:: jamming_platform_name <platform-name>
+
+   Specifies the platform that will be used to calculate the required jamming power. This input is to be used when
+   plotting the '**required_jamming_power**' variable for the location of the jammer system.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+
+.. include:: sensor_plot_target_characteristics.txt
+
+Target Region
+=============
+
+.. command:: ground_range_limits <min-length-value> <max-length-value>
+
+   Specifies the ground range limits of the sample mesh.
+
+   **Default** none. This must be provided.
+
+.. command:: ground_range_step <step-length-value>
+
+   Specifies the increment between sample points in the ground range direction.
+
+   **Default** 1.0 nm
+
+.. command:: altitude_limits <min-length-value> max-length-value>
+
+   Specifies the altitude limits of the sample mesh.
+
+   **Default** none. This must be provided.
+
+.. command:: altitude_step <step-length-value>
+
+   Specifies the increment between sample points in the altitude direction.
+
+   **Default** 0.25 nm
+
+Output Selection
+================
+
+.. include:: sensor_plot_map_variables.txt
+.. include:: sensor_plot_map_script_variables.txt
+
+.. command:: detection_reference <db-ratio-value>
+
+   The reference signal-to-noise ratio used to determine the **required_rcs** or **rcs_required** variable_.
+
+   **Default** 12.8 dB
+
+.. command:: pd_map_file <file-name>
+
+   Specifies the name of the file to which 'pd map' output will be written. The name does not imply that only **pd** can be written but rather denotes a common file format.
+
+   **Default** 'pd map' output will not be produced.
+
+.. command:: header_line_1 <text>
+.. command:: header_line_2 <text>
+.. command:: header_line_3 <text>
+
+   Specifies the text to be contained in the first three lines of the output file when pd_map_file_ is specified.
+
+   **Default** all header lines are blank.
+
+.. command:: output_column_limit <integer>
+
+   Specifies the maximum number of columns per physical line in the output file when pd_map_file_ is specified.
+
+   **Default** 100
+
+   .. note::
+      If the file is to be imported into a spreadsheet such as Microsoft Excel, this value should be set so that the rows do not have to be split into multiple physical lines.
+
+
+.. command:: gnuplot_file <file-name>
+
+   Specifies the name of the file to which 'gnuplot' output will be written.
+
+   **Default** 'gnuplot' output will not be produced.
+
+.. command:: gnuplot_player_file <file-name>
+
+   Specifies the name of the file to which player's Down range/Cross range or Latitude/Longitude will be written. Will not output target locations.
+
+   **Default** 'gnuplot' player location output will not be produced.

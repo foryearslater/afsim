@@ -1,0 +1,106 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COMM_PROTOCOL_IGMP
+----------------------
+
+.. model:: routing_protocol WSF_COMM_PROTOCOL_IGMP
+
+.. parsed-literal::
+
+   protocol <name> :model:`WSF_COMM_PROTOCOL_IGMP`
+   
+      join_multicast_group_ <address>
+      
+      leave_multicast_group_ <address>
+      
+      level_0_multicast_
+      
+      level_1_multicast_
+      
+      level_2_multicast_
+      
+      join_delay_ <random-time-reference>
+      
+      leave_delay_ <random-time-reference>
+      
+   end_protocol
+   
+Overview
+========
+
+:model:`WSF_COMM_PROTOCOL_IGMP` is an emulation of basic multicasting
+capabilities provided in AFSIM. This protocol is not a routing protocol,
+and will not determine the correct path or the capability to send to any given
+destination or group, so it must be used with another routing protocol enabled
+for successful usage (such as the legacy protocol).
+
+The multicast protocol allows comms to join multicast
+groups designated by an address in the appropriate range (224.0.0.0 to 
+239.255.255.255). Any subsequent transmission to an address will then be
+carried appropriately by any other multicast enabled routers to the 
+appropriate destinations, limiting the number of messages spawned in the process.
+
+Note that sending multicast not only requires this protocol available from the
+sender, but also the recipient, as well as any potential other comms who may
+route multicast messages. Other non-multicast enabled comms will simply
+"discard" the message, as they will not be able to resolve the address to an
+appropriate destination.
+
+Commands
+========
+
+.. command:: join_multicast_group <address>
+
+   Adds this comm to the multicast group specified. Any messages sent to this
+   address will attempt carrying the message to this comm, assuming no routing
+   failures.
+
+.. command:: leave_multicast_group <address>
+
+   Removes this comm from the specified multicast group. Specifically intended
+   to allow removal of indicated multicast group specification from derived comms.
+
+.. command:: level_0_multicast
+
+   Indicates that this multicast protocol instance is of type 0, indicating no
+   actual multicast support.
+
+.. command:: level_1_multicast
+
+   Indicates that this multicast protocol instance is of type 1, indicating that
+   this comm is capable of sending multicast messages, but cannot receive them.
+
+.. command:: level_2_multicast
+
+   Indicates that this multicast protocol instance is of type 2, indicating that
+   this comm has full multicast capabilities, and can both send and receive
+   multicast messages.
+   
+   This is the default setting for this protocol.
+   
+.. command:: join_delay <random-time-reference>
+
+   Specifies the time required to join a multicast group, for more advanced
+   modeling of network characteristics. This may also affect how other protocols
+   who use multicast (such as OSPF) function, due to delayed propogation of
+   multicast group data amongst routers. Future plans of script capabilities in
+   joining and leaving multicast groups will be affected by this value.
+   
+   **Default** constant 0 script
+   
+.. command:: leave_delay <random-time-reference>
+
+   Specifies the time required to leave a multicast group, for more advanced
+   modeling of network characteristics. This may also affect how other protocols
+   who use multicast (such as OSPF) function, due to delayed propagation of
+   multicast group data amongst routers. Future plans of script capabilities in
+   joining and leaving multicast groups will be affected by this value.

@@ -1,0 +1,645 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WsfTrack:
+
+WsfTrack
+--------
+
+.. contents::
+   :local:
+
+.. class:: WsfTrack
+   :cloneable:
+   :constructible:
+
+.. _WsfTrack.General_Methods:
+
+General Methods
+===============
+
+.. method:: void Initialize()
+
+   Defines the originator of the track to be the requesting platform and assigns the next available track number.
+
+.. method:: WsfTrackId TrackId()
+
+   Return the WsfTrackId of the track.
+
+.. method:: double StartTime()
+
+   Return the initial time the track was established.
+
+.. method:: double TimeSinceStarted()
+
+   Return the time since the track was established.
+
+.. method:: double UpdateTime()
+
+   Return the time the track was last updated.
+
+.. method:: void SetUpdateTime(double aUpdateTime)
+
+   Sets the time that the track will report that is was last updated.
+
+.. method:: double TimeSinceUpdated()
+
+   Return the time since the track was last updated.
+
+.. method:: int UpdateCount()
+
+   Return the number of times the track has been updated.
+
+.. method:: bool IsStale()
+
+   Is the track's data stale.
+
+.. method:: bool IsPredefined()
+
+   Is the track predefined or prebriefed. Use a :command:`track` block to define predefined tracks.
+
+.. method:: bool IsFalseTarget()
+
+   Is the track a false target track.
+
+.. method:: void SetStale(bool aIsStale)
+
+   Sets whether the track's data is stale.
+
+.. method:: WsfPlatform Originator()
+
+   Returns the platform of the track's originator.  The user should use IsValid() before calling any methods on the WsfPlatform returned.
+
+.. method:: WsfGeoPoint OriginatorLocation()
+
+   Returns the 'sensor' position of the track's originator at the time of the report.  So if a sensor is offset from the owning platform, this location will be offset from the platform location.
+
+.. method:: string OriginatorName()
+
+   Returns the name of the originating platform.
+
+.. method:: string OriginatorType()
+
+   Returns the type of the originating platform.
+
+.. method:: string SensorName()
+
+   If the track is the product of a sensor, return the name of the sensor (on the sensing platform) that was used to produce the track. The return value will be an empty string if the track is not the product of a sensor.
+
+.. method:: string SensorType()
+
+   If the track is the product of a sensor, return the type of the sensor that was used to produce the track. The return value will be an empty string if the track is not the product of a sensor.
+
+.. method:: string SensorMode()
+
+   If the track is the product of a sensor, return the sensor mode that was used to produce the track. The return value will be an empty string if the track is not the product of a sensor.
+
+.. method:: double Range()
+
+   Return the range of the track (meters). For pre-briefed tracks and sensors that do not provide range information, the range will not be valid (returns 0 meters). In these cases, use relative geometry methods of either :method:`GroundRangeTo() <WsfTrack.GroundRangeTo>` or :method:`SlantRangeTo() <WsfTrack.SlantRangeTo>`.
+
+.. method:: double RangeRate()
+
+   Returns the range rate of the track (meters / second).
+
+.. method:: bool RangeValid()
+
+   Return true if the value returned by :method:`Range() <WsfTrack.Range>` is valid.
+
+.. method:: void SetRange(double aRange)
+
+   Set the range from the originator to the target (meters).
+
+.. method:: double RangeErrorSigma()
+
+   Returns the standard deviation of the error in the range measurement (meters).
+   
+.. method:: double RangeRateErrorSigma()
+
+   Returns the standard deviation of the error in the range rate measurement (meters / second).
+
+.. method:: double Bearing()
+
+   Get the bearing of the target with respect to true north at the originators location (degrees).
+
+.. method:: bool BearingValid()
+
+   Return true if the value returned by :method:`Bearing() <WsfTrack.Bearing>` is valid.
+
+.. method:: void SetBearing(double aBearing)
+
+   Set the bearing of the target with respect to true north at the originators location (degrees).
+
+.. method:: double BearingErrorSigma()
+
+   Returns the standard deviation of the error in the bearing measurement (meters).
+
+.. method:: bool ElevationValid()
+
+   Return true if the value returned by :method:`Elevation() <WsfTrack.Elevation>` is valid.
+
+.. method:: double Elevation()
+
+   Return the perceived target elevation angle from local horizontal (degrees).
+
+.. method:: void SetElevation(double aElevation)
+
+   Set the perceived target elevation angle from local horizontal (degrees).
+
+.. method:: double ElevationErrorSigma()
+
+   Returns the standard deviation of the error in the elevation measurement (meters).
+
+.. method:: string Type()
+
+   Return the perceived type of the target. Take note that if the track is from a passive sensor, :method:`Type() <WsfTrack.Type>` will return the truth target type.
+
+.. method:: bool TypeValid()
+
+   Return true if the value returned by :method:`Type() <WsfTrack.Type>` is valid.
+
+.. method:: Map <string, double> Types()
+
+   Return the perceived types of the target in the form of a :class:`Map\<string,double\><Map\<T1,T2\>>`, where the :class:`string` (key) is a possible perceived target (platform) type, and the double (value) either represents a probability or a likelihood that the target is the perceived type.  If the values are probabilities, they will sum to one.
+
+   .. note::
+      If only one type is returned in the map, it will have probability one, similar to :method:`Type() <WsfTrack.Type>`.
+
+.. method:: bool TypesValid()
+
+   Return true if the values returned by :method:`Types() <WsfTrack.Types>` are valid.
+
+.. method:: void SetType(string aType)
+
+   Set the perceived type of the target.
+
+.. method:: void SetTypes(Map<string,double> aTypes)
+
+   Set the perceived types of the target, when more than one possibility exists.  The perceived types of the target are the form of a :class:`Map\<string,double\><Map\<T1,T2\>>`, where the :class:`string` (key) is a possible perceived target (platform) type, and the double(value) either represents a probability or a likelihood that the target is the perceived type.  If the values are probabilities, they will sum to one.
+
+.. method:: string Side()
+
+   Return the perceived side of the target.
+
+.. method:: bool SideValid()
+
+   Return true if the value returned by :method:`Side() <WsfTrack.Side>` is valid.
+
+.. method:: void SetSide(string aSide)
+
+   Set the perceived side of the target.
+
+.. method:: double TrackQuality()
+
+   Return the track's quality as a value in the range [0..1] with 0 being the lowest and 1 being the highest.
+
+.. method:: double TrackQuality(double aFutureTime)
+
+   Return the track's quality as a value in the range [0..1] with 0 being the lowest and 1 being the highest at the given time in the future. The current track covariance data is used to predict the future state and its track quality at that time.
+
+.. method:: void SetTrackQuality(double aTrackQuality)
+
+   Set the track's quality as a value in the range [0..1] with 0 being the lowest and 1 being the highest.
+
+.. method:: double Quality()
+
+   Return the track's quality as a value in the range [0..1] with 0 being the lowest and 1 being the highest. Unlike TrackQuality this method attempts to assign a quantitative track quality based on the track's covariance data, if available.
+
+.. method:: double Quality(double aFutureTime)
+
+   Return the track's quality as a value in the range [0..1] with 0 being the lowest and 1 being the highest at the given time in the future. Unlike TrackQuality this method attempts to assign a quantitative track quality based on the track's covariance data, if available. If state covariance data are available from a Kalman filter, it will be expanded to the given time using the covariance's process noise model, so that the quality will generally be lower.
+
+.. method:: bool IFF_Ambiguous()
+.. method:: bool IFF_Foe()
+.. method:: bool IFF_Friend()
+.. method:: bool IFF_Neutral()
+.. method:: bool IFF_Unknown()
+
+   Return a boolean indicating if the 'Identify-Friend-Or-Foe' (IFF) status. Exactly one of the methods will return true while the others will return false. The meanings of the IFF values are as follows:
+
+   * Ambiguous - Two conflicting IFF reports have been received.
+   * Foe - The track is believed to represent a foe.
+   * Friend - The track is believed to represent a friend.
+   * Neutral - The track is believed to represent a neutral object.
+   * Unknown - It is not known if the track represents a friend, foe, or neutral object.
+
+.. method:: void SetIFF_Ambiguous()
+.. method:: void SetIFF_Foe()
+.. method:: void SetIFF_Friend()
+.. method:: void SetIFF_Neutral()
+.. method:: void SetIFF_Unknown()
+
+   Set the track's IFF value (see above for definitions).
+
+.. method:: bool LandDomain()
+.. method:: bool AirDomain()
+.. method:: bool SurfaceDomain()
+.. method:: bool SubsurfaceDomain()
+.. method:: bool SpaceDomain()
+
+   Returns a boolean value indicating if the target is perceived to be in a specific 'spatial domain'. By default, a sensor will set the spatial domain of the track to be the same as the true spatial domain of the mover for the platform that was detected. If the target platform did not have a mover (i.e., it is a non-moving object), then it is assumed to be in the land domain unless defined otherwise. A track can be a member of only one spatial domain (i.e., exactly one of these methods will return true while the others will return false).
+
+   The meanings of the domains are defined by the Distributed Interactive Simulation Protocol (IEEE Standard 1278.1) as
+   follows:
+
+   * Land - A building, ground vehicle, etc.
+   * Air - Aircraft, etc.
+   * Surface - Ships.
+   * Subsurface - Submarines.
+   * Space - Satellites.
+
+.. method:: void SetLandDomain()
+.. method:: void SetAirDomain()
+.. method:: void SetSurfaceDomain()
+.. method:: void SetSubsurfaceDomain()
+.. method:: void SetSpaceDomain()
+
+   Sets the track's spatial domain (see above for definitions).
+   
+.. method:: int GlobalTrackNumber()
+
+   Get the Global Track Acquisition Number (GTAN) for the track.
+   
+   .. note::
+      The purpose of the GTAN is to provide another method for identifying tracks outside of the :method:`TrackId<WsfTrack.TrackId>`.
+
+.. method:: void SetGlobalTrackNumber(int aId)
+
+   Set the Global Track Acquisition Number (GTAN) for the track.
+
+   .. note::
+      The purpose of the GTAN is to provide another method for identifying tracks outside of the :method:`TrackId<WsfTrack.TrackId>`.
+
+   .. note::
+      Tracks in the master track list assigned a GTAN value will retain that value unless reassigned by this method.
+
+.. _WsfTrack.Emitter_Methods:
+
+Emitter Methods
+===============
+
+.. method:: int EmitterCount()
+
+   Get the emitter type count (# of emitters) for the track (i.e., the number of emitters detected that make up the track).
+
+.. method:: int EmitterType(int aEmitterIndex)
+
+   Get the emitter type name of the detected emitter at the specified emitter index. The specified emitter index integer can be retrieved by getting the EmitterCount() and for-looping each value up to the EmitterCount() value.
+
+.. method:: int EmitterSignalIndexCount(int aEmitterIndex)
+
+   Get the signal count of the detected emitter at the specified emitter index. The specified emitter index integer can be retrieved by getting the :method:`EmitterCount() <WsfTrack.EmitterCount>` and for-looping each value up to the :method:`EmitterSignalIndexCount() <WsfTrack.EmitterSignalIndexCount>` value.
+
+.. method:: int EmitterSignalIndexEntry(int aEmitterIndex, int aEmitterSignalIndex)
+
+   Get the signal index entry at the emitter index entry of the detected emitter and emitter signal index entry of the detected signal to access the signal data using one of the `Signal Methods`_. The specified emitter index integer can be retrieved by getting the :method:`EmitterCount() <WsfTrack.EmitterCount>` and for-looping each value up to the :method:`EmitterCount() <WsfTrack.EmitterCount>` value. The specified emitter signal index integer can be retrieved by getting the :method:`EmitterSignalIndexCount() <WsfTrack.EmitterSignalIndexCount>` and for-looping each value up to the :method:`EmitterSignalIndexCount() <WsfTrack.EmitterSignalIndexCount>` value for the emitter at the emitter index.
+
+.. _WsfTrack.Signal_Methods:
+
+Signal Methods
+==============
+
+.. method:: bool SignalToNoiseValid()
+
+   Return true if the value returned by :method:`SignalToNoise() <WsfTrack.SignalToNoise>` is valid.
+
+.. method:: double SignalToNoise()
+
+   Return the signal to noise from the sensor.
+
+.. method:: void SetSignalToNoise(double aSignalToNoise)
+
+   Set the signal to noise from the sensor.
+
+.. method:: bool FrequencyValid()
+
+   Return true if the value returned by :method:`Frequency() <WsfTrack.Frequency>` is valid.
+
+.. method:: double Frequency()
+
+   Get the frequency of the detected emitter. For multiple signal emitters the first detected  signal frequency in the signal list is returned. For multiple signal emitters coming from one platform, the :method:`SignalFrequency(int index) <WsfTrack.SignalFrequency>` must be used to get all the frequencies contributing to the track.
+
+.. method:: void SetFrequency(double aFrequency)
+
+   Set the frequency of the detected emitter. For multiple signal emitters the first detected signal frequency in the signal list is set.
+
+.. method:: int SignalCount()
+
+   Get the signal count (# of signals) for the track (i.e., number of signals detected that make up the emitters on the track).
+
+.. method:: string SignalEmitterType(int aSignalIndex)
+
+   Get the perceived emitter type. The specified signal index integer can be retrieved by getting the :method:`SignalCount() <WsfTrack.SignalCount>` and for-looping each value up to the :method:`SignalCount() <WsfTrack.SignalCount>` value.
+
+.. method:: double SignalFrequency(int aSignalIndex)
+
+   Get the frequency of the detected emitter at the specified signal index. The specified signal index integer can be retrieved by getting the :method:`SignalCount() <WsfTrack.SignalCount>` and for-looping each value up to the :method:`SignalCount() <WsfTrack.SignalCount>` value.
+
+.. method:: double SignalPRI(int aSignalIndex)
+
+   Get the pulse-repetition-interval (PRI) of the detected emitter at the specified signal index. The specified signal index integer can be retrieved by getting the :method:`SignalCount() <WsfTrack.SignalCount>` and for-looping each value up to the :method:`SignalCount() <WsfTrack.SignalCount>` value.
+
+.. method:: double SignalPW(int aSignalIndex)
+
+   Get the pulse-width (PW) of the detected emitter at the specified signal index. The specified signal index integer can be retrieved by getting the :method:`SignalCount() <WsfTrack.SignalCount>` and for-looping each value up to the :method:`SignalCount() <WsfTrack.SignalCount>` value.
+
+.. method:: double PixelCount()
+
+   Returns the approximate pixel count occupied by the target within the image (only produced by imaging sensors). The return value will be zero if the track was not the product of an imaging sensor.
+
+.. method:: void SetPixelCount(double aPixelCount)
+
+   Sets the approximate pixel count occupied by the target with the image. This is meaningful only for imaging sensors.
+
+.. _WsfTrack.Truth_Methods:
+
+Truth Methods
+=============
+
+When using the standard sensor and tracking models, WSF perfectly correlates tracks to a specific platform ('perfect correlation'). The 'truth' methods access information about the platform to which the track applied. When using some advanced sensor and tracking models this information may not be defined.
+
+.. method:: WsfPlatform Target()
+
+   Returns the target platform if one exists.  The user should use IsValid() before calling any methods on the WsfPlatform returned.
+
+   .. note::
+      This is truth information. It is explicitly related to a physical entity in the simulation.
+
+
+.. method:: int TargetIndex()
+
+   Returns the platform index that corresponds to the platform that this track represents.
+
+   .. note::
+      This is truth information. It is explicitly related to a physical entity in the simulation.
+
+
+.. method:: string TargetName()
+
+   Returns the truth platform name from the platform that corresponds to the target represented by :method:`TargetIndex() <WsfTrack.TargetIndex>`.
+
+   .. note::
+      This is truth information. For pre-briefed :command:`track`\ s, if the platform attribute is not set then this field is blank, only :method:`TargetIndex() <WsfTrack.TargetIndex>` will be valid.
+
+
+.. method:: string TargetType()
+
+   Returns the truth platform type from the platform which corresponds to the target represented by :method:`TargetIndex() <WsfTrack.TargetIndex>`.
+
+   .. note::
+      This is truth information. For pre-briefed :command:`track`\ s, if the platform attribute is not set this field is blank, only :method:`TargetIndex() <WsfTrack.TargetIndex>` will be valid.
+
+.. method:: double TargetDamaged()
+
+   Return the platform's current damage level (factor). The return value is in the range of [0..1], with 0 being undamaged and 1 being fully damaged or destroyed.
+
+   .. note::
+      This is truth information. The value returned by this method is not valid for pre-briefed :command:`track`\ s.
+
+
+.. method:: void SetTarget(string aPlatformName)
+
+   Indicates the platform with the specified name is the new truth target represented by this track. If the platform with the specified name exists when this method is called, the truth data (i.e., target name, index, and type information only) will be modified so that subsequent calls to the other truth methods will return values that reflect the specified platform.
+
+   If the platform with the specified name does not exist when the call is made then this method does nothing.
+
+.. method:: void ClearTarget()
+
+   Removes the target truth identification from the track. After calling this method :method:`Target() <WsfTrack.Target>` will return a null reference, :method:`TargetIndex() <WsfTrack.TargetIndex>` will return 0, and :method:`TargetName() <WsfTrack.TargetName>` and :method:`TargetType() <WsfTrack.TargetType>` will return null strings.
+
+   .. note::
+      This is primarily used for testing and should be used with caution as many WSF capabilities rely on this information being defined.
+
+.. _WsfTrack.Location,_Speed_and_Covariance_Methods:
+
+Location, Speed and Covariance Methods
+======================================
+
+.. method:: bool LocationValid()
+
+   Return true if the track contains fully-known 3-D position information (i.e. altitude is not assumed). :method:`Latitude() <WsfTrack.Latitude>`, :method:`Longitude() <WsfTrack.Longitude>`, and :method:`Altitude() <WsfTrack.Altitude>` represent known data that have been reported directly or computed from range, bearing and elevation reports.
+
+   .. note::
+      A true result from this method implies that any location method will return valid data whose accuracy is consistent with modeling.
+
+.. method:: bool LocationValid2D()
+
+   If :method:`LocationValid() <WsfTrack.LocationValid>` returns true then this method will also return true.  In addition, this method returns true if the altitude is assumed rather than known. :method:`Latitude() <WsfTrack.Latitude>` and :method:`Longitude() <WsfTrack.Longitude>` represent known data that have been reported directly or computed from range and bearing reports. :method:`Altitude() <WsfTrack.Altitude>` may return an assumed rather than known value (see :method:`AltitudeKnown() <WsfTrack.AltitudeKnown>`).
+
+   .. note::
+      A true result from this method implies that any location method will return valid data; however, the altitude may be inaccurate if it is assumed rather than known.  Due to the curvature of the earth, an inaccurate altitude may cause lat/lon errors even when range and bearing are known.
+
+.. method:: bool AltitudeKnown()
+
+   Return true if the altitude is known from information reports such as sensor elevation measurements.
+
+   .. note::
+      Tracking processes may assume an altitude if it is not known. The return value will be false if the altitude has been assumed.
+
+.. method:: WsfGeoPoint ReportedLocation()
+
+   Return the position represented by the track, **without extrapolation** forward to the current time.
+
+.. method:: WsfGeoPoint CurrentLocation()
+
+   Return the position represented by the track, **with extrapolation** forward to the current time.
+
+.. method:: WsfGeoPoint LocationAtTime(double aTime)
+
+   Return the position represented by the track, **with extrapolation** forward to the specified time.
+
+.. method:: double Latitude()
+.. method:: double Longitude()
+.. method:: double Altitude()
+
+   Return the track's reported latitude, longitude (decimal degrees) or altitude (meters), respectively, **without
+   extrapolation** forward to the current time.
+
+   .. note::
+      These commands should be used only if a single position component will be extracted. If multiple components will be extracted, it is more efficient to use :method:`ReportedLocation() <WsfTrack.ReportedLocation>` and retrieve the individual components from the returned object.
+
+   .. note::
+      The value is **not extrapolated** to the current time (see :method:`CurrentLocation() <WsfTrack.CurrentLocation>`).
+
+
+.. method:: double X()
+.. method:: double Y()
+.. method:: double Z()
+
+   Return the "'x', 'y' or 'z' component (meters) of the track's reported WCS position, respectively, **without extrapolation** forward to the current time.
+
+   .. note::
+      These commands should be used only if a single position component will be extracted. If multiple components will be extracted, it is more efficient to use :method:`ReportedLocation() <WsfTrack.ReportedLocation>` and retrieve the individual components from the returned object.
+
+   .. note::
+      The value is **not extrapolated** to the current time (see :method:`CurrentLocation() <WsfTrack.CurrentLocation>`).
+
+
+.. method:: void SetLocation(WsfGeoPoint aGeoPoint)
+
+   Sets the track's current location using the supplied :class:`WsfGeoPoint`.
+
+.. method:: void SetLocationLLA(double aLatitude, double aLongitude, double aAltitude)
+
+   Sets the track's current geodetic location (degrees, degrees, meters).
+
+.. method:: void SetLocationWCS(double aX, double aY, double aZ)
+
+   Sets the track's current geocentric position (meters, meters, meters).
+
+.. method:: bool HeadingValid()
+
+   Return true if the value returned by :method:`Heading() <WsfTrack.Heading>` is valid.
+
+.. method:: double Heading()
+
+   Return the track's reported heading.
+
+.. method:: bool VelocityValid()
+
+   Return true if the track's velocity WCS velocity is valid.
+
+.. method:: double Speed()
+
+   Return the track's reported speed.
+
+.. method:: double Vx()
+
+   Return "x' component of the track's WCS velocity.
+
+.. method:: double Vy()
+
+   Return "y' component of the track's WCS velocity.
+
+.. method:: double Vz()
+
+   Return "z' component of the track's WCS velocity.
+
+.. method:: Vec3 VelocityWCS()
+
+   Return track's velocity in :ref:`WCS <WCS>` coordinates.
+
+.. method:: Vec3 VelocityNED()
+
+   Return track's velocity in North-East-Down coordinates.  This method requires that the track has location information as well as velocity.
+
+.. method:: void SetVelocityWCS(double aVx, double aVy, double aVz)
+
+   Sets the track's current geocentric velocity (meters/second, meters/second, meters/second).
+
+.. method:: void SetVelocityNED(double aVn, double aVe, double aVd)
+
+   Sets the track's current north/east/down  velocity (meters/second, meters/second, meters/second).
+
+.. method:: void SetVelocity(double aSpeed, double aBearing)
+
+   Sets the track's current velocity given a speed and bearing (meters/second, degrees).
+
+.. method:: void SetVelocity(double aSpeed, double aBearing, double aElevation)
+
+   Sets the track's current velocity given a speed, bearing, and elevation (meters/second, degrees, degrees).
+
+.. method:: WsfCovariance StateCovariance()
+
+   Returns the state covariance matrix as of the last track update. This will generally be present only for tracks that have been filtered with a Kalman filter.
+
+   .. note::
+      The return value will be invalid if the track does not have an associated covariance matrix. It should be tested with the :method:`StateCovarianceValid()<WsfTrack.StateCovarianceValid>` method prior to being used.
+
+.. method:: WsfCovariance StateCovarianceAtTime(double aSimTime)
+
+   Returns the state covariance matrix that represents the state covariance matrix as of the last track update propagated forward to the specified time. If the supplied time is less than the last update time of the track, the state covariance from the last track update will be returned.
+
+   .. note::
+      The return value will be invalid if the track does not have an associated covariance matrix. It should be tested with the :method:`StateCovarianceValid()<WsfTrack.StateCovarianceValid>` method prior to being used.
+
+.. method:: WsfCovariance StateCovarianceValid()
+
+   Return true if the :class:`WsfCovariance` value returned by :method:`StateCovariance() <WsfTrack.StateCovariance>` or :method:`StateCovarianceAtTime()<WsfTrack.StateCovarianceAtTime>` is valid.
+
+.. method:: WsfCovariance MeasurementCovariance()
+
+   Returns a reference to a covariance matrix that is dynamically created using the errors provided in the track.  The measurement covariance is generally different from a state covariance matrix: the state covariance takes process noise into account, in addition to the linearized expected error values present in the measurement covariance.  The measurement covariance is useful when there is no Kalman filter associated with at track, yet a covariance is needed for that track.
+
+   .. note::
+      The return value will be invalid if the track does not have an associated measurement matrix. It should be tested with the :method:`MeasurementCovarianceValid()<WsfTrack.MeasurementCovarianceValid>` method prior to being used.
+
+.. method:: WsfCovariance MeasurementCovarianceValid()
+
+   Return true if the :class:`WsfCovariance` value returned by :method:`MeasurementCovariance() <WsfTrack.MeasurementCovariance>` is valid.
+
+.. method:: bool WithinZoneOf(WsfPlatform aPlatform, string aZoneName)
+
+   Returns 'true' if the track is within the specified zone defined on the specified platform. The zone can be created on the platform using the zone ... end_zone block or the use_zone command. See :command:`platform`.
+
+.. method:: bool WithinZoneOf(WsfPlatform aPlatform, string aZoneName, string aSensorName)
+
+   Returns 'true' if the track is within the specified zone defined on the specified platform using the sensor orientation. The zone can be created on the platform using the zone ... end_zone block or the use_zone command. See :command:`platform`.
+
+.. _WsfTrack.Relative_Geometry_Methods:
+
+Relative Geometry Methods
+=========================
+
+.. method:: double TrueBearingTo(WsfTrack aTrack)
+            double TrueBearingTo(WsfPlatform aPlatform)
+            double TrueBearingTo(double aLat, double aLon, double aAlt)
+            double TrueBearingTo(WsfGeoPoint aPoint)
+
+   Return the bearing [-180..180] (degrees) to the given location. The angle is relative to north, with positive values being clockwise.
+
+.. method:: double RelativeBearingTo(WsfTrack aTrack)
+            double RelativeBearingTo(WsfPlatform aPlatform)
+            double RelativeBearingTo(double aLat, double aLon, double aAlt)
+            double RelativeBearingTo(WsfGeoPoint aPoint)
+
+   Return the bearing [-180..180] (degrees) to the given location. The angle is relative to the tracks current heading with positive values being clockwise.
+
+.. method:: double SlantRangeTo(WsfTrack aTrack)
+            double SlantRangeTo(WsfTrack aTrack, bool aUseSpherical)
+            double SlantRangeTo(WsfPlatform aPlatform)
+            double SlantRangeTo(WsfPlatform aPlatform, bool aUseSpherical)
+            double SlantRangeTo(double aLat, double aLon, double aAlt)
+            double SlantRangeTo(double aLat, double aLon, double aAlt, bool aUseSpherical)
+            double SlantRangeTo(WsfGeoPoint aPoint)
+            double SlantRangeTo(WsfGeoPoint aPoint, bool aUseSpherical)
+
+   Return the slant range between the track and the indicated location. If *aUseSpherical* is true, calculate using spherical coordinates; if it is false or left unspecified, calculate using ellipsoidal coordinates.
+
+.. method:: double GroundRangeTo(WsfTrack aTrack)
+            double GroundRangeTo(WsfPlatform aPlatform)
+            double GroundRangeTo(double aLat, double aLon, double aAlt)
+            double GroundRangeTo(WsfGeoPoint aPoint)
+
+   Return the approximate ground range between the track and the indicated location.
+
+.. method:: double DownRangeTo(WsfTrack aTrack)
+            double DownRangeTo(WsfPlatform aPlatform)
+            double DownRangeTo(double aLat, double aLon, double aAlt)
+            double DownRangeTo(WsfGeoPoint aPoint)
+
+   Return the approximate down range between the track and the indicated location. This is the ground range times the cosine of the relative bearing to the location. Positive values indicate the location is in front of the track while negative values indicate it is behind the track.
+
+.. method:: double CrossRangeTo(WsfTrack aTrack)
+            double CrossRangeTo(WsfPlatform aPlatform)
+            double CrossRangeTo(double aLat, double aLon, double aAlt)
+            double CrossRangeTo(WsfGeoPoint aPoint)
+
+   Return the approximate cross range between the track and the indicated location. This is the ground range times the sine of the relative bearing to the location. Positive values indicate the location is to the right of the track while negative values indicate it is to the left of the track.
+
+.. _WsfTrack.Auxiliary_Data_Methods:
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt
+
+.. include:: _wsftrack.wsf_mil.txt

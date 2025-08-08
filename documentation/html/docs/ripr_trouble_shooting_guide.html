@@ -1,0 +1,515 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RIPR Trouble Shooting Guide &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="road_traffic" href="road_traffic.html" />
+    <link rel="prev" title="RIPR Scenarios" href="ripr_scenarios.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="road_traffic.html" title="road_traffic"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ripr_scenarios.html" title="RIPR Scenarios"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="ripr-trouble-shooting-guide">
+<span id="id1"></span><h1>RIPR Trouble Shooting Guide<a class="headerlink" href="#ripr-trouble-shooting-guide" title="Permalink to this headline">¶</a></h1>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#tips-and-tricks">Tips and Tricks</a></p></li>
+<li><p><a class="reference internal" href="#are-your-agents-sensing-the-enemy-platforms">Are your agents sensing the enemy platforms?</a></p></li>
+<li><p><a class="reference internal" href="#do-your-agents-have-tracks-of-the-enemy-platforms">Do your agents have tracks of the enemy platforms?</a></p></li>
+<li><p><a class="reference internal" href="#do-your-commanders-have-tracks">Do your commanders have tracks?</a></p></li>
+<li><p><a class="reference internal" href="#did-your-commander-agents-create-jobs">Did your commander agents create jobs?</a></p></li>
+<li><p><a class="reference internal" href="#are-your-agents-bidding-on-the-jobs">Are your agents bidding on the jobs?</a></p></li>
+<li><p><a class="reference internal" href="#should-your-agents-even-be-winning-a-job">Should your agents even be winning a job?</a></p></li>
+<li><p><a class="reference internal" href="#are-your-behavior-trees-visiting-the-desired-behaviors">Are your behavior trees visiting the desired behaviors?</a></p></li>
+<li><p><a class="reference internal" href="#are-behavior-s-being-executed">Are behavior’s being executed?</a></p></li>
+<li><p><a class="reference internal" href="#are-your-behavior-parameters-set-to-good-values">Are your behavior parameters set to good values?</a></p></li>
+<li><p><a class="reference internal" href="#are-the-agent-behaviors-acting-right">Are the agent behaviors acting right?</a></p></li>
+<li><p><a class="reference internal" href="#do-you-have-enough-tools-for-the-job">Do you have enough tools for the job?</a></p></li>
+</ol>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>RIPR agents are simply WSF platforms that contain a RIPR processor.  The RIPR processor interacts with other platform
+components and systems during operation.  Given this fact, sometimes “RIPR problems” are just misunderstandings of the
+WSF framework or different platform systems.  Agents operate on perception; this often means that agents must have
+tracks because tracks are an available perception of an agent’s environment.  The first few steps of this debugging
+guide are to help you verify the agents have a working perception, and then the latter two thirds of the guide will
+deal with specific RIPR agent script issues.</p>
+</section>
+<section id="tips-and-tricks">
+<h2>Tips and Tricks<a class="headerlink" href="#tips-and-tricks" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Temporarily remove platforms that aren’t involved:  platform_availability name &lt;the name&gt; availability 0.</p></li>
+<li><p>Temporarily remove behaviors that aren’t necessary: comment out: <em>behavior &lt;name&gt;</em> in the behavior_tree.</p></li>
+<li><p>Verify your suspect behavior script is actually be used: Either: writeln_d() or event_output with BTREE_NODE_EXEC events.</p></li>
+<li><p>Verify jobs are being awarded: insert the <em>debug_job_board</em> behavior into commander’s behavior tree.</p></li>
+<li><p>Turn script_debug_writes on for all suspect script.</p></li>
+<li><p>Put a writeln_d() before each return statement to explain why that script is returning.</p></li>
+<li><p>Put a writeln_d() before each for loop or while loop and write out how many loops will occur (often this is the
+size of an array or track list).</p></li>
+<li><p>Put a writeln_d() after complicated script and write out the value of a variable that the script modified.</p></li>
+<li><p>Replace complicated script with simpler more understandable script, example:  return (1000000  range); //bid value</p></li>
+</ul>
+</section>
+<section id="are-your-agents-sensing-the-enemy-platforms">
+<h2>Are your agents sensing the enemy platforms?<a class="headerlink" href="#are-your-agents-sensing-the-enemy-platforms" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check for SENSOR_TRACK_INITIATED events in the <a class="reference internal" href="event_output.html#event_output.enable" title="enable (event_output)"><span class="xref wsf wsf-command">event_output</span></a>.</p></li>
+<li><p>If your sensors are correctly not detecting and tracking, then at the very least look for SENSOR_DETECTION_ATTEMPT
+events to show that they are trying.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Make sure your sensors are turned on.</p></li>
+<li><p>Make sure your sensors have been set up correctly. Example: you are using the desired frequency on your transmitters
+and receivers for the beams of the modes of your <a class="reference internal" href="wsf_radar_sensor.html#WSF_RADAR_SENSOR" title="WSF_RADAR_SENSOR"><span class="xref wsf wsf-model">radar sensor</span></a>.</p></li>
+<li><p>Try using a simple <a class="reference internal" href="wsf_geometric_sensor.html#WSF_GEOMETRIC_SENSOR" title="WSF_GEOMETRIC_SENSOR"><span class="xref wsf wsf-model">WSF_GEOMETRIC_SENSOR</span></a> with a large maximum_range to test that at least a truth detection can
+take place.</p></li>
+</ul>
+</section>
+<section id="do-your-agents-have-tracks-of-the-enemy-platforms">
+<h2>Do your agents have tracks of the enemy platforms?<a class="headerlink" href="#do-your-agents-have-tracks-of-the-enemy-platforms" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check for LOCAL_TRACK_INITIATED events in the <a class="reference internal" href="event_output.html#event_output.enable" title="enable (event_output)"><span class="xref wsf wsf-command">event_output</span></a>.  Field three identifies the
+platform owning the track.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Make sure the platform has a <a class="reference internal" href="wsf_track_processor.html#WSF_TRACK_PROCESSOR" title="WSF_TRACK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TRACK_PROCESSOR</span></a> component defined.</p></li>
+<li><p>Make sure the platform sensors are reporting tracks to the <a class="reference internal" href="wsf_track_processor.html#WSF_TRACK_PROCESSOR" title="WSF_TRACK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TRACK_PROCESSOR</span></a> component. Use the
+<a class="reference internal" href="platform_part_commands.html#_.platform_part.internal_link" title="internal_link (_.platform_part)"><span class="xref wsf wsf-command">internal_link</span></a> command on the sensor to report tracks internally.</p></li>
+</ul>
+</section>
+<section id="do-your-commanders-have-tracks">
+<h2>Do your commanders have tracks?<a class="headerlink" href="#do-your-commanders-have-tracks" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check for LOCAL_TRACK_INITIATED events in the <a class="reference internal" href="event_output.html#event_output.enable" title="enable (event_output)"><span class="xref wsf wsf-command">event_output</span></a>.  Field three identifies the
+platform owning the track.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Make sure a <a class="reference internal" href="comm.html#comm" title="comm"><span class="xref wsf wsf-command">comm device</span></a> is defined on the sending and receiving platforms.</p></li>
+<li><p>Make sure your track processors are command:<cite>_.External_Link_Commands.external_link</cite> reporting tracks to the necessary
+platforms.  Example (on a subordinate track processor):  external_link commander via &lt;comm name&gt;.</p></li>
+<li><p>Make sure your command chain is in tact.  Use the <a class="reference internal" href="platform.html#platform.commander" title="commander (platform)"><span class="xref wsf wsf-command">commander</span></a> or</p></li>
+</ul>
+<p><a class="reference internal" href="platform.html#platform.command_chain" title="command_chain (platform)"><span class="xref wsf wsf-command">command_chain</span></a> commands in the platform input block.</p>
+</section>
+<section id="did-your-commander-agents-create-jobs">
+<h2>Did your commander agents create jobs?<a class="headerlink" href="#did-your-commander-agents-create-jobs" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Attach the <em>debug_job_board</em> behavior to your commander agent’s behavior tree at the root level and look at the
+standard output.  The behavior can be included from <em>site_types/processors/ripr_agents/aiai/</em> in the unclassified
+analyst repository.  If the agent ever creates jobs, it will print out a representation of its job board in a table
+form.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Turn on <a class="reference internal" href="script_commands.html#_.script_commands.script_debug_writes" title="script_debug_writes (_.script_commands)"><span class="xref wsf wsf-command">script_debug_writes</span></a> on behaviors that should have created jobs.</p></li>
+<li><p>Study the agent behavior scripts and add <a class="reference internal" href="script/builtin.html#__BUILTIN__.writeln_d" title="__BUILTIN__.writeln_d"><span class="xref wsf wsf-method">__BUILTIN__.writeln_d</span></a> statements of your own.</p></li>
+<li><p>The agent behaviors that currently create jobs exclusively from tracks are:</p>
+<ul>
+<li><p><em>behavior_create_clustering_jobs</em> found in <em>site_types/processors/ripr_agents/aigci/</em>. (very common for GCI agents)</p></li>
+<li><p><em>behavior_create_target_jobs_self</em> found in <em>site_types/processors/ripr_agents/aifl/</em>. (very common for flight lead
+agents if no GCI are used)</p></li>
+<li><p><em>behavior_manage-pincer</em> found in <em>site_types/processors/ripr_agents/aifl/</em></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="are-your-agents-bidding-on-the-jobs">
+<h2>Are your agents bidding on the jobs?<a class="headerlink" href="#are-your-agents-bidding-on-the-jobs" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Attach the <em>debug_job_board</em> behavior to your commander agent’s behavior tree at the root level and look at the
+standard output.  The behavior can be included from <em>site_types/processors/ripr_agents/aiai/</em> in the unclassified
+analyst repository.  The agent will print out a representation of its job board in a table form, and each column
+represents a subordinate and his bids on the jobs in each row.  If an agent has no bid for a job, then a ‘-’ character
+will be present in its column instead of a numerical value.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Turn on <a class="reference internal" href="script_commands.html#_.script_commands.script_debug_writes" title="script_debug_writes (_.script_commands)"><span class="xref wsf wsf-command">script_debug_writes</span></a> on behaviors that should have bid on jobs.</p></li>
+<li><p>Study the <em>query_bid_type</em> script block in the agent behavior scripts and add <a class="reference internal" href="script/builtin.html#__BUILTIN__.writeln_d" title="__BUILTIN__.writeln_d"><span class="xref wsf wsf-method">__BUILTIN__.writeln_d</span></a>
+statements of your own.</p></li>
+<li><p>The agent behaviors that currently bid on the aforementioned jobs are:</p>
+<ul>
+<li><p><em>behavior_interpret_zone_jobs</em> found in <em>site_types/processors/ripr_agents/aifl/</em>. (very common for flight lead
+agents if GCI are used)</p></li>
+<li><p><em>behavior_pursue-target</em> found in <em>site_types/processors/ripr_agents/aiai/</em>. (very common for airborne interceptor
+agents)</p></li>
+<li><p><em>behavior_pincer</em> found in <em>site_types/processors/ripr_agents/aiai/</em></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="should-your-agents-even-be-winning-a-job">
+<h2>Should your agents even be winning a job?<a class="headerlink" href="#should-your-agents-even-be-winning-a-job" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Looking at the output of the <em>debug_job_board</em> behavior, are other agents rightfully winning the job of interest?</p></li>
+<li><p>Is your agent of interest rightfully winning a different job?</p></li>
+<li><p>The job allocation will be optimal so some of the bids must be higher or lower than you want.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Turn on <a class="reference internal" href="script_commands.html#_.script_commands.script_debug_writes" title="script_debug_writes (_.script_commands)"><span class="xref wsf wsf-command">script_debug_writes</span></a> on the <em>bid_on_jobs</em> behavior and on the behavior
+that owns the <a class="reference internal" href="wsf_ripr_processor.html#WSF_RIPR_PROCESSOR.query_bid_type" title="query_bid_type (WSF_RIPR_PROCESSOR)"><span class="xref wsf wsf-command">query_bid_type block</span></a> for the job of interest.</p></li>
+<li><p>Add writeln_d() statements to that <a class="reference internal" href="wsf_ripr_processor.html#WSF_RIPR_PROCESSOR.query_bid_type" title="query_bid_type (WSF_RIPR_PROCESSOR)"><span class="xref wsf wsf-command">query_bid_type</span></a> script block to find out what
+is causing your bids to go too high or too low.</p></li>
+<li><p>Often the problem will be a misunderstanding of one or two parameters (e.g., bidding too low on a target because
+somebody ELSE has shot at it).</p></li>
+</ul>
+</section>
+<section id="are-your-behavior-trees-visiting-the-desired-behaviors">
+<h2>Are your behavior trees visiting the desired behaviors?<a class="headerlink" href="#are-your-behavior-trees-visiting-the-desired-behaviors" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check for BTREE_NODE_EXEC events in the <a class="reference internal" href="event_output.html#event_output.enable" title="enable (event_output)"><span class="xref wsf wsf-command">event_output</span></a>.</p></li>
+<li><p>Or turn <em>script_debug_writes on</em> for the behavior of interest.  Most behaviors have writeln_d() statements inside
+their precondition script block.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Field 3 is the platform, field 5 is the behavior name, field 6 shows 0 or 1 for if the behavior changed execution
+state at that time</p></li>
+<li><p>If the behavior did not run then field 7 shows a reason for failure.  If the failure reason displays “not considered”
+and never changes, then your behavior tree is constructed poorly.</p></li>
+<li><p>Make sure you did not attach the behavior of interest on the tree in such a way that it will never run:</p>
+<ul>
+<li><p>If it is in a selector node, is there a behavior before it that will always pass and always be selected?</p></li>
+<li><p>If it is in a sequence node, is there a behavior before it that will always fail and break the sequence of execution?</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="are-behavior-s-being-executed">
+<h2>Are behavior’s being executed?<a class="headerlink" href="#are-behavior-s-being-executed" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check for BTREE_NODE_EXEC events in the <a class="reference internal" href="event_output.html#event_output.enable" title="enable (event_output)"><span class="xref wsf wsf-command">event_output</span></a> to see if your behaviors run. Field 6
+shows the execution state.</p></li>
+<li><p>Or turn <em>script_debug_writes on</em> for the behavior of interest.  Most behaviors have writeln_d() statements inside
+their execute script block.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>The precondition script in the behavior node might be too strict or faulty.</p></li>
+<li><p>Try making the precondition script less limiting:</p>
+<ul>
+<li><p>Try different values for behavior parameters such that the precondition should pass.</p></li>
+<li><p>Temporarily changing the precondition to always return true.</p></li>
+<li><p>Add your own writeln_d() statements near complicated script to help you understand why it might fail.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="are-your-behavior-parameters-set-to-good-values">
+<h2>Are your behavior parameters set to good values?<a class="headerlink" href="#are-your-behavior-parameters-set-to-good-values" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check all of my parameter edits to see how they differ from the release example behaviors.</p></li>
+<li><p>Note: the release example behaviors should have their parameters set up in such a way to allow maximum action.  In
+other words, they aren’t very limiting.</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Common issues:</p>
+<ul>
+<li><p>I require a track quality that is too high.</p></li>
+<li><p>I shoot at very low percent of max range.</p></li>
+<li><p>I have not set up my intercept speeds for different platforms.</p></li>
+<li><p>I forgot to add all my weapons to the weapons array map.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="are-the-agent-behaviors-acting-right">
+<h2>Are the agent behaviors acting right?<a class="headerlink" href="#are-the-agent-behaviors-acting-right" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>There can always be bugs in behavior script or edge cases that the script did not account for.</p></li>
+<li><p>Check that the scripts and files you wanted to include were actually used.  The WSF IDE makes this easy, just
+right-click and select “go to definition.”</p></li>
+</ul>
+<p><strong>Debug</strong></p>
+<ul class="simple">
+<li><p>Study the script well and determine if there appears to be large parts of it that are never executed.</p></li>
+<li><p>Check for IF statements that are never entered, check for loops that are never looped, and check for early return
+statements.</p></li>
+<li><p>Look for unique or seldom used platform script methods or subsystem methods.  Were proper parameters passed in?</p></li>
+</ul>
+</section>
+<section id="do-you-have-enough-tools-for-the-job">
+<h2>Do you have enough tools for the job?<a class="headerlink" href="#do-you-have-enough-tools-for-the-job" title="Permalink to this headline">¶</a></h2>
+<p><strong>Verify</strong></p>
+<ul class="simple">
+<li><p>Check that you understand the intended use of your agent behaviors.  You might need to create a new behavior, or get
+help modifying an existing one.  Here is a short list of the most common and most used behaviors and a small
+description of their purpose.</p></li>
+<li><p>GCI behaviors (aigci):</p>
+<ul>
+<li><p><em>behavior_create_clustering_jobs</em> is for using a WsfClusterManager to create clusters of tracks and a zone job for
+each cluster.</p></li>
+</ul>
+</li>
+<li><p>Flight Lead behaviors (aifl):</p>
+<ul>
+<li><p><em>behavior_create_target_jobs_self</em> is for creating pursue-target jobs from local tracks. Good for when a GCI
+commander is not used.</p></li>
+<li><p><em>behavior_interpret_zone_jobs</em> is for bidding on and performing zone jobs.  It creates pursue-target jobs from every
+cluster member given in the job.</p></li>
+<li><p><em>behavior_create_point_job</em> is for creating a pursue-point job when there are not enough cluster members in a zone
+job to send the whole flight group.</p></li>
+<li><p><em>behavior_create_cap-routes</em> is for creating cap-route jobs from a user given list of points and route names.</p></li>
+<li><p><em>behavior_manage-pincer</em> is for creating a pincer job if the conditions are appropriate.</p></li>
+<li><p><em>behavior_manage-uplinks</em> simply removes uplink jobs if they are invalid. AIAI agents add uplink jobs to AIFL agents.</p></li>
+</ul>
+</li>
+<li><p>Airborne Interceptor behaviors (aiai):</p>
+<ul>
+<li><p><em>behavior_pursue-target</em> is for bidding on and performing pursue-target jobs.  It sets the target on the RIPR
+processor and flies towards it.</p></li>
+<li><p><em>behavior_engage-target</em> is for shooting weapons at the RIPR processor’s set target.</p></li>
+<li><p><em>behavior_default-flight</em> is for flying (or bringing the platform back onto) the planned route of the platform.</p></li>
+<li><p><em>behavior_evade</em> is for using a WSF_THREAT_PROCESSOR to find threats and then fly away from them.  It also flies
+away from allies if evading a threat.</p></li>
+<li><p><em>behavior_cap-route</em> is for bidding on and performing cap-route jobs.  It flies the given route around the given
+point.</p></li>
+<li><p><em>behavior_escort</em> is for flying in formation with a care package and ignoring tracks that aren’t a threat to said
+package.</p></li>
+<li><p><em>behavior_go_home</em> is for monitoring subsystems (e.g., weapons, fuel) and other considerations in order to fly the
+agent home.</p></li>
+<li><p><em>behavior_pincer</em> is for bidding on and performing pincer jobs.  Two or more platforms separate to flank and/or drag
+a target area.</p></li>
+<li><p><em>behavior_pursue-point</em> is for bidding on and performing pursue-point jobs.  It flies towards the given point.</p></li>
+<li><p><em>behavior_weapon-uplink</em> is for creating, bidding on, and performing weapon_uplink jobs.  It creates weapon_uplink
+jobs when trying to pass off an uplink.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/ripr_trouble_shooting_guide.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="road_traffic.html" title="road_traffic"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ripr_scenarios.html" title="RIPR Scenarios"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

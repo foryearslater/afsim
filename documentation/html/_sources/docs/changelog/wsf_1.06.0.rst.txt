@@ -1,0 +1,156 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.0:
+
+WSF 1.6.0 - 29 May 2009
+-----------------------
+
+General
+=======
+
+* Added Suppressor 7's Multiple Target Tracker (:ref:`MTT`; otherwise known as the "Bogdon"
+  tracker).  Users should specify "mtt" as the :command:`track_manager.tracker_type` (or, specify "mtt" as the
+  correlation and fusion methods in the track_manager block) to enable use of MTT.
+
+* A new implementation of the standard waypoint movers (:model:`WSF_AIR_MOVER`, :model:`WSF_GROUND_MOVER`,
+  :model:`WSF_SURFACE_MOVER` and :model:`WSF_SUBSURFACE_MOVER`) are provided as an option in this release. The new implementation
+  can be used in place of the existing implementation by defining the environment variable **WSF_NEW_MOVER** with a
+  non-empty value prior to running your application.
+
+  This is the final release in which the new movers will remain an option. Pending no problems, the new movers will
+  become the default with the 1.6.1 release. **It would be much appreciated if users would attempt to use the new movers
+  and report any deficiencies.**
+
+Corrections
+===========
+
+* **(CR 6512)** Fixed an issue where the script compiler would throw an error if an object was cast to a container
+  type (i.e. Array or Map).
+
+* **(CR 6515)** Fixed an issue where the script compiler would throw an error if a script's return type was a
+  container type (i.e. Array or Map).
+
+* **(CR 6523)** Fixed an issue where complex types weren't being removed from container types (i.e. Array and Map)
+  when Erase is called.
+
+* **(CR 6528)** Fixed an issue where the script method :method:`WithinFieldOfView <WsfPlatform.WithinFieldOfView>` for a
+  :model:`jammer <WSF_RF_JAMMER>` always returned 'false' due to an implementation issue in software.
+
+* **(CR 6532)** Fixed an issue with the script compiler not allowing a static method call inside of an if expression
+  (e.g. if (WsfPlatform.FindPlatform("my-plat").IsValid()))
+
+* Fixed an issue with false-targets causing a segmentation fault due to the false-target screener not properly
+  clearing false-target blips.
+
+* **(CR 6540)** Corrected an issue where a sensor would not detect targets if terrain was in use and the sensor was
+  located where the terrain was below mean sea level. The simple round-Earth horizon masking check used early in the
+  sensor detection process indicates masking occurs if either object is below mean sea level. When using terrain it is
+  possible to be above ground level but below mean sea level, thus causing horizon masking to be declared as occurring,
+  when in fact it should not.
+
+* **(CR 6541)** :ref:`docs/event/sensor_events:SENSOR_DETECTION_ATTEMPT` events were not being generated for
+  :model:`WSF_EOIR_SENSOR` and :model:`WSF_SAR_SENSOR`. The sensors were modified to invoke the SensorDetectionAttempt simulation
+  observer.
+
+* **(CR 6550)** Fixed an error in the function for setting the platform appearance word. A call to the function was
+  clearing any previous settings.
+
+* **(CR 6578)** Fixed an issue where the :method:`task manager StartJamming <WsfTaskManager.StartJamming>` and
+  :method:`weapon StartJamming <WsfWeapon.StartJamming>` script methods allow for the setting of invalid frequencies and
+  bandwidths. Any frequency that is out of bounds will not cause an assignment to be made. This fix does still allow for
+  the setting of any frequency for barrage type jammers. Use of the :method:`task manager CanJam <WsfTaskManager>` and
+  :method:`weapon CanJam <WsfWeapon.CanJam>` scripts can be used before calling the **StartJamming** script methods.
+
+* Changed the way in which the :command:`electronic_attack` and :command:`electronic_protect`
+  effects are applied in the software. There were some minor issues when dealing with the inheritance of some of the
+  effects and their proper application when applied. This change should not be noticeable from a users perspective.
+
+* Corrected a problem in the propagation algorithm used by the :model:`WSF_SPACE_MOVER`.  This problem only manifested
+  itself when TLEs were being used, and the current epoch preceded the epoch of the TLE.
+
+* **(CR 6642)** Corrected a problem in :model:`WSF_IRST_SENSOR` where the use of an :command:`antenna_pattern` to implement
+  installation effects (windows, etc.) was being applied twice. Also modified the :ref:`Azimuth-elevation_Table_Definition` 
+  from within :command:`antenna_pattern` to accept **absolute** as a valid
+  *<value-units>*. This eliminates the need to convert the effects tables to dB.
+
+Enhancements
+============
+
+* Added the input command :command:`track_manager.tracker_type` to :command:`track_manager`.
+
+* Added the input command :command:`track.frequency` to :command:`track`.
+
+* Added the script method :method:`IsPredefined <WsfTrack.IsPredefined>` to :class:`WsfTrack`.
+
+* Added the script method :method:`ActiveBeams <WsfWeapon.ActiveBeams>` and :method:`MaximumBeams <WsfWeapon.MaximumBeams>` to
+  :class:`WsfWeapon` for :model:`WSF_RF_JAMMER` weapon types.
+
+* Added the input command :model:`frequency_band <WSF_RF_JAMMER>` for :model:`WSF_RF_JAMMER <WSF_RF_JAMMER>` weapon
+  types.
+
+* Made a :model:`jammer_group <WSF_RF_JAMMER>` be added as a  :command:`_.platform_part.category`
+  also to aid in script checking via the :method:`CategoryMemberOf <WsfPlatformPart.CategoryMemberOf>` method.
+
+* Changed the default :model:`group_power_distribution <WSF_RF_JAMMER>` to be 'constant' instead
+  of 'average' to aid in the use of jammer groups as categories and not having to specify the
+  :model:`group_power_distribution <WSF_RF_JAMMER>` also.
+
+* Modified the :command:`terrain` input processing so it will abort if terrain sources were specified but they do not exist.
+
+* Added the :command:`dis_interface.simple_detonations_exclude` command to the :command:`dis_interface` to allow
+  :command:`dis_interface.simple_detonations` processing to be excluded for specified weapon platform types or associated
+  weapon_effects.
+
+* Added :command:`sensor_map horizontal_map command <horizontal_map.sensor_platform_yaw>` that allow  the
+  orientation of the sensing platform to be specified.
+
+* **(CR 6351)** Added the capability for the inherent perception of jamming based on the
+  :command:`comm.jamming_perception_threshold` by a :command:`comm` system. Access to this perception is
+  provided via the :method:`JammingPerceived <WsfComm.JammingPerceived>` script method. This capability was implemented to mimic
+  a comm operator's ability to perceive jamming and possibly take corrective action.
+
+* **(CR 6351)** Added the capability for the inherent perception of jamming based on the
+  :model:`jamming_perception_threshold <WSF_RADAR_SENSOR>` by a :model:`WSF_RADAR_SENSOR` predefined
+  sensor type. Access to this perception is provided via the :method:`JammingPerceived <WsfSensor.JammingPerceived>` script
+  method. This capability was implemented to mimic a radar operator's ability to perceive jamming and possibly take
+  corrective action.
+
+* **(CR 6351)** Added in the capability to have :model:`alternate_frequencies <WSF_RADAR_SENSOR>` on
+  a :model:`WSF_RADAR_SENSOR`. These alternate frequencies can be switched to by the :model:`WSF_AGILITY_EFFECT`
+  :command:`electronic_protect` technique in the presence of jamming and/or at simulation initialization by
+  issuing the :command:`randomize_radar_frequencies`  command.
+
+* **(CR 6351)** Added the capability to randomize a radar's (of type :model:`WSF_RADAR_SENSOR`) frequencies at simulation
+  startup via the :command:`randomize_radar_frequencies` and the
+  :model:`alternate_frequencies <WSF_RADAR_SENSOR>`.
+
+* **(CR 6351)** Added the new :command:`electronic_protect` capability of :model:`WSF_AGILITY_EFFECT` which
+  uses the new :model:`jamming_perception_threshold <WSF_RADAR_SENSOR>` to detect the presence of
+  jamming and change to a different mode or to an alternate frequency as defined by
+  :model:`alternate_frequency <WSF_RADAR_SENSOR>`. Currently only valid for sensor's of type
+  :model:`WSF_RADAR_SENSOR`.
+
+* Added new uplink features to :class:`WsfTaskManager` including new :method:`WsfTaskManager.StartUplinking` methods. 
+  Includes related inputs for :model:`WSF_TASK_PROCESSOR` including :model:`uplink_source,
+  uplink_comm, uplink_delay, auto_weapon_uplink, and auto_weapon_uplink_platform <WSF_TASK_PROCESSOR>`.  New related methods
+  :method:`WsfTask.ResourceIsUplink` and :method:`WsfTask.ResourceIsProcessor` for :class:`WsfTask`.
+
+* Added specialized script task types :class:`WsfWeaponTask`, :class:`WsfJammerTask`, :class:`WsfUplinkTask`.  These can be used in
+  conjunction with a new form of :method:`WsfTaskManager.AssignTask`.
+
+* **(CR 6623)** Added :method:`methods <WsfPlatform.InfraredSigState>` to query the current signature state of a platform.
+  Also added the :ref:`docs/event/platform_events:PLATFORM_APPEARANCE_CHANGED` event to :command:`event_output` and :command:`observer`. This event will be issued
+  whenever the :method:`signature state <WsfPlatform.SetInfraredSigState>`, :method:`concealment
+  factor <WsfPlatform.SetConcealmentFactor>` or :method:`appearance word <WsfPlatform.SetAppearance>` is changed.
+
+* Added :ref:`write_str <script>`, which provides a way to write data to a string. It's interface is the same as
+  :ref:`writeln <script>`, but returns the string that was written instead of writing to the console.

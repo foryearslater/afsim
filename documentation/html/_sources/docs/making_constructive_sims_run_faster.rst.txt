@@ -1,0 +1,63 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Making Constructive Sims Run Faster
+-----------------------------------
+
+The items below typically can be adjusted without having a detrimental effect on the simulation. However, keep in mind what you are adjusting and what affect it will have on an individual platform. Severely adjusting frame rates can affect a simulation.  Adjusting event or replay outputs will not affect a simulation outcome.
+
+* | **update_interval on movers**
+  |  Setting the update_interval to less than 5 to 10 seconds for movers generally creates run time issues.
+  |  However, guided movers absolutely need lower update intervals if used as a weapon.
+
+* | **update_interval in scripts**
+  |  Calling a script on a platform once a second is costly.
+  |  Think about extending it out to 10 or so seconds or longer.
+
+* | **frame_time in sensors**
+  |  Going below 1 second takes up a lot of resources.  In addition, think about the time it takes to form a track.
+  |  Example: If it normally takes a sensor 10 seconds to form a track once positive sensor detections occur, set the
+     frame_time to 3.3 seconds for a 3 of 5 hits_to_establish_track.
+
+* | :command:`dis_interface`
+  |  Inputs that can be changed to radically change the size of a replay file (make it smaller which cuts down runtime)
+     are:
+  |  suppress_comm_data  - Do you really need to see the blue comm lines in visualization tools?
+  |  heartbeat_timer - set it up to 100 (from a default of 5).
+  |  entity_position_threshold - set it up to 10 meters (from a default of 1).
+  |  entity_orientation_threshold - set it up to 10 degrees (from a default of 3)
+  |  Keep in mind that setting these values DO NOT AFFECT THE SIMULATION.
+
+* | :command:`event_output`
+  |  Do you really need to log every detection attempt by the sensors?
+  |  Do you really need to log every track update?
+  |  Anything that is selected requires I/O which is expensive.
+  |  Again, selection of event items to retain DO NOT AFFECT THE SIMULATION.
+
+* | :command:`csv_event_output`
+  |  Do you really need to log every detection attempt by the sensors?
+  |  Do you really need to log every track update?
+  |  Anything that is selected requires I/O which is expensive.
+  |  Again, selection of event items to retain DO NOT AFFECT THE SIMULATION.
+
+* | :command:`observer`
+  |  If used to write to output or to log file can be expensive.
+  |  Use care though as these may be used for simulation runtime also.
+
+* | **write_ln or debug statements**
+  |  Comment out every writeln and turn off debug statements.  Writing out to the screen requires I/O.
+
+* | **replacing default mesh networks in comms**
+  |  The default network type in comms is the mesh network, which scales very poorly with many
+  |  members in the network: [(n * (n - 1)) / 2 ] edges, where n is the number of comms in the
+  |  network. If larger networks are needed, try switching to a more scalable network type (such as star)
+  |  or define the network entirely via the use of the generic network type to avoid excessive performance
+  |  penalties to using the mesh network.

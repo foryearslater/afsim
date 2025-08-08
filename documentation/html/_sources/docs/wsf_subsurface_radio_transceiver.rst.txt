@@ -1,0 +1,200 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SUBSURFACE_RADIO_TRANSCEIVER
+--------------------------------
+
+.. model:: comm WSF_SUBSURFACE_RADIO_XMTR
+.. model:: comm WSF_SUBSURFACE_RADIO_RCVR
+.. model:: comm WSF_SUBSURFACE_RADIO_TRANSCEIVER
+
+.. parsed-literal::
+
+   comm <name-or-type> :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` | :model:`WSF_SUBSURFACE_RADIO_XMTR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` | :model:`WSF_SUBSURFACE_RADIO_RCVR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :ref:`Antenna_Commands` ...
+      ... :command:`comm` Commands ...
+      ... :command:`WSF_COMM_TRANSCEIVER` Commands ...
+      ... :command:`WSF_RADIO_TRANSCEIVER` Commands ...
+      ... :command:`_.transmitter` ... end_transmitter
+      ... :command:`_.receiver` ... end_receiver
+      max_underwater_range_filter_ ...
+      max_communication_depth_ ...
+      minimum_horizon_angle_ ...
+      :command:`WSF_SUBSURFACE_RADIO_TRANSCEIVER.set_VLF_comm` ...
+      :command:`WSF_SUBSURFACE_RADIO_TRANSCEIVER.unset_VLF_comm` ...
+      water_attenuation_factor_ ...
+
+      ... `WSF_SUBSURFACE_RADIO_TRANSCEIVER Commands <Commands>`_ ...
+   end_comm
+
+.. note:: 
+
+    :model:`WSF_SUBSURFACE_RADIO_XMTR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` and
+    :model:`WSF_SUBSURFACE_RADIO_RCVR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` are transmit-only and receive-only versions of
+    :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER`.
+
+Overview
+========
+    
+:model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` provides a baseline radio implementation that is capable of both transmitting and
+receiving using a :command:`_.transmitter` and :command:`_.receiver`. If a communication device is required to transmit or receive only,
+the :model:`WSF_SUBSURFACE_RADIO_XMTR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` and :model:`WSF_SUBSURFACE_RADIO_RCVR <WSF_SUBSURFACE_RADIO_TRANSCEIVER>` types are
+available. Both of these types are special cases of the :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` type and therefore share the
+same commands that are listed below in the command section.
+
+The :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` inherits from :model:`WSF_RADAR_SENSOR` and :model:`WSF_COMM_TRANSCEIVER` and accepts
+keywords from the parent classes.  Testing has been limited to the function of passing messages between an airborne
+platform and a second platform that can be at any altitude.  Behaviors using more complex routing functions have not
+been verified.
+
+The :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` provides a communications option that overrides the traditional horizon constraints
+to permit simulated communications with submerged submarines.  Most WSF sensor and communications systems were
+designed to operate above the earth's surface.  Thus, when altitudes of transmitters or receivers have values of zero
+or less, then constraints are usually imposed to stop any further processing of the sensing or communications event. 
+When two communications systems are of the :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` type, then messages can be delivered to
+platforms that are below the earth's surface.
+
+Two basic methods of communications are considered within this single communications type--very low frequency (VLF) and
+optical lasers.  Both methods are intended to permit users to achieve communications "effects" for simulations. 
+Neither has high fidelity to model the physics involved with the propagation of the waves.
+
+The VLF communication mode results in near-perfect communications that are unconstrained by horizons or terrain.  The
+mode is activated using the keyword :command:`WSF_SUBSURFACE_RADIO_TRANSCEIVER.set_VLF_comm`.  When in the VLF mode of operations, constraints are not
+imposed for absorption, attenuation, or horizon-angle limits.
+
+The default state for :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER` results in the state such that VLF communications behavior is not
+set (:command:`WSF_SUBSURFACE_RADIO_TRANSCEIVER.unset_VLF_comm`) and thus, a set of path constraints will be imposed.  The path constraints are intended to
+provide top-level "effects" that impose constraints which are intended to be consistent with effects for a
+laser-communications system.  Laser-light energy is rapidly absorbed by water.  The underwater path lengths (often only
+a few hundred feet) are usually very short.  Unfortunately, the short underwater-transmission-path distances are often
+within the margins of errors for many range and earth-horizon calculations that are used in mission-level simulations.
+
+Simplifying assumptions are made to permit and to restrict communication events when **not** operating as VLF:
+
+* The intersection of a spherical-earth surface with the straight-line path between transmitter and receiver is used to
+  calculate a distance for the path through the water.  This path is used for underwater range limits and the water-path
+  absorption effects. The remainder of the slant-range is used for atmospheric absorption effects.
+* The method ignores detailed refraction effects, and it also ignores interactions for specific absorption and
+  reflections as the energy penetrates the waves at the air-water boundary.  These values are currently within the noise
+  of other error sources.  Therefore, detailed laser engineering-level models are more appropriate for study of these
+  features.
+* The transmission distance is assumed to be approximated by spherical-one-earth-radius horizon distances between
+  platforms. If terrain models are included, the terrain is allowed to block the path along the airborne part of the path.
+* Users can limit the communications capabilities that might be caused by water-entry-angle limits by using the keyword
+  minimum_horizon_angle_. This angle is measured from the horizon upward.  Communications with angles less than this
+  limit are stopped.  The effect is to require platforms to reduce their slant range to be able to communicate.
+* Unrealistically long underwater ranges can be restricted by using the keyword max_underwater_range_filter_. 
+  This range is limited to 1000 meters by default, and users can increase or decrease the value as desired.  This keyword
+  has an additional effect of permitting communication over the short range without regard to horizon or terrain.
+
+.. block:: WSF_SUBSURFACE_RADIO_TRANSCEIVER
+
+Commands
+========
+      
+.. command:: max_underwater_range_filter <length-value>
+   
+   Prevents unrealistically long underwater ranges by specifying a range constraint for the underwater portion of the
+   transmission path.  This keyword also has an additional effect of permitting communication over the short range without
+   regard to horizon or terrain.
+
+   .. note::
+   
+      In addition to restricting ranges based on underwater path lengths, users can also restrict the total
+      range by using the :command:`_.antenna_commands.maximum_range` keyword in the :command:`_.transmitter` or :command:`_.receiver` block.
+   
+   Default:  1000 m
+
+.. command:: max_communication_depth <length-value>
+   
+   Specifies the maximum depth at which a submerged platform is permitted to exchange communication events.  In order to
+   reduce user input issues, the absolute value of the numeric input is used, and the value is converted to be a negative
+   altitude to represent the depth below the surface for the submerged platform.
+   
+   Default:  negative infinity
+
+.. command:: minimum_horizon_angle <angle-value>
+   
+   Specifies the minimum angle acceptable for transmissions through the water's surface.  This angle is measured from the
+   horizon upward.  Communications with angles less than this limit are stopped.  The effect is to require platforms to
+   reduce their slant range to be able to communicate.
+   
+   Default:  -90 deg
+
+.. command:: set_VLF_comm
+.. command:: unset_VLF_comm
+   
+   When the command is set_VLF_comm, then all horizon checks are ignored and the message is delivered.
+   
+   Default:  unset_VLF_comm
+
+.. command:: water_attenuation_factor <dbratio-value>/<length-value>
+   
+   Specifies a factor by which signals are attenuated as they pass through the water part of the transmission path.  The
+   format for data is a number followed by a dB ratio value, followed by a backslash, and then followed by a
+   <length-value>.
+
+    A sample entry is::
+
+      water_attenuation_factor  0.5 dB/m
+   
+   Default:  0.0 dB/m
+
+Examples
+========
+
+The VLF communications option is activated by :command:`WSF_SUBSURFACE_RADIO_TRANSCEIVER.set_VLF_comm` on :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER`.
+
+::
+
+   comm VLF_COMM WSF_SUBSURFACE_RADIO_TRANSCEIVER
+        debug
+        set_VLF_comm  // Disables horizon checks for long-range comms
+        transmitter
+           frequency      30.0 khz
+           //power          10.0 kw  // S/N and jamming are not modeled for VLF at current time
+        end_transmitter
+        receiver
+           frequency      30.0 khz
+           //maximum_range   500 km  //Can limit VLF range
+        end_receiver
+        //max_communication_depth  -400 ft  //Can enforce a depth limit
+   end_comm
+
+Operations with the optical-line-of-sight communications option is the default for :model:`WSF_SUBSURFACE_RADIO_TRANSCEIVER`.
+
+::
+
+   antenna_pattern  UWCOM_ANTENNA
+     uniform_pattern
+        minimum_gain 70.0 db
+     end_uniform_pattern
+   end_antenna_pattern
+
+   comm UW_COMM WSF_SUBSURFACE_RADIO_TRANSCEIVER
+        debug
+        transmitter
+           frequency 600000.0 ghz
+           //Note: 'power' value needed to enable attenuation and jamming checks to compute S/I
+           power          1.0 kw
+           antenna_pattern UWCOM_ANTENNA
+        end_transmitter
+        receiver
+           frequency 600000.0 ghz
+           antenna_pattern UWCOM_ANTENNA
+        end_receiver
+        water_attenuation_factor      0.3 dB/m //Default = 0.0 dB/m
+        minimum_horizon_angle         3.0 deg  //Default = -90 deg
+        max_underwater_range_filter 400.0 m    //Default = 1000 meters
+        max_communication_depth    -200.0 m    //Default = negative infinity
+   end_comm

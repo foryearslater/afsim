@@ -1,0 +1,94 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_AGILITY_EFFECT
+------------------
+
+.. model:: effect WSF_AGILITY_EFFECT
+
+.. model:: effect WSF_RADAR_AGILITY_EFFECT
+
+EW Effects: :ref:`Predefined_Electronic_Warfare_Effect_Types`
+
+.. parsed-literal::
+
+   ...
+     effect <effect-name> WSF_AGILITY_EFFECT
+        :ref:`Base Effect Commands <electronic_warfare_effect.commands>`
+
+        agility_type_ ...  end_agiltiy_type
+     end_effect
+   ...
+
+Overview
+========
+
+This base effect type can be included in the :command:`electronic_protect` technique block as one
+of the many available effects for a given technique. The commands listed below are the base-type commands that can be
+specified in the effect block for this effect type.
+
+.. block:: WSF_AGILITY_EFFECT
+
+Commands
+========
+
+.. command:: debug
+   
+   Set debug mode for this effect.
+
+.. command:: agility_type  <agility-type> ... end_agility_type
+   
+   Input block to provide the agility-type of this effect and associated input commands for this agility-type. The
+   specified agility-type is applied when a comm system or radar sensor perceives jamming. For this effect to properly
+   function a radar sensor's :command:`jamming_perception_threshold <WSF_RADAR_SENSOR.jamming_perception_threshold>` and
+   :command:`jamming_perception_timeout <WSF_RADAR_SENSOR.jamming_perception_timeout>` or a comm's
+   :command:`jamming_perception_threshold <comm.jamming_perception_threshold>` and
+   :command:`jamming_perception_timeout <comm.jamming_perception_timeout>` should be properly defined.
+   
+   **<agility-type>**
+      Specifies the agility type to be used. Available agility types are as follows:
+
+      **frequency_changing**
+         Provides for changing to different alternate frequencies within the radar sensor's
+         :command:`sensor.mode_select_delay` or comm's
+         :command:`comm.frequency_select_delay` constraint.
+   
+         ::
+         
+            ...
+              agility_type
+                frequency_changing
+              end_agility_type
+            ...
+   
+         .. note::
+      
+            If this effect is an :command:`electronic_protect` on a :model:`WSF_RADAR_SENSOR`
+            type, then the sensor will be considered frequency agile (pulse-to-pulse) iff this effect is defined as a
+            frequency_changing AND :command:`alternate frequencies <_.transmitter.frequency>` are defined on the :command:`_.transmitter` AND
+            :command:`jamming perception thresholds <WSF_RADAR_SENSOR.jamming_perception_timeout>` are set.
+
+      **mode_changing**
+         Provides for changing to different radar modes within the
+         :command:`mode_select_delay <sensor.mode_select_delay>` constraint.
+            
+         ::
+         
+            ...
+             agility_type mode_changing
+                mode_name 1 <mode-name-1>
+                mode_name 2 <mode-name-2>
+                ...
+                mode_name N <mode-name-N>
+              end_agility_type
+            ...
+            
+         **<mode-name-n>** - Specifies the mode name that will be applied in the order of the preceding values from [1,N].

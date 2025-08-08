@@ -1,0 +1,183 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+behavior_tree
+-------------
+
+.. **Navigation:** :model:`WSF_SCRIPT_PROCESSOR`
+
+.. contents::
+   :local:
+   :depth: 4
+
+.. command:: behavior_tree ... end_behavior_tree
+   :block:
+
+   The Behavior Tree is an artificial intelligence technology that allows scenario developers to quickly create flexible
+   agents with various tactical modules, called behaviors or behavior nodes.  The nodes can be arranged together in
+   interesting and interrelated ways with connector nodes.
+
+   .. parsed-literal::
+
+      behavior_tree_
+         <one or more nodes>
+      end_behavior_tree
+
+   There are two basic node types:
+
+   * :command:`Behavior Nodes <behavior>` - the leaf nodes of the tree, contain user defined script that performs a particular
+     behavior or action.  See the :command:`behavior` page for more info.
+   * Connector Nodes - useful for building & organizing the tree. These nodes specify how behavior nodes are related to
+     each other.
+
+Connector Nodes
+===============
+
+*Connector Node Structure & Syntax*
+
+::
+
+  <connector-node-type>
+    [run_selection ...]
+    [make_selection ...]
+    <two or more nodes>
+  end_<connector-node-type>
+
+Currently, there are five supported connector-node-types:  sequence_,  parallel_,  selector_,
+priority_selector_,  and weighted_random_
+
+If it's not clear from the syntax definition above, any node on the behavior tree can have any number of child nodes
+(either connector or behavior type).  These child nodes can subsequently have any number and type of children as well,
+and so on.  Two of the connector node types perform a sequence of sorts and can not make use of any modifiers, however
+there are three connector nodes types that perform a single child selection (selector, priority_selector, and
+weighted_random) and these can be further specialized by using the sub-commands run_selection_ and make_selection_ .
+
+.. command:: sequence ... end_sequence
+
+   Sequence nodes are the 2nd most common connector node used in behavior trees.  When a sequence node is reached, it
+   executes all of its children in order, until one of the children fails its precondition.  If the first child fails,
+   then none of the children are executed.  If all children pass their preconditions, they are all executed.  If the first
+   half of the children pass and the next node fails, then the first half of the children are all executed, and the
+   second half are not.
+
+.. command:: parallel ... end_parallel
+
+   Parallel nodes are connector nodes used in the behavior tree in order to execute every one of their children that
+   passes precondition, regardless of ordering.
+
+.. command:: selector ... end_selector
+
+   Selector nodes are the most common connector node used in behavior trees.  A selector node dictates the tree to choose
+   only one of its children to execute.  The tree will execute the first child of a selector node that passes its
+   precondition.
+
+.. command:: priority_selector ... end_priority_selector
+
+   Priority-Selector nodes are connector nodes used in the behavior tree in order to choose and execute whichever child is
+   highest valued.  The value of a child is determined by its precondition script block.  Priority-Selector nodes always
+   (and only) execute their highest valued child.
+
+.. command:: weighted_random ... end_weighted_random
+
+   Weighted-Random nodes are connector nodes used in the behavior tree in order to randomly choose and execute a child.  A
+   uniform weighted random selection is performed, and the weights for each child are determined by their precondition
+   script blocks.  For example, if a Weighted-Random node has two children and both return a value of "3", then they are
+   equally likely to be chosen.  It will be common for Weighted-Random nodes to use the "run_selection" feature, in order
+   to allow their selected child to execute for a while (or until done) before another random selection is made.
+
+.. command::  <connector node sub-commands>
+
+   *(only useful for types: selector, priority_selector, and weighted_random)*
+
+   .. command:: run_selection [ until_done | for <time> | repeat <int> ]
+
+      Specify how long a selected child will be executed for, rather than the default: once (repeat 1).  If "until_done" is
+      declared, then a child node will be executed until its precondition returns 0.0 or false.
+
+   .. command:: make_selection [ continuous | count <int> ]
+
+      Specify how many selections will be made, rather than the default: continuous.  This doesn't affect or change whatever
+      is defined by make_selection, but rather it could limit how many times a selector type node will perform.
+
+   For example, this tree defined below will randomly select between behaviors "cat" and "dog" with probability of
+   selection at 67% and 33%, respectively (because of their precondition return values).  Each time a selection is made,
+   the node will be run automatically on each update for 30 seconds rather than new selections being made each update
+   (because of the run_selection command).  The weighted_random node will only make selections ten times and then it won't
+   do anything after that (because of the make_selection command).  So this tree will only be doing something for
+   approximately 300 seconds (30 sec times 10).
+
+   ::
+
+     behavior cat precondition return 2.0 end_precondition execute writeln("cat"); end_execute end_behavior
+     behavior dog precondition return 1.0 end_precondition execute writeln("dog"); end_execute end_behavior
+     behavior_tree
+       weighted_random
+         run_selection for 30 sec
+         make_selection count 10
+         behavior_node cat
+         behavior_node dog
+       end_weighted_random
+     end_behavior_tree
+
+Defining a behavior_tree
+========================
+
+By default, the behavior tree has an invisible root node that is a parallel node.  All behaviors, and all nodes that
+exist at the root level will all be checked for preconditions and executed if the preconditions passed.
+
+``behavior_tree ... end_behavior_tree``
+
+Behavior trees can contain [theoretically] and infinite depth of nested connector nodes and behaviors.  Here is an
+example of a behavior tree that doesn't use any connector nodes, and has a depth of one, by attaching only behavior
+nodes themselves to the [invisible] root node of the tree.
+
+*Example Shallow Behavior Tree*::
+
+ # all these named behaviors are assumed to be pre-defined
+ behavior_tree
+    behavior_node check_fuel
+    behavior_node check_instruments
+    behavior_node drink_coffee
+ end_behavior_tree
+
+*Example Simple Behavior Tree*::
+
+   # sequences over the "check_fuel" and "check_instruments" behaviors every update
+   behavior_tree
+      sequence
+         behavior_node  check_fuel
+         behavior_node  check_instruments
+      end_sequence
+   end_behavior_tree
+
+*Example Nested Behavior Tree*::
+
+ # all these named behaviors are assumed to be pre-defined
+ behavior_tree
+   sequence
+     behavior_node drink_coffee
+     selector
+       behavior_node check_fuel
+       behavior_node check_instruments
+     end_selector
+   end_sequence
+ end_behavior_tree
+
+Behavior Tree Design Considerations
+===================================
+
+The two main considerations of the tree builder are the preconditions of behavior nodes and the placement of nodes in
+the tree.  These two considerations working together decide which nodes of a behavior tree execute. The precondition is
+an internal check a node does to determine if it can even run.  The position of a node in the behavior tree acts as an
+"external check" to determine whether or not it will run.  For example, if a node is a child of a selector node and
+other child nodes are often selected, then this node may never get called on.
+
+.. include:: _behavior_tree.wsf_mil.txt

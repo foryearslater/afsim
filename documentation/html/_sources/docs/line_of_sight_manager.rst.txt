@@ -1,0 +1,142 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+line_of_sight_manager
+---------------------
+
+.. command:: line_of_sight_manager ... end_line_of_sight_manager
+     :block:
+     
+.. parsed-literal::
+
+    line_of_sight_manager
+
+       // Commands_
+
+       maximum_location_change_ ...
+       vegetation_layer_masking_ ...
+       debug_
+       use_height_for_ground_platforms_ ...
+
+       // `Multi-thread Commands`_                     (Applicable only in frame-step simulations)
+
+       multi_thread_
+       debug_thread_
+
+       // `Multi-thread Performance Commands`_         (Applicable only when multi-threaded)
+
+       number_of_priority_levels_ ...
+       max_steps_in_priority_level_ ...
+       processing_rate_ ...
+
+    end_line_of_sight_manager
+
+Overview
+========
+
+The Line-of-sight (LOS) manager calculates and maintains LOS information between entities and/or entity parts in the
+simulation on request.
+
+For event-based simulations, the first time a LOS check is requested for a given pair, the LOS manager performs the LOS
+calculation and saves the result. For subsequent LOS requests for the same pair, the LOS manager checks first for
+movement using the maximum_location_change_ criteria to determine if LOS information needs updating. If neither
+player has moved, then the LOS manager references the saved LOS result.
+
+For frame-step simulations, similar to the behavior in event-based simulations, the first time a LOS check is requested
+for a given pair, the LOS manager performs the LOS calculation and saves the result. However, for each subsequent
+frame, after platform-mover updates occur at the beginning of the frame, all previously requested platforms are
+considered again. The LOS manager checks first for movement using the same check as in event-based simulations. If
+movement has occurred beyond the threshold criteria, the LOS manager performs the LOS calculation and updates the LOS
+information for all LOS interactions it has knowledge of containing that platform.
+
+The frame-step approach can be more computationally intensive; therefore, a multi-threading option is available. With
+this option enabled, the LOS manager creates a worker thread for LOS calculation processing.
+
+Commands
+========
+
+.. command:: maximum_location_change <length-value>
+   
+   The distance a platform must move when determining whether LOS information needs updating.
+
+   **Default** 0.0 meters
+
+.. command:: vegetation_layer_masking <boolean-value>
+   
+   Indicates that line of sight masking is to be performed with the vegetation layer of the terrain instead of the bare
+   earth layer.
+
+.. command:: debug 
+   
+   Writes additional information to standard output when debugging the LOS manager's main thread logic.
+   
+   .. note::
+      Debug only one thread at a time for best results.
+
+
+.. command:: use_height_for_ground_platforms <boolean-value>
+   
+   Indicates that a ground platform's :command:`platform.height` is to be added to its altitude when doing terrain masking
+   checks.
+
+Multi-thread Commands
+=====================
+
+Applicable only in frame-step simulations.
+
+.. command:: multi_thread 
+   
+   Creates a worker thread for processing line-of-sight calculations.
+
+.. command:: debug_thread 
+   
+   Writes additional information to standard output when debugging the LOS manager's worker thread logic.
+
+   .. note::
+      Debug only one thread at a time for best results.
+
+Multi-thread Performance Commands
+=================================
+
+These commands provide capability to change processing performance of the LOS manager's worker thread. Improvement is
+not guaranteed; use with caution.
+
+If the worker thread is overloaded and unable to perform all LOS calculations in the current frame, the unprocessed
+requests are saved for the next frame. In the next frame, requests with highest priority are processed first.
+
+By default, there are 3 priority levels (queues) each requiring 5 requests before the request before moving to a higher
+level. For example, assume a platform is moving at a distance greater than the maximum_location_change_ each
+frame. The LOS manager internally generates a request to update the LOS information for all LOS interactions it has
+knowledge of containing that platform. If the platform does not get processed for 5 frames it will move up in priority.
+If 5 more frames go by and the LOS interactions for that platform are still not getting updated, the platform will move
+up again in priority.
+
+.. command:: number_of_priority_levels <positive integer>
+   
+   The number of priority levels used when processing line-of-sight calculation requests.
+   
+   **Default** 3 (minimum is 1)
+
+.. command:: max_steps_in_priority_level <positive integer>
+   
+   The number of requests received for a given LOS interaction required before it moves up in priority.
+   
+   **Default** 5 (minimum is 1)
+
+.. command:: processing_rate <positive integer>
+   
+   The number of line-of-sight updates performed by the worker thread in one cycle.  A cycle consists of processing
+   requests, determining priority, and then updating the LOS data.  This keeps the thread from getting stuck processing
+   requests and never getting to actually updating the LOS data.  It also facilitates pausing the thread, since this can
+   only be done between cycles.
+   
+   **Default** 10 (minimum is 1)
+

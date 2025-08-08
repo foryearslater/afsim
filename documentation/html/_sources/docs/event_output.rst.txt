@@ -1,0 +1,158 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. |EO_COMMAND| replace:: :command:`event_output`
+.. |EO| replace:: event_output
+.. |END_EO| replace:: end_event_output
+.. |OUTPUT_FILE| replace:: events.evt
+.. |OUTPUT_FILE_D| replace:: events%d.evt
+
+|EO|
+----
+
+.. ==========================================================================================================================================
+.. DEVELOPER NOTE: PLEASE REFER TO THE ``afsim/doc/developer/event_page_template.rst`` BEFORE WRITING NEW ``csv_event_output`` DOCUMENTATION!
+.. ==========================================================================================================================================
+
+.. contents::
+   :local:
+
+.. command:: event_output ... end_event_output
+   :block:
+
+.. parsed-literal::
+
+   |EO|
+      file_ [ |FileName| | STDOUT | NULL]
+      lat_lon_format_ d[:m[:s]][.#]
+      time_format_ [[h:]m:]s[.#]
+      print_eci_locations_ |Boolean|
+      print_failed_message_delivery_attempts_ |Boolean|
+      print_failed_sensor_detection_attempts_ |Boolean|
+      print_single_line_per_event_ |Boolean|
+      print_track_in_message_ |Boolean|
+      print_track_covariance_ |Boolean|
+      print_track_residual_covariance_ |Boolean|
+      flush_output_ |Boolean|
+      disable_ [ <event> | all ]
+      enable_ [ <event> | all ]
+   |END_EO|
+
+.. include:: event_output_overview.txt
+.. include:: event_output_subs.txt
+
+General Format
+==============
+
+.. table::
+   :align: left
+
+   ================================================================================ ================================================================================
+   One-party event:                                                                 .. parsed-literal::
+
+                                                                                       <time> <event> <party-1> <extra-data>
+
+   Two-party event:                                                                 .. parsed-literal::
+
+                                                                                       <time> <event> <party-1> <party-2> <extra-data>
+
+   Three-party event:                                                               .. parsed-literal::
+
+                                                                                       <time> <event> <party-1> <party-2> <party-3> <extra-data>
+   ================================================================================ ================================================================================
+
+.. include:: event_output_breakdown.txt
+
+Event Index
+===========
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   event/*
+
+.. include:: event_output_commands_common.txt
+
+.. command:: lat_lon_format d[:m[:s]][.#]
+
+   Specifies the format and number of decimal places for displaying |Latitude| and |Longitude|.
+
+   **Default** d:m:s.2
+
+.. command:: time_format [[h:]m:]s[.#]
+
+   Specifies the format and number of decimal places for displaying <time>.
+
+   **Default** s.5
+
+.. command:: print_eci_locations <boolean>
+
+   Specifies whether position, velocity, and acceleration data are output referenced to the ECI coordinate frame.  This
+   will override the standard output of positions in LLA, and velocities and accelerations in NED coordinates.
+
+   .. note::
+      This option is primarily used for space-based simulation output analysis.
+
+   **Default** false
+
+.. command:: print_failed_message_delivery_attempts <boolean>
+
+   Specifies if :ref:`docs/event/message_events:MESSAGE_DELIVERY_ATTEMPT` events should be printed if the attempt was unsuccessful.
+
+   **Default** true
+
+.. command:: print_failed_sensor_detection_attempts <boolean>
+
+   Specifies if :ref:`docs/event/sensor_events:SENSOR_DETECTION_ATTEMPT` events should be printed if the attempt was unsuccessful.
+   Setting this to false will dramatically reduce the event file size because only successful detection events will be printed.
+
+   **Default** true
+
+.. command:: print_single_line_per_event <boolean>
+
+   Specifies if each event should be printed on a single line.
+
+   **Default** false
+
+.. command:: print_track_in_message <boolean>
+
+   If a track is part of a message (such as in a :class:`WsfTrackMessage`) then also print out the contents of the track itself.
+
+   **Default** false
+
+.. command:: print_track_covariance <boolean>
+
+   If covariance data is contained in a track that is being logged, the contents of the track's covariance matrix are also logged.
+
+   **Default** false
+
+.. command:: print_track_residual_covariance <boolean>
+
+   If residual covariance data is contained in a track that is being logged, the contents of the track's residual covariance matrix are also logged.
+
+   **Default** false
+
+.. note::
+   The track covariance matrix is converted from WCS to originator-referenced NED, and the principal axes are computed in this coordinate system.
+
+.. include:: event_output_block_example.txt
+
+::
+
+   00:00:00.0 PLATFORM_ADDED SimpleStriker Type: BLUE_STRIKER Side: blue \
+    LLA: 00:00:00.00n 00:00:00.00e 0 m Heading: 90.000 deg Pitch: 0.000 deg Roll: 0.000 deg \
+    Speed: 0.000 m/s * [ 0.000 0.000 0.000 ] Acceleration: 0.000 m/s2 * [ 0.000 0.000 0.000 ]
+   00:00:00.0 SIMULATION_STARTING Year: 2003 Month: 6 Day: 1 Hour: 12 Minute: 0 Second: 0
+   00:10:01.0 SIMULATION_COMPLETE Year: 2003 Month: 6 Day: 1 Hour: 12 Minute: 10 Second: 1
+   00:10:01.0 PLATFORM_DELETED SimpleStriker Type: BLUE_STRIKER Side: blue Ps: 1 \
+    LLA: 01:03:02.17n 02:39:42.30e 9144 m Heading: 89.993 deg Pitch: 0.000 deg Roll: 0.000 deg \
+    Speed: 298.378 m/s * [ 0.000 1.000 -0.000 ] Acceleration: 0.014 m/s2 * [ 0.000 0.000 1.000 ]

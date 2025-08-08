@@ -1,0 +1,287 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+weapon_effects
+==============
+
+.. contents::
+   :local:
+
+.. Navigation: :ref:`Predefined_Weapon_Effect_Types`
+
+Script Class: :class:`WsfWeaponEngagement`
+
+.. command:: weapon_effects <name> <base-type> ... end_weapon_effects
+   :block:
+
+   .. parsed-literal::
+
+      weapon_effects <name> <base-type>
+
+         debug_
+         draw_endgame_pk_
+         excluded_category_ <category-name>
+         incidental_damage_allowed_ <boolean-value>
+         intercept_pk_ <pk-value>
+         launch_pk_ <pk-value>
+         remove_weapon_platform_ <boolean-value>
+         use_intercept_pk_
+         use_launch_pk_
+         
+         # `Script Interface`_
+
+         on_target_damaged_
+            ... <script>...
+         end_on_target_damaged
+
+         on_target_killed_
+            ... script commands ...
+         end_on_target_killed
+
+         script void :command:`on_weapon_detonation() <weapon_effects.on_weapon_detonation>`
+            ... script commands ...
+         end_script
+
+         script void :command:`on_weapon_target_engagement(WsfPlatform aTarget) <weapon_effects.on_weapon_target_engagement>`
+            ... script commands ...
+         end_script
+
+      end_weapon_effects
+
+Overview
+--------
+
+Defines a weapon's effectiveness in rendering enemy target platforms ineffective or neutralized.  The effect upon target platforms may be of a probabilistic nature, or physics based (miss distance, incidence angle, impact velocity, etc.), or some combination of the two.  In some cases a probability of kill (Pk) may be determined from the launch conditions, or in some cases from the terminal conditions; this model allows for either approach.  The model also allows for a catastrophic event during flyout (gimbal lock, airframe destruction, jamming of the targeting sensor, etc.) that renders the weapon inert or ineffective against any target, for the rest of the flight.
+
+Commands
+--------
+
+.. attention:: Some :command:`weapon_effects` base-types are not compatible with all commands defined below.  For example, :model:`WSF_CARLTON_LETHALITY` does not accept intercept_pk_, and if used the result is an input processing error.  See the individual base-type model definition documentation for incompatible :command:`weapon_effects` commands.
+
+.. command:: debug
+
+   Debugging information will be sent to standard output.
+
+.. command:: draw_endgame_pk
+
+   Forces a pk draw on a target at time of end game regardless of whether or not the target is indestructible, or is internally or externally controlled.
+
+.. command:: excluded_category <category-name>
+
+   Defines a platform category the weapon will not affect.  If the target :command:`platform` being considered for damage is of this category, no neutralizing effect will be possible.
+
+.. command:: incidental_damage_allowed <boolean-value>
+
+   Defines whether any "incidental" platform damage is possible.  Incidental is damage to a platform other than the intended one.  For air-to-air missile engagements, a missile typically will kill its intended target, or none at all (no incidental damage), but if a bomb is dropped with the intention of destroying a train station and misses, it could easily destroy an adjacent building (incidental damage).
+
+   **Default:** false
+
+.. command:: intercept_pk <pk-value>
+.. command:: launch_pk <pk-value>
+
+   The probability of kill assuming a valid intercept.  If use_intercept_pk_, then launch_pk_ will be ignored, conversely, if use_launch_pk_, then the intercept_pk_ will be ignored.  In the event a :command:`PkTable <WSF_SPHERICAL_LETHALITY.pk_table>` is present and enabled by the :command:`WSF_SPHERICAL_LETHALITY.use_pk_table` command, then the intercept_pk_ value will be overridden by the pk fetched from the table.
+
+.. command:: remove_weapon_platform <boolean-value>
+
+   Determines whether the explicit weapon platform causing the effect is removed upon completion of the engagement.  The setting is ignored for implicit engagements.  Setting this to 'false' allows the platform to remain after the completion of the engagement.
+
+   **Default:** true (The weapon platform is removed upon completion of the engagement)
+
+.. command:: use_intercept_pk
+
+   Sets an internal flag indicating that the intercept_pk_ value (either as user input, or calculated internally, depending upon the specific effects model) will be used to determine the end effect upon the target.
+
+.. command:: use_launch_pk
+
+   Sets an internal flag indicating that the launch_pk_ value (either as user input, or calculated internally, depending upon the specific effects model) will be used to determine the end effect upon the target.
+
+Script Interface
+----------------
+
+weapon_effects supports the script interface to allow the user to define custom processing that is invoked during the termination of an engagement.
+
+.. note::
+      Great care should be exercised when writing script that utilize the :class:`WsfWeaponEngagement` object. Please observe the cautions documented in :class:`WsfWeaponEngagement`. For instance, the firing platform may no longer exist.
+
+.. note::
+      When the :command:`dis_interface` receives a Detonation PDU for a remotely simulated weapon, it may not use the :command:`weapon_effects` associated with the weapon (and therefore, not execute this script). See :command:`dis_interface.simple_detonations` for more information.
+
+.. command:: on_target_damaged ... end_on_target_damaged
+
+   Perform a custom scripted action when the weapon_effects algorithm determines a target platform has been damaged. *This action is performed instead of the default action* (which is to assign a numeric damage value to the target platform).  The variable *DAMAGE*, indicating the numeric value of the damage, is available when executing this script.
+
+.. command:: on_target_killed ... end_on_target_killed
+
+   Perform a custom scripted action when the weapon_effects algorithm determines a target platform has been killed.  *This action is performed instead of the default action* (which is to remove the platform from the simulation, if possible) The variable *DAMAGE*, indicating the numeric value of the damage, is available when executing this script; however, this value should be equal to 1.0.
+
+.. command:: script void on_weapon_detonation() ... end_script
+   :id: on_weapon_detonation
+
+   This is invoked when it has been determined that the weapon has detonated, but before taking action against any of the targets. When called, any of the methods defined in :class:`WsfWeaponEngagement` are available.
+
+   .. note::
+      See the notes in the general discussion of the `Script Interface`_.
+
+.. command:: script void on_weapon_target_engagement(WsfPlatform aTarget) ... end_script
+   :id: on_weapon_target_engagement
+
+   This script may be invoked repeatedly for a single weapon detonation. It is invoked once for each target that might be possibly affected by the weapon. When called, any of the methods defined in :class:`WsfWeaponEngagement` are available. **aTarget** refers to the current target :class:`WsfPlatform` being considered.
+
+   This script is typically used to:
+
+   * Degrade the probability of kill (Pk) based on the conditions that exist at the time of intercept.
+   * Implement non-lethal effects.
+   * Display information about the intercept.
+   * Affect the target platform in some other way other than just killing it.
+
+   .. note::
+      See the notes in the general discussion of the `Script Interface`_.
+
+Examples
+--------
+
+An example that sets the damage on the target platform and sets the target's appearance to "smoking" is as follows::
+
+   on_target_damaged
+      # The following line duplicates the default weapon effects behavior
+      TargetPlatform().SetDamageFactor(DAMAGE);
+
+      # Set the entity appearance to "smoking"
+      # LSB = 5, 2 bits, value = 2
+      TargetPlatform().SetAppearance(5, 2, 2);
+   end_on_target_damaged
+
+An example that reflects a "Mobility Kill" on the target platform is as follows::
+
+   on_target_killed
+      TargetPlatform().Mover().SetDamageFactor(DAMAGE);  # Reflect damage on the mover.
+      # Appearance of mobility kill:
+      # LSB=1, size=1, value=1.
+      TargetPlatform().SetAppearance(1, 1, 1);
+   end_on_target_killed
+
+In the following example, which typically arises during a directed-energy engagement, only part of the target is affected.  Specifically, the target's IRST sensor is destroyed::
+
+   on_target_killed
+      WsfPlatform target = TargetPlatform();
+      if ((target.Type()   == "SU-37") &&
+          (TargetOffsetName() == "IRST"))
+      {
+         # Set the damage on the sensor,
+         # after which it is unusable.
+         target.Sensor("irst").SetDamageFactor(1.0);
+      }
+   end_on_target_killed
+
+This example degrades the Pk of the weapon if another platform is within the vicinity of the weapon at termination::
+
+ weapon_effects SAM_LETHALITY WSF_GRADUATED_LETHALITY
+   # The default lethality
+   radius_and_pk 100 m 0.7
+
+   script void on_weapon_target_engagement(WsfPlatform aTarget)
+
+     if  (MissDistance() >= 100) return;  #do not care it was a miss anyway
+     if ((aTarget.Type() == "A") ||
+         (aTarget.Type() == "B") ||
+         (aTarget.Type() == "C"))
+     {
+        int TotalSimPlatforms = WsfSimulation.PlatformCount(); #Get total number of platforms
+        int i;
+        for (i = 0; i < TotalSimPlatforms; i = i + 1) #Test every platform
+        {
+           WsfPlatform testPlatform = WsfSimulation.FindPlatform(i);
+           if ((testPlatform.Type() == "X") && (aTarget.SlantRangeTo(testPlatform) <= 1111 ))
+           {
+              SetPkDegrade(0.5);
+           }
+           if ((testPlatform.Type() == "Y") && (aTarget.SlantRangeTo(testPlatform) <= 1111 ))
+           {
+              SetPkDegrade(0.4);
+           }
+           if ((testPlatform.Type() == "Z") && (aTarget.SlantRangeTo(testPlatform) <= 1111 ))
+           {
+              SetPkDegrade(0.3);
+           }
+        }
+     }
+   end_script
+ end_weapon_effects
+
+
+Finally, an example that duplicates the default behavior (i.e., killing the platform), in script::
+
+   on_target_killed
+      TargetPlatform().Detonate("target_impact");
+   end_on_target_killed
+
+Following is a contrived example that will degrade the Pk if the weapon speed is less than 300 m/s::
+
+ weapon_effects SAM_LETHALITY WSF_GRADUATED_LETHALITY
+
+    # The default lethality
+    radius_and_pk 100 m 0.7
+
+    script void on_weapon_target_engagement(WsfPlatform aTarget)
+       WsfPlatform weapon = WeaponPlatform();
+       if (! (aTarget.IsValid() && weapon.IsValid())) return;
+       if (weapon.Speed() < 300)
+       {
+          SetPkDegrade(0.5);
+       }
+    end_script
+ end_weapon_effects
+
+Following is an example that prints some information::
+
+ weapon_effects SAM_LETHALITY WSF_GRADUATED_LETHALITY
+
+    # The default lethality
+    radius_and_pk 100 m 0.7
+
+    script void on_weapon_target_engagement(WsfPlatform aTarget)
+      writeln("T=",TIME_NOW," Weapon Engagement",
+              "; Start Time: ", StartTime(),
+              "; Elapsed Time: ", TimeSinceStarted(),
+              ", Serial: ", SerialNumber());
+      WsfPlatform target = aTarget;
+      WsfPlatform weapon = WeaponPlatform();
+      if (! (target.IsValid() && weapon.IsValid())) return;
+
+      writeln(" Weapon Name      : ", weapon.Name());
+      writeln(" Target Name      : ", target.Name());
+
+      writeln(" Weapon Loc       : ", WeaponLocation().ToString());
+      writeln(" Target Loc       : ", TargetLocation().ToString());
+
+      writeln(" Weapon Launch Loc: ", WeaponLocationAtLaunch().ToString());
+      writeln(" Target Launch Loc: ", TargetLocationAtLaunch().ToString());
+
+      writeln(" Miss Distance    : ", MissDistance());
+      writeln(" Pk               : ", Pk());
+      writeln(" Pk Degrade       : ", PkDegrade());
+
+      writeln(" Heading          : Weapon: ", weapon.Heading(), ", Target: ",
+      target.Heading(),
+              ", Diff=", target.HeadingDifferenceOf(weapon));
+      writeln(" Speed            : Weapon: ", weapon.Speed(), ", Target: ",
+      target.Speed());
+      writeln(" Range            : ", weapon.SlantRangeTo(target));
+
+    end_script
+ end_weapon_effects
+
+See Also
+--------
+
+* :command:`platform <platform.weapon_effects>`
+* :class:`WsfWeaponEngagement`
+* :model:`WSF_EXPLICIT_WEAPON`

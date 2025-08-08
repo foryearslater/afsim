@@ -1,0 +1,97 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfGroup
+--------
+
+.. class:: WsfGroup inherits WsfObject
+
+WsfGroup is an aggregation of :command:`platform` and platform part (:command:`sensor`, :command:`processor`, :command:`comm`) objects.
+
+Accessor Methods
+================
+
+Accessor methods allow access to group members
+.. method:: Array<string> MembersByName()
+
+   Returns a list of member names
+
+.. method:: Array<WsfObject> Members()
+
+   Returns a list containing all members of the group.  Each returned :class:`WsfObject` can be either a :class:`WsfPlatform` or a
+   :class:`WsfPlatformPart`.
+
+.. method:: int Size()
+
+   Returns the number of members in the group.
+
+.. method:: WsfObject Member(int aIndex)
+
+   Returns a member of the group by index.  The specified index should be in the range [0, Size).
+   You can use the bracket operator "[ ]" instead of Member (e.g., myGroup[0] instead of myGroup.Member(0))
+
+
+Group Methods
+=============
+
+Group methods allow changes to the structure of the group
+
+.. method:: void AddMember(WsfPlatform aPlatform)
+            void AddMember(WsfPlatformPart aPlatformPart)
+
+   Adds the given platform or platform part to the group
+
+.. method:: void RemoveMember(WsfPlatform aPlatform)
+            void RemoveMember(WsfPlatformPart aPlatformPart)
+
+   Adds the given platform or platform part to the group
+
+.. method:: static WsfGroup CreateGroup(string aGroupName, string aGroupType)
+
+   Creates a group with the given name using a base group type or an already defined group as a template.
+
+.. method:: static WsfGroup Group(string aGroupName)
+
+   Returns a WsfGroup object matching the given name
+
+.. method:: static Array<string> Groups()
+
+   Returns a list of the names of all groups in the simulation.
+
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt
+
+example
+=======
+
+::
+
+ group group_template WSF_GROUP
+    *group properties go here*
+ end_group
+
+ PLATFORM.GroupJoin("dynamic_group", "group_template");
+ Array<string> groups = WsfGroup.Groups();
+ foreach(string groupName in groups)
+ {
+    WsfGroup group = WsfGroup.Group(groupName);
+    if( group.IsValid() )
+    {
+       writeln( "Group: " + groupName );
+       foreach( string memberName in group.Members() )
+       {
+          writeln( "     " + memberName );
+       }
+    }
+ }

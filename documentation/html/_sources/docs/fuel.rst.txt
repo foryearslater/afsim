@@ -1,0 +1,146 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+fuel
+----
+
+see :ref:`Predefined_Fuel_Types`
+
+Script Class: :class:`WsfFuel`
+
+.. command:: fuel ... end_fuel
+    :block:
+
+# 1. Define a fuel type (occurs outside a platform or platform_type command)
+
+.. parsed-literal::
+
+ fuel <new-type> <base-type>
+    ... :ref:`Platform_Part_Commands` ...
+
+    maximum_quantity_ ...
+    initial_quantity_ ...
+    reserve_quantity_ ...
+    mode_ ...
+
+    on_bingo_ ... end_on_bingo
+    on_empty_ ... end_on_empty
+    on_refuel_ ... end_on_refuel
+    on_reserve_ ... end_on_reserve
+
+    ... type-specific fuel commands ...
+ end_fuel
+
+# 2. Instantiate a fuel object on a new platform type:
+
+.. parsed-literal::
+
+ platform_type ...
+    fuel <type>
+         ... desired attributes and commands ...
+    end_fuel
+ end_platform
+
+# 3. Instantiate a (not previously existing) fuel object on a platform instance:
+
+.. parsed-literal::
+
+ platform ...
+    add fuel <type>
+         ... desired attributes and commands ...
+    end_fuel
+ end_platform
+
+# 4. Modify a (previously existing) fuel object on a platform instance:
+
+.. parsed-literal::
+
+ platform ...
+    edit fuel
+         ... additional/changed/overwritten attributes and commands ...
+    end_fuel
+ end_platform
+
+Overview
+========
+
+A fuel object defines the rate at which fuel is expended on the platform. For each :command:`platform`, total mass is
+assumed to be the sum of empty mass, fuel mass, and payload mass.  Empty mass is generally a fixed quantity, payload
+varies perhaps only at discrete events, but fuel quantities are consumed continuously.  The :command:`fuel` object is called
+whenever the platform moves and updates the amount of fuel expended.  The resulting fuel amount is supplied back to the
+platform, so that total mass is readily available for Newtonian dynamics and other such calculations.
+
+.. note::
+   If a platform does not have a :command:`fuel` object, run-time fuel computations will not be performed, but a
+   fixed fuel quantity may still be supplied as :command:`platform` input.
+
+.. _Fuel.Commands:
+
+Commands
+========
+
+.. command:: maximum_quantity <mass-value>
+   
+   Defines the maximum quantity of fuel that can be carried.
+   
+   **Default** infinity
+
+.. command:: initial_quantity <mass-value>
+   
+   Defines the initial quantity of fuel.
+   
+   **Default** 0 kg
+
+.. command:: reserve_quantity <mass-value>
+   
+   Defines the threshold such that when the quantity of fuel remaining falls below this value, the platform is considered
+   to be operating on reserves. If an on_reserve_ block is defined, it will be executed when this state is reached.
+   
+   **Default** 0 kg
+
+.. command:: bingo_quantity <mass-value>
+   
+   Defines the threshold such that when the quantity of fuel remaining falls below this value, the platform is considered
+   to in BINGO. If an on_bingo_ block is defined, it will be executed when this state is reached.
+   
+   **Default** 0 kg
+
+.. command:: mode <mode-name>
+   
+   Specifies the name of the mode to be used for fuel types that support modes.
+
+Script Interface
+================
+
+In each of the following scripts, the following variables will be predefined:
+
+* :class:`WsfFuel`     this;              // This fuel object
+* :class:`WsfPlatform` PLATFORM;          // The platform containing this fuel object
+* double      TIME_NOW;          // The current simulation time
+
+.. command:: on_bingo ... <script-definition> ... end_on_bingo
+   
+   Defines a script to be executed when the quantity of fuel remaining falls below the threshold defined by
+   bingo_quantity_.
+
+.. command:: on_empty ... <script-definition> ... end_on_empty
+   
+   Defines a script to be executed when all fuel has been expended.
+
+.. command:: on_reserve ... <script-definition> ... end_on_reserve
+   
+   Defines a script to be executed when the quantity of fuel remaining falls below the threshold defined by
+   reserve_quantity_.
+
+.. command:: on_refuel ... <script-definition> ... end_on_refuel
+   
+   Defines a script to be executed when a refueling operation has been completed.
+

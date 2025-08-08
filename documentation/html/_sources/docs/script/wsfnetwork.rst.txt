@@ -1,0 +1,107 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfNetwork
+----------
+
+.. class:: WsfNetwork inherits Object
+
+.. note:: The comm framework does not initialize until all platforms have initialized in the simulation. Most network script methods are invalid during :command:`on_initialize`, but are available during :command:`on_initialize2`.
+
+Static Methods
+==============
+
+.. method:: bool AddNetwork(WsfNetwork aNetwork)
+
+   Adds the network to the simulation network manager for use within the communications environment. Prior
+   to using this command, any user instantiated network will be non-functional until added using this command.
+   This method returns true if the network passed checks and is now managed by the simulation.
+
+   .. warning:: This method creates a copy of the network provided that is subsequently added to simulation management.
+                As such, any subsequent usage of the network object provided to this method will not affect the network
+                that is being managed by the simulation. Users who wish to do so should reacquire the network directly
+                from the simulation using the :method:`WsfNetwork.GetNetwork` method.
+
+.. method:: bool RemoveNetwork(WsfNetwork aNetwork)
+
+   Removes the network from active management within the simulation network manager. Any comms assigned to this
+   network lose their assigned address and become unmanaged as well, which means any unassigned comm will not be
+   able to communicate within AFSIM in this condition. Any addresses previously assigned to this network are
+   available for future usage. Returns true if the removal succeeded, as some networks may forbid removal based
+   on their implementation unless certain prerequisites are met.
+
+.. method:: bool RemoveMember(WsfComm aComm)
+            bool RemoveMember(string aPlatformName, string aCommName)
+
+   Removes a comm from the network it is currently assigned. The comm will lose its current address and
+   become unmanaged, resulting in a non-operational status within the simulation. This method may return false,
+   as some comms may not be removed from certain network implementations unless certain prerequisites are met.
+
+   Knowledge of which network will remove this comm can be determined by querying the comm prior to this call
+   via :method:`WsfComm.NetworkName`.
+
+.. method:: WsfNetwork GetNetwork(WsfAddress aNetworkAddress)
+            WsfNetwork GetNetwork(string aNetworkName)
+
+   Returns a network object being managed by the simulation.
+
+.. method:: Array<string> GetManagedNetworks()
+
+   Returns and array of network names for all networks being managed by the simulation.
+
+Methods
+=======
+
+.. method:: WsfAddress GetAddress()
+
+   Returns the address of the network.
+
+.. method:: void SetAddress(WsfAddress aNetworkAddress)
+
+   Assigns an address to this network. This does not check if the address is valid within the simulation
+   context, which occurs during the AddNetwork call.
+
+.. method:: string GetName()
+
+   Returns the name of the network.
+
+.. method:: void SetName(string aName)
+
+   Sets the name of the network.
+
+.. method:: bool AddMember(WsfComm aComm)
+            bool AddMember(string aPlatformName, string aCommName)
+
+   Adds a comm to this network. If the comm is currently assigned to another network, this method will
+   return false, as only unassigned comms may be added to a network.
+
+.. method:: bool AddLink(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+            bool AddLink(string aSourcePlatformName, string aSourceCommName, string aDestinationPlatformName, string aDestinationCommName)
+
+   Adds a connection between the two specified members in the network. This method is not applicable to all
+   network types. In addition, networks may forbid certain links based on the type of network and its
+   implementation. This call only adds a directed link from the source to the destination, so if bi-directional
+   communication links are required, this call must be made again with swapped source and destination
+   specifiers.
+
+.. method:: bool RemoveLink(WsfAddress aSourceAddress, WsfAddress aDestinationAddress)
+            bool RemoveLink(string aSourcePlatformName, string aSourceCommName, string aDestinationPlatformName, string aDestinationCommName)
+
+   Removes a connection between the two specified members in the network. This method is not applicable to all
+   network types. In addition, networks may forbid removal of certain links based on the type of network and its
+   implementation. This call only removes a directed link from the source to the destination, so if
+   bi-directional communication needs to be removed, this call must be made again with swapped source and
+   destination specifiers.
+
+.. method:: Array<WsfAddress> GetMembers()
+
+   Returns an array of addresses representing all the comm members existing in the network at the time
+   of this query.

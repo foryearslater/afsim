@@ -1,0 +1,151 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+medium
+------
+
+See :ref:`Predefined_Medium_Types`
+
+.. contents::
+   :local:
+
+Script Class :class:`WsfCommMedium`
+
+.. command:: medium <name-or-type> <base-type-name> ... end_medium
+   :block:
+
+   .. parsed-literal::
+
+      medium_ <name-or-type> <base-type-name>
+
+         channels_ <integer-value>
+         default_mode_name_ <mode-name>
+         use_sharing_ <boolean-value>
+
+         mode_ <mode-name>
+            ...
+         end_mode
+
+         script string :command:`medium.ModeOnTransmit` ...
+
+      end_medium
+
+Adding a medium_ to a valid communication framework object:
+
+.. parsed-literal::
+
+    comm <name> <type>   # or edit comm <name>
+       add medium <type>
+         ...
+       end_medium
+    end_comm
+
+Editing a medium_ object on a valid communication framework object:
+
+.. parsed-literal::
+
+    router <name> <type>   # or edit router <name>
+       edit medium <type>
+          ...
+       end_medium
+    end_router
+
+Deleting a medium_ object on a valid communication framework object:
+
+.. parsed-literal::
+
+    comm <name> <type>   # or edit comm <name>
+       delete medium <type>
+    end_comm
+
+Note that deleting a medium replaces the existing definition with the
+default medium type with default settings for this object.
+
+Overview
+========
+
+A medium is an object based representation of the means by which a communications device
+propagates data to another communication device.
+
+Mediums provide a definable user type that can be utilized by various objects within the AFSIM
+communications framework. Mediums define the limitations imposed on communications by their
+implementation, working in conjunction with the limitations defined by the communications model
+that uses the medium. For example, even though a communication device may utilize a maximum
+transfer_rate, that rate may be further limited by the medium being used, or other characteristics
+dynamic to the medium (such as the number of channels being utilized in multiplexing).
+
+Mediums are unique in that they may be shared between multiple communication objects in AFSIM. As such,
+every communication device using a shared medium is restricted by the limitations of such a medium. For
+example, a medium shared between four comm devices may have four channels available for transmission. If
+one comm is using all four of those channels, all other comm devices cannot transmit until one or more of
+those channels are available for usage. Particular models may implement their own restrictions based on
+concepts such as interference, congestion, etc.
+
+Because mediums are shared objects, they are only definable in the global context. Any utilization of
+a medium specific to a comm object (such as a router or a comm) must refer to a medium defined in
+the global context, and only refers to such a medium by its type name.
+
+Mediums may also contain multiple modes, indicating different states associated with that medium. Using
+the AFSIM scripting language, the state used for any transmission may be modified during runtime
+to provide a dynamic method to change transmission characteristics. While any object in AFSIM is limited
+to a single medium object, that medium may have any number of modes available for usage.
+
+Commands
+========
+
+.. command:: channels <integer-value>
+
+   Defines the number of channels available to a medium, in other words, if multiplexing is available.
+   The number of channels determines how many concurrent transmissions may be handled by this medium,
+   and subsequently by all communication objects utilizing this medium.
+
+   Default **maximum integer value** (no restriction on number of concurrent transmissions)
+
+.. command:: default_mode_name <mode-name>
+
+   Specifies the default mode to be used for transmissions over this medium. Every medium has a default
+   mode named as "default" using default values. Unless this command is used, the "default" mode
+   will be used during typical medium processing. Note that the default mode may be modified by
+   explicitly defining the "default" mode using the mode command.
+
+   Default **Use of the "default" mode**
+
+.. command:: use_sharing <boolean-value>
+
+   By default, mediums are shared between every object that refers to a particular globally defined
+   medium type. If use_sharing is indicated to be false, then this medium type definition will result
+   in every usage of this medium instantiating their own instance. This allows the type definition to
+   act as a simple template for each instance, while avoiding sharing the actual medium itself.
+
+   Default **true** (mediums are shared)
+
+.. command:: mode <mode-name> .. end_mode
+
+   The mode command is used to define an individual mode for this medium. It may be repeated any number
+   of times, with the restriction that each mode must have a unique string name. The actual commands
+   available for any given mode is determined by the medium type being used.
+
+   .. note:: Every medium has a "default" mode. Any usage of typical mode commands outside of the mode block refers to the "default" mode.
+
+.. command:: ModeOnTransmit (script)
+
+   .. parsed-literal::
+
+      script string ModeOnTransmit(:class:`WsfCommMessage` aMessage, :class:`WsfComm` aTransmitter, :class:`WsfComm` aReceiver)
+      ...
+      end_script
+
+   Defines an optional script method that is invoked every time a message is attempting transmission over
+   this medium. A user may specify the mode intended for transmission over this medium by returning the string identifier for the mode.
+
+   By returning an empty string when this method is called, or a mode name that does not exist, the medium
+   will use the currently specified default mode for this message transmission.
+   

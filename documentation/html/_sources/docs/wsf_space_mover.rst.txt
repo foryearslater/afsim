@@ -1,0 +1,150 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. |SPACE_MOVER_MODEL| replace:: :model:`WSF_SPACE_MOVER`
+
+.. |SPACE_MOVER_SCRIPT_CLASS| replace:: :class:`WsfSpaceMover`
+
+.. |SPACE_MOVER_MISSION_REF| replace:: :ref:`mission_sequence<WSF_SPACE_MOVER.orbital_mission_sequence>`
+
+.. |SPACE_MOVER_MANEUVERING_REF| replace:: :ref:`maneuvering models<WSF_SPACE_MOVER.Maneuvering_Models>`
+
+.. |SPACE_MOVER_ATTITUDE_REF| replace:: :ref:`attitude controller model<WSF_SPACE_MOVER.Attitude_Controller_Models>`
+
+WSF_SPACE_MOVER
+---------------
+
+.. contents::
+   :local:
+
+**Script Type:** |SPACE_MOVER_SCRIPT_CLASS|
+
+.. model:: mover WSF_SPACE_MOVER
+
+    .. parsed-literal::
+
+     mover *<name>* :model:`WSF_SPACE_MOVER`
+        ... :command:`base mover commands <mover>` ...
+        ... `Orbital Element Commands`_ ...
+        ... `Orbital Propagator Commands`_ ...
+        :command:`attitude_controller` :ref:`<type-name><WSF_SPACE_MOVER.Attitude_Controller_Models>` ...
+            ...
+        end_attitude_controller
+        conjunction_setup_
+           ...
+        end_conjunction_setup
+        :command:`maneuvering`         :ref:`<type-name><WSF_SPACE_MOVER.Maneuvering_Models>` ...
+            ...
+        end_maneuvering
+        :ref:`mission_sequence<orbital_mission_sequence>`
+            ...
+        end_mission_sequence
+        position_ <\ :ref:`waypoint <route>`\ >
+        orbital_state_ ... end_orbital_state
+        initial_state_lla_ ...
+        initial_state_eci_ ...
+        oblate_earth_ ...
+        orbit_color_ ...
+
+       # `Script Interface`_
+
+       :command:`on_initialize` ... end_on_initialize
+       :command:`on_initialize2` .. end_on_initialize2
+       :command:`on_update` ... end_on_update
+       :command:`_.script_commands.script_variables` ... end_script_variables
+       :ref:`scripts <Script_Commands>` ... end_script
+       ... Other :ref:`Script Commands <Common_Script_Interface>` ...
+     end_mover
+
+Overview
+========
+
+|SPACE_MOVER_MODEL| implements a mover for a platform in orbit about the Earth.   It is useful for modeling conceptual satellites and satellite constellations, as well as for providing an idealized representation of existing satellites.
+
+By default, the mover simulates the propagation of a satellite in orbit about a point mass.  If the oblate_earth_ option is enabled, |SPACE_MOVER_MODEL| will also include the mean first order gravitational perturbation effects due to the oblate Earth.
+
+|SPACE_MOVER_MODEL| can be initialized in one of several ways.  One  method is to provide an initial position_.  Alternatively, classical `orbital elements <Orbital Element Commands_>`_, position and velocity :command:`state information<WSF_SPACE_MOVER.initial_state_eci>`, or :command:`two-line elements<orbit>` may be provided :ref:`*<wsf_space_mover_tle_note>`.  It can also be initialized from script, using methods in |SPACE_MOVER_SCRIPT_CLASS|.
+
+.. include:: space_mover_overview_common.txt
+
+.. block:: WSF_SPACE_MOVER
+
+Commands
+========
+
+.. include:: orbital_state.txt
+
+.. command:: position <waypoint>
+
+   Specify a waypoint as an alternate method to define the orbital path (i.e., instead of the orbit ... end_orbit block).  The platform will be placed in a circular orbit if no speed is specified; otherwise the speed specified in the waypoint will be used to produce the orbit.
+
+   When using this method, keep in mind the following:
+
+   * LEO orbits are typically above an altitude of 400 km.
+   * GEO is at an altitude of 22,240 mi, or 35786 km, with zero inclination (heading = 90 degrees).
+   * Orbits often have inclinations of launch latitude (heading = 90-launch latitude).
+   * Orbits are usually prograde (heading between 0 and 180 degrees).
+
+   ::
+
+    //Example: Geostationary satellite
+
+    platform test-geo WSF_PLATFORM
+      add mover WSF_SPACE_MOVER
+         position 0n 90w altitude 22240 mi heading 90 degrees
+      end_mover
+    end_platform
+
+    //Example: LEO satellite
+
+    platform test-leo WSF_PLATFORM
+      add mover WSF_SPACE_MOVER
+         position 0n 90w altitude 450 km heading 60 degrees
+      end_mover
+    end_platform
+
+.. command:: initial_state_lla <lat> <lon> <alt> <velN> <velE> <velD>
+
+   Specify the initial state of the platform in terms of a location and velocity.  The location is in lat, lon, alt format; the velocity is in a local North, East, Down frame.  This input is similar to the position_ input above, but in this case it completely specifies the physical state of the object.
+
+.. command:: initial_state_eci <locX> <locY> <locZ> <velX> <velY> <velZ>
+
+   Specify the initial state of the platform in terms of a location and velocity.  The location and velocity are in the ECI frame.  This input is similar to the position_ input above, but in this case it completely specifies the physical state of the object.
+
+.. command:: oblate_earth <boolean-value>
+
+   Enable or disable a first-order oblate earth perturbation.  When enabled, the simulated effect is that of two bodies and an oblate Earth.  When disabled, the effect is that of two bodies and a spherical earth.
+
+   Default: 'disabled'.
+
+.. include:: orbit_color_commands.txt
+
+.. include:: two_line_element_commands.txt
+
+.. include:: orbital_propagator_commands.txt
+
+.. include:: conjunction_input.txt
+
+.. _WSF_SPACE_MOVER.Attitude_Controller_Models:
+
+.. include:: attitude_controller_models.txt
+
+.. _WSF_SPACE_MOVER.Maneuvering_Models:
+
+.. include:: orbital_maneuvering_models.txt
+
+.. _WSF_SPACE_MOVER.orbital_mission_sequence:
+
+.. include:: orbital_mission_sequence.txt
+
+.. _WSF_SPACE_MOVER.script_interface:
+
+.. include:: space_mover_script_interface.txt

@@ -1,0 +1,68 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_NUMBER_OF_ACCESSES_MOE
+--------------------------
+
+.. model:: moe WSF_NUMBER_OF_ACCESSES_MOE
+
+   .. parsed-literal::
+
+      :command:`moe` <name> :model:`WSF_NUMBER_OF_ACCESSES_MOE`
+         subtype_ ...
+         output_ ...
+      end_moe
+
+Overview
+========
+
+:model:`WSF_NUMBER_OF_ACCESSES_MOE` computes quantities related to the number
+of times that a grid point has access to a free asset. Access intervals are per
+free asset, so if a grid point has access to two free assets at once, then it
+counts as two separate accesses. Some of the subtypes available for this MOE
+use midnight-to-midnight UTC calendar days in their definition.
+
+Computation Subtype
+===================
+
+.. command:: subtype <sub-type> [[<min-parameter> <max-parameter>] <sample-span>]
+
+   Specify the computation subtype. 
+
+   :model:`WSF_NUMBER_OF_ACCESSES_MOE` has the following subtypes that take no parameter:
+
+   * **total** - The measured value will be the total number of accesses for the grid point in question.
+   
+   :model:`WSF_NUMBER_OF_ACCESSES_MOE` has three subtypes that take only the <sample-span> parameter:
+   
+   * **minimum_per** - The measured value will be the minimum number of accesses within a sample for the grid point in question. If the coverage interval fits entirely within one sample, then this is the same as the total number of gaps.
+   * **maximum_per** - The measured value will be the maximum number of accesses within a sample for the grid point in question. If the coverage interval fits entirely within one sample, then this is the same as the total number of gaps.
+   * **mean_per** - The measured value will be :math:`\frac{the total number of accesses}{coverage interval duration / sample span}` for the grid point in question.
+   
+   The <sample-span> parameter defines the duration of the samples taken for
+   these three subtypes. 
+
+   .. note:: There are subtle differences in how these subtypes actually use this parameter. **minimum_per** and **maximum_per** tie this duration to midnight, UTC, such that if <sample-span> had a value of 1 day, each sample would occur from midnight to consecutive midnight, UTC. If <sample-span> had a value of 6 hours, the samples would occur from midnight to 0600, 0600 to 1200, 1200 to 1800, or 1800 to midnight. One consequence of this is that, for these two subtypes, the only valid values for <sample-span> are those that can be expressed as 1/n days, where n is a positive integer. This is so that samples always remain aligned with each calendar day (midnight to consecutive midnight, UTC). The smallest acceptable value is 1 second. **mean_per**, however, does not tie <sample-span> to the calendar, and as a result, will accept any positive duration as a value. For instance, suppose the value of <sample-span> is 1 day. If the coverage interval starts at 1200, Jan 1, and lasts until 1200, Jan 2, the **minimum_per** and **maximum_per** subtypes would account for 2 days (Jan 1 and Jan 2), but the **mean_per** subtype would only account for one day, because the interval was actually only 24 hours long. 
+
+   :model:`WSF_NUMBER_OF_ACCESSES_MOE` supports the following subtype that takes
+   two input parameters specifying a minimum and maximum time span. These subtypes will
+   only count access intervals whose durations are at least as long as the minimum span, but
+   no longer than the maximum span:
+
+   * **in_span** - The measured value will be the total number of accesses whose durations are at least as long as <min-parameter>, but no longer than <max-parameter> for the grid point in question.
+   
+   :model:`WSF_NUMBER_OF_GAPS_MOE` supports the following subtype that takes three
+   input parameters specifying, in this order, the minimum and maximum duration of gaps that should
+   be counted, followed by the sample span as described above:
+   
+   * **in_span_per** - The measured value will be the that of in_span, divided by the length of the whole coverage interval in days.
+
+.. include:: common_measure_commands.txt

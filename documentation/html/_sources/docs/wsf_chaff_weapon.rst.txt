@@ -1,0 +1,111 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CHAFF_WEAPON
+----------------
+
+.. model:: weapon WSF_CHAFF_WEAPON
+
+**Script Class**: :class:`WsfChaffWeapon`
+
+.. parsed-literal::
+
+   weapon <name> :model:`WSF_CHAFF_WEAPON`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :model:`WSF_EXPLICIT_WEAPON` Commands ...
+
+      ejector <name>
+         ... `Chaff Ejector Commands`_ ...
+      end_ejector
+
+      ... additional ejector definitions
+
+      cloud_update_interval_ ...
+      draw_cloud_approximations_ ...
+      launched_platform_type_ ...
+
+   end_weapon
+
+Overview
+========
+
+:model:`WSF_CHAFF_WEAPON` represents a weapon that dispenses :model:`chaff parcels <WSF_CHAFF_PARCEL>`, consisting of a large number of shorted tuned dipole
+antennas cut to lengths designed to create a desired RCS response across a frequency range of interest. One or more dispensed chaff
+parcels combine to form a chaff cloud, which is generally used as a radar countermeasure in either corridor-laying or self-protection
+mode. 
+
+A chaff cloud is not a simulation entity, only an aggregation of parcels used to calculate a bistatic presented area to the interacting 
+transmitter and receiver.
+
+A chaff weapon is a :model:`WSF_EXPLICIT_WEAPON` that creates parcels (each modeled as individual platforms) dispensed by 
+a system of one or more ejectors. Each ejector is given a unique name and can be independently configured to specify quantity and type
+of parcels, location on the platform, and ejection velocity.
+
+Commands
+========
+
+.. command:: cloud_update_interval <time-value>
+
+   If non-zero, specifies a periodic time interval at which the simulation will update the state (position, velocity, size, etc.)
+   of dispensed chaff parcels. If zero, parcels will only be updated when necessary to determine their state. See :command:`mover.update_interval`
+   for movers.
+
+   **Default:** 0.0
+
+.. command:: draw_cloud_approximations <boolean-value>
+
+   If true, will use :class:`WsfDraw` to draw an ellipsoid representing cloud approximations for debugging purposes. Can be used to
+   visualize the presented area of the cloud used in RCS calculations.
+
+   **Default:** false
+
+.. command:: launched_platform_type <string-reference>
+
+   Although required in :command:`WSF_EXPLICIT_WEAPON <WSF_EXPLICIT_WEAPON.launched_platform_type>` this command is optional for 
+   :model:`WSF_CHAFF_WEAPON`. Can be specified to add user-defined scripts to dispensed parcels, or other custom
+   :command:`platform` commands. However, it is an error to define a :command:`mover` or :command:`radar_signature` on this platform type, since these 
+   components are modeled internally to the simulation.
+
+   **Default:** If none is specified, a dummy WSF_PLATFORM type will be used.
+
+Chaff Ejector Commands
+======================
+
+.. command:: quantity <integer-value>
+
+   Specifies the number of parcels that are initially available in the ejector.
+
+   **Default:** 10
+
+.. command:: parcel_type <string-reference>
+  
+   Specifies the type of :model:`chaff parcel <WSF_CHAFF_PARCEL>` that this ejector dispenses. The specified value must represent
+   a valid parcel type that must be defined when this ejector is initialized in the simulation.
+
+   **Default:** No default. Must be specified.
+
+.. command:: location <x length-value> <y length-value> <z length-value> <length-units>
+
+   Specifies the location of the ejector in the entity coordinate system of the dispensing platform.
+   
+   **Default:** 0 0 0 meters
+
+.. command:: ejection_velocity <speed-value>
+.. command:: ejection_elevation <angle-value>
+.. command:: ejection_azimuth <angle-value>
+
+   Specifies the magnitude, azimuth, and elevation of the vector in the entity coordinate system that represents the additional 
+   velocity, relative to the dispensing platform, provided by the launching mechanism. Similar to :command:`WSF_EXPLICIT_WEAPON.launch_delta_v`
+   except specified in spherical rather than cartesian coordinates.
+
+   **Default:** 15.0 m/s, 0.0 deg, 0.0 deg
+

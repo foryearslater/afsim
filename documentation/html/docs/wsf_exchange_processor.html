@@ -1,0 +1,713 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF_EXCHANGE_PROCESSOR &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF_EXISTING_PLATFORM_GRID" href="wsf_existing_platform_grid.html" />
+    <link rel="prev" title="WSF_ESM_SENSOR" href="wsf_esm_sensor.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_existing_platform_grid.html" title="WSF_EXISTING_PLATFORM_GRID"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_esm_sensor.html" title="WSF_ESM_SENSOR"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-exchange-processor">
+<h1>WSF_EXCHANGE_PROCESSOR<a class="headerlink" href="#wsf-exchange-processor" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="WSF_EXCHANGE_PROCESSOR">
+processor WSF_EXCHANGE_PROCESSOR<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<pre class="literal-block">processor <em>&lt;name&gt;</em> <a class="reference internal" href="#WSF_EXCHANGE_PROCESSOR" title="WSF_EXCHANGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_EXCHANGE_PROCESSOR</span></a>
+   ... <a class="reference internal" href="processor.html#processor" title="processor"><span class="xref wsf wsf-command">processor</span></a> commands ...
+   ... <a class="reference internal" href="platform_part_commands.html#platform-part-commands"><span class="std std-ref">Platform Part Commands</span></a> ...
+   ... <a class="reference internal" href="#exchange-processor-commands">Exchange Processor Commands</a> ...
+   ... <a class="reference internal" href="#exchange-processor-script-interface">Exchange Processor Script Interface</a> ...
+   <a class="reference internal" href="#container">container</a> &lt;name&gt;
+     ...
+   end_transactor
+   <a class="reference internal" href="#transactor">transactor</a> &lt;name&gt;
+     ...
+   end_transactor
+end_processor</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#WSF_EXCHANGE_PROCESSOR" title="WSF_EXCHANGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_EXCHANGE_PROCESSOR</span></a> is a processor that manages the exchange of commodities or services with other simulated
+platforms.  Three possible examples would be a tanker-to-receiver exchange of fuel, a warehouse which supplies spare
+parts to a mechanic who needs them, or that same mechanic which goes to a disabled vehicle to repair it and return it to
+service.  An exchange is negotiated in a series of ping-pong negotiation events as given below.  The result is a mutually
+decided upon quantity of exchange, and optionally, a decided rate of transfer of that commodity or service.  (If no
+rate is specified, the exchange rate defaults to zero, and is thus considered instantaneous.)  If a non-zero rate is
+negotiated, both platforms understand the exchange is in-progress until the full amount is transacted, based upon time
+elapsed.  In this case, either participant may cancel the transaction prematurely, and the transacted amount to the
+present time will be retained.</p>
+<p>The platform-to-platform exchange may be within a single WSF-based simulation, or with an externally simulated entity
+across a DIS interface (see final two paragraphs below).  A DIS interface does _not_ specify a rate of transfer, so the
+fidelity of these exchanges may degrade a bit.  More on this later.</p>
+<p>There are several sub-classes the user will need to understand to accomplish Exchange functionality, as noted in the
+paragraphs below:</p>
+<p>First, a discussion of ‘quantity’.  A quantity is captured in any implementation-defined convenient unit of measure.
+However, if the exchanged commodity is linked to the WSF platform payload or fuel in order to affect the motion dynamics
+(see below), then the units of measure must be internally specified in kilograms.  (The standard WSF input parsing will
+accept imperial or other unit types, but will translate them internally to MKS.)  But provided the Container contents do
+not interact with the platform mass, the units supplied to the container, and interacted with by scripting, may be
+arbitrary floating point values, such as “pallets of supplies”, “spare engines”, or “number of wing repairs”.  It is up
+to the implementation to consistently interpret what this quantity represents.</p>
+<p>A “tender” encapsulates a Request or an Offer of a commodity or service.  The tender will specify the name of the
+commodity or service, the maximum amount desired or available to be provided, the maximum rate at which it may be
+transferred, and a flag indicating whether this named item is a commodity, or a service.  This tender item is an
+object which is creatable via script, and may be compared to another to see if they are a match.  Tendered quantities
+are always specified as positive, regardless of whether the associated transactor is a supplier or receiver.</p>
+<p>A “container” is placed on the WSF_EXCHANGE_PROCESSOR, and specifies the maximum amount of an item which may be stored
+for later provision, or the maximum amount which may be accumulated at any one time on the platform.  The container
+holds a tender as one of its attributes, which dictates an overall maximum quantity and rate of exchange for any
+transaction into or out of the Container.  In addition to a ‘maximum’ quantity, there is also a ‘current’ quantity to
+the container, which is set separately, and always constrained to only what will fit in the container.  The container
+may begin the simulation full, empty, or anywhere in between.</p>
+<p>A “transactor” is a conduit through which commodities or services may enter or leave a specified container.  The
+direction of flow (‘is_offeror’ or ‘is_requestor’) is specified at the time of creation of the transactor, and may
+not be changed afterward.  Multiple transactors may be plugged into the same container at the same time, to permit
+simultaneous additions and removals. Each transactor may optionally specify a further Rate constraint, which is
+applied in addition to the container’s rate constraint.  For any proposed transaction to succeed, it must be
+compatible in name and ‘is_service’ with the container it is plugged into.</p>
+<p>The potential for a future exchange will begin when one ‘is_offeror’ transactor reserves or sets aside a tender of
+some commodity or service.  The transactor may be told via script to reserve all or some part of what is available
+to supply from its associated container, using ReserveAll() or ReserveTender() operations.  This Reserve action may
+trigger an externally observable event that a platform capability is changed (see <a class="reference internal" href="event/platform_events.html#platform-capability-changed"><span class="std std-ref">PLATFORM_CAPABILITY_CHANGED</span></a>).
+Note that for this observable event to be generated, a commodity and capability type must be paired, via the
+‘commodity_and_capability_pairing’ keyword.  This Reserve call is required, otherwise the associated offering
+transactor will not be “listening”, for an exchange.  (Depending upon the ground rules appropriate to the simulation,
+it might be considered a “cheat” to use the <a class="reference internal" href="event/platform_events.html#platform-capability-changed"><span class="std std-ref">PLATFORM_CAPABILITY_CHANGED</span></a> notification, and other communication
+mechanisms such as radio transmissions might be more appropriate.  This is left as an implementation detail.)</p>
+<p>After a reservation is made, at any time later, another transactor on another platform that ‘is_requestor’ may
+request a tender.  An actual exchange is always initiated by the requestor of goods or services, by calling
+RequestAll() or RequestTender(), usually via scripted call.  The request will then internally issue a REQUEST event.
+If the reserve and the request are compatible in name and service/commodity type, and are sufficiently close in
+proximity, then a negotiation begins as to the actual amount and rate of the transaction.</p>
+<p>For exchanges, the events REQUEST, OFFER, ACCEPT, SUPPLY, RECEIVE occur in quick succession, and involve a negotiation
+of exchanged quantity and rate of service.  The negotiation accepts the largest quantity and fastest rate that both
+players can support.  The offeror and receiver may then stay in the SUPPLYING and ACCEPTING state for a time duration,
+with the mutual understanding that a shared transaction rate of goods is in process.   During this span of time,
+either player may choose to terminate the transaction prematurely with a CANCEL event.  If so triggered, a CANCEL
+event terminates the transaction, but any goods or services partially transacted prior to the CANCEL event are
+maintained, in accordance with the agreed-upon rate of exchange.  NOTE: This is true only for WSF-to-WSF transactions;
+the fidelity of a transaction over DIS is lower, as a rate cannot be communicated; the PDUs do not contain a rate value.
+So every exchange will appear as instantaneous to a DIS entity.  Even so, there may still be value in modeling a
+transfer rate within WSF, as the supplier of the commodity will be made unavailable for a specified length of time,
+to account for a realistic transfer rate.</p>
+<p>The underlying exchange process will generate WSF observable events:  <a class="reference internal" href="event/exchange_events.html#exchange-queried"><span class="std std-ref">EXCHANGE_QUERIED</span></a>,
+<a class="reference internal" href="event/exchange_events.html#exchange-negotiated"><span class="std std-ref">EXCHANGE_NEGOTIATED</span></a>, and <a class="reference internal" href="event/exchange_events.html#exchange-completed"><span class="std std-ref">EXCHANGE_COMPLETED</span></a>.  The former two are for low-level coordination between
+all potentially transacting platforms, so the end-user will generally prefer to observe the latter.  A script method
+is available to react to the EXCHANGE_COMPLETED event.  If the exchange is occurring at an agreed-upon rate, then
+the EXCHANGE_COMPLETED event is generated at the trailing edge of the exchange.</p>
+<p>The processor will also subscribe to a callback for observable event <a class="reference internal" href="event/platform_events.html#platform-capability-changed"><span class="std std-ref">PLATFORM_CAPABILITY_CHANGED</span></a>.  This
+permits the processor to internally maintain a list of what simulated platforms offer goods or services that may
+be desired.  A script method is available to provide the closest available provider of a payload, fuel, or repair.
+(Note that this knowledge is imperfect… a simulated entity may be known to supply fuel, however it cannot be known
+for certain that this the same _kind_ of fuel, and so an affirmative response to the request may not result.)</p>
+<p>Through the <a class="reference internal" href="#exchange-processor-script-interface">Exchange Processor Script Interface</a>, the user may control the addressee, timing, amount, and rate of
+the transactions desired.  The named types described above (tender, container, transactor) are “scriptable” objects,
+identified with a capital first letter:  Tender, Container, Transactor, and in addition, a Query object.</p>
+<p>Within WSF, the mass of a particular platform consists of three parts:  its empty mass, its fuel mass, and its
+payload mass.  The WSF_EXCHANGE_PROCESSOR allows its Containers to &lt;optionally&gt; be hooked to either payload or
+fuel, so that exchanged commodities immediately impact the total mass of the platform.  See the ‘hook_to_payload’
+and ‘hook_to_fuel’ keyword options below.</p>
+<p>The underlying state machine behavior for a transaction of commodities (goods) is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_Transactor_Role_</span>  <span class="n">_Begin_State_</span>  <span class="n">_End_State_</span>  <span class="n">_Generated_Event_</span>
+<span class="n">Offeror</span>            <span class="o">-</span><span class="n">disabled</span><span class="o">-</span>     <span class="n">READY</span>        <span class="o">-</span><span class="n">none</span><span class="o">-</span>
+<span class="n">Receiver</span>           <span class="n">READY</span>          <span class="n">REQUESTING</span>   <span class="n">REQUESTED</span>
+<span class="n">Offeror</span>            <span class="n">READY</span>          <span class="n">OFFERING</span>     <span class="n">OFFERED</span>
+<span class="n">Receiver</span>           <span class="n">REQUESTING</span>     <span class="n">ACCEPTING</span>    <span class="n">ACCEPTED</span>
+<span class="n">Offeror</span>            <span class="n">OFFERING</span>       <span class="n">SUPPLYING</span>    <span class="n">SUPPLIED</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="n">Begin</span> <span class="n">transfer</span> <span class="ow">in</span><span class="o">-</span><span class="n">progress</span> <span class="n">timer</span><span class="o">&gt;</span>
+<span class="n">Receiver</span>           <span class="n">ACCEPTING</span>      <span class="n">READY</span>        <span class="n">RECEIVED</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="n">Begin</span> <span class="n">transfer</span> <span class="ow">in</span><span class="o">-</span><span class="n">progress</span> <span class="n">timer</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">For</span> <span class="n">the</span> <span class="n">offeror</span> <span class="ow">and</span> <span class="n">receiver</span><span class="p">,</span> <span class="n">when</span> <span class="n">the</span> <span class="n">timer</span> <span class="n">elapses</span><span class="p">,</span> <span class="n">the</span> <span class="n">transaction</span> <span class="ow">is</span> <span class="n">fully</span> <span class="n">completed</span><span class="o">.&gt;</span>
+</pre></div>
+</div>
+<p>The underlying state machine behavior for a transaction of services (repairs) is similar to the above, but with
+additions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_Transactor_Role_</span>  <span class="n">_Begin_State_</span>  <span class="n">_End_State_</span>  <span class="n">_Generated_Event_</span>
+<span class="n">Offeror</span>            <span class="o">-</span><span class="n">disabled</span><span class="o">-</span>     <span class="n">READY</span>        <span class="o">-</span><span class="n">none</span><span class="o">-</span>
+<span class="n">Receiver</span>           <span class="n">READY</span>          <span class="n">REQUESTING</span>   <span class="n">REQUESTED</span>
+<span class="n">Offeror</span>            <span class="n">READY</span>          <span class="n">OFFERING</span>     <span class="n">OFFERED</span>
+<span class="n">Receiver</span>           <span class="n">REQUESTING</span>     <span class="n">ACCEPTING</span>    <span class="n">ACCEPTED</span>
+<span class="n">Offeror</span>            <span class="n">OFFERING</span>       <span class="n">SUPPLYING</span>    <span class="n">SUPPLIED</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="n">Begin</span> <span class="n">repair</span> <span class="ow">in</span><span class="o">-</span><span class="n">progress</span> <span class="n">timer</span><span class="o">&gt;</span>
+                                               <span class="o">&lt;</span><span class="n">repair</span> <span class="ow">in</span><span class="o">-</span><span class="n">progress</span> <span class="n">timer</span> <span class="n">expires</span><span class="o">&gt;</span>
+<span class="n">Offeror</span>            <span class="n">SUPPLYING</span>      <span class="n">READY</span>        <span class="n">OFFEROR_COMPLETED</span>
+<span class="n">Receiver</span>           <span class="n">ACCEPTING</span>      <span class="n">READY</span>        <span class="n">REQUESTOR_RESPONDED</span>
+<span class="n">Offeror</span>            <span class="n">READY</span>          <span class="n">READY</span>        <span class="o">&lt;</span><span class="n">confirmation</span> <span class="n">received</span><span class="p">,</span> <span class="n">but</span> <span class="n">no</span> <span class="n">action</span> <span class="n">needed</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Either Transactor may Cancel a transaction in progress, which will generate event CANCEL to inform the other,
+so CANCEL may be an internally or externally generated event.  A Cancel is automatically queued internally as a
+timeout mechanism if the other player becomes unresponsive during the exchange.  Provided that follow-on
+transaction negotiations have succeeded, the time-queued Cancel is later ignored.</p>
+<p>A typical goods exchange example is one in which a platform of an air refueling tanker type is to offload fuel from its
+payload quantity, and supply it to a nearby aircraft to replenish its fuel quantity.  Following is a declaration of
+such a tanker platform type with an ability to supply fuel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform_type</span> <span class="n">TANKER</span> <span class="n">WSF_PLATFORM</span>
+  <span class="n">processor</span> <span class="n">exchange_proc</span> <span class="n">WSF_EXCHANGE_PROCESSOR</span>
+     <span class="n">update_interval</span> <span class="mi">5</span> <span class="n">sec</span>                   <span class="c1"># Will periodically evaluate (if auto_request true) which platform to</span>
+                                             <span class="c1"># send a request to.</span>
+     <span class="n">commodity_and_capability_pairing</span> <span class="n">JP8_FUEL</span> <span class="n">SUPPLY_FUEL</span>
+                                             <span class="c1"># Associates a commodity or service name (appearing again below) to a</span>
+                                             <span class="c1"># DIS-enumerated platform Capability item.</span>
+                                             <span class="c1"># The third keyword must be one of the following:</span>
+                                             <span class="c1">#    SUPPLY_PAYLOAD, SUPPLY_FUEL, VEHICLE_REPAIR, VEHICLE_RECOVERY,</span>
+                                             <span class="c1">#    SUPPLY_ADS_B</span>
+     <span class="n">container</span> <span class="n">fuel_supply_tank</span>
+        <span class="n">commodity</span> <span class="n">JP8_FUEL</span>                   <span class="c1"># == begin &quot;tender&quot; ==</span>
+           <span class="n">maximum_mass_quantity</span> <span class="mi">8000</span> <span class="n">kg</span>     <span class="c1"># Under no circumstances will the quantity of this container exceed</span>
+                                             <span class="c1">#    8000 kg</span>
+           <span class="n">mass_rate</span>           <span class="mi">50</span> <span class="n">kg</span><span class="o">/</span><span class="n">sec</span>     <span class="c1"># This is an upper constraint on the rate at which fuel may enter or</span>
+                                             <span class="c1"># leave the container.</span>
+        <span class="n">end_commodity</span>                        <span class="c1"># == end &quot;tender&quot; ==</span>
+        <span class="n">initial_mass_quantity</span>    <span class="mi">7000</span> <span class="n">kg</span>     <span class="c1"># The initial quantity in this container is 7000 kg, 1000 kg short</span>
+                                             <span class="c1"># of &quot;full&quot;.</span>
+     <span class="n">end_container</span>
+     <span class="n">transactor</span> <span class="n">fuel_provider</span>
+        <span class="c1"># === TANKER WITH FUEL === (OFFERS)</span>
+        <span class="n">container_name</span>     <span class="n">fuel_supply_tank</span>  <span class="c1"># Specifies the source for the fuel to supply to others.</span>
+        <span class="n">is_offeror</span>                           <span class="c1"># Specifies that this transactor will always supply, not receive fuel.</span>
+                                             <span class="c1"># If fuel is to be simultaneously onloaded and offloaded, another</span>
+                                             <span class="c1"># transactor should be defined.</span>
+        <span class="n">hook_to_fuel</span>                 <span class="n">false</span>   <span class="c1"># This flag (if true) would be applicable to the _receiver&#39;s_ processor.</span>
+        <span class="n">hook_to_payload</span>               <span class="n">true</span>   <span class="c1"># As transactions are completed, the exchanged quantity</span>
+                                             <span class="c1"># is DECREMENTED from the payload attribute of the platform.</span>
+        <span class="n">exclusive_hook_to_payload</span>     <span class="n">true</span>   <span class="c1"># Indicates that this transactor has full exclusive ownership of the</span>
+                                             <span class="c1"># platform payload attribute,</span>
+                                             <span class="c1"># and so can and will overwrite the quantity of the platform&#39;s payload as</span>
+                                             <span class="c1"># fuel is transferred.</span>
+        <span class="n">response_time_out_interval</span>  <span class="mi">10</span> <span class="n">sec</span>   <span class="c1"># If we receive a request, and make an offer, this is how long we</span>
+                                             <span class="c1"># will wait for a response back before we terminate and move on.</span>
+        <span class="n">proximity_limit</span>             <span class="mi">500</span> <span class="n">m</span>    <span class="c1"># If the transacting platforms are more than this distance apart,</span>
+                                             <span class="c1"># the transaction will not be allowed to take place.</span>
+     <span class="n">end_transactor</span>
+  <span class="n">end_processor</span>
+<span class="n">end_platform_type</span>
+</pre></div>
+</div>
+<p>Provided that a DIS network is properly configured, the exchange of goods or services may be with an external DIS
+entity.  In this case, the commodity or service type to be exchanged must be declared within the DIS environment as
+below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">entity_type</span> <span class="n">JP8_FUEL</span> <span class="mi">6</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span>    <span class="c1"># This is a DIS-compliant value.  Consult SISO-REF-010-20xx.x for standard DIS</span>
+                                       <span class="c1"># enumerations of typical logistics commodities.</span>
+   <span class="n">dis_exchange</span> <span class="n">debug</span> <span class="n">end_dis_exchange</span> <span class="c1"># For assistance in debugging transactions over DIS.</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p>In all cases of remote exchanges via DIS, each state machine transition triggering event delineated in the sequences
+above must occur twice, once in the local simulation, once in the remote one.   A local event triggers a call-back
+mechanism which sends an appropriate DIS PDU type externally.  The receipt of that PDU at the remote destination will
+trigger the same event which previously precipitated the event in the local simulation.</p>
+</section>
+<section id="tender-definition">
+<h2>Tender Definition<a class="headerlink" href="#tender-definition" title="Permalink to this headline">¶</a></h2>
+<p>A Tender can be constructed by the user in the input stream in two ways, as a commodity or service.</p>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.commodity">
+<span id="commodity"></span>commodity<em> &lt;commodity-name&gt;</em> … #Tender Commands<em> &lt;tender_body&gt;</em> … end_commodity<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.commodity" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tender of ‘commodity’ is to propose an exchange of some named tangible goods, noting the kind, amount, and rate of a
+planned requested or offered exchange.  It does _not_ specify the direction of flow, which is dictated by the
+transactor <a class="reference internal" href="#is_offeror">is_offeror</a> or <a class="reference internal" href="#is_requestor">is_requestor</a> setting.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.service">
+<span id="service"></span>service<em> &lt;service-name&gt;</em> … #Tender Commands<em> &lt;tender_body&gt;</em> … end_service<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.service" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tender of ‘service’ is to propose an exchange of some named intangible service, noting the kind, amount, and rate of
+a planned requested or offered exchange.  It does _not_ specify the direction of flow, which is dictated by the
+transactor <a class="reference internal" href="#is_offeror">is_offeror</a> or <a class="reference internal" href="#is_requestor">is_requestor</a> setting.</p>
+</dd></dl>
+
+</section>
+<section id="tender-commands">
+<h2>Tender Commands<a class="headerlink" href="#tender-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.quantity">
+<span id="quantity"></span>quantity<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the current number of services available or desired.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.maximum_quantity">
+<span id="maximum_quantity"></span>maximum_quantity<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.maximum_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the limiting number of services available or desired.  Syntactical convenience to indicate the maximum size
+of a container (see below).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.mass_quantity">
+<span id="mass_quantity"></span>mass_quantity<a class="reference internal" href="argumenttypes.html#mass-value" title="mass-value"><em> &lt;mass-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.mass_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the current mass of commodity available or desired.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.maximum_mass_quantity">
+<span id="maximum_mass_quantity"></span>maximum_mass_quantity<a class="reference internal" href="argumenttypes.html#mass-value" title="mass-value"><em> &lt;mass-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.maximum_mass_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the limiting quantity of commodity available or desired.  Syntactical convenience to indicate the maximum
+size of a container (see below).</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.rate">
+<span id="rate"></span>rate<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the rate of services offered per unit time.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.service_interval">
+<span id="service_interval"></span>service_interval<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.service_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the time required to accomplish a unit of service.  30 minutes = Two repairs per hour.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.mass_rate">
+<span id="mass_rate"></span>mass_rate<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.mass_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the rate of commodities exchanged services offered per unit time.  The real value must be followed with a
+correct mass rate specification, such as kg/sec, etc.</p>
+</dd></dl>
+
+</section>
+<section id="container-definition">
+<h2>Container Definition<a class="headerlink" href="#container-definition" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.container">
+<span id="container"></span>container<em> &lt;container-name&gt;</em> … #Container Commands<em> &lt;container_body&gt;</em> … end_container<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.container" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &lt;container-name&gt; specifies the name of the object, as a way for the <a class="reference internal" href="#WSF_EXCHANGE_PROCESSOR" title="WSF_EXCHANGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_EXCHANGE_PROCESSOR</span></a> to differentiate
+between perhaps several containers owned by the processor.  The container block quantifies a container; its name, what
+it holds, maximum, and current quantities of the commodity or service.  While a service (i.e. engine-repair) is not a
+tangible to be held in a container, for the purposes of simulation book-keeping, it is treated as such.  Transactions
+are always “piped” into or out of a named container.  No transaction is permitted which transfers more of a commodity
+or service than may be added to or decremented from a container, given its maximum capacity and current quantity.  A
+constraining operation will always bound/clamp the transaction to abide by the container’s constraint.  Any convenient
+number of containers may be defined as needed, and a container may have more than one transaction “piped” into it, such
+as a tanker aircraft which may both on-load fuel from another tanker and offload fuel to a receiver simultaneously,
+both linked to the same container.</p>
+</dd></dl>
+
+</section>
+<section id="container-commands">
+<h2>Container Commands<a class="headerlink" href="#container-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.service">
+<span id="service"></span>service …end_service<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify a service type, amount, and exchange rate, as in <a class="reference internal" href="#tender-definition">Tender Definition</a> above.  Only one “service” or
+“commodity” may be supplied.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.commodity">
+<span id="commodity"></span>commodity …end_commodity<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.commodity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify a commodity type, amount, and exchange rate, as in <a class="reference internal" href="#tender-definition">Tender Definition</a> above.  Only one “service” or
+“commodity” may be supplied.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.initial_quantity">
+<span id="initial_quantity"></span>initial_quantity<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.initial_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the beginning number of services available in the container, which must be less than or equal to the maximum
+container size in the above tender specification.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.initial_mass_quantity">
+<span id="initial_mass_quantity"></span>initial_mass_quantity<a class="reference internal" href="argumenttypes.html#mass-value" title="mass-value"><em> &lt;mass-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.initial_mass_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the beginning amount of a commodity available in the container, which must be less than or equal to the
+maximum container size in the above tender specification.</p>
+</dd></dl>
+
+</section>
+<section id="transactor-definition">
+<h2>Transactor Definition<a class="headerlink" href="#transactor-definition" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.transactor">
+<span id="transactor"></span>transactor<em> &lt;transactor-name&gt;</em> … #Transactor Commands<em> &lt;transactor_body&gt;</em> … end_transactor<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.transactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &lt;transactor-name&gt; specifies the name of the object, as a way for the <a class="reference internal" href="#WSF_EXCHANGE_PROCESSOR" title="WSF_EXCHANGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_EXCHANGE_PROCESSOR</span></a> to differentiate
+between perhaps several transactors owned by the processor.  The transactor block quantifies a transaction; its name,
+the direction of flow of the commodity or service, and current quantities of the transaction in-progress.  Regardless
+of direction, quantities tend toward zero as the transaction progresses (is_offeror starts with amount available and
+reaches zero when exhausted, is_requestor starts with amount desired and reaches zero as fully satisfied).
+Transactions are always “piped” into or out of a named container.  Regardless of the initial amount of Reserve() or
+Request(), the transaction starts only after being constrained to what may come from or fit into the named container.</p>
+</dd></dl>
+
+</section>
+<section id="transactor-commands">
+<h2>Transactor Commands<a class="headerlink" href="#transactor-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.is_offeror">
+<span id="is_offeror"></span>is_offeror<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.is_offeror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transactor is configured as an offeror/provider of goods or services.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.is_requestor">
+<span id="is_requestor"></span>is_requestor<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.is_requestor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transactor is configured as a requestor/consumer of goods or services.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.hook_to_fuel">
+<span id="hook_to_fuel"></span>hook_to_fuel<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.hook_to_fuel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transactor will increment or decrement the quantity of fuel on its platform after every successful transaction.  Will
+not decrement below a zero quantity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.hook_to_payload">
+<span id="hook_to_payload"></span>hook_to_payload<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.hook_to_payload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transactor will increment or decrement the quantity of payload on its platform after every successful transaction.
+Will not decrement below a zero quantity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.exclusive_hook_to_payload">
+<span id="exclusive_hook_to_payload"></span>exclusive_hook_to_payload exclusive_hook_to_fuel<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.exclusive_hook_to_payload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transactor will directly control the quantity of payload or fuel, forcing it to match what is currently in the named
+container.  It will be permitted to ignore and override any other process which sets the fuel or payload quantity,
+including input file specifications.  Will not decrement below a zero quantity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.proximity_limit">
+<span id="proximity_limit"></span>proximity_limit<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.proximity_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the maximum distance allowed between two platforms in order to exchange.  Default is zero, or distance
+ignored.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.time_out_clock_interval">
+<span id="time_out_clock_interval"></span>time_out_clock_interval<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.time_out_clock_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the maximum interval allowed to wait for a response to an offer or request.  If a request is received, and a
+corresponding offer is sent out, and then no response is subsequently received, the offer is canceled after this
+period of time, in order to allow the transactor to be freed up to offer to another requestor.</p>
+</dd></dl>
+
+</section>
+<section id="exchange-processor-commands">
+<h2>Exchange Processor Commands<a class="headerlink" href="#exchange-processor-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.commodity_and_capability_pairing">
+<span id="commodity_and_capability_pairing"></span>commodity_and_capability_pairing<em> &lt;commodity-name&gt;</em><em> &lt;capability-type&gt;</em><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.commodity_and_capability_pairing" title="Permalink to this definition">¶</a></dt>
+<dd><p>This keyword creates an association between a commodity name, and a <a class="reference internal" href="script/wsfplatform.html#wsfplatform-capabilities-methods"><span class="std std-ref">Platform Capability</span></a>,
+as supplied in the DIS Entity State PDU.  If an exchange processor has a transactor which is currently
+offering a fuel commodity, then this processor will assure that the platform capability “SUPPLY_FUEL” will be flagged
+as present.  (See example input above.)  Other bits may indicate that fuel or payload can be provided, but only if they
+are properly indicated with the keyword above.  Multiple pairings may be provided.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.service_and_capability_pairing">
+<span id="service_and_capability_pairing"></span>service_and_capability_pairing<em> &lt;service-name&gt;</em><em> &lt;capability-type&gt;</em><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.service_and_capability_pairing" title="Permalink to this definition">¶</a></dt>
+<dd><p>This keyword creates an association between a service type name, and a <a class="reference internal" href="script/wsfplatform.html#wsfplatform-capabilities-methods"><span class="std std-ref">Platform Capability</span></a>,
+as supplied in the DIS Entity State PDU.  If an exchange processor has a transactor which is currently
+offering a repair service, then this processor will assure that the platform capability “VEHICLE_REPAIR” will be
+flagged as present.  Other bits may indicate that vehicle repair or vehicle recovery, is available, but only if they
+are properly indicated with the keyword above.  Multiple pairings may be provided.
+(Capability Automated Data Service - Broadcast (ADS_B) is currently not supported.)</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.ignore_all_proximity_checks">
+<span id="ignore_all_proximity_checks"></span>ignore_all_proximity_checks<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.ignore_all_proximity_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>If set true, command ignores, and overrides all the transactor ‘proximity_limit’ values above, forcing them to zero.
+No transactions will fail due to a proximity limit check.  Default is ‘false’.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.force_transactions_instantaneous">
+<span id="force_transactions_instantaneous"></span>force_transactions_instantaneous<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.force_transactions_instantaneous" title="Permalink to this definition">¶</a></dt>
+<dd><p>If set true, command ignores all specifications of tender ‘rate’, ‘service_interval’, or ‘mass_rate’.  Once successfully
+negotiated, the resulting transactions will take zero simulated time.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.debug">
+<span id="debug"></span>debug<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Command prompts console output of assistance in debugging processor operations.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.edit">
+<span id="edit"></span>edit<em> &lt;object_type&gt;</em><em> &lt;object_name&gt;</em> … end_&lt;object_type&gt;<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.edit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Command allows the edit of a previously named transactor or container.  This command will begin a block, which must
+be concluded with the normal end_block syntax.  Inside the block, any commands may be used which are appropriate for
+the chosen object_type.</p>
+</dd></dl>
+
+</section>
+<section id="exchange-processor-script-interface">
+<h2>Exchange Processor Script Interface<a class="headerlink" href="#exchange-processor-script-interface" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#WSF_EXCHANGE_PROCESSOR" title="WSF_EXCHANGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_EXCHANGE_PROCESSOR</span></a> (script object name WsfExchangeProcessor) utilizes the capabilities of the
+<a class="reference internal" href="common_script_interface.html#common-script-interface"><span class="std std-ref">Common Script Interface</span></a> and <a class="reference internal" href="wsf_script_processor.html#WSF_SCRIPT_PROCESSOR" title="WSF_SCRIPT_PROCESSOR"><span class="xref wsf wsf-model">WSF_SCRIPT_PROCESSOR</span></a>, as well as providing the following:</p>
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Transactor">
+<span id="Transactor"></span>Transactor FindContainer(string)<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Transactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the named Container (1st arg) exists, will return a reference to the Transactor to interact with.  Returned object should be checked for IsValid() before use.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Transactor">
+<span id="Transactor"></span>Transactor FindTransactor(string)<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Transactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the named Transactor (1st arg) exists, will return a reference to the Transactor to interact with.  Returned object should be checked for IsValid() before use.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Array&lt;int&gt;">
+<span id="Array<int>"></span>Array&lt;int&gt; PayloadProviders()<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Array<int>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of the platform indices for the simulated entities currently known to be providing payload,
+regardless of their proximity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Array&lt;int&gt;">
+<span id="Array<int>"></span>Array&lt;int&gt; FuelProviders()<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Array<int>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of the platform indices for the simulated entities currently known to be providing fuel, regardless of
+their proximity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Array&lt;int&gt;">
+<span id="Array<int>"></span>Array&lt;int&gt; VehicleRepairers()<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Array<int>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of the platform indices for the simulated entities currently known to be providing vehicle repair
+services, regardless of their proximity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.Array&lt;int&gt;">
+<span id="Array<int>"></span>Array&lt;int&gt; VehicleRecoverers()<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.Array<int>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of the platform indices for the simulated entities currently known to be providing vehicle recovery
+services, regardless of their proximity.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_EXCHANGE_PROCESSOR.WsfPlatform">
+<span id="WsfPlatform"></span>WsfPlatform ClosestPossibleProvider(string)<a class="headerlink" href="#WSF_EXCHANGE_PROCESSOR.WsfPlatform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a reference to the platform which is the closest known provider of the capability represented by the supplied commodity Item name.  Returned object should be checked for IsValid() before use.</p>
+</dd></dl>
+
+<p>In general, each of the sub-component types given above are scriptable objects, to include:  ‘tender’ as “Tender”,
+‘container’ as “Container”, ‘transactor’ as “Transactor”, and a new scriptable type not previously mentioned, a
+“Query” type.  The purpose of the Query type is simply to provide details to be able to discern in script if two Tenders are compatible.</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_exchange_processor.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_existing_platform_grid.html" title="WSF_EXISTING_PLATFORM_GRID"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_esm_sensor.html" title="WSF_ESM_SENSOR"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

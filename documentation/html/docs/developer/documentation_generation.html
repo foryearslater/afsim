@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Documentation Generation &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Documentation Guide" href="documentation_guide.html" />
+    <link rel="prev" title="Contents" href="contribution_process.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="documentation_guide.html" title="Documentation Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="contribution_process.html" title="Contents"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="documentation-generation">
+<h1>Documentation Generation<a class="headerlink" href="#documentation-generation" title="Permalink to this headline">¶</a></h1>
+<p>This is a component of the <a class="reference internal" href="documentation_guide.html"><span class="doc">Documentation Guide</span></a>.</p>
+<p>AFSIM supports automatic documentation generation (conversion from RST source to a final output format - i.e. HTML).</p>
+<p>The generation process is automated through the use of the following tools:</p>
+<ul class="simple">
+<li><p>CMake</p></li>
+<li><p>Sphinx</p></li>
+<li><p>Python</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Additional tools may be necessary to generate documentation in alternative formats. For more information see <a class="reference internal" href="build_instructions.html#prerequisites"><span class="std std-ref">Prerequisites</span></a></p>
+</div>
+<p>The following sections include developer-focused instructions which detail multiple methods to generate AFSIM Documentation.</p>
+<section id="organization-cmake">
+<h2>Organization &amp; CMake<a class="headerlink" href="#organization-cmake" title="Permalink to this headline">¶</a></h2>
+<p>Any project that is included by CMake in the AFSIM build system may have documentation automatically generated.
+Sphinx will look for directories named <em>doc</em> in the list of directories supplied to the <code class="docutils literal notranslate"><span class="pre">add_wsf_doc_input</span></code> macro from a project’s CMakeList file.
+Any ‘.rst’ files included in the <em>doc</em> directory and its subdirectories will automatically be included in the documentation build.</p>
+<p>Example directory structure:</p>
+<blockquote>
+<div><pre class="literal-block">wsf_extension
+|__ <em>doc</em>
+|__ grammar
+|__ source
+|__ test
+|__ CMakeLists.txt
+|__ wsf_cmake_extension.cmake
+|__ wsf_module</pre>
+</div></blockquote>
+<p>Within <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code>:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Add *doc* parent directory to the documentation build list
+add_wsf_doc_input(${CMAKE_CURRENT_SOURCE_DIR})
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="building-html-documentation">
+<h2>Building HTML Documentation<a class="headerlink" href="#building-html-documentation" title="Permalink to this headline">¶</a></h2>
+<p>Generating the HTML documentation is as simple as building the <strong>DOCUMENTATION</strong> target generated by CMake.</p>
+<ul>
+<li><p>In Microsoft Visual Studio right click on <strong>DOCUMENTATION</strong> in the <strong>Solution Explorer</strong> under the <strong>CMakeTargets</strong> folder and select <strong>Build</strong>.</p></li>
+<li><p>On Linux, from within the build directory, enter <strong>make DOCUMENTATION</strong>.</p></li>
+<li><p>The CMake command-line interface may also be used to build the <strong>DOCUMENTATION</strong> target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">--</span><span class="n">build</span> <span class="o">&lt;</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">target</span> <span class="n">DOCUMENTATION</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>The resulting documentation can be viewed by opening the file <em>&lt;build-dir&gt;/documentation/index.html</em>.</p>
+<p>For convenience, <em>index.html</em> is added to the <strong>DOCUMENTATION</strong> Visual Studio project after generation, and may be opened from there.</p>
+<p>Sphinx will attempt to rebuild an HTML file only if the corresponding ‘.rst’ file is newer. However, it does not perform extensive dependency analysis.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If the resulting output does not reflect the expected result, remove the <em>_doctrees</em>, <em>docs</em> and <em>html</em> directories in the <em>&lt;build-dir&gt;/documentation</em>
+directory and re-build the <strong>DOCUMENTATION</strong> target.</p>
+</div>
+</section>
+<section id="building-documentation-without-cmake">
+<h2>Building Documentation without CMake<a class="headerlink" href="#building-documentation-without-cmake" title="Permalink to this headline">¶</a></h2>
+<p>AFSIM documentation may be generated without CMake by executing the <em>cmake/Modules/sphinx/build_doc.py</em> script like:</p>
+<blockquote>
+<div><p>python3 cmake/Modules/sphinx/build_doc.py</p>
+</div></blockquote>
+<p>By default this script will <em>glob</em> the contents of all <em>doc</em> directories within the AFSIM source tree, and emit generated documentation in the <em>cmake/Modules/sphinx/generated-docs</em> directory.
+Available command line options may be viewed with <code class="docutils literal notranslate"><span class="pre">build_doc.py</span> <span class="pre">--help</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>build_doc.py</em> script is a convenient mechanism for testing AFSIM documentation, however the CMake method is the primary mechanism.
+The CMake approach provides full functionality (i.e. populating sidebar entries) and more convenient customization options to select a subset of documentation modules to be generated.</p>
+</div>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/developer/documentation_generation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="documentation_guide.html" title="Documentation Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="contribution_process.html" title="Contents"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

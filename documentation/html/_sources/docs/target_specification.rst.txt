@@ -1,0 +1,109 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Target Specification Commands
+-----------------------------
+
+.. command:: target ... end_target
+   :block:
+
+   .. parsed-literal::
+
+      target_
+         platform_ ...
+         libration_point_ ...
+         eci_position_ ...
+         eci_state_ ...
+         offset_ ...
+         position_offset_ ...
+         velocity_offset_ ...
+         offset_time_ ...
+         lag_time_ ...
+      end_target
+
+   These commands specify the target of a targeting-class orbital maneuver (:doc:`target`, :doc:`intercept`, and :doc:`rendezvous`). When specifying a target, one selects both a base target, and an optional offset from that base target.
+
+Base Target Commands
+====================
+
+.. command:: platform <string-value>
+
+   Use the platform with the given name as the base target.
+
+.. command:: libration_point <system> <point>
+
+   Use the given libration point of the given system as the base target. Allowed values of the system are:
+
+   * earth_moon - This will select a point with the Earth as the primary, and the Moon as the secondary object.
+   * sun_earth - This will select a point with the Sun as the primary, and the Earth as the secondary object.
+   * sun_jupiter - This will select a point with the Sun as the primary, and Jupiter as the secondary object.
+
+   The allowed values for the point are:
+
+   * l1 - The L1 point. This is on the line connecting the primary and secondary, and between the two objects.
+   * l2 - The L2 point. This is on the line connecting the primary and secondary, and beyond the secondary object.
+   * l3 - The L3 point. This is on the line connecting the primary and secondary, and on the opposite side of the primary as the secondary.
+   * l4 - The L4 point. This is one of the equilateral points, and is ahead of the secondary in the direction of orbit.
+   * l5 - The L5 point. This is one of the equilateral points, and is behind the secondary in the direction of orbit.
+
+.. command:: eci_position <x-position> <y-position> <z-position> <length-units>
+
+   Use the given ECI position as the base target. This is equivalent to eci_state_ with a velocity of zero.
+
+.. command:: eci_state <x-position> <y-position> <z-position> <length-units> <x-velocity> <y-velocity> <z-velocity> <speed-units>
+
+   Use the given ECI position and velocity as the base target.
+
+   .. note:: This command only has an effect for a :doc:`rendezvous` maneuver; it is ignored for :doc:`target` and :doc:`intercept`.
+
+Offset Commands
+===============
+
+.. command:: offset <frame> <x-offset> <y-offset> <z-offset> <length-units>
+             position_offset <frame> <x-offset> <y-offset> <z-offset> <length-units>
+
+   Specify a position offset from the specified base target, expressed in the given frame. The available frame options are:
+
+   * ric - The RIC frame uses an x-axis (Radial) along the target's position vector, a z-axis (Cross-track) along the target's orbital angular momentum, and a y-axis (In-track) completing the right-handed frame.
+   * ntw - The NTW frame uses an x-axis along the target's velocity vector, a z-axis perpendicular to x and in the same plane as the target's nadir vector, and a y-axis completing the right-handed frame.
+
+   If both a position_offset_ and velocity_offset_ are provided, the same frame need not be used for both.
+
+   For example, an offset of *offset ntw 20 0 0 meters* would be 20 meters ahead of the target in its direction of motion.
+
+   .. note:: This command is useful for maneuvering around targets for proximity operations.
+
+   .. note:: The command offset_ may be deprecated in the future, so it is suggested to use position_offset_.
+
+.. command:: velocity_offset <frame> <x_offset> <y_offset> <z_offset> <speed-units>
+
+   Specify a velocity offset from the specified base target, expressed in the given frame. The available frame options are:
+
+   * ric - The RIC frame uses an x-axis (Radial) along the target's position vector, a z-axis (Cross-track) along the target's orbital angular momentum, and a y-axis (In-track) completing the right-handed frame.
+   * ntw - The NTW frame uses an x-axis along the target's velocity vector, a z-axis perpendicular to x and in the same plane as the target's nadir vector, and a y-axis completing the right-handed frame.
+
+   If both a position_offset_ and velocity_offset_ are provided, the same frame need not be used for both.
+
+   .. note:: This command only has an effect for the :doc:`rendezvous` maneuver, and it is ignored for :doc:`target` and :doc:`intercept`.
+
+.. command:: offset_time <time-value>
+
+   For targets that have a kinematic offset (at least one of position_offset_ or velocity_offset_ is provided), also specifying an offset_time_ will indicate at what time after the end of the maneuver that the provided kinematic offset will be achieved. For example, this command can be used to target a state such that 1 hour after the maneuver the maneuvering platform will attain the given target.
+
+   .. note:: If a non-zero offset_time_ is provided, but there is no non-zero kinematic offset, this command will have no effect.
+
+   .. note:: This command can be combined with lag_time_, but the combined effect can be non-intuitive.
+
+.. command:: lag_time <time-value>
+
+   Specify a lag time for the target. If a lag time is specified, the actual target will be advanced by the specified time along its motion relative to where the targeting operation is aimed. For example, the performer of a :doc:`rendezvous` maneuver that has a lag_time_ specified will achieve an orbit that follows along the orbit of the target platform, but will be the given time behind the target in its orbit.
+
+   .. note:: This command can be combined with offset_time_, but the combined effect can be non-intuitive.

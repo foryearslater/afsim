@@ -1,0 +1,114 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+SOSM_atmosphere_model
+---------------------
+
+.. model:: atmosphere_model SOSM_atmosphere_model
+
+This page describes how to create an SOSM atmosphere definition using the table model.
+
+Creating the atmosphere definition consists of three step:
+
+* Acquire raw spectral atmospheric data. This is generally accomplished by executing MODTRAN. (See `Executing
+  MODTRAN`_)
+* Convert raw spectral atmospheric data from the first step to a format that can be read by the SOSM. (See
+  `Converting MODTRAN Output`_)
+* Create a the SOSM atmophere model file that references the files created in the second step. (See `Creating the
+  Atmosphere Definition File`_)
+
+A pair of Perl scripts are provided with the WSF release which facilitate the use of MODTRAN in preparing the
+atmosphere tables needed by the model. These scripts are located in *sosm/modtran* and operate as follows:
+
+Executing MODTRAN
+=================
+
+A Perl script 'modtran_execute.pl' is included with the standard WSF distribution in the directory *sosm/modtran*.
+This script facilitates the creation of the raw spectral atmospheric data using MODTRAN over the desired altitude,
+elevation and range values. Execute the script as follows::
+
+ *<path-to-wsf>*/sosm/modtran/modtran_execute.pl *<basename>*
+
+The file '*<basename>*.def' which indicates the observer altitudes, the line of sight elevation angle and range values
+and the MODTRAN input cards. The preparation of a '.def' file requires some knowledge of MODTRAN. Several examples of
+'.def' files are present in the *sosm/modtran* directory. The output from this script are the files::
+
+ *<basename>*_bgr.plt - Background radiance
+ *<basename>*_bgt.plt - Background transmittance *(Not currently used)*
+ *<basename>*_fgr.plt - Foreground radiance
+ *<basename>*_fgt.plt - Foreground transmittance
+
+Note that it can take several hours to perform this process.
+
+The following observations should be noted when creating the MODTRAN input:
+
+* Card 4, FLAGS(1:1) should be blank or 'W' (wavenumber input)
+* Card 4, XFLAG must be set to 'W' (wavenumber output).
+* Card 4, DV should be set to 20 (cm-1) unless you are also prepared to update your sensor and target models.
+* Card 4, V1 and V2 should be a multiple of DV.
+* The size of the output files will be directly proportional to the number of spectral samples, i.e.: ((V2 - V1) / DV)
+  + 1.
+
+Converting MODTRAN Output
+=========================
+
+Once MODTRAN has been run to create the necessary files, the files must be converted into tho format that can be used
+by SOSM. This can be accomplished by using the Perl script *modtran_convert.pl* that is supplied with the standard
+WSF distribution in the directory *sosm/modtran*. Execute the script as follows::
+
+ modtran_convert.pl *<basename>*
+
+The script takes the files produced by the previous step and produces the tables needed by SOSM::
+
+ *<basename>*.bgr
+ *<basename>*.bgt *(Not currently used)*
+ *<basename>*.fgr
+ *<basename>*.fgt
+
+Creating the Atmosphere Definition File
+=======================================
+
+After running the previous steps, the file '*<basename>*.txt' should be created which contains the following::
+
+ atmosphere_model table
+    background_radiance      *<basename>*.bgr
+    foreground_radiance      *<basename>*.fgr
+    foreground_transmittance *<basename>*.fgt
+ end_atmosphere
+
+Example
+=======
+
+Assume you wish to create a new atmosphere type that is based on the US Standard Day atmosphere that is provided with
+the standard WSF distribution. Copy 'sosm/modtran/us_std_day.def' to 'us_std_day_mod.def' and edit as desired. Then
+execute MODTRAN::
+
+ *<path-to-wsf>*/sosm/modtran/modtran_execute.pl us_std_day_mod
+
+Convert the files::
+
+ *<path-to-wsf>*/sosm/modtran/modtran_convert.pl us_std_day_mod
+
+Create the file 'us_std_day_mod.txt' with the following contents::
+
+ atmosphere_model table
+    background_radiance      us_std_day_mod.bgr
+    foreground_radiance      us_std_day_mod.fgr
+    foreground_transmittance us_std_day_mod.fgt
+ end_atmosphere
+
+To use the new model in your simulation, add the following commands to your simulation input stream after all other
+sosm_interface commands::
+
+ sosm_interface
+    sosm_interface.load_atmosphere     US_STD_DAY_MOD from us_std_day_mod.txt
+    sosm_interface.default_atmosphere  US_STD_DAY_MOD
+ end_sosm_interface

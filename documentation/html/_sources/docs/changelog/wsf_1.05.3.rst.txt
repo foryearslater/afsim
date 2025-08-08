@@ -1,0 +1,107 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.5.3:
+
+WSF 1.5.3 - 13 March 2009
+-------------------------
+
+General
+=======
+
+* The scripting language will now issue a warning if an attempt is made to use a null reference. See the
+  Enhancements_ section below.
+
+Corrections
+===========
+
+* **(CR 6283)** When using the :command:`sensor_plot.horizontal_map` function of :command:`sensor_plot`, it is sometimes
+  necessary to give the platform containing the sensor-under-test a route with a velocity in order to model doppler
+  constraints (for instance, when testing a SAR sensor). This was incorrectly causing the platform to be moved during the
+  map generation. This modification prevents the platform from being moved.
+
+* **(CR 6284)** Provided an alternative method for computing :command:`_.receiver` noise power as 'k * T_0 * B * Fn'.
+  Specifying :command:`_.receiver.noise_figure` alone will cause the new alternative method to be used. Specifying
+  :command:`_.receiver.noise_figure` along with :command:`_.receiver.antenna_ohmic_loss` or
+  :command:`_.receiver.receive_line_loss` will cause the
+  former method to be used.
+
+* **(CR 6303)** WSF was detecting targets that SUPPRESSOR was not. This was traced to an issue where the apparent
+  target elevation angle (after the approximation for atmospheric refraction), was different from SUPPRESSOR by about 0.1
+  - 0.2 degrees. This was resulting in slightly different values for antenna gains, but was impacting the multi-path
+  calculations to a greater extent. The angles differences have been reduced by an order of magnitude, and
+  signal-to-Noise values are now within 0.1 dB.
+
+* **(CR 6361)** WsfAntennaPattern::GetPeakGain was returning 1.0 instead of the peak gain of the table when the
+  pattern was defined by the :ref:`antenna_pattern.pattern_table` command.
+
+* **(CR 6367)** Messages were allowed to be transmitted and received over communications links even if the
+  transmitter or receiver was off.
+
+* **(CR 6368)** The 'Intercept_Pk', 'Pk_Degrade' and 'Pk' fields were not included in the WEAPON_HIT and
+  WEAPON_MISSED :command:`event_output` if the target was marked as 'indestructible'.
+
+Enhancements
+============
+
+* Enhanced the :model:`WSF_SLB_EFFECT` to blank targets based on probability draws and incoming signal (i.e. jamming
+  signal) duty-cycle comparisons. Can set the type of target blanking to use via the
+  :model:`target_blanking_effect <WSF_SLB_EFFECT>`. Target blanking also occurs for CW noise signals
+  correctly as long as the main target signal return does not exceed the jamming signal by the blanking threshold.
+
+
+* **(CR 6346)** Added in the capability to degrade the :command:`electronic protect (EP) <electronic_protect>`
+  :model:`WSF_SLC_EFFECT` effect via an :command:`Electronic Attack (EA) <electronic_attack>` :model:`WSF_SLC_DEGRADE_EFFECT`. This effect
+  addition allowed the introduction of the :command:`Electronic Attack (EA) <electronic_attack>` :model:`WSF_POL_MOD_EFFECT` effect to
+  be implemented also.
+
+* **(CR 5485)** Completed the implementation of the 'strip' mode in :model:`WSF_SAR_SENSOR <WSF_SAR_SENSOR>`.
+  This also adds numerous methods to :class:`WsfImage`.
+
+* **(CR 6362)** An :command:`event_output` PLATFORM_OMITTED message will now be produced (if enabled) if a
+  platform is excluded from the simulation by the :command:`platform_availability` block or by
+  the user-defined 'on_platform_injection' script.
+
+* Added the script methods :method:`WsfGeoPoint.Offset` and :method:`WsfGeoPoint.OffsetWCS` to :class:`WsfGeoPoint`. This
+  allows a point to be computed that can be supplied as a cue to a sensor, weapon or jammer, or as a point for navigation.
+
+* Added the script method :method:`WsfArticulatedPart.CueToPoint` to :class:`WsfArticulatedPart`. This is useful for cueing
+  a sensor, weapon or jammer to a computed location.
+
+* Added new Fedora Core 6 compatible ATIF shared object libraries.  Now SAGE/ATIF works with either fc2-compatible
+  ("ln3") or a fc6 compatible ("ln4") libraries.
+
+* Added class WsfBroker, and WsfObserver::ExchangeEvent.  Enables functionality for the exchange of commodities
+  and/or services between platforms, whether internally or externally modeled over a DIS network.  Initial implementation
+  was for aerial refueling, but can also have application to many logistics exchanges as well.
+
+* **(CR 6371)** Added the capability to input frequency-dependent peak power outputs for :command:`_.transmitter`
+  with the :command:`_.transmitter.power` input command. This frequency dependency of the transmitter power is in addition
+  to any frequency-dependent :command:`_.transmitter.antenna_pattern_table` gain table input.
+
+* Enhanced run-time error detection for script methods.  Calling methods on null objects, and passing null objects
+  as method parameters are now detected.  If a script call error is detected, an error message is printed to the screen
+  with details about the problem.  A new related command :command:`_.script_commands.script_abort_on_null_references` has been
+  added.
+
+* Added several script methods to :class:`WsfWeaponEngagement` to make it more useful. In particular, it can query:
+
+   * The location of the weapon and target at the point of closest approach
+   * The miss distance at the point of closest approach
+   * Whether or not the engagement is resulting in a hit or miss.
+
+* Added a :method:`WsfGeoPoint.ToString` method to :class:`WsfGeoPoint` to allow easier printing.
+
+* A steerable/slewable :model:`jammer  transmitter <WSF_RF_JAMMER>` being controlled externally can now be steered via the
+  DIS emission PDU. The beam azimuth and elevation center will be used to cue the jammer transmitter to these centers,
+  but restricted by the :command`slewing <_.articulated_part>` and
+  :ref:`steering <Antenna_commands>` limits set in the WSF
+  definition for the :model:`jammer <WSF_RF_JAMMER>`.

@@ -1,0 +1,76 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CARLTON_LETHALITY
+=====================
+
+.. model:: weapon_effects WSF_CARLTON_LETHALITY
+
+.. parsed-literal::
+
+   :command:`weapon_effects` <name> :model:`WSF_CARLTON_LETHALITY`
+      ... :command:`weapon_effects` Commands ...
+      ... :model:`WSF_EXPLICIT_WEAPON_EFFECTS` Commands ...
+      ... WSF_CARLTON_LETHALITY Commands_ ...
+   end weapon_effects
+
+Overview
+--------
+
+The Carlton Damage Equation is most often used for indirect fire artillery engagements against fixed ground targets. Down range and cross range miss distances are assumed to occur in a more-or-less horizontal plane containing the target, and the weapon's velocity vector is used to orient the values in a near-far, right-left direction. Any Z offsets are ignored. Orientation of either the weapon or the target do not matter. This implements the Carlton lethality model as expressed by the equation:
+
+:math:`P_k = D_0 \times e^{(\frac{-\pi D_0} {LA} \times (x^2 \times RDR + y^2 \times \frac{1} {RDR} ))}`
+
+Where:
+
+:math:`D_0`
+   Input parameter for the weapon/target pair (defined as an input value)
+
+:math:`LA`
+   Lethal area for the weapon/target pair (defined as an input value)
+
+:math:`AOF`
+   Angle of fall of the weapon (relative to horizontal)
+
+:math:`x`
+   Downrange miss distance
+
+:math:`y`
+   Cross range miss distance
+
+:math:`RDR = \frac{1}{1 - 0.8 \times \cos AOF}`
+
+.. block:: WSF_CARLTON_LETHALITY
+
+Commands
+--------
+
+.. warning::
+
+   The following :command:`weapon_effects` commands are not compatible with WSF_CARLTON_LETHALITY.  Use of these commands will result in an input processing error.
+   
+   * :command:`weapon_effects.intercept_pk`
+   * :command:`weapon_effects.launch_pk`
+   * :command:`weapon_effects.use_launch_pk`
+   
+.. command:: d_zero <real-value>
+
+   The value of :math:`D_0` in the range [0 .. 1].
+
+   **Default:** 0.5
+
+.. command:: lethal_area <target-type> <area-value>
+
+   Specify the lethal area (LA) for a target of the specified type.  This command should be repeated for all target types to which this lethality object will be applicable.
+
+.. note::
+
+   If there is no lethal area defined for the target type, the munition is assumed to have NO effect on the target.

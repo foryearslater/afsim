@@ -1,0 +1,658 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WsfBrawlerProcessor &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="WsfChaffWeapon" href="wsfchaffweapon.html" />
+    <link rel="prev" title="WsfBrawlerMover" href="wsfbrawlermover.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfchaffweapon.html" title="WsfChaffWeapon"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsfbrawlermover.html" title="WsfBrawlerMover"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsfbrawlerprocessor">
+<h1>WsfBrawlerProcessor<a class="headerlink" href="#wsfbrawlerprocessor" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+WsfBrawlerProcessor  inherits <a class="reference internal" href="wsfquantumtaskerprocessor.html#WsfQuantumTaskerProcessor" title="WsfQuantumTaskerProcessor">WsfQuantumTaskerProcessor</a></dt>
+<dd></dd></dl>
+
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#overview" id="id1">Overview</a></p></li>
+<li><p><a class="reference internal" href="#evaluation-methods" id="id2">Evaluation Methods</a></p></li>
+<li><p><a class="reference internal" href="#brawler-methods" id="id3">Brawler Methods</a></p></li>
+<li><p><a class="reference internal" href="#mover-methods" id="id4">Mover Methods</a></p></li>
+<li><p><a class="reference internal" href="#aerodynamic-methods" id="id5">Aerodynamic Methods</a></p></li>
+<li><p><a class="reference internal" href="#location-and-geometry-methods" id="id6">Location and Geometry Methods</a></p></li>
+<li><p><a class="reference internal" href="#timing-and-event-methods" id="id7">Timing and Event Methods</a></p></li>
+<li><p><a class="reference internal" href="#utility-methods" id="id8">Utility Methods</a></p></li>
+<li><p><a class="reference internal" href="#subsystem-methods" id="id9">Subsystem Methods</a></p></li>
+</ul>
+</div>
+<section id="overview">
+<h2><a class="toc-backref" href="#id1">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Most of the script methods on the WsfBrawlerPlatform revolve around either evaluating or flying a maneuver.  The evaluation methods take a given
+maneuver, project it forward in time, evaluation the future state, and return the value after biasing and multiplicative effects.  The fly methods
+actually command the platform to fly a maneuver.  The <a class="reference internal" href="../wsf_brawler_processor.html#WSF_BRAWLER_PROCESSOR" title="WSF_BRAWLER_PROCESSOR"><span class="xref wsf wsf-model">WSF_BRAWLER_PROCESSOR</span></a> (which uses a <a class="reference internal" href="../wsf_brawler_mover.html#WSF_BRAWLER_MOVER" title="WSF_BRAWLER_MOVER"><span class="xref wsf wsf-model">WSF_BRAWLER_MOVER</span></a>) also supports many of the standard mover
+commands, such as: GoToLocation(), TurnToHeading(), GoToAltitude(), GoToSpeed(), FollowRoute(), ReturnToRoute().  See the <a class="reference internal" href="wsfplatform.html#WsfPlatform" title="WsfPlatform"><span class="xref wsf wsf-class">WsfPlatform</span></a> page for
+a full list and reference the <a class="reference internal" href="../wsf_brawler_mover.html#WSF_BRAWLER_MOVER" title="WSF_BRAWLER_MOVER"><span class="xref wsf wsf-model">WSF_BRAWLER_MOVER</span></a> page for further clarification.</p>
+</section>
+<section id="evaluation-methods">
+<h2><a class="toc-backref" href="#id2">Evaluation Methods</a><a class="headerlink" href="#evaluation-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EvaluateRates">
+double EvaluateRates<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> angularRates</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> axialAccelerations</em>, <em class="sig-param">int ilevel</em>, <em class="sig-param">int kalt</em>, <em class="sig-param">int icall</em>, <em class="sig-param">int lcall</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateRates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Evaluates a maneuver alternative where angular rates and axial accelerations are given.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>angularRates - radians/sec</p></li>
+<li><p>axialAccelerations - meters/sec^2.</p></li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EvaluateHeadingSpeedAltitude">
+double EvaluateHeadingSpeedAltitude<span class="sig-paren">(</span><em class="sig-param">double heading</em>, <em class="sig-param">double speed</em>, <em class="sig-param">double altitude</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double maxClimbRate</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateHeadingSpeedAltitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates a maneuver alternative to move to the specified heading, speed, and altitude with constraints of maxGees and maxClimbRate.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>heading  - degrees</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>altitude  - meters</p></li>
+<li><p>maxGees  - Gs</p></li>
+<li><p>maxClimbRate  - meters/sec</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EvaluateTurnInPlaneWithSpeed">
+double EvaluateTurnInPlaneWithSpeed<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> turningPlane</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double speed</em>, <em class="sig-param">int ilevel</em>, <em class="sig-param">int kalt</em>, <em class="sig-param">int icall</em>, <em class="sig-param">int lcall</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateTurnInPlaneWithSpeed" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.EvaluateTurnInPlaneWithThrottle">
+double EvaluateTurnInPlaneWithThrottle<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> turningPlane</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double throttle</em>, <em class="sig-param">int ilevel</em>, <em class="sig-param">int kalt</em>, <em class="sig-param">int icall</em>, <em class="sig-param">int lcall</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateTurnInPlaneWithThrottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates a maneuver alternative that pulls into the turning plane constrained by G-force and speed.  The Brawler
+platform’s current location is a point on the plane and the supplied vector defines the surface of the plane.</p>
+<ul class="simple">
+<li><p>turningPlane  - A directional unit vector in the NED coordinate frame</p></li>
+<li><p>maxGees  - Gs</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>throttle - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EvaluateVectorWithSpeed">
+double EvaluateVectorWithSpeed<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> direction</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double speed</em>, <em class="sig-param">int ilevel</em>, <em class="sig-param">int kalt</em>, <em class="sig-param">int icall</em>, <em class="sig-param">int lcall</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateVectorWithSpeed" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.EvaluateVectorWithThrottle">
+double EvaluateVectorWithThrottle<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> direction</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double throttle</em>, <em class="sig-param">int ilevel</em>, <em class="sig-param">int kalt</em>, <em class="sig-param">int icall</em>, <em class="sig-param">int lcall</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvaluateVectorWithThrottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates a maneuver alternative to move to the specified direction.</p>
+<ul class="simple">
+<li><p>direction  - Unit vector in the NED coordinate frame pointing in the desired direction of travel.</p></li>
+<li><p>maxGees  - Gs</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>throttle - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+<section id="brawler-methods">
+<h2><a class="toc-backref" href="#id3">Brawler Methods</a><a class="headerlink" href="#brawler-methods" title="Permalink to this headline">¶</a></h2>
+<p>These methods allow scripted modification of BRAWLER values from user input.</p>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.SetFlightAggressiveness">
+void SetFlightAggressiveness<span class="sig-paren">(</span><em class="sig-param">double aFactor</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.SetFlightAggressiveness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set aggressiveness factor for this aircraft’s flight (unitless). Corresponds to input <code class="docutils literal notranslate"><span class="pre">aggfac</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.SetCombatEffectiveness">
+void SetCombatEffectiveness<span class="sig-paren">(</span><em class="sig-param">double aEffect</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.SetCombatEffectiveness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set combat effectiveness value of the platform (unitless). Corresponds to input <code class="docutils literal notranslate"><span class="pre">cmbeff</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.SetForceRatio">
+void SetForceRatio<span class="sig-paren">(</span><em class="sig-param">double aRatio</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.SetForceRatio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the force ratio (unitless). Corresponds to input <code class="docutils literal notranslate"><span class="pre">fratio</span></code>.</p>
+</dd></dl>
+
+</section>
+<section id="mover-methods">
+<span id="bp-mover-methods"></span><h2><a class="toc-backref" href="#id4">Mover Methods</a><a class="headerlink" href="#mover-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.FlyRates">
+bool FlyRates<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> angularRates</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> axialAccelerations</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.FlyRates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flies the specified angular rates and axial accelerations.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>angularRates  - radians/sec</p></li>
+<li><p>axialAccelerations  - meters/sec^2.</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.FlyHeadingSpeedAltitude">
+bool FlyHeadingSpeedAltitude<span class="sig-paren">(</span><em class="sig-param">double heading</em>, <em class="sig-param">double speed</em>, <em class="sig-param">double altitude</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double maxClimbRate</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.FlyHeadingSpeedAltitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flies to the specified heading, speed, and altitude with maxGees and maxClimbRate limiting the maneuver.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>heading  - degrees</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>altitude  - meters</p></li>
+<li><p>maxGees  - Gs</p></li>
+<li><p>maxClimbRate  - meters/sec</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.PullGsInPlaneWithSpeed">
+bool PullGsInPlaneWithSpeed<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> turningPlane</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double speed</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.PullGsInPlaneWithSpeed" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.PullGsInPlaneWithThrottle">
+bool PullGsInPlaneWithThrottle<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> turningPlane</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double throttle</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.PullGsInPlaneWithThrottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pulls in the specified turning plane.  The brawler platform’s current location is a point on the plane and the supplied
+vector defines the surface of the plane.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>turningPlane  - direction vector in the NED coordinate frame</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>throttle  - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p></li>
+<li><p>maxGees  - Gs</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.FlyVectorWithSpeed">
+bool FlyVectorWithSpeed<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> velocity</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double speed</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.FlyVectorWithSpeed" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.FlyVectorWithThrottle">
+bool FlyVectorWithThrottle<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> velocity</em>, <em class="sig-param">double maxGees</em>, <em class="sig-param">double throttle</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.FlyVectorWithThrottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flies the desired velocity vector and speed while being limited by maxGees.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>velocity  -  ‘direction vector ‘ in the NED coordinate frame (typically normalized)</p></li>
+<li><p>speed  - meters/sec</p></li>
+<li><p>throttle  - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p></li>
+<li><p>maxGees  - Gs</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</section>
+<section id="aerodynamic-methods">
+<h2><a class="toc-backref" href="#id5">Aerodynamic Methods</a><a class="headerlink" href="#aerodynamic-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.MaxAvailableGs">
+double MaxAvailableGs<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.MaxAvailableGs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the maximum instantaneous (not sustainable) Gees the platform could pull at this very moment - meters/sec^2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.MaxSustainedGs">
+double MaxSustainedGs<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.MaxSustainedGs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the maximum sustainable Gees the platform could pull at this very moment - meters/sec^2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.MaxTacticalGs">
+double MaxTacticalGs<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.MaxTacticalGs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Gees that are tactically appropriate to pull at this moment, based on target range &amp;amp; position.  Will return either MaxSustainedGs() or MaxAvailableGs().  Meters/sec^2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.MaxForwardAccelWithGravity">
+double MaxForwardAccelWithGravity<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.MaxForwardAccelWithGravity" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.MinForwardAccelWithGravity">
+double MinForwardAccelWithGravity<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.MinForwardAccelWithGravity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the specified maximum or minimum acceleration possible (including the addition of gravity) given the current platform state and engine capability - meters/sec^2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.CorneringVelocity">
+double CorneringVelocity<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.CorneringVelocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the cornering velocity given the current platform state and engine capability - meters/sec.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Area">
+double Area<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the surface area (reference area) of the airframe (meters^2).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.DynamicPressure">
+double DynamicPressure<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.DynamicPressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current dynamic pressure (Pascals).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Mach">
+double Mach<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Mach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current mach.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Throttle">
+double Throttle<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Throttle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current throttle [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EmptyWeight">
+double EmptyWeight<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EmptyWeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the empty weight (Kilograms).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.FuelWeight">
+double FuelWeight<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.FuelWeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current fuel weight (Kilograms).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Weight">
+double Weight<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current total weight (Kilograms). This is equivalent to <a class="reference internal" href="#WsfBrawlerProcessor.EmptyWeight" title="WsfBrawlerProcessor.EmptyWeight"><span class="xref wsf wsf-method">EmptyWeight</span></a> + <a class="reference internal" href="#WsfBrawlerProcessor.FuelWeight" title="WsfBrawlerProcessor.FuelWeight"><span class="xref wsf wsf-method">FuelWeight</span></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Lift">
+double Lift<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Lift" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.Lift">
+double Lift<span class="sig-paren">(</span><em class="sig-param">double angleOfAttack</em>, <em class="sig-param">double speed</em>, <em class="sig-param">double altitude</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Lift" title="Permalink to this definition">¶</a></dt>
+<dd><p>The form without input arguments returns the current lift (Newtons).  Use the form with input arguments to query for hypothetical lift values.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>angleOfAttack - degrees</p></li>
+<li><p>speed - meters/sec</p></li>
+<li><p>altitude - meters</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Drag">
+double Drag<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Drag" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.Drag">
+double Drag<span class="sig-paren">(</span><em class="sig-param">double angleOfAttack</em>, <em class="sig-param">double speed</em>, <em class="sig-param">double altitude</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Drag" title="Permalink to this definition">¶</a></dt>
+<dd><p>The form without input arguments returns the current drag (Newtons).  Use the form with input arguments to query for hypothetical drag values.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>angleOfAttack - degrees</p></li>
+<li><p>speed - meters/sec</p></li>
+<li><p>altitude - meters</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Thrust">
+double Thrust<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Thrust" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.Thrust">
+double Thrust<span class="sig-paren">(</span><em class="sig-param">double throttle</em>, <em class="sig-param">double speed</em>, <em class="sig-param">double altitude</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Thrust" title="Permalink to this definition">¶</a></dt>
+<dd><p>The form without input arguments returns the current thrust (Newtons).  Use the form with input arguments to query for hypothetical thrust values.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>throttle - Query the lift using this throttle setting [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.</p></li>
+<li><p>speed - meters/sec</p></li>
+<li><p>altitude - meters</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</section>
+<section id="location-and-geometry-methods">
+<h2><a class="toc-backref" href="#id6">Location and Geometry Methods</a><a class="headerlink" href="#location-and-geometry-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.LocationNED">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> LocationNED<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.LocationNED" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.LocationNED">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> LocationNED<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsfplatform.html#WsfPlatform" title="WsfPlatform">WsfPlatform</a> aPlatform</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.LocationNED" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.LocationNED">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> LocationNED<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsftrack.html#WsfTrack" title="WsfTrack">WsfTrack</a> aTrack</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.LocationNED" title="Permalink to this definition">¶</a></dt>
+<dt id="WsfBrawlerProcessor.LocationNED">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> LocationNED<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsfgeopoint.html#WsfGeoPoint" title="WsfGeoPoint">WsfGeoPoint</a> aGeoPoint</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.LocationNED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the NED location (units of meters) of the provided object (yourself if none specified).  The NED location returned is relative to the internal BRAWLER point of reference; typically the reference point will be the location of first BRAWLER platform defined in the simulation.  The NED locations returned are only relevant to other NED locations returned from the methods in this section, as they all use the same reference point.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.ConvertNEDtoWind">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> ConvertNEDtoWind<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> ned</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.ConvertNEDtoWind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the wind coordinate frame vector of the provided NED location relative to the platform (meters).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.ConvertWindtoNED">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> ConvertWindtoNED<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> wind</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.ConvertWindtoNED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the NED coordinate frame vector of the provided wind vector relative to the platform (meters).</p>
+</dd></dl>
+
+</section>
+<section id="timing-and-event-methods">
+<h2><a class="toc-backref" href="#id7">Timing and Event Methods</a><a class="headerlink" href="#timing-and-event-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.ProjectedTimeDelta">
+double ProjectedTimeDelta<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.ProjectedTimeDelta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the time interval used to project forward our mental perception of ourselves &amp;amp; our threats when making choices between alternative.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.GetConsciousnessEventTime">
+double GetConsciousnessEventTime<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.GetConsciousnessEventTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the time remaining until the next consciousness event update.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.GetNextConsciousnessEventTime">
+double GetNextConsciousnessEventTime<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.GetNextConsciousnessEventTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the simulation time of the next consciousness event update.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.ScheduleConsciousnessEvent">
+double ScheduleConsciousnessEvent<span class="sig-paren">(</span><em class="sig-param">double simTime</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.ScheduleConsciousnessEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forces a consciousness event to occur at the provided simulation time.</p>
+</dd></dl>
+
+</section>
+<section id="utility-methods">
+<h2><a class="toc-backref" href="#id8">Utility Methods</a><a class="headerlink" href="#utility-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.AimPoint">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> AimPoint<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> position</em>, <em class="sig-param">double speed</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> targetPosition</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> targetVelocityDirection</em>, <em class="sig-param">double targetSpeed</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.AimPoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the position vector of the calculated aim point or (0,0,0) if no intercept solution exists.  Units of input parameters do not matter as long as they are all consistent.
+Recommended use would be MKS units.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>position - Position of the attacker.</p></li>
+<li><p>speed - Speed of the attacker.</p></li>
+<li><p>targetPosition - Position of the target.</p></li>
+<li><p>targetVelocityDirection - Unit vector of the target’s direction of travel.</p></li>
+<li><p>targetSpeed - Speed of the target.</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.Intercept">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> Intercept<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> position</em>, <em class="sig-param">double speed</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> targetPosition</em>, <em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> targetVelocity</em>, <em class="sig-param">double cosMaxLOS</em>, <em class="sig-param">double desiredLOSAngle</em>, <em class="sig-param">double desiredAltitude</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.Intercept" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the direction and necessary speed the attacker should use to reach an interception point.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>position - Position of the attacker (meters).</p></li>
+<li><p>speed - Speed of the attacker (meters/sec).</p></li>
+<li><p>targetPosition - Position of the target (meters).</p></li>
+<li><p>targetVelocity - Target’s speed and direction of travel (meters/sec).</p></li>
+<li><p>cosMaxLOS - Cosine of max LOS to the target.</p></li>
+<li><p>desiredLOSAngle - Desired LOS angle to the intercept point (radians).</p></li>
+<li><p>desiredAltitude - Desired altitude until 30 degree elevation angle exceeded.</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.OffBoresightAngle">
+double OffBoresightAngle<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsfplatform.html#WsfPlatform" title="WsfPlatform">WsfPlatform</a> platform</em>, <em class="sig-param"><a class="reference internal" href="wsfplatform.html#WsfPlatform" title="WsfPlatform">WsfPlatform</a> target</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.OffBoresightAngle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the off-boresight angle (radians) between the platform and the target.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.SlowFlight">
+bool SlowFlight<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.SlowFlight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if platform is in slow-flight conditions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.EvasionDirection">
+<a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> EvasionDirection<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.EvasionDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the evasion direction computed by the brawler evaluation logic for the evasion maneuver value component.  This
+method is used by the evasion alternative.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.SuggestVectoredFlight">
+void SuggestVectoredFlight<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="vec3.html#Vec3" title="Vec3">Vec3</a> direction</em>, <em class="sig-param">double value</em>, <em class="sig-param">double speed</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.SuggestVectoredFlight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Suggests a vectored flight.  This method is used by flight and/or pilot posture decision levels.  Not currently used by
+1v1 WVR-only BRAWLER AFSIM agent.</p>
+</dd></dl>
+
+</section>
+<section id="subsystem-methods">
+<h2><a class="toc-backref" href="#id9">Subsystem Methods</a><a class="headerlink" href="#subsystem-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfBrawlerProcessor.QuantumTaskerProcessor">
+<a class="reference internal" href="wsfquantumtaskerprocessor.html#WsfQuantumTaskerProcessor" title="WsfQuantumTaskerProcessor">WsfQuantumTaskerProcessor</a> QuantumTaskerProcessor<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.QuantumTaskerProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the default quantum tasker processor being used by the BRAWLER platform.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfBrawlerProcessor.ThreatProcessor">
+<a class="reference internal" href="wsfthreatprocessor.html#WsfThreatProcessor" title="WsfThreatProcessor">WsfThreatProcessor</a> ThreatProcessor<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfBrawlerProcessor.ThreatProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the default threat processor being used by the BRAWLER platform.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/script/wsfbrawlerprocessor.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfchaffweapon.html" title="WsfChaffWeapon"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsfbrawlermover.html" title="WsfBrawlerMover"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

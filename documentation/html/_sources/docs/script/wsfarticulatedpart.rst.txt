@@ -1,0 +1,252 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfArticulatedPart
+------------------
+
+.. class:: WsfArticulatedPart inherits WsfPlatformPart
+
+WsfArticulatedPart is the base class for physical parts on a platform such as sensors and comm devices. It
+encapsulates the ability of the part to articulate with respect to the platform.
+
+General Methods
+===============
+
+.. method:: double Pitch()
+
+   Returns the pitch angle in degrees.
+
+.. method:: void SetPitch(double aPitch)
+
+   Sets the pitch to the angle provided in degrees.
+
+.. method:: double Roll()
+
+   Returns the roll angle in degrees.
+
+.. method:: void SetRoll(double aRoll)
+
+   Sets the roll to the angle provided in degrees.
+
+.. method:: double Yaw()
+
+   Returns the yaw angle in degrees.
+
+.. method:: void SetYaw(double aYaw)
+
+   Sets the yaw to the angle provided in degrees.
+
+.. method:: Vec3 Location()
+
+   Returns the location of the part in the :ref:`ECS` coordinate system.
+
+.. method:: double X()
+            double Y()
+            double Z()
+            double DX()
+            double DY()
+            double DZ()
+
+   Returns the X, Y, Z position and DX, DY, DZ velocity relative to the host platform.  **This is used primarily for
+   visualization only**.
+
+.. method:: void SetXYZ(double aX, double aY, double aZ)
+            void SetDXYZ(double aDeltaX, double aDeltaY, double aDeltaZ)
+
+   Sets the articulated part's position or velocity relative to the host platform (meters).  **This is used primarily for
+   visualization only**.
+
+.. method:: bool CanSlewInAzimuth()
+            bool CanSlewInElevation()
+
+   Indicates if the device can 'slew' in the selected direction, as defined by the :command:`_.articulated_part.slew_mode`.
+
+.. method:: double SlewMinimumAzimuth()
+            double SlewMaximumAzimuth()
+            double SlewMinimumElevation()
+            double SlewMaximumElevation()
+
+   Returns the requested slew angle limit (in degrees) as defined by the :command:`_.articulated_part.azimuth_slew_limits` and :command:`_.articulated_part.elevation_slew_limits`.
+
+.. method:: bool CanCueInAzimuth()
+            bool CanCueInElevation()
+
+   Indicates if the device can cue in the selected direction.
+
+   .. note::
+
+      The slew limits and cue limits of a device are the same if the device does not support
+      mode-specific cue limits (e.g., sensors).
+
+
+.. method:: double CueMinimumAzimuth()
+            double CueMaximumAzimuth()
+            double CueMinimumElevation()
+            double CueMaximumElevation()
+
+   Returns the indicated cue angle limit (in degrees).
+
+   .. note::
+
+      The slew limits and cue limits of a device are the same if the device does not support
+      mode-specific cue limits (e.g., sensors).
+
+
+.. method:: string MaskingPatternState()
+
+   Returns the current masking pattern state of the articulated platform part.
+
+.. method:: void SetMaskingPatternState(string aState)
+
+   Sets the articulated platform part's masking pattern state to the given state.
+
+Relative Geometry Methods
+=========================
+
+.. method:: WsfGeoPoint ApparentLocationOf(WsfGeoPoint aTrueLocation, double aEarthRadiusScaleFactor)
+
+   This method is used to compute the 'apparent' location of an object (i.e., the perceived location of an object which
+   accounts for atmospheric refraction).  The apparent location may be needed to properly cue sensors which have very
+   narrow beams.
+
+   Example::
+
+    WsfSensor sensor = PLATFORM.Sensor("thisSensor");
+    sensor.CueToPoint(sensor.ApparentLocationOf(TRACK.CurrentLocation(), 1.333333));
+
+   The value '1.333333' is the typical value for a radar.
+
+.. method:: double RelativeAzimuthOf(WsfGeoPoint aPoint)
+            double RelativeElevationOf(WsfGeoPoint aPoint)
+
+   Return the azimuth or elevation angle of the supplied point with respect to the **current** orientation of the
+   articulated part. If a cue is active then the return value will be with respect to the cued orientation of the part,
+   otherwise it will be with respect to the uncued orientation.
+
+   The returned azimuth angle will be in the range of +/- 180 degrees, with positive values going to the right. The
+   returned elevation angle will be in the range of +/- 90 degrees, with positive values going up.
+
+.. method:: Vec3 ConvertPCSVectorToWCS(Vec3 aPCS_Vector)
+
+   Given a vector in the Part Coordinate System (:ref:`PCS <PCS>`), convert that vector to the World Coordinate System (:ref:`WCS <WCS>`).
+
+.. method:: Vec3 ConvertWCSVectorToPCS(Vec3 aWCS_Vector)
+
+   Given a vector in the World Coordinate System (:ref:`WCS <WCS>`), convert that vector to the Part Coordinate System (:ref:`PCS <PCS>`).
+
+.. method:: Vec3 ConvertPCSVectorToECS(Vec3 aPCS_Vector)
+
+   Given a vector in the Part Coordinate System (:ref:`PCS <PCS>`), convert that vector to the Entity Coordinate System (:ref:`ECS`).
+
+.. method:: Vec3 ConvertECSVectorToPCS(Vec3 aWCS_Vector)
+
+   Given a vector in the Entity Coordinate System (:ref:`ECS`), convert that vector to the Part Coordinate System (:ref:`PCS <PCS>`).
+
+Cueing Methods
+==============
+
+.. method:: bool CueToLLA(double aLat, double aLon, double aAlt)
+
+   Sets the cued location to the provided latitude, longitude, and altitude (degrees, degrees, meters).  Returns true if the requested cue is within the part limits.
+
+.. method:: bool CueToWCS(double aX, double aY, double aZ)
+            bool CueToWCS(Vec3 aLocationWCS)
+
+   Set the cued location to the provided WCS location x, y, and z (meters, meters, meters).  Returns true if the requested cue is within the part limits.
+
+.. method:: bool CueToPoint(WsfGeoPoint aPoint)
+
+   Sets the cued location the location defined by the provided point.  Returns true if the requested cue is within the part limits.
+
+.. method:: bool CueToTrack(WsfTrack aTrack)
+
+   Sets the cued location to the location defined by the provided track.  Returns true if the requested cue is within the part limits.
+
+.. method:: bool CueToAbsoluteAzEl(double aAz, double aEl)
+
+   Cues to the part specified azimuth and elevation **relative to the horizontal plane (no pitch or roll) of the host
+   platform**. The angles must be provided in degrees.  Returns true if the requested cue is within the part limits.
+
+   .. note::
+
+      The supplied angles are converted to part-relative angles at the time of the call.
+
+
+.. method:: bool CueToRelativeAzEl(double aAz, double aEl)
+            bool CueToAzEl(double aAz, double aEl)
+
+   Cues the part to the specified azimuth and elevation **relative to the uncued orientation of the part**. The must be
+   provided in degrees.  Returns true if the requested cue is within the part limits.
+
+.. method:: void ClearCueing()
+
+   Clear the current cue.
+
+.. method:: bool IsCued()
+
+   Returns true if a cue is active.
+
+.. method:: bool IsSlewing()
+
+   Returns true if the part is currently slewing to a cue.
+
+.. method:: double TimeToCueToLLA(double aLatitude, double aLongitude, double aAltitude)
+            double TimeToCueToWCS(double aX, double aY, double aZ)
+            double TimeToCueToWCS(Vec3 aLocationWCS)
+            double TimeToCueToPoint(WsfGeoPoint aPoint)
+            double TimeToCueToTrack(WsfTrack aTrack)
+            double TimeToCueToAbsoluteAzEl(double aAbsoluteAzimuth, double aAbsoluteElevation)
+            double TimeToCueToRelativeAzEl(double aRelativeAzimuth, double aRelativeElevation)
+            double TimeToCueToAzEl(double aRelativeAzimuth, double aRelativeElevation)
+
+   Returns the amount of time in seconds it takes for the part to orient in azimuth and elevation to the given location. Must have an :command:`_.articulated_part.azimuth_slew_rate` and/or :command:`_.articulated_part.elevation_slew_rate` defined, otherwise the rate is instantaneous. For sensors, if the :command:`sensor_mode.azimuth_cue_rate` and/or the :command:`sensor_mode.elevation_cue_rate` are defined then the minimum azimuth rate and minimum elevation rate will be used in the calculation.
+
+   .. note:: If the given location is outside of the slew limits, -1 is returned.
+
+.. method:: double ActualCuedAzimuth()
+            double ActualCuedElevation()
+
+   Returns azimuth or elevation angle of the cue with respect to the uncued orientation of the part. If a cue is
+   not active then zero will be returned.
+
+   .. note::
+
+      If the current cue is outside the slew/cue limits, the angles will be clipped to the current limits.
+
+   .. note::
+
+      Values returned from these methods differ from :method:`WsfArticulatedPart.CurrentCuedAzimuth` and :method:`WsfArticulatedPart.CurrentCuedElevation` while
+      the articulated part is in the process of slewing to a cue.
+
+.. method:: double CurrentCuedAzimuth()
+            double CurrentCuedElevation()
+
+   Returns the current azimuth or elevation angle of the part with respect to its uncued orientation. If a cue is
+   not active then zero will be returned.
+
+   The returned azimuth angle will be in the range of -/- 180 degrees, with positive values going to the right. The
+   returned elevation angle will be in the range of +/- 90 degrees, with positive values going up.
+
+   .. note::
+
+      If the current cue is outside the slew/cue limits, the angles will be clipped to the current limits.
+
+
+Articulation Update Control
+===========================
+
+.. method:: void EnableArticulationUpdates(double aInterval)
+
+   Enables articulation update events. This schedules an event that will update the part's articulation state at the specified interval (in seconds).
+
+.. method:: void DisableArticulationUpdates()
+
+   Cancels the articulation update event.

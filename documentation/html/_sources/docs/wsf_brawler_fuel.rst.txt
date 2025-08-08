@@ -1,0 +1,53 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_BRAWLER_FUEL
+----------------
+
+.. model:: fuel WSF_BRAWLER_FUEL
+   
+.. parsed-literal::
+
+   fuel <name> :model:`WSF_BRAWLER_FUEL`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`common fuel commands <Fuel.Commands>` ...
+      aero_file ...
+      initial_quantity_ratio ...
+   end_fuel
+
+:ref:`Fuel.Commands`
+
+Overview
+========
+
+:model:`WSF_BRAWLER_FUEL` implements a fuel object that consumes fuel at a rate determined by parameters in the brawler aero_file. 
+Note that the aero file must be defined for this fuel type to function. See :class:`WsfFuel` for script methods.
+
+WSF_BRAWLER_FUEL requires speed, altitude, and a throttle position to calculate fuel consumption rate. It queries platform for its
+speed and altitude, and it queries the mover on the platform for a throttle position. By default, WsfMover's GetThrottlePosition() 
+function will return a 1.0, indicating military power. Movers are responsible for implementing the virtual function GetThrottlePosition() 
+to return more accurate throttle values. As of this time, the movers that further specify this function are WsfAirMover and WsfBrawlerMover.
+
+Commands
+========
+
+In addition to all of the standard :command:`fuel` commands, :model:`WSF_BRAWLER_FUEL` adds the following:
+
+.. command:: aero_file <file-absolute-path>
+   
+   Defines the absolute path for the brawler aero file that will determine the fuel flow rate. Fuel flow rate 
+   is calculated based on the platform's defined performance at different mach and altitude values. 
+
+   As an example of an aero_file for a fake, unclassified aircraft, reference ACFT_BAC1.FXW.
+
+.. command:: initial_quantity_ratio <real>
+
+   Specifies the initial quantity of fuel as a ratio of the maximum fuel capacity defined in the aero_file_ configuration.

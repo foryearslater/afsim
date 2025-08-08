@@ -1,0 +1,158 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+aux_data
+--------
+
+.. block:: _
+
+.. command:: aux_data ... end_aux_data
+   :block:
+
+.. parsed-literal::
+
+   aux_data_
+      bool <name> = <boolean-value>
+      int <name> = <integer>
+      double <name> = <real>
+      string <name> = <string>
+      unitary <name> = <unitary-value>
+      <struct-type> <name>
+      <registered-type> <name>
+   end_aux_data
+
+Overview
+========
+
+aux_data provides a mechanism to attach application-specific data to :command:`track`, :command:`platform`, :command:`comm`,
+:command:`sensor`, :command:`_.transmitter` and :command:`_.receiver` objects. The data can be manipulated using script methods or
+from application-specific code.
+
+Simple Attributes
+=================
+
+The simple attribute types, bool, int, double, and string, correspond with their C-code equivalents.  The unitary type
+allows users to specify a double value using units.  An example of an aux_data definition with only simple data types
+is the following:
+
+.. parsed-literal::
+
+   aux_data_
+      bool    IS_DETECTED          = false
+      string  FAC_RESPONSE         = "FLY_ROUTE"
+   end_aux_data
+
+Initial values may be provided as shown in the example above.  If initial values are omitted they are assigned default
+values as follows::
+
+ bool    : false
+ int     : 0
+ double  : 0.0
+ string  : ""
+
+Unitary Types
+=============
+
+A unitary type represents a variable with WSF standard units.  In order to provide a unitary
+declaration within an aux_data block, one must provide the unit type as well as an initial value.  An example of a
+unitary declaration is the following:
+
+ unitary TIME_DETECTED = 1.0 seconds
+
+Including this declaration in the above example yields the following:
+
+.. parsed-literal::
+
+   aux_data_
+      bool    IS_DETECTED    = false
+      unitary TIME_DETECTED  = 1.0 seconds
+      string  FAC_RESPONSE   = "FLY_ROUTE"
+   end_aux_data
+
+Structures
+==========
+
+Structures are used to group associated variables together, these are defined in aux data using the 
+``struct`` keyword; for example::
+
+ struct TARGET_INFO_TYPE
+    string NATIONALITY = "USA"
+    int    TAIL_NUMBER = 4321
+    string ENGINE_TYPE = "GE-111"
+ end_struct
+ 
+.. note::
+   These structures are intended as a method to provide additional data to scenarios in an unobtrusive 
+   way that can be accessed/modified from the codebase, especially in terms of usage for external plugins and extensions.
+   These structures are fundamentally different than :class:`script_struct`, therefore a :class:`script_struct`
+   is not available to be used in aux_data. 
+
+Structures declared in aux data are not accessible in script, though the struct members may be accessible, for example:
+
+.. parsed-literal::
+
+   aux_data_
+      struct example
+         int x = 3
+      end_struct
+   end_aux_data
+   execute at_time 1 sec absolute
+      int y = PLATFORM.AuxDataInt("x");
+      writeln(y); // output is "3"
+   end_execute
+
+.. note::
+   Structures may be nested inside other structures, but those nested structures' members can not be accessed in script.
+
+These user-defined structures are placed in aux data definitions along with simple attributes as follows:
+
+.. parsed-literal::
+
+   aux_data_
+      bool              IS_DETECTED       = false
+      unitary           TIME_DETECTED     = 1.0 seconds
+      string            FAC_RESPONSE      = "FLY_ROUTE"
+      TARGET_INFO_TYPE  TARGET_INFO
+   end_aux_data
+   
+.. note::
+   Structures must be a Registered Type in order to be used as a type in aux data, see below.
+
+Registered Types
+================
+
+Registered types (formerly, Complex types) are classes and structures already defined in code.  One must register a
+registered type in code, with the C++ statement ``UtAttributeBase::RegisterPrototype``, before it may be used in an
+aux_data definition.  For example, in order to use the WSF C++ class, ``WsfCategoryList``, as a registered type in an
+aux_data declaration, one must first register this type, in code, as follows::
+
+ // Option 1:
+ UtAttributeBase::RegisterPrototype("WSF_CATEGORY_LIST",
+                                    ut::make_unique<UtAttribute<WsfCategoryList>>());
+ // Option 2:
+ UtAttribute<WsfCategoryList>::RegisterPrototype("WSF_CATEGORY_LIST");
+
+Adding an attribute of this type to the above aux_data declaration results in the following:
+
+.. parsed-literal::
+
+   aux_data_
+      bool              IS_DETECTED       = false
+      unitary           TIME_DETECTED     = 1.0 seconds
+      string            FAC_RESPONSE      = "FLY_ROUTE"
+      TARGET_INFO_TYPE  TARGET_INFO
+      WSF_CATEGORY_LIST SENSOR_CATEGORIES
+   end_aux_data
+
+.. note::
+
+   There is no initial value for registered types.  The objects' constructors will perform the necessary
+   initialization.

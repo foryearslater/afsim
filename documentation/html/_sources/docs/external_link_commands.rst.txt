@@ -1,0 +1,68 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _External_Link_Commands:
+
+External Link Commands
+----------------------
+
+.. block:: _.External_Link_Commands
+
+Overview
+========
+
+External Link Commands are available on platform parts which have chosen to use the WSF external link capabilities. The external link capability provides the facility to route messages to off-board destinations.  These can utilize commander/subordinate/peer relationships, through the use of :command:`platform.command_chain`, via defining and joining comm :command:`groups<group>`, or direct addressing.
+
+Commands
+========
+
+.. command:: report_to [ commander | peers | subordinates ] via <xmtr-name> [ to <rcvr-name> ]
+.. command:: external_link [ commander | peers | subordinates ] via <xmtr-name> [ to <rcvr-name> ]
+
+   Specifies the intended recipients of the message on the default :command:`platform.command_chain`. This command may be specified multiple times to cause the message to be routed to multiple sets of recipients.
+
+   * **<xmtr-name>** is the name of a :command:`comm` device on the platform which has transmit capabilities. This argument is mandatory, as a comm must exist and cannot be ambiguous.
+
+   * **<rcvr-name>** is the name of a :command:`comm` device on the recipient platform that has reception capabilities. If not specified, it is assumed the target receiving comm has the same name as that provided for **<xmtr-name>**.
+
+.. command:: report_to command_chain <cmd-chain-name> [ commander | peers | subordinates ] via <xmtr-name> [ to <rcvr-name> ]
+.. command:: external_link command_chain <cmd-chain-name> [ commander | peers | subordinates ] via <xmtr-name> [ to <rcvr-name> ]
+
+   This is just like the earlier version except that it applies to the specified :command:`platform.command_chain` rather than the default command chain.
+
+.. command:: report_to platform <platform-name> comm <comm-name> via <xmtr-name>
+.. command:: external_link platform <platform-name> comm <comm-name> via <xmtr-name>
+
+   Specifies a unique platform and comm object as recipient using their respective names. Like all external link commands, this command may be used multiple times.
+
+.. command:: report_to address <address> via <xmtr-name>
+.. command:: external_link address <address> via <xmtr-name>
+
+   Specifies a recipient by an assigned address. Every comm object in AFSIM is assigned an address, either dynamically or by user input. If such an address is specified by user input, it may be used in this context to identify the recipient of external linkage.
+
+   In addition to the mundane use case above, supplied addresses may be broadcast or multicast addresses. Assuming the transmitting and receiving comms have these capabilities, any message sent via external linkage will use these methods of transmission instead of a standard unicast transmission. This also allows the support and usage of special addressing schemas with external links. Any properly defined extension of the AFSIM comm framework (via protocol usage and reserved addressing) can be used in this manner.
+
+.. command:: report_to_group <group-name>  via <xmtr-name>
+
+   Specifies that the :command:`comm` object members of the given :command:`group` name are intended recipients of messages sent by this device.  This command may be specified multiple times to cause the message to be routed to multiple groups.
+
+   * **<xmtr-name>** is the name of a :command:`comm` device on the platform which has transmit capabilities. This argument is mandatory, as a comm must exist and cannot be ambiguous. The comm name of the receiving device must be the same as this in the current implementation.
+
+   .. note::
+      Platforms and non-comm platform parts may be members of groups, however, the report_to_group command will silently ignore any members that are not comms.
+
+.. command:: clear_external_links
+
+   Remove all of the currently defined external links defined by the external_link_ or report_to_ commands. This is useful if one wants to reuse an existing platform definition with some modifications.
+
+.. command:: debug_external_links
+
+   Enables various messages related to internal processing of external links. This command should precede any other external link commands to ensure all debug output is emitted for parsed input commands.

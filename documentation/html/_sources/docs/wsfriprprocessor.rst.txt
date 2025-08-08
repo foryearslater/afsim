@@ -1,0 +1,343 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfRIPRProcessor
+----------------
+
+.. class:: WsfRIPRProcessor inherits WsfProcessor
+
+Job Board Management
+====================
+
+Bidding
+^^^^^^^
+
+.. method:: void ClearBidsFor(WsfRIPRProcessor aProc)
+            void ClearBidsFor(WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Clears all bids from aProc for the jobs on the job board.  If aChannelIndex is specified (for multichannel agents) the
+   job bids for that channel are cleared.
+
+.. method:: double QueryBid(WsfRIPRJob aJob)
+   
+   Returns the highest bid of all subordinates. If aExpandPassThroughs is set to **true** it will also include
+   subordinates of subordinates in a recursive manner. aExpandPassThroughs is **true** by default. This call will execute
+   the :command:`query_bid <WSF_RIPR_PROCESSOR.query_bid>` script block on the calling processor.
+
+.. method:: double QuerySubordinatesMaxBid(WsfRIPRJob aJob)
+            double QuerySubordinatesMaxBid(WsfRIPRJob aJob, bool aExpandPassThroughs)
+   
+   Returns the highest bid of all subordinates. If aExpandPassThroughs is set to **true** it will also include
+   subordinates of subordinates in a recursive manner. aExpandPassThroughs is **true** by default. This call will execute
+   any :command:`query_bid <WSF_RIPR_PROCESSOR.query_bid>` script blocks on subordinate processors.
+
+Channels
+^^^^^^^^
+
+.. method:: Array<string> ChannelJobTypes(int aChannelIndex)
+   
+   Returns an array of all the job types (job names) that can use the channel indicated by aChannelIndex as specified by
+   the :command:`channel_job_type <WSF_RIPR_PROCESSOR.channel_job_type>` input command.  If the returned array is empty, then all
+   job types can use the indicated channel.
+
+.. method:: Array<int> JobTypeChannels(string aJobType)
+   
+   Returns an array of all the channels that aJobType (job name, also called job type) is allowed to use as specified by
+   the :command:`channel_job_type <WSF_RIPR_PROCESSOR.channel_job_type>` input command.  If the returned array is empty, then the
+   job type can use all channels on the agent processor.
+
+.. method:: int NumJobChannels()
+   
+   Returns the number of job channels (for multichannel agents).  An agent can make bids for jobs for each of its channels
+   and win bids for each of those channels separately.  If the agent didn't have "num_job_channels X" specified in its
+   RIPR processor script input block, then it is not a multichannel agent and this method will return 1, the default.
+
+.. method:: void SetNumJobChannels(int aNumChannels)
+   
+   Sets the number of job channels on an agent from script, during run-time.  This overrides whatever the script input
+   "num_job_channels X" specified in its RIPR processor script input block.
+
+Job Board
+^^^^^^^^^
+
+.. method:: bool IsBidWindowOpen()
+   
+   Returns true if the job board bid window is open and false otherwise.  The job board will only accept bids if the
+   window is open.
+
+.. method:: bool IsJobWindowOpen()
+   
+   Returns true if the job board job window is open and false otherwise.  The job board will only assign jobs if the
+   window is open.
+
+.. method:: int JobAllocationMode()
+   
+   Returns a numeric value that identifies the allocation mode being used by the agent's job board.
+
+   * 0 == Spread
+
+      * Default -- The job board attempts to find a maximum profit matching between subordinates and jobs.  If there are more jobs (or job slots, for jobs that can accept multiple winners) than there are subordinates (or bid channels among all subordinates) then some subordinates (or bid channels) will be left idle.
+
+   * 1 == Greedy
+
+      * Every subordinate is given the job he bids highest on with the highest priority, without regard for the maximum number of winners that the job allows.  Every subordinate will get a job. (Disregards Job Stickiness value)
+
+   * 2 == CoverThenGreedy
+
+      * Like spread, but remaining unassigned subordinates will be given the job they bid highest on with the highest priority, even if that results in the job having more winners that the maximum specified.  This mode may be preferable to Spread if you don't want to hold subordinates in reserve and don't mind some jobs being over-performed.
+
+   * 3 == CoverThenSpread
+
+      * Like spread, but remaining unassigned subordinates will be spread out over the pool of jobs with no job getting two extra winners before all jobs have one extra winner.  This mode may be preferable to Spread if you don't want to hold subordinates in reserve and don't mind some jobs being over-performed.
+
+   * 4 == StrictPriority
+
+      * Awards the highest priority job to the highest bidder regardless of the bidder's highest overall bid or the total profit of the system.
+
+.. method:: bool JobPassThrough()
+   
+   Returns whether or not the processor has been designated as a pass-through processor. If **true**, the RIPR processor
+   will pass any jobs down to subordinate RIPR processors and any bids up to its commander processor and will not process
+   them.
+
+.. method:: void SetBidWindowOpen(bool aOpen)
+   
+   Sets the state of the job board bid window.  The job board will only accept bids if the window is open.
+
+.. method:: void SetJobAllocationMode(int aMode)
+   
+   Sets the job allocation mode of the agent's job board to aMode.
+
+.. method:: void SetJobPassThrough(bool aPassThrough)
+   
+   Sets the pass-through flag on the processor. If **true**, the RIPR processor will pass any jobs down to subordinate
+   RIPR processors and any bids up to its commander processor and will not process them.
+
+.. method:: void SetJobStickiness(double aScaleFactor)
+   
+   Sets the job stickiness on the agent's job board.  Job stickiness is simply a scale value that is multiplied onto an
+   agent's bid for a job if he is currently a winner for that job.  It is very common for a scenario to set the stickiness
+   of all agents down to 1.0 so that bids can be tightly controlled by agent script.  The default value of stickiness
+   increases an agents bid on a job by 50% if he is currently the winner for that job.
+   
+   Default: 1.5
+
+.. method:: void SetJobWindowOpen(bool aOpen)
+   
+   Sets the state of the job board job window.  The job board will only assign jobs if the window is open.
+
+Jobs
+^^^^
+
+.. method:: void AddJob(WsfRIPRJob aJob)
+   
+   Adds aJob to the agent's job board.
+
+   .. parsed-literal::
+
+      // Create a job with various parameters
+      :class:`WsfRIPRJob` newJob = :class:`WsfRIPRJob`.Create(PROCESSOR, newJobName, newJobDescription, newJobPriority, newJobMaxWinners);
+   
+      // add newJob to my job board
+      AddJob(newJob);
+
+.. method:: int DeleteCompletedJobs()
+   
+   Deletes completed jobs from the agent's job board and returns the number of jobs deleted.
+
+.. method:: WsfRIPRJob GetJobByData(string aDataKey, Object aDataValue)
+   
+   Returns the job with data matching the (aDataKey, aDataValue) key/value pair.
+    
+   .. parsed-literal::
+
+      :class:`WsfRIPRJob` tempJob = CommanderProcessor().GetJobByData(dataKey, dataValue);
+
+.. method:: WsfRIPRJob GetJobById(int aID)
+   
+   Returns the job with the ID number aID.
+
+.. method:: WsfRIPRJob JobFor(WsfRIPRProcessor aProc)
+            WsfRIPRJob JobFor(WsfRIPRProcessor aProc, int aChannelIndex)
+            WsfRIPRJob JobFor(double aSimTime, WsfRIPRProcessor aProc)
+            WsfRIPRJob JobFor(double aSimTime, WsfRIPRProcessor aProc, int aChannelIndex)
+   
+   Returns the job won by aProc, if any.  If aChannelIndex is specified (for multichannel agents) the job for that channel
+   is returned, if any. Often used like:
+
+   .. parsed-literal::
+
+      :class:`WsfRIPRJob` mCurrentJob = CommanderProcessor().JobFor(TIME_NOW, PROCESSOR);
+
+.. method:: Array<WsfRIPRJob> Jobs()
+   
+   Returns an array of all the jobs on the agent's job board.  Often used by an agent to get the jobs from his commander's
+   job board, like so:
+
+   .. parsed-literal::
+
+      // get all jobs from my commander's job board
+      Array<:class:`WsfRIPRJob`> jobs = CommanderProcessor().Jobs();
+
+.. method:: int PurgeDeadTakers()
+   
+   Remove from all jobs any bidders who are no longer present in the simulation.
+
+.. method:: void RemoveAllJobs()
+   
+   Removes all jobs from the agent's job board.
+
+.. method:: void RemoveJob(WsfRIPRJob aJob)
+   
+   Removes aJob from the agent's job board.
+
+Other
+=====
+
+.. method:: WsfPlatform CommanderPlatform()
+            WsfPlatform CommanderPlatform(string aCommandChainName)
+   
+   Returns the WsfPlatform for the current processor's commander on the default command chain, or aCommandChainName if
+   specified.
+
+.. method:: WsfRIPRProcessor CommanderProcessor()
+            WsfRIPRProcessor CommanderProcessor(string aCommandChainName)
+   
+   Returns the :class:`WsfRIPRProcessor` for the current processor's commander on the default command chain, or
+   aCommandChainName if specified.
+
+   ::
+
+    // get number of peers targeting this track
+    int targeting = CommanderProcessor().SubsTargeting(targetTrack);
+
+.. method:: Array<WsfPlatform> SubordinatePlatforms()
+            Array<WsfPlatform> SubordinatePlatforms(string aCommandChainName)
+   
+   Returns a list of platforms that are subordinates of the calling platform on the default command chain, or
+   aCommandChainName if specified.
+
+.. method:: Array<WsfRIPRProcessor> SubordinateProcessors()
+            Array<WsfRIPRProcessor> SubordinateProcessors(string aCommandChainName)
+   
+   Returns a list of processors that are subordinates of the calling processor on the default command chain, or
+   aCommandChainName if specified.
+
+.. method:: double WallClockTime()
+   
+   Returns the current system time.
+
+
+Target Management
+=================
+
+.. method:: bool ClearTarget()
+   
+   Clears the current target of the RIPR processor.
+
+.. method:: bool SetTarget(string aTargetName)
+            bool SetTarget(WsfPlatform aTargetPlatform)
+            bool SetTarget(WsfTrack aTargetTrack)
+   
+   Sets the RIPR processor's current target by name, platform, or track.  Returns *true* on success.
+
+.. method:: WsfTrack Target()
+            WsfTrack TargetTrack()
+   
+   Returns the local track of the RIPR processor's current target.
+
+.. method:: string TargetName()
+   
+   Returns the name of the RIPR processor's current target.
+
+.. method:: WsfPlatform TargetPlatform()
+   
+   Returns the platform script object for the RIPR processor's current target.
+
+Weapon Management
+=================
+
+.. method:: WsfPlatform ActiveWeaponPlatform(int aIndex)
+   
+   Returns the platform of the active weapon from this RIPR processor, at the given index.
+
+.. method:: int PeersTargeting(WsfTrack aTarget)
+   
+   Returns the number of peers who have the given target as their current target.
+
+.. method:: int PeersWeaponsActive(WsfTrack aTarget)
+   
+   Returns the number of active weapons against the given target that originated from (or are being supported) by this
+   RIPR processor and its peers.
+
+.. method:: int SubsTargeting(WsfTrack aTarget)
+            int SubsTargeting(WsfTrack aTarget, WsfPlatform aExcludePlatform)
+   
+   Returns the number of subordinates who have the given target track as their current target.  If aExcludePlatform is
+   given, then this platform is excluded from the count of subordinates who might be targeting the track.
+
+.. method:: int SubsWeaponsActive(WsfTrack aTarget)
+            int SubsWeaponsActive(WsfTrack aTarget, WsfPlatform excludeSub)
+   
+   Returns the number of active weapons against the given target that originated from (or are being supported) by this
+   RIPR processor's subordinates.  The second form of this method allows you to specify a subordinate platform to exclude
+   from the count.
+
+.. method:: int WeaponsActive()
+            int WeaponsActive(WsfTrack aTarget)
+   
+   The first form returns the total number of weapons active from this RIPR processor.  The second form returns the number
+   of weapons active against the given target track.
+
+.. method:: int WeaponsActiveOfType(WsfWeapon aWeapon)
+   
+   Returns the number of weapons of the given type that are active from this RIPR processor.
+
+.. method:: int WeaponsIncoming(Array<WsfPlatform> threatArray)
+   
+   Returns the number of incoming weapons or detected objects (could be regular planes that are moving fast enough) that
+   have been deemed "threatening" by a :model:`WSF_THREAT_PROCESSOR` on the platform.  The *threatArray* parameter is filled
+   with the platforms of all the threats.
+
+Weapon Uplink Management
+========================
+
+.. method:: bool IsUplinkingTo(WsfPlatform weaponPlatform)
+   
+   Queries whether or not the RIPR processor has an active uplink to the given weapon platform.  Does not check if the
+   comm is successful or if the weapon is even alive.  It simply checks if the RIPR processor thinks it has an uplink.
+
+.. method:: bool StartUplinking(WsfPlatform weaponPlatform)
+            bool StartUplinking(WsfPlatform weaponPlatform, WsfTrack targetTrack)
+   
+   Starts the RIPR processor sending track uplinks to the weapon platform specified.  The second form receives a track
+   that represents the weapon's target.  If the track is not specified, and the first form is used, then the weapon's
+   current target is used (common way).
+
+.. method:: bool StopUplinking(WsfPlatform aPlatform)
+   
+   Has the RIPR processor stop all track uplinks to the weapon platform specified.  The weapon will then need to receive
+   tracks from somebody else or from its own sensor(s).
+
+.. method:: bool UplinkCapable()
+   
+   Queries whether or not the RIPR processor is capable of weapon uplinks, which is determined by whether or not the
+   'weapon_uplink_path' script input was used.  If a valid weapon_uplink_path was included in the processor definition,
+   then the processor is uplink capable.  The sensor and comm used by the weapon_uplink_path must be valid.
+
+.. method:: int UplinkCount()
+   
+   Queries for the number of active uplinks that the RIPR processor has.
+
+.. method:: WsfPlatform UplinkPlatformEntry(int aUplinkIndex)
+   
+   Returns the weapon platform for the specified uplink, referenced by index (zero based).
+

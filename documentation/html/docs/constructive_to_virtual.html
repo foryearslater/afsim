@@ -1,0 +1,501 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Constructive to Virtual &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="AFSIM Contact Information" href="contact_info.html" />
+    <link rel="prev" title="console_output" href="console_output.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="contact_info.html" title="AFSIM Contact Information"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="console_output.html" title="console_output"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="constructive-to-virtual">
+<h1>Constructive to Virtual<a class="headerlink" href="#constructive-to-virtual" title="Permalink to this headline">¶</a></h1>
+<section id="what-must-be-done-to-change-a-constructive-wsf-simulation-and-have-it-run-real-time-virtual">
+<h2>What must be done to change a constructive WSF simulation and have it run real time (virtual)?<a class="headerlink" href="#what-must-be-done-to-change-a-constructive-wsf-simulation-and-have-it-run-real-time-virtual" title="Permalink to this headline">¶</a></h2>
+<p>The following steps outline what must be changed in the WSF input files.</p>
+<p><strong>1) Add the command “realtime”.</strong></p>
+<p>The “realtime” command will have the simulation run at wall clock speed.</p>
+<p><strong>2) Configure the dis_interface block for the tcp/ip parameters.</strong></p>
+<p>The command “dis_interface… end_dis_interface” block sets up the parameters required to run WSF over DIS. An example of a multicast interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">exercise</span>                  <span class="mi">1</span>
+   <span class="n">site</span>                      <span class="mi">25</span>
+   <span class="n">application</span>               <span class="mi">44</span>
+   <span class="n">multicast</span>                 <span class="mf">224.2</span><span class="o">.</span><span class="mf">25.55</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">10.32</span> <span class="c1"># Multicast Address / The ethernet device on my PC to use</span>
+   <span class="c1">#broadcast                192.168.10.255 # Broadcast Example</span>
+   <span class="n">port</span>                      <span class="mi">3225</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p><strong>3) Configure the dis_interface block for the sides.</strong></p>
+<p>Map the force side to whatever the side subcommand uses in the scenario files. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+  <span class="c1">#force     &lt;side&gt;   &lt;dis-force-id&gt;</span>
+   <span class="n">force</span> <span class="n">blue</span>    <span class="mi">1</span>     <span class="c1"># default value if side is not specified</span>
+   <span class="n">force</span> <span class="n">red</span>     <span class="mi">2</span>     <span class="c1"># default value if side is not specified</span>
+   <span class="n">force</span> <span class="n">green</span>   <span class="mi">3</span>     <span class="c1"># default value if side is not specified</span>
+   <span class="c1">## OR ##</span>
+   <span class="n">force</span> <span class="n">united_states</span> <span class="mi">1</span>
+   <span class="n">force</span> <span class="n">canada</span>        <span class="mi">2</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p><strong>4) Map the platform_types to DIS Enumerations in the dis_interface block.</strong></p>
+<p>Entity type Enumerations of 00:00:00:00:00:00:00 will be sent out if a platform_type is not mapped. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="c1">#entity_type   &lt;platform_type&gt; &lt;dis-entity-type&gt;</span>
+   <span class="c1">#munition_type &lt;platform_type&gt; &lt;dis-entity-type&gt; # same as entity_type</span>
+   <span class="n">entity_type</span>         <span class="n">F</span><span class="o">-</span><span class="mi">15</span><span class="n">E</span>      <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">:</span><span class="mi">225</span><span class="p">:</span><span class="mi">1</span><span class="p">:</span><span class="mi">5</span><span class="p">:</span><span class="mi">5</span><span class="p">:</span><span class="mi">0</span>
+   <span class="n">entity_type</span>         <span class="n">F</span><span class="o">-</span><span class="mi">18</span><span class="n">E</span>      <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">:</span><span class="mi">225</span><span class="p">:</span><span class="mi">1</span><span class="p">:</span><span class="mi">9</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">0</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p><strong>5) Map the entity_id manually or automatically in the dis_interface block:</strong></p>
+<p>Automatic example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">start_entity</span>        <span class="mi">10</span> <span class="c1"># dis entity id starts at 10 {25:44:10 and up for site:application:entity_id}</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p>Manual example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="c1">#entity_id &lt;platform_name&gt; &lt;entity-number&gt;</span>
+   <span class="n">entity_id</span>   <span class="n">hornet</span><span class="o">-</span><span class="mi">1</span>        <span class="mi">101</span> <span class="c1"># example: makes a dis entity id of {25:44:101}</span>
+   <span class="n">entity_id</span>   <span class="n">raptor</span><span class="o">-</span><span class="mi">1</span>        <span class="mi">102</span>
+   <span class="n">entity_id</span>   <span class="n">tank</span><span class="o">-</span><span class="mi">1</span>          <span class="mi">103</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p><strong>6) Do this step ONLY if dis emission PDUs must be mapped:</strong></p>
+<p>In most cases, the emitter_type just needs to be mapped.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="c1">#emitter_type       &lt;sensor/jammer-type&gt; &lt;dis-emitter-name-enum&gt;</span>
+   <span class="c1">#emitter_function   &lt;sensor/jammer-type&gt; &lt;dis-emitter-function-enum&gt;</span>
+   <span class="c1">#beam_type &lt;sensor/jammer-type&gt; &lt;sensor/jammer-mode-name&gt; &lt;sensor/jammer-beam-number&gt;</span>
+   <span class="o">&lt;</span><span class="n">dis</span><span class="o">-</span><span class="n">beam</span><span class="o">-</span><span class="n">parameter</span><span class="o">-</span><span class="n">index</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>
+   <span class="c1">#beam_function &lt;sensor/jammer-type&gt; &lt;sensor/jammer-mode-name&gt; &lt;sensor/jammer-beam-number&gt;</span>
+   <span class="o">&lt;</span><span class="n">dis</span><span class="o">-</span><span class="n">beam</span><span class="o">-</span><span class="n">function</span><span class="o">-</span><span class="n">enum</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>
+   <span class="n">emitter_type</span>        <span class="n">EW_RADAR_TYPE</span>           <span class="mi">11</span>
+   <span class="n">emitter_type</span>        <span class="n">TTR_RADAR_TYPE</span>          <span class="mi">12</span>
+   <span class="n">emitter_type</span>        <span class="n">ACQ_RADAR_TYPE</span>          <span class="mi">13</span>
+
+   <span class="n">emitter_function</span>    <span class="n">EW_RADAR_TYPE</span>                   <span class="mi">2</span>
+   <span class="c1">#sets the function to &quot;2&quot; for the EW_RADAR emitter function (see the dis spec for correct value)</span>
+
+   <span class="n">beam_type</span>           <span class="n">EW_RADAR_TYPE</span>                   <span class="o">*</span> <span class="o">*</span> <span class="mi">11</span>
+   <span class="c1">#defaults the beam parameter index to 11 for all undefined modes and undefined beam numbers.</span>
+
+   <span class="n">beam_type</span>           <span class="n">EW_RADAR_TYPE</span>                   <span class="o">*</span> <span class="mi">2</span> <span class="mi">12</span>
+   <span class="c1">#sets the beam parameter index to 12 for all undefined mode names except when beam number 2 is defined.</span>
+
+   <span class="n">beam_type</span>           <span class="n">EW_RADAR_TYPE</span>                   <span class="o">*</span> <span class="mi">3</span> <span class="mi">13</span>
+   <span class="c1">#sets the beam parameter index to 13 for all undefined mode names except when beam number 3 is defined.</span>
+
+   <span class="n">beam_function</span>       <span class="n">EW_RADAR_TYPE</span>                   <span class="o">*</span> <span class="mi">2</span> <span class="mi">22</span>
+   <span class="c1">#sets the beam enum function to 22 for beam number 2 (see the dis spec for the value)</span>
+
+   <span class="n">beam_type</span>           <span class="n">TTR_RADAR_TYPE</span>                  <span class="n">TRACK</span> <span class="o">*</span> <span class="mi">30002</span>
+   <span class="c1">#sets the beam parameter index to 30002 when in TRACK mode for all beam numbers</span>
+
+   <span class="n">beam_function</span>       <span class="n">TTR_RADAR_TYPE</span>                  <span class="n">TRACK</span> <span class="o">*</span> <span class="mi">7</span>
+   <span class="c1">#sets the function to 7 if in TRACK mode for all beams. (see the dis spec for the value)</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p><strong>7) Ensure the usage of static addressing for communications devices, where appropriate.</strong></p>
+<p>Communications devices often use dynamic addressing (not explicitly providing an address to a comm) in the
+constructive simulation use case. If any other simulation is using a network that is also used by local communication
+devices (including by omitting any input in the case of the default network, or sharing a common network by using the
+local:master or local:slave, amongst others), then these comms must be given static addresses in order to ensure correct
+and consistent application of comms addresses across all simulations.</p>
+<p>Examples of comm definitions in the constructive use case, prior to necessary changes.</p>
+<p>Case 1 - String network name usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">datalink</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">network_name</span> <span class="n">blue_net</span>
+<span class="n">end_comm</span>
+
+<span class="n">comm</span> <span class="n">datalink_2</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">network_name</span> <span class="n">blue_net</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 2 - Command-chain usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">blue_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">network_name</span> <span class="o">&lt;</span><span class="n">local</span><span class="p">:</span><span class="n">master</span><span class="o">&gt;</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 3 - Default network usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">generic_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="c1">#uses the &#39;default&#39; network</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 4 - Network address usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">red_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">network_address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Examples of necessary conversions, assuming externally defined comms using the same network.</p>
+<p>Case 1 - String network name usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">datalink</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_comm</span>
+
+<span class="n">comm</span> <span class="n">datalink_2</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.2</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 2 - Command-chain usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">network</span> <span class="n">master</span><span class="p">:</span><span class="o">&lt;</span><span class="n">commander</span><span class="o">-</span><span class="n">platform</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">WSF_COMM_NETWORK_MESH</span>
+   <span class="n">network_address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.0</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_network</span>
+
+<span class="n">comm</span> <span class="n">blue_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.123</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 3 - Default network usage - (Note that the default network is always 0.1.0.0/16):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">generic_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">address</span> <span class="mf">0.1</span><span class="o">.</span><span class="mf">22.127</span><span class="o">/</span><span class="mi">16</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>Case 4 - Network address usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">red_comm</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+   <span class="n">address</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span><span class="o">/</span><span class="mi">24</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+<p>For more details in regard to why this is necessary, see <a class="reference internal" href="analyst_ocd/communications_primer.html"><span class="doc">Communications Primer</span></a>.</p>
+</section>
+<section id="dis-specific-questions-and-answers">
+<h2>DIS Specific Questions and Answers<a class="headerlink" href="#dis-specific-questions-and-answers" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><strong>What must be done to stay within the DIS spec? Other simulations don’t understand some PDUs that WSF is sending out.</strong></p></li>
+</ul>
+<p>The following subcommands in the dis_interface block can be added to force DIS compliance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">maximum_beam_entries</span>        <span class="mi">10</span> <span class="c1"># Limit number of beams</span>
+   <span class="n">maximum_track_jam_entries</span>   <span class="mi">10</span> <span class="c1"># Limit track/jam entries to the DIS spec</span>
+   <span class="n">suppress_non_standard_data</span>  <span class="n">true</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>How can I see what is being mapped easily?</strong></p></li>
+</ul>
+<p>Add “log_created_entities” to the dis_interface block. A list of platform_types and dis enumerations will be displayed in the console window at runtime.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">log_created_entities</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>I have several platforms at the same lat/lon. How can I make it so platform X is the priority to get hit with an external weapon?</strong></p></li>
+</ul>
+<p>The target_priority command will add bias to the simulation to the priority target when a DIS detonate PDU is received. Here is an example of making all the SAM_FC_RADAR platforms be the highest priority target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">target_priority</span> <span class="n">SAM_FC_RADAR</span> <span class="mi">1000</span> <span class="c1">#This makes the SAM_FC_RADAR types have a huge bias to be killed.</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>How can I make a platform not send any DIS information out to other simulations?</strong></p></li>
+</ul>
+<p>Use the private command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="c1">#private [ name &lt;name&gt; | type &lt;type&gt; | all ]</span>
+   <span class="n">private</span> <span class="nb">type</span> <span class="n">SITE_COMMANDER</span>
+   <span class="n">private</span> <span class="n">name</span> <span class="n">target</span><span class="o">-</span><span class="mi">52</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Can WSF ignore an application that is running? We have 10 simulations running and WSF does not need to interface with application 55.</strong></p></li>
+</ul>
+<p>Yes, use the subcommand “filter_out_by_site_and_app</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">filter_out_by_site_and_app</span>
+      <span class="n">ignore_site</span> <span class="mi">25</span>
+      <span class="n">ignore_application</span> <span class="mi">55</span>
+   <span class="n">end_filter_out_by_site_and_app</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>The simulation is not starting after I enter the command to run WSF.</strong></p></li>
+</ul>
+<p>This means none of the other sims are sending out a “start” PDU. To start WSF without a “start” PDU:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">autostart</span>                    <span class="c1"># Comment this out if someone sends out a start PDU.</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>I keep getting unknown platform warnings. What is this about?</strong></p></li>
+</ul>
+<p>Every external platform that WSF receives must have a platform_type defined along with a DIS enumeration value.  When WSF receives a platform over DIS, WSF automatically creates (instantiates) the platform internally and acts upon it.  Unknown (not mapped) platforms received over DIS are created internally but will have default values (i.e.,
+extreme signature values) defined for them.  First, make a platform_type and assign a signature to it.  Second, add entity_type and an enumeration mapping just like it was an internal body.</p>
+<ul class="simple">
+<li><p><strong>If WSF receives an entity with 00:00:00:00:00:00:00 or any other enumeration that is not mapped, can it be mapped to something specific?</strong></p></li>
+</ul>
+<p>Yes, use the subcommand unknown_platform_type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">unknown_platform_type</span>   <span class="o">&lt;</span><span class="n">platform_type</span><span class="o">&gt;</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>I changed a setting in a dis_interface block and the WSF simulation did not change! What is wrong?</strong></p></li>
+</ul>
+<p>Another dis_interface block most likely is being read in AFTER the dis_interface block you edited. Keep in mind that the last command read in will overwrite your setting.  To see what files have been read in (and the order in which they were read in), look at the log file (typically located under the subdirectory named “output”).</p>
+<ul class="simple">
+<li><p><strong>How easy is it to add the above real-time commands?</strong></p></li>
+</ul>
+<p>In this example, the command to run a simulation constructively is “run mysim.txt”. First, create a realtime.txt file (the filename can be of your choosing). Sample contents of a realtime.txt file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">realtime</span>
+<span class="n">dis_interface</span>
+   <span class="n">exercise</span>                    <span class="mi">1</span>
+   <span class="n">site</span>                        <span class="mi">25</span>
+   <span class="n">application</span>                 <span class="mi">44</span>
+   <span class="n">multicast</span>                   <span class="mf">224.2</span><span class="o">.</span><span class="mf">25.55</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">10.32</span>
+   <span class="n">port</span>                        <span class="mi">3225</span>
+   <span class="n">suppress_comm_data</span>
+   <span class="n">maximum_track_jam_entries</span>   <span class="mi">10</span>
+   <span class="n">autostart</span>
+   <span class="n">force</span> <span class="n">united_states</span>         <span class="mi">1</span>
+   <span class="n">force</span> <span class="n">canada</span>                <span class="mi">2</span>
+   <span class="n">log_created_entities</span>
+<span class="n">end_dis_interface</span>
+<span class="n">include</span> <span class="n">dis_map</span><span class="o">.</span><span class="n">txt</span> <span class="c1"># This file would have all of your dis enumeration mappings...</span>
+</pre></div>
+</div>
+<p>Now, type the command “run mysim.txt realtime.txt” and the constructive WSF simulation will run in real time.</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/constructive_to_virtual.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="contact_info.html" title="AFSIM Contact Information"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="console_output.html" title="console_output"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

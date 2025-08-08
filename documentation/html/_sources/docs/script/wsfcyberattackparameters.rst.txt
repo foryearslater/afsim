@@ -1,0 +1,67 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCyberAttackParameters
+------------------------
+
+.. class:: WsfCyberAttackParameters inherits Object
+   :constructible:
+   :cloneable:
+
+Overview
+========
+
+WsfCyberAttackParameters_ is a container object consisting of any number of :class:`WsfCyberAttackParameterObject`.
+Because this data is essentially auxiliary data, nearly any type of user required data can be held by this container,
+from primitive types, to formally defined script objects, and even user constructed script objects.
+
+The data provided to this container, either prior to or at
+the time of a cyber attack, can be used by the effects associated with that attack. The usage of such parameters may
+be defined by the effect implementation directly (as with :model:`WSF_CYBER_WEAPONS_RETARGET_EFFECT`) or may be provided
+within the context of script method overloads to define the behavior of such attacks (as with :model:`WSF_CYBER_SCRIPT_EFFECT_ENHANCED`).
+
+It is important to note that this container maintains the ordering of the data supplied to it. Because the data can be of
+any type, in cases where the parameters are exposed to usage in the script context, the user must retrieve the data in a
+manner appropriate for the type that was originally used. For example, primitive types can be retrieved directly with the
+auxiliary data API, however, more complex objects must be obtained as generic objects and then cast correctly.
+
+This object supports the usage of any number of effects needing user supplied parameters.
+
+General Methods
+===============
+
+.. method:: Array<string> GetEffectNames()
+
+   Returns an array of strings representing the names of effects that this object contains data for.
+   
+.. method:: int GetEffectEntryCount(string aEffectName)
+
+   Returns the number of parameters in this container for the effect specified by the string effect name provided.
+   
+.. method:: WsfCyberAttackParameterObject GetEffectEntryByIndex(string aEffectName, int aIndex)
+
+   Returns the parameter (auxiliary data container) associated with the effect specified by the string name
+   at the indicated index.
+   
+.. method:: void AddParameter(WsfCyberAttackParameterObject aParameter)
+
+   Adds a parameter to this container for subsequent usage by a named effect.
+   
+   Note that the :class:`WsfCyberAttackParameterObject` being added must have only a single string attribute,
+   otherwise the parameter will not be utilized. If multiple parameters are required for a single effect,
+   a different :class:`WsfCyberAttackParameterObject` should be passed to this method call for each required
+   parameter.
+   
+   The order in which parameters are added to this object is maintained, such that users may be confident
+   in the underlying types of the parameters passed. For example, if two parameters are passed using this
+   method, both with the string name **effect-type**, and the second parameter was an integer, retrieving
+   the second indexed parameter object (using index 1, since indexing is 0-based) will provide the
+   :class:`WsfCyberAttackParameterObject` with an integer as the base type.

@@ -1,0 +1,260 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_PERCEPTION_PROCESSOR
+------------------------
+
+.. model:: processor WSF_PERCEPTION_PROCESSOR
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+**Script Object:** :class:`WsfPerceptionProcessor`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_PERCEPTION_PROCESSOR`
+      ... :command:`processor` Commands ...
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`External_Link_Commands` ...
+      ... :model:`WSF_SCRIPT_PROCESSOR Commands <WSF_SCRIPT_PROCESSOR>` ...
+
+      report_interval_ ...
+      reporting_self_ ...
+      reporting_others_ ...
+
+      asset_perception_ ...
+      perceive_self_ ...
+
+      threat_update_interval_ ...
+      max_threat_load_ ...
+      threat_importance_function_ ...
+
+      asset_update_interval_ ...
+      max_asset_load_ ...
+      asset_importance_function_ ...
+
+      `Heat Map Commands`_ ... end_heat_map
+   end_processor
+
+Overview
+========
+
+:model:`WSF_PERCEPTION_PROCESSOR` performs three main functions:
+
+* Status reporting as an asset to commander, subordinates, &/or peers.
+* Asset perception modeling, updated at the given rate, capped at the given max load.
+* Threat (track) perception modeling, updated at the given rate, capped at the given max load.
+
+The perception modeling, both of assets and threats, is to represent a platform agent updating their mental knowledge of said entities. Think of it as the agent looking down at their radar screen or status displays at the given rates while their mental ability allows them to keep only so many things in their mind. Here is a simple example of a subordinate who reports asset status to a commander who now has perception (based on received messages) of this subordinate (notice the use of the :command:`report_to <_.External_Link_Commands.report_to>` command::
+
+    platform cmd WSF_PLATFORM
+      comm  comm1  WSF_COMM_TRANSCEIVER
+        internal_link brain
+      end_comm
+      processor brain WSF_PERCEPTION_PROCESSOR
+        asset_perception       status_messages
+        asset_update_interval  25 sec
+        max_asset_load         10
+      end_processor
+    end_platform
+
+    platform sub WSF_PLATFORM
+      commander cmd
+      comm  comm1  WSF_COMM_TRANSCEIVER
+      end_comm
+      processor brain WSF_PERCEPTION_PROCESSOR
+        report_interval 10 sec
+        report_to commander via comm1
+      end_processor
+    end_platform
+
+.. block:: WSF_PERCEPTION_PROCESSOR
+
+Commands
+========
+
+.. command:: report_interval <time-value>
+
+   Specifies the interval at which asset state messages are sent to friends.
+
+   *Default:* 0 secs (no reporting done)
+
+.. command:: reports_self <boolean-value>
+
+.. command:: reporting_self <boolean-value>
+
+   Specifies whether or not to report out asset status messages about this platform.
+
+   *Default:* true
+
+.. command:: reports_others <boolean-value>
+
+.. command:: reporting_others <boolean-value>
+
+   Specifies whether or not to report out messages of all received and known asset status (of other platforms).
+
+   *Default:* false
+
+.. command:: asset_perception [ status_messages; truth <members> ]
+
+   * *status_messages*: asset perception will utilize any received :class:`WSF_ASSET_MESSAGE <WsfAssetMessage>` messages.
+   * *truth <members>*: asset perception will traverse the command chain and use truth data.
+
+      * <members> is a colon-separated list of 'commander', 'subordinates', 'peers', 'all_commanders', &/or 'all_subordinates'. Example:
+
+     ::
+
+        # Uses truth data for this platform's commander and all subordinates down the entire command chain
+        asset_perception truth all_subordinates:commander
+
+   *Default:* truth (but no members, so empty perception).
+
+.. command:: perceive_self
+
+   Include this platform in the list of perceived assets.
+
+   *Default:* false
+
+.. command:: threat_update_interval <time-value>
+
+   Specifies the interval at which the processor updates its threat perception.
+
+   *Default:* 0 secs (no delayed interval, uses current master track list)
+
+.. command:: max_threat_load <integer>
+
+   Specifies the maximum number of entries held in the threat perception.
+
+   *Default:* 0 (no max limit)
+
+.. command:: threat_importance_function <string>
+
+   Specify a script function name used to measure threat importance. If specified, it completely over-rides the use of any script functions that try to set threat importance or unimportance (see :class:`WsfPerceptionProcessor`). Only useful when max_threat_load is defined, otherwise no limit is imposed and importance is not necessary. Script function must match the signature of "double FunctionName(WsfLocalTrack)". Values returned by the script will be interpreted as lower being more important (golf scoring).
+
+   ::
+
+      script double MyThreatImportance(WsfLocalTrack threat)
+        return PLATFORM.SlantRangeTo(threat);
+      end_script
+      threat_importance_function MyThreatImportance
+
+.. command:: asset_update_interval <time-value>
+
+   Specifies the interval at which the processor updates its asset perception.
+
+   *Default:* 0 secs (no delayed interval, uses current truth or received asset messages; see 'asset_perception')
+
+.. command:: max_asset_load <integer>
+
+   Specifies the maximum number of entries held in the asset perception.
+
+   *Default:* 0 (no max limit)
+
+.. command:: asset_importance_function <string>
+
+   Specify a script function name used to measure asset importance. If specified, it completely over-rides the use of any script functions that try to set asset importance or unimportance (see :class:`WsfPerceptionProcessor`). Only useful when max_asset_load is defined, otherwise no limit is imposed and importance is not necessary.  Script function must match the signature of "double FunctionName(WsfAssetPerception)". Values returned by the script will be interpreted as lower being more important (golf scoring).
+
+   ::
+
+      script double MyAssetImportance(WsfAssetPerception asset)
+        return PLATFORM.SlantRangeTo(asset.Location());
+      end_script
+      asset_importance_function MyAssetImportance
+
+Heat Map Commands
+*****************
+
+The heat map operates on perceived threats to provide a perception layer of the approximate location ("heat") of lost tracks and areas covered by sensors ("cold"). The heat map requires that both :command:`processor.update_interval` and threat_update_interval be specified. If they are not default values
+of 5 seconds will be used.
+
+The following commands define the operation of the heat map.
+
+.. command:: position <latitude-value> <longitude-value>
+
+   Specifies the latitude and longitude of the center point of the heat map grid.
+
+   *Default:* 0n 0e
+
+.. command:: altitude <length-value>
+
+   Specifies the altitude of the center point of the heat map grid.
+
+   *Default:* 0 m msl
+
+.. command:: grid_extent <length-value>
+
+   Specifies the distance the heat map grid extends from the center point.
+
+   *Default:* 0 m
+
+.. command:: cell_size <length-value>
+
+   Specifies the length of one side of a cell in the heat map grid.
+
+   *Default:* 0 m
+
+   .. note::
+
+      grid_extent should be evenly divisible by cell_size. If it is not the southern and eastern edges of
+      the map will have unused half cells.
+
+.. command:: heat_decay [0.05 .. 0.9]
+
+   Optional value that specifies the amount a heat cell will change in value as it gets stale.
+
+   *Default:* 0.1
+
+.. command:: decay_interval <time-value>
+
+   Optional value that specifies the time between updates of a heat map cell's value. Heat value in a cell will decay
+   toward zero by heat_decay each interval update.
+
+   *Default:* 30 sec
+
+.. command:: expansion_timeout <time-value>
+
+   Optional value that specifies how long a heat source will continue to expand.
+
+   *Default:* 240 sec
+
+.. command:: use_asset_perception <boolean-value>
+
+   Optional value that indicates the perception processor should use the sensor coverage of assets to generate the "cold"
+   coverage of the heat map.
+
+   *Default:* false
+
+   .. note::
+
+      This will be in addition to any sensors on the platform that has the heat map. Sensors must be active
+      radar to be considered.
+
+.. command:: sensor_range <length-value>
+
+   The distance from its source that a sensor is considered to "clear" the heat map. This should be shorter than the
+   actual maximum range of the sensor and cover a distance where there is 95% or higher Pd.
+
+   *Default:* 0 m
+
+.. command:: draw_grid <boolean-value>
+
+.. command:: draw_heat <boolean-value>
+
+.. command:: draw_sensor_outline <boolean-value>
+
+   Optional values that indicate :class:`WsfDraw` commands should be issued for the heat map grid lines, the heat/cold values of the heat cells, or sensor coverage outlines respectively. These commands can be used to visualize the information represented by the heat map but leaving them off will speed up simulation runs.
+
+   *Default:* false
+
+Script Interface
+================
+
+:model:`WSF_PERCEPTION_PROCESSOR` utilizes the capabilities of the :ref:`Common_Script_Interface`, and :model:`WSF_SCRIPT_PROCESSOR`.

@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Reference Values &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Rendezvous" href="rendezvous.html" />
+    <link rel="prev" title="receiver" href="receiver.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="rendezvous.html" title="Rendezvous"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="receiver.html" title="receiver"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="reference-values">
+<span id="id1"></span><h1>Reference Values<a class="headerlink" href="#reference-values" title="Permalink to this headline">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The WSF <a class="reference internal" href="wsf_user_input_format.html#wsf-user-input-format-pre-processor"><span class="std std-ref">Pre-Processor</span></a> (introduced in AFSIM 1.9.0) provide a better and more general
+way to accomplish what is provided by this capability. Please consider using it if possible.</p>
+</div>
+<p><a class="reference internal" href="#id1">Reference Values</a> is a feature added in <a class="reference internal" href="changelog/wsf_1.07.3.html#wsf-1-7-3"><span class="std std-ref">WSF 1.7.3 - 10 Apr 2012</span></a> that provides a mechanism for the value of some WSF
+commands to be defined at run-time from the value of a <a class="reference internal" href="script_variables.html#scriptvariables"><span class="std std-ref">Script Variables</span></a>. The primary motivation for
+this feature is to support the situation where an an analyst may want to vary the value of one or more parameters from
+run-to-run (design of experiments). Prior to the implementation of this feature the analyst had to update the affected
+files with the desired values, run the application, update the files with the next values, run the application and so
+on. This was very error prone, especially if there were a large number of files. Another motivation is to be able to
+provide ‘base types’ that represent some nominal configuration, but to provide the ability to temporarily override the
+configuration without modifying the original definition (which may be in a shared storage area referenced by multiple
+users).</p>
+<p>The best way to demonstrate the use of reference values is through a simple example. One common simulation technique is
+to use a delay time to model the time that it takes to perform some function. In this example, an analyst has inserted
+a delay to simulate the time that it takes to assimilate information before it can act on it. Platforms of type
+COMMANDER receive track information from offboard sources, use it to update its <em>operating picture</em> (using
+<a class="reference internal" href="wsf_track_processor.html#WSF_TRACK_PROCESSOR" title="WSF_TRACK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TRACK_PROCESSOR</span></a>), and then act on the information (using <a class="reference internal" href="wsf_task_processor.html#WSF_TASK_PROCESSOR" title="WSF_TASK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TASK_PROCESSOR</span></a>). As defined below, there is a
+fixed 5 second ‘assimilation’ delay.</p>
+<pre class="literal-block">platform_type COMMANDER WSF_PLATFORM
+   comm radio WSF_COMM_TRANSCEIVER
+      internal_link delay_proc
+   end_comm
+
+   processor delay_proc <a class="reference internal" href="wsf_message_processor.html#WSF_MESSAGE_PROCESSOR" title="WSF_MESSAGE_PROCESSOR"><span class="xref wsf wsf-model">WSF_MESSAGE_PROCESSOR</span></a>
+      process
+         select type WSF_TRACK_MESSAGE end_select
+         select type WSF_TRACK_DROP_MESSAGE end_select
+         delay_time 5.0 sec
+         internal_link track_proc
+      end_process
+      default_process
+         internal_link task_proc
+      end_default_process
+   end_processor
+
+   processor track_proc <a class="reference internal" href="wsf_track_processor.html#WSF_TRACK_PROCESSOR" title="WSF_TRACK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TRACK_PROCESSOR</span></a>
+      ...
+   end_processor
+
+   processor task_proc <a class="reference internal" href="wsf_task_processor.html#WSF_TASK_PROCESSOR" title="WSF_TASK_PROCESSOR"><span class="xref wsf wsf-model">WSF_TASK_PROCESSOR</span></a>
+      ...
+   end_processor
+end_platform_type</pre>
+<p>If platforms of this type were used in a simulation one would get a fixed 5 second delay between the time the track was
+received and the time when the task processor could make a decision. Now let us say we want to see what will happen if
+we vary the time to see what happens if the delay is 5, 10, 15 or 20 seconds. First, change the <em>delay_time 5.0 sec</em> to
+read:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">delay_time</span> <span class="o">/</span><span class="n">variable</span> <span class="n">PROCESSING_TIME</span> <span class="o">/</span><span class="n">default</span> <span class="mf">5.0</span> <span class="n">sec</span>
+</pre></div>
+</div>
+<p>Then, in the master input file (e.g., master.txt) add the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script_variables</span>
+   <span class="n">double</span> <span class="n">PROCESSING_TIME</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+<span class="n">end_script_variables</span>
+
+<span class="n">on_initialize</span>
+   <span class="n">PROCESSING_TIME</span> <span class="o">=</span> <span class="mf">5.0</span> <span class="o">*</span> <span class="n">WsfSimulation</span><span class="o">.</span><span class="n">RunNumber</span><span class="p">();</span>   <span class="o">//</span> <span class="n">will</span> <span class="n">take</span> <span class="n">values</span> <span class="n">of</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span> <span class="ow">and</span> <span class="mi">20</span>
+<span class="n">end_on_initialize</span>
+
+<span class="n">initial_run_number</span> <span class="mi">1</span>
+<span class="n">final_run_number</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>Better yet, put the above commands in a separate file (e.g., multi_run.txt) and run the simulation using the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sage</span> <span class="n">master</span><span class="o">.</span><span class="n">txt</span> <span class="n">multi_run</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>The above example uses the <a class="reference internal" href="monte_carlo_iteration.html#monte-carlo-iteration"><span class="std std-ref">Monte Carlo Iteration</span></a> to run 4 iterations within one
+invocation of the executable. In more complex cases the user may want to create a file for each case (e.g.,
+case-&lt;n&gt;.txt) which contains a <a class="reference internal" href="script_variables.html#scriptvariables"><span class="std std-ref">Script Variables</span></a> block that contains the variable definitions for that case. This
+would work very well if the desired cases weren’t a simple multi-dimensional matrix. Then each case would be run
+separately:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sage</span> <span class="n">master</span><span class="o">.</span><span class="n">txt</span> <span class="n">case</span><span class="o">-</span><span class="mf">1.</span><span class="n">txt</span>
+<span class="n">sage</span> <span class="n">master</span><span class="o">.</span><span class="n">txt</span> <span class="n">case</span><span class="o">-</span><span class="mf">2.</span><span class="n">txt</span>
+ <span class="o">...</span>
+<span class="n">sage</span> <span class="n">maser</span><span class="o">.</span><span class="n">txt</span> <span class="n">case</span><span class="o">-&lt;</span><span class="n">n</span><span class="o">&gt;.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>Maintaining a separate file for each case also makes it easier to see exactly which parameters were used for the case.</p>
+</section>
+<section id="syntax">
+<h2>Syntax<a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h2>
+<p>To describe the new syntax we will consider the <a class="reference internal" href="processor.html#processor.update_interval" title="update_interval (processor)"><span class="xref wsf wsf-command">update_interval</span></a> command contained in <a class="reference internal" href="processor.html#processor" title="processor"><span class="xref wsf wsf-command">processor</span></a>.
+Prior to the implementation of reference values it was defined as:</p>
+<blockquote>
+<div><p><strong>update_interval</strong> &lt;time-value&gt;</p>
+</div></blockquote>
+<p>With the implementation of reference values, the documentation now reads:</p>
+<blockquote>
+<div><p><strong>update_interval</strong> &lt;time-reference&gt;</p>
+</div></blockquote>
+<p>The value for commands that now accept reference values will appear as <em>&lt;X-reference&gt;</em> in the description. The
+value for commands that do not accept a reference value will appear as <em>&lt;X-value&gt;</em> in the description. In the
+reference section for &lt;time-reference&gt; one will see there are two possible formats. The first form is to be used when
+entering a fixed value:</p>
+<blockquote>
+<div><p>&lt;time-value&gt;</p>
+</div></blockquote>
+<p>The second form is used to request that the value be assigned at run-time from a variable of the supplied name.</p>
+<blockquote>
+<div><p>/variable <em>&lt;variable-name&gt;</em> /default &lt;time-value&gt;</p>
+</div></blockquote>
+<p>The clause ‘/default &lt;time-value&gt;’ is optional. It indicates that if the variable specified by <em>&lt;variable-name&gt;</em>
+cannot be found then the supplied default will be used.</p>
+<p>Given the above, the following are valid forms for <strong>update_interval</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">update_interval</span> <span class="mf">1.0</span> <span class="n">sec</span>
+<span class="n">update_interval</span> <span class="o">/</span><span class="n">variable</span> <span class="n">THINKER_UPDATE_INTERVAL</span> <span class="o">/</span><span class="n">default</span> <span class="mf">1.0</span> <span class="n">sec</span>
+<span class="n">update_interval</span> <span class="o">/</span><span class="n">variable</span> <span class="n">THINKER_UPDATE_INTERVAL</span>
+</pre></div>
+</div>
+</section>
+<section id="resolving-a-variable-reference">
+<h2>Resolving A Variable Reference<a class="headerlink" href="#resolving-a-variable-reference" title="Permalink to this headline">¶</a></h2>
+<p>When a variable reference is used, the value of the command is determined (<em>resolved</em>) at run-time rather than when the
+command is read. In particular, it is resolved when the containing object (e.g., platform, mover, processor, sensor) is
+added to the running simulation. When attempting to resolve a reference, the software will start in the current script
+context and proceed upward looking for the variable of the supplied name. In <strong>most</strong> cases this means that it will
+first look for a script variable at the platform level, and then look at the global level. There are some exceptions
+that will be defined later.</p>
+<p>If the variable is successfully located, it is simply <strong>copied</strong> to the command value. Three very important things must
+be noted:</p>
+<ul class="simple">
+<li><p>It is copied only once when it is resolved during simulation initialization. If the variable is subsequently changed
+during the simulation, it will not affect the value of the command.</p></li>
+<li><p>The value of the script variable must be in the internal units required by the command (the expected units are
+documented in <a class="reference internal" href="argumenttypes.html#argument-types-reference-values"><span class="std std-ref">Reference Values</span></a>. Time must be in seconds, length in meters, mass in kilograms, angles
+in radians.</p></li>
+<li><p>Normal validity checking of values is not performed. The user is expected to enter a valid value.</p></li>
+</ul>
+<p>If the variable could not be located then the default value specified by ‘/default’ will be used if it was provided. If
+no default was provided then object initialization will fail with an error message and the simulation will be
+terminated.</p>
+<p>The values of resolved variable references will be written to the simulation log file as defined by <a class="reference internal" href="file_commands.html#log_file" title="log_file"><span class="xref wsf wsf-command">log_file</span></a>.
+This will serve as a source for the user to check to see if the expected values were assigned to the
+commands.</p>
+</section>
+<section id="exceptions-in-resolving-variables">
+<h2>Exceptions in resolving variables<a class="headerlink" href="#exceptions-in-resolving-variables" title="Permalink to this headline">¶</a></h2>
+<p>There are some exceptions to starting context for variable resolution.</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="platform.html#platform" title="platform"><span class="xref wsf wsf-command">platform</span></a> commands <a class="reference internal" href="platform.html#platform.creation_time" title="creation_time (platform)"><span class="xref wsf wsf-command">creation_time</span></a> and <a class="reference internal" href="platform.html#platform" title="platform"><span class="xref wsf wsf-command">weapons_effects</span></a> always resolve from the
+global level.</p></li>
+<li><p>The <a class="reference internal" href="mover.html#mover" title="mover"><span class="xref wsf wsf-command">mover</span></a> command <a class="reference internal" href="wsf_air_mover.html#_.route_mover.start_time" title="start_time (_.route_mover)"><span class="xref wsf wsf-command">start_time</span></a> always resolves from the global level.</p></li>
+<li><p>Commands that are defined by processors that derive from <a class="reference internal" href="wsf_script_processor.html#WSF_SCRIPT_PROCESSOR" title="WSF_SCRIPT_PROCESSOR"><span class="xref wsf wsf-model">WSF_SCRIPT_PROCESSOR</span></a> start searching at the processor
+level, and then proceed to the platform level and finally the global level. Note, however, commands are defined in the
+parents of <a class="reference internal" href="wsf_script_processor.html#WSF_SCRIPT_PROCESSOR" title="WSF_SCRIPT_PROCESSOR"><span class="xref wsf wsf-model">WSF_SCRIPT_PROCESSOR</span></a> (i.e., <a class="reference internal" href="processor.html#processor" title="processor"><span class="xref wsf wsf-command">processor</span></a> and <a class="reference internal" href="platform_part_commands.html#platform-part-commands"><span class="std std-ref">Platform Part Commands</span></a> ) still
+start at the platform level.</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/reference_values.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="rendezvous.html" title="Rendezvous"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="receiver.html" title="receiver"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

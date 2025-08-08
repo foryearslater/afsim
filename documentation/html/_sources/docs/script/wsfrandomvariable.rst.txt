@@ -1,0 +1,83 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfRandomVariable
+-----------------
+
+.. class:: WsfRandomVariable
+   :constructible:
+   :cloneable:
+
+This class provides a limited distribution selection, using a generator separate from the simulation's random
+number generator, for passage between script contexts where
+there is a desire to maintain a repeatable but separate random number generation. The seed used
+for this object is the same as specified globally in AFSIM.
+
+Methods
+=======
+
+.. method:: void Set(string aDistribution, double aParameter1, double aParameter2, string aConstraint)
+
+   This method provides the distribution, required parameters, and optional constraints for using
+   the WsfRandomVariable_ object. This method **MUST** be called prior to its usage. It may be called
+   multiple times to change the distribution and constraints associated with the script object.
+
+   The passed string aDistribution represents the distribution to be used, with the following options:
+
+      * "exponential" for an exponential distribution.
+      * "log_normal" for a log normal distribution.
+      * "normal" for a normal distribution.
+      * "uniform" for a uniform distribution.
+      * "constant" for a constant value. 
+      
+   Any other string value than those above defaults to a constant value (no distribution).
+
+   The two parameter values are used based on the distribution type specified. If not required for the distribution,
+   the parameter value is unused and any value may be provided.
+
+      * For an exponential distribution, aParameter1 specifies the lambda (inverse of the mean).
+      * For log normal and normal distributions, aParameter1 is the mean, aParameter2 is the standard deviation.
+      * For uniform distributions, aParameter1 is the minimum value, aParameter2 is the maximum value.
+      * For a constant, aParameter1 is the constant value.
+
+   The passed string aConstraint specifies the optional constraints on the value of the random variable, s.t.
+
+      * "positive" indicates draw results should be greater than zero.
+      * "non_negative" indicates draw results should be greater than or equal to zero.
+      * "no_constraint" indicates no constraints. 
+      
+   Any other string value than those above defaults to no constraints.
+
+.. method:: double Draw()
+
+   Draws a value from the distribution and parameters provided, and returns that value. In the case of
+   constant usage, the constant value is provided.
+
+.. method:: double LastDraw()
+
+   Returns the last draw value generated. Does not call the random number generator
+   and modify future values resulting from a draw.
+
+.. method:: double GetFirstParameter()
+
+   Returns the first parameter provided using the :method:`Set<WsfRandomVariable.Set>` method.
+
+.. method:: double GetSecondParameter()
+
+   Returns the second parameter provided using the :method:`Set<WsfRandomVariable.Set>` method. This value is only valid if used for the specified distribution.
+
+.. method:: string GetDistribution()
+
+   Returns the string name of the set distribution. If the :method:`Set<WsfRandomVariable.Set>` method has not been called, defaults to indicating a constant value.
+
+.. method:: string GetConstraint()
+
+   Returns any constraint applied using the :method:`Set<WsfRandomVariable.Set>` method. If the :method:`Set<WsfRandomVariable.Set>` method has not been called, defaults to indicating no constraint.

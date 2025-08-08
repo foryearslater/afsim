@@ -1,0 +1,204 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfRoute
+--------
+
+.. class:: WsfRoute inherits WsfObject
+    :constructible:
+    :cloneable:
+    :container:
+
+Example:
+
+.. parsed-literal::
+
+  :class:`WsfWaypoint` wp = route[i];
+
+  :class:`WsfRoute` route = WsfRoute.CopyGlobal("my_route");
+  :class:`WsfWaypoint` wpt = route[0]; # Access the first waypoint
+  wpt.SetSpeed(200); # Set the speed to 200 m/s
+  # CAUTION: The indexing operator returns a reference to the waypoint, and
+  #          may become a null reference if the route is modified
+  #          using a method like Append()
+
+Static Methods
+==============
+
+.. method:: WsfRoute Create(string aRouteName)
+
+   Returns a named but empty new route.
+
+.. method:: WsfRoute CopyGlobal(string aRouteName)
+
+   Returns a copy of a global :command:`route` defined in the input file, named aRouteName.
+
+.. method:: WsfRoute FindGlobal(string aRouteName)
+
+   Returns a reference to a global :command:`route` defined in the input file, named aRouteName.  The returned route may not be modified directly, use :method:`CopyGlobal()<WsfRoute.CopyGlobal>` if modification is required.
+   
+.. method:: Array<string> GlobalRoutes()
+
+   Returns the names of all the global routes as an array of strings.
+   
+Methods
+=======
+
+.. method:: void Append(WsfWaypoint aWaypoint)
+            void Append(WsfRoute aRoute)
+            void Append(WsfGeoPoint aGeoPoint, double aSpeed)
+            void Append(string aRouteName)
+
+   Appends the specified data to the end of the current route.
+
+.. method:: void Insert(int aBeforeIndex, WsfWaypoint aNewWaypoint)
+
+   Inserts the supplied waypoint into the route before the waypoint at the specified index. aBeforeIndex must be in the range [0, :method:`Size()<WsfRoute.Size>`-1].
+
+.. method:: void Remove(int aWaypointIndex)
+
+   Removes a waypoint from the route.  aWaypointIndex must be in the range [0, :method:`Size()<WsfRoute.Size>`-1].
+
+.. method:: WsfRoute Copy()
+
+   Returns a copy of the route.
+
+.. method:: int Size()
+
+   Returns the number of waypoints in the route.
+
+.. method:: WsfWaypoint Waypoint(int aIndex)
+            WsfWaypoint Waypoint(string aLabel)
+
+   Returns the waypoint at aIndex, or the waypoint with label aLabel. Waypoint(int) is equivalent to the index operator: "route[int]".
+
+   .. note::
+
+      This returns a **reference** to the waypoint.  Modification of the waypoint affects the route.  If waypoints are added or removed from the route, the waypoint reference may become invalidated.
+
+.. method:: WsfWaypoint Front()
+
+   Returns the first waypoint in the route.
+
+   .. note::
+
+      This returns a **reference** to the waypoint.  Modification of the waypoint affects the route.  If waypoints are added or removed from the route, the waypoint reference may become invalidated.
+
+.. method:: WsfWaypoint Back()
+
+   Returns the last waypoint in the route.
+
+   .. note::
+
+      This returns a **reference** to the waypoint.  Modification of the waypoint affects the route.  If waypoints are added or removed from the route, the waypoint reference may become invalidated.
+
+
+.. method:: void Print()
+
+   Prints the route to the console for debugging purposes.
+
+.. method:: void SetAltitude(double aAltitude)
+            void SetAltitude(double aAltitude, string aAltReference)
+
+   Changes the altitude of all the waypoints belonging to the route.
+
+   .. note::
+
+      If no altitude reference is specified, the original waypoint altitude reference (e.g., agl, msl) will be used.
+
+.. method:: double GetSpeed(int aIndex)
+
+   Returns the speed at the specified waypoint.
+
+.. method:: void SetSpeed(double aSpeed)
+
+   Sets the speed value of each waypoint in the route.
+
+.. method:: void SetSpeed(int aIndex, double aSpeed)
+
+   Sets the speed value of the waypoint at the specified index.
+
+.. method:: void Transform(double aLatitude, double aLongitude, double aHeading)
+
+   Transforms the route at the given location aligned with the specified heading.  This is typically used to orient orbits in a particular direction.
+
+.. method:: void AddCallbackToWaypoint(string aCallbackName, int aIndex)
+
+   Adds the specified :command:`callback` to the waypoint at the specified index.
+
+.. method:: void AddCallbackToLastWaypoint(string aCallbackName)
+
+   Adds the specified :command:`callback` to the last waypoint in the route.
+
+.. method:: void AddCallbackToLastWaypoint(string aCallbackName, string aProcessorName)
+
+   Adds the specified :command:`callback` from the specified processor to the last waypoint in the route.
+
+.. method:: void AddCallbackToLastWaypoint(Method aMethod)
+
+   Adds the specified callback :class:`Method` to the last waypoint in the route.  The given method should take 0 or 1 argument as follows::
+
+    void A_Method()
+    void A_Method(WsfPlatform aCaller)
+
+.. method:: double TotalLength()
+
+   Returns total length of the route in meters.
+
+.. method:: WsfGeoPoint LocationAtDistance(double aDistance)
+
+   Returns a :class:`WsfGeoPoint` at a location along the route at the specified distance from the start of the route.
+
+   .. note::
+
+      This method is accurate with routes containing Latitude/Longitude points only.
+
+.. method:: double DistanceAlongRoute(WsfGeoPoint aLocation)
+
+   Given a point on or near the route, this computes the approximate distance from the start of the route.
+
+   .. note::
+
+     This method is accurate with routes containing Latitude/Longitude points only.
+
+.. method:: double DistanceFromRoute(WsfGeoPoint aLocation)
+
+   Computes the distance between the given point and the closest segment on the route.
+
+   .. note::
+
+      This method is
+      accurate with routes containing Latitude/Longitude points only.
+
+.. method:: WsfRoute SubrouteByDistance(double aDistance1, double aDistance2)
+
+   Computes a sub-route from this route given a starting and ending distance from the route's first point.  If aDistance1 is less than aDistance2, the resulting route will be reversed.  Both distance values should be in the range [0, :method:`TotalLength()<WsfRoute.TotalLength>`].
+
+   Example::
+
+    WsfRoute reversed = route.SubrouteByDistance(route.TotalLength(), 0)
+
+   .. note::
+
+      This method is accurate with routes containing Latitude/Longitude points only.
+
+.. method:: Array<Object> Intersect(WsfRoute aOtherRoute)
+
+   Computes the intersection of this route and aOtherRoute assuming straight segments.  Ignores altitude differences between the routes.  Returns an array with 3 elements for each intersection: (int segment_index_1, int segment_index_2, :class:`WsfGeoPoint` intersection_location).  The segment_indexes give the waypoint index where the intersection occurs for each route.
+
+.. method:: Iterator WsfRouteIterator GetIterator()
+
+   Returns an iterator that points to the beginning of the route. This is used by the script language to support the **foreach** command, but may also be used directly.
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt

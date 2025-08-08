@@ -1,0 +1,187 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _orbital_maneuvering_models:
+
+.. include:: orbital_maneuvering_models.txt
+
+.. _orbital_maneuvering_models.common_commands:
+
+Common Maneuvering Model Commands
+*********************************
+
+.. _orbital_maneuvering_models.maneuver_update_interval:
+
+.. command:: maneuver_update_interval <time-value>
+
+   The update interval at which :ref:`finite<orbital_event.finite>` maneuvering events are evaluated.
+
+   **Default** 1.0 s
+
+.. _orbital_maneuvering_models.types:
+
+Maneuvering Model Types
+***********************
+
+.. _orbital_maneuvering_models.simple:
+
+Simple Maneuvering Model
+""""""""""""""""""""""""
+
+.. parsed-literal::
+
+   maneuvering simple
+      delta_v_                  ...
+      maximum_acceleration_     ...
+      maneuver_update_interval_ ...
+   end_maneuvering
+
+The default orbital maneuver model. delta-V is provided explicitly as an input (instead of providing mass properties and thrust).
+Finite maneuvers can be limited by a maximum acceleration.  This model is representative of ion thrusters,
+and can be used when management of a specific delta-V budget is the primary consideration.
+
+.. command:: delta_v <speed-value>
+
+   The total amount of "delta-V" available to the parent platform for performing maneuvers.
+
+   **Default** :math:`10^{12}~\rm{m}/\rm{s}`.
+
+.. command:: maximum_acceleration <acceleration-value>
+
+   The maximum acceleration available to perform :ref:`finite<orbital_event.finite>` maneuvers.
+
+   **Default** :math:`1000~\rm{m}/\rm{s}^2`.
+
+.. _orbital_maneuvering_models.rocket:
+
+Rocket Maneuvering Model
+""""""""""""""""""""""""
+
+.. parsed-literal::
+
+   maneuvering rocket
+      :ref:`stage commands<orbital_maneuvering_models.stage_commands>` ...
+      maneuver_update_interval_  ...
+   end_maneuvering
+
+The rocket orbital maneuver model expends delta-V according to the Tsiolkovsky rocket equation.  Mass properties and thrust must be provided
+(see :ref:`stage commands<orbital_maneuvering_models.stage_commands>`, below, for a description of valid stage inputs.
+
+The rocket may be specified in more than one stage.  In that case the mass properties and thrust must be provided for each stage separately.  The first stage defined is the first one used, and it would be the first jettisoned using the :doc:`perform staging<perform_staging>`.
+
+For example, the following definition describes the Russian Proton "Breeze-M" booster and payload.  It is defined in three stages: the first stage describes the auxiliary propellant tank (APT), that is jettisoned after two or three initial maneuvers; the second stage describes the remainder of the booster's mass and propulsion; and the third stage describes a payload with the capability of performing on-orbit maneuvers:
+
+.. parsed-literal::
+
+      maneuvering rocket
+         stage  // breeze-M APT
+            specific_impulse 326 seconds
+            thrust 19620 newtons
+            empty_mass 1125 kg
+            fuel_mass 10920 kg
+         end_stage
+         stage  // breeze-M upper stage
+            specific_impulse 326 seconds
+            thrust 19620 newtons
+            empty_mass 1125 kg
+            fuel_mass 8300 kg
+         end_stage
+         stage  // payload with mr-107 aerojet small thrusters
+            specific_impulse 236 s
+            thrust           1028 newtons // assume x4
+            empty_mass       2000 kg
+            fuel_mass        500 kg // guess
+         end_stage
+      end_maneuvering
+
+.. _orbital_maneuvering_models.stage_commands:
+
+Stage Commands
+^^^^^^^^^^^^^^
+
+.. parsed-literal::
+
+   stage
+      specific_impulse_                ...
+      thrust_                          ...
+      burn_rate_                       ...
+      exhaust_velocity_                ...
+      initial_mass_     | total_mass_  ...
+      final_mass_       | empty_mass_  ...
+      propellant_mass_  | fuel_mass_   ...
+   end_stage
+
+Define one or more stages to be used by the :ref:`rocket<orbital_maneuvering_models.rocket>` maneuvering model.
+
+.. command:: specific_impulse <time-value>
+
+   Provide the specific impulse of the stage in vacuum, typically expressed in seconds.
+
+   .. note:: The specific impulse ::math:`I_{sp}` is related to the :command:`exhaust velocity<exhaust_velocity>`, ::math:`v_e`, by the acceleration of  gravity at sea level, :math:`g_0`, as follows:
+             :math:`I_{sp} = v_e / g_0`.
+
+.. command:: thrust <force-value>
+
+   Provide the total thrust (:math:`F_t`) of the stage.
+
+.. command:: burn_rate <mass-flow-value>
+
+   Provide the burn (fuel depletion) rate (:math:`\dot{m}`).
+
+.. command:: exhaust_velocity <speed-value>
+
+   Provide the propellant exhaust velocity (:math:`v_e`).
+
+.. command:: initial_mass <mass-value>
+.. command:: total_mass   <mass-value>
+
+   Specify the initial_mass (:math:`m_i`), defined to be the propellant_mass_ plus the final_mass_.
+
+.. command:: final_mass <mass-value>
+.. command:: empty_mass <mass-value>
+
+   Specify the final (empty) mass (:math:`m_f`), defined to be the initial_mass_ minus the propellant_mass_.
+
+.. command:: propellant_mass <mass-value>
+.. command:: fuel_mass       <mass-value>
+
+   Specify the propellant mass, defined to be the initial_mass_ minus the final_mass_.
+
+.. note:: The inputs total_mass_, empty_mass_, and fuel_mass_ can be also be used to specify mass properties for stages, in order to remain consistent with the inputs for :model:`WSF_GUIDED_MOVER`.  It is understood that fuel_mass_ represents all propellant (fuel and oxidizer) in the stage.
+
+.. _orbital_maneuvering_models.rocket_physics:
+
+Physics Model
+^^^^^^^^^^^^^
+
+The :ref:`rocket<orbital_maneuvering_models.rocket>` maneuvering model is governed by the Tsiolkovsky rocket equation.  Applying this equation to a single maneuver:
+
+.. math::
+   \Delta{v} = v_e ln \frac{m_0}{m_1}
+
+where :math:`\Delta{v}` is the magnitude of the change in velocity of the rocket, :math:`v_e` is the exhaust_velocity_, :math:`m_0` is the initial mass before execution of the maneuver, and :math:`m_1` is the final mass after execution of the maneuver.
+
+Defining a propellant mass :math:`m_p` expended in the maneuver of duration :math:`\Delta{t}`, it is clear that
+
+.. math::
+   m_p \equiv m_0 - m_1 = \dot{m} \Delta{t}
+
+and equivalently,
+
+.. math::
+   m_1 = m_0 - \dot{m} \Delta{t}
+
+Then, rewriting the rocket equation to remove :math:`m_1`, and manipulating to solve for the maneuver duration :math:`\Delta{t}`:
+
+.. math::
+   \Delta{t} = \frac{m_0}{\dot{m}}(1 - \exp{\frac{-\Delta{v}}{v_e}})
+
+When performing a maneuver, checks are made to ensure that a sufficient fuel supply is available.  As the maneuver is performed, propellant is deleted and the stage's mass properties are updated.

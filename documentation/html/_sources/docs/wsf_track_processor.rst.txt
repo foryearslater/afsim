@@ -1,0 +1,350 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TRACK_PROCESSOR
+-------------------
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+.. model:: processor WSF_TRACK_PROCESSOR
+
+   .. parsed-literal::
+
+    processor <name> :model:`WSF_TRACK_PROCESSOR`
+       ... :command:`processor` Commands ...
+       ... :model:`WSF_SCRIPT_PROCESSOR` Commands ...
+
+       master_track_processor_ ...
+       non_master_track_processor_ ...
+       :command:`track_manager` ... end_track_manager
+
+       # Track Purging Commands
+
+       purge_interval_ ...
+       track_history_retention_interval_
+
+       # Reporting Commands
+
+       :command:`_.External_Link_Commands.external_link` ...
+       :command:`_.External_Link_Commands.report_to` ...
+       report_interval_ ...
+       report_method_ ...
+       fused_track_reporting_ ...
+       raw_track_reporting_ ...
+       pass_through_reporting_ ...
+       candidate_track_reporting_ ...
+       unchanged_track_reporting_ ...
+       update_on_report_ ...
+
+       # Received Report Assimilation Commands
+
+       circular_report_rejection_ ...
+       inbound_filter_
+
+       # `Script Interface`_
+
+       :command:`on_initialize` ... end_on_initialize
+       :command:`on_initialize2` ... end_on_initialize2
+       :command:`on_update` ... end_on_update
+       :command:`_.script_commands.script_variables` ... end_script_variables
+       :command:`_.script_commands.script` ... end_script
+       .. Other Script Commands ...
+
+       script bool :method:`WsfTrackProcessor.is_track_reportable` (:class:`WsfTrack` aTrack)
+          ...
+       end_script
+
+    end_processor
+
+Overview
+========
+
+:model:`WSF_TRACK_PROCESSOR` implements a processor interface for a track_manager. It is responsible for two major functions:
+
+* Accepting reports from local and off-board sources and feeding them to a track manager for correlation and fusion.
+* Sending updated tracks to interested parties.
+
+As it is a :model:`WSF_SCRIPT_PROCESSOR`, it sends messages to connected internal processors and external entities via comm.
+
+The referenced track manager can be either the parent platform's track manager (i.e., the track manager that keeps the
+Master Track List for the platform).  Alternatively, it can create its own track manager that keeps an independent
+track list.
+
+This processor can be told to report fused tracks or 'raw' tracks to external entities (a raw track is defined as any
+track that is input to the track processor). External entities will receive a :class:`WsfTrackMessage` (type
+WSF_TRACK_MESSAGE) containing the updated track.  Connected processors on the same platform receive
+WSF_TRACK_NOTIFY_MESSAGEs, indicating that there has been some change in state of a fused track (Created, Updated,
+Dropped, Removed).  The fused tracks are referenced through the Master Track List of the platform.
+
+General Commands
+================
+
+.. command:: master_track_processor
+
+   Indicates that this processor should be used as the platform's master track processor.  It will directly access
+   the platform's Master Track Manager object and associated Master Track List.  This is the default behavior.
+
+.. command:: non_master_track_processor
+
+   Indicates that this processor will not be used as the platform's master track processor.  It will create its own
+   track manager object, and it will maintain a track list separate from the platform's Master Track List.
+
+.. note::
+
+   For a non-master track processor, this object will process **track_manager sub-commands** in a
+   *track_manager ... end_track_manager block*.
+
+.. command:: track_manager ... end_track_manager
+
+   This is a block for processing **track manager** input for track processors that are not their platform's master
+   track processor.  Place track manager sub-commands within this block.
+
+   Otherwise, if the track processor is the master track processor, the track_manager block belongs at the platform level.
+
+Track Purging Commands
+======================
+
+.. command:: purge_interval <time-value>
+
+.. command:: drop_after_inactive <time-value>
+
+   Specifies that a track will be dropped if it goes for more than the specified time without an update.  If fused
+   tracks are reported (see report_fused_tracks), a WsfTrackDropMessage will be sent over external links, and attached
+   local observers will be notified.
+
+   .. note::
+
+      A track for which an task assignment has been made or received will not be dropped until all such
+      assignments have been completed.
+
+   .. note:: Not a valid command for non-master track processors.
+
+   Default: Infinite (Do not purge tracks).
+
+.. command:: track_history_retention_interval <time-value>
+
+   Specifies that track histories should be kept for the given time interval.  This option is valid only if
+   :command:`track_manager.retain_track_history` is set in the associated track manager.
+
+   .. note::
+
+      This interval is a lower bound.  Tracks older than the retention interval will be kept as simulation
+      time progresses, until the next time the track history is purged.
+
+   .. note:: Currently track history purging is performed at the same time interval as the input
+
+   Default: 1 hour
+
+Reporting Control Commands
+==========================
+
+A platform can report its tracks to other platforms. The commands described below determine what, how often and too
+whom tracks are reported:
+
+* The :command:`_.External_Link_Commands.external_link` or :command:`_.External_Link_Commands.report_to` commands control to whom
+  information is to be reported.
+* The report_interval_ and report_method_ command determines how often the tracks are reported.
+* The raw_track_reporting_, fused_track_reporting_, unchanged_track_reporting_ and
+  candidate_track_reporting_ commands determine the types of data reported.
+
+.. command:: report_interval <time-value>
+
+   Report tracks (raw or fused depending on the following inputs) at the given interval.
+   Each track in the respective track lists will be sent to externally connected entities once per report interval.
+
+   Default: 10 secs (if external links are defined)
+
+.. note::
+
+      external links must be defined if reporting is to occur.
+
+.. command:: report_method [batch | cyclic | on_update | on_update_fused]
+   Specify the strategy for reporting tracks.
+
+   batch
+      All tracks are reported to externally connected entities at the beginning of the reporting interval.  New
+      tracks will be reported immediately.
+
+   cyclic
+      Tracks are reported to externally connected entities throughout the reporting interval.  The time between
+      reports is T/(N-1), where T is the reporting interval and N is the number of tracks in the master track list at the
+      beginning of the frame.  New tracks will be reported immediately.
+
+   on_update
+      Tracks are reported when they are updated. If this is selected, a received track report may result in the
+      immediate report of:
+      * The received track report (i.e., the 'raw' or 'nonlocal' track). The track report will be reported if
+      raw_track_reporting_ is on and the time since the previous report for the same track ID was greater than or equal
+      the report_interval_.
+      * A 'local' or 'fused' track that was updated as the result of the received track report. The updated track will be
+      reported if fused_track_reporting_ is on and the time since the previous report for the local track was greater
+      than or equal to the report_interval_.
+      This also implicitly selects::
+
+       circular_report_rejection  on
+       unchanged_track_reporting  off
+
+   on_update_fused
+      This is equivalent to the following:
+
+      ::
+
+          report_method              on_update
+          fused_track_reporting      on
+          circular_report_rejection  on
+          unchanged_track_reporting  off
+
+   Default: **batch**
+
+.. command:: fused_track_reporting <boolean-value>
+
+   Indicates that the object should report fused (local) tracks to externally connected entities via comm devices.
+
+   Default: 'off', or to not report fused tracks.
+
+.. note::
+
+      Fused tracks should only be reported to entities that will not transmit tracks back to the sender.
+
+.. command:: raw_track_reporting <boolean-value>
+
+   Indicates whether nonlocal ('raw') tracks are to be reported to externally connected entities via comm devices.
+
+   Default: report raw tracks ('on')
+
+.. command:: pass_through_reporting <boolean-value>
+
+   Indicates that any nonlocal ('raw') tracks are to be reported immediately to externally connected entities.
+   This is the same as 'raw_track_reporting', except that reporting is in a 'pass-through' mode, rather than
+   interval-based.
+
+.. command:: candidate_track_reporting <boolean-value>
+
+   Indicates whether 'candidate tracks' (i.e., filtered sensor measurements for which the filter is not yet stable)
+   should be reported to externally connected entities.  Setting this option allows the data to be made available in the
+   master track list as soon as it is received.
+
+.. command:: unchanged_track_reporting <boolean-value>
+
+   Indicates whether tracks whose data have not changed since the last reporting interval should be reported again.
+
+   Default: **on**
+
+
+.. command:: update_on_report <boolean-value>
+
+Specify whether to update track information to the time of the report.  If enabled, track location and location
+uncertainty are updated before track reports are sent.  If
+:command:`quantitative_track_quality` is enabled, the reported track
+quality will be recomputed based on extrapolated location uncertainty.
+
+Default: *true*, if :command:`quantitative_track_quality` is set;
+*false* otherwise.
+
+Deprecated Command Forms
+************************
+
+The following commands are deprecated form of the above commands. They should not be used in new applications as they
+may be removed in a future release.
+
+.. command:: report_raw_tracks
+
+   Same as ``raw_track_reporting on``.
+
+.. command:: report_fused_tracks
+
+   Same as ``fused_track_reporting on``.
+
+.. command:: report_pass_through
+
+   Same as ``pass_through_reporting on``.
+
+.. command:: report_candidate_tracks
+
+   Same as ``candidate_track_reporting on``.
+
+Received Report Assimilation Commands
+=====================================
+
+The following commands control the disposition of received reports.
+
+.. command:: circular_report_rejection <boolean-value>
+
+   Indicates how received track reports that are determined to be 'circular' should be processed. A received track report
+   is declared to be a 'circular report' if one of the following conditions is true:
+
+      * The received track report is a simple reflection of a report that originated from the receiving node.
+
+      * The received track report is a fused track report whose last update was the result of a report that originated from
+        the receiving node.
+
+   Default: **off**
+
+
+.. command:: inbound_filter ... end_inbound_filter
+
+   By default, the processor will attempt to submit all received reports to the track manager for correlation and fusion.
+   There are situations, however, where a given track processor may not desire this activity. This block allows control
+   over what is assimilated.
+
+   At the current time there is only one subcommand, as described below:
+
+   ``reject non_sensor_reports``
+      Indicates that reports that aren't direct sensor reports should be ignored. This is
+      typically used if a 'filter node' reports raw tracks to a 'fusion node' which assimilates data from multiple sources
+      and produces fused reports. There exists the possibility that the fusion node may broadcast its fused products back to
+      the filter node, which will cause problems if assimilated.
+
+Script Interface
+================
+
+.. class:: WsfTrackProcessor
+
+:model:`WSF_TRACK_PROCESSOR` utilizes the capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`, as
+well as providing the following:
+
+.. method:: void is_track_reportable(WsfTrack aTrack) :ref:`Script Body <script>` end_script
+
+The 'is_track_reportable' method may be supplied to provide an additional level of control over what tracks get
+reported. It is very useful for creating custom reporting methods. If this method is defined, it will be called
+whenever a track is about to be reported as a result of the standard fused or raw track reporting. If it is not defined
+then the track will be reported as normal.
+
+The method must be defined as follows::
+
+ script bool is_track_reportable(WsfTrack aTrack)
+    // Define the script body here to return a 'true' value if the track should
+    // be reported and 'false' if it should not.
+    //
+    // For example, the following will report the track only if it has been
+    // updated within the last 60 seconds:
+
+    bool isReportable = true;
+    if (aTrack.TimeSinceUpdated() > 60.0) isReportable = false;
+    return isReportable;
+ end_script
+
+Note that the same method is called for both fused and raw track reporting. For fused track reporting the input object
+will actually be a :class:`WsfLocalTrack`, but the argument type will still be a :class:`WsfTrack`. If you need to access methods
+that are only defined on :class:`WsfLocalTrack`, you must 'cast' the argument. For example::
+
+ script bool is_track_reportable(WsfTrack aTrack)
+    bool isReportable = true;
+    WsfLocalTrack track = (WsfLocalTrack) aTrack;
+    if (track.IsValid())         // will be true if the track is a :class:`WsfLocalTrack`
+    {
+       // Don't report if the track is 'old' or there are no contributors
+       if ((track.TimeSinceUpdated() > 60.0) ||
+           (track.RawTrackCount() == 0)) isReportable = false;
+    }
+    return isReportable;
+ end_script
+

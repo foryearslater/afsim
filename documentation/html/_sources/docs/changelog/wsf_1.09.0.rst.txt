@@ -1,0 +1,118 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.9.0:
+
+WSF 1.9.0 - 29 Aug 2014
+-----------------------
+
+General
+=======
+
+* Major new features incorporated into WSF 1.9 include the initial release of the :model:`Pseudo-6DOF mover <WSF_P6DOF_MOVER>`, a :ref:`WSF_User_Input_Format.Pre-Processor`, and the snapshot capability.  Currently, snapshotting is not built into the executables included with the release and requires the developer to make a custom build. Due to the recent snapshotting inclusions multi-threading the sage executable is not currently operational, to be fully functional in next release.
+
+Corrections
+===========
+
+* **(CR 10552)** Fixed an issue where :class:`WsfRoute` methods DistanceAlongRoute and DistanceFromRoute would fail on routes that cross the 180th meridian.
+* **(CR 10587)** Fixed an issue where Range, Bearing and Elevation values in a :class:`WsfTrack` were being incorrectly set wrt to the platform doing the sensing instead of its platform part (i.e. receiver if present). This issue caused the target location and errors to be off slightly in some situations and was not consistent with other data in the track reporting.
+* **(CR 10631)** Fixed an issue where the script method :method:`WsfSensorInteraction.ModeName` was returning garbage.
+* **(CR 10671)** Fixed an issue where tracks from static images (SAR, etc.) had track quality unexpectedly reduced to 0.5.  This was causing problems with decision making based on track quality.
+* **(CR 10681)** Fixed an issue where :model:`on_message <WSF_SCRIPT_PROCESSOR>` blocks were not being processed in :model:`WSF_IMAGE_PROCESSOR`.
+* **(CR 10686)** Fixed an issue where "dummy" terrain elevation tiles (i.e., tiles created where no dted or float-grid data exist) were not being loaded / unloaded correctly.
+* **(CR 10770)** Fixed an issue where :model:`one_m2_detect_range <WSF_RADAR_SENSOR>` was not calibrating properly with :ref:`esa_patterns <antenna_pattern.esa_pattern>` and any :command:`standard antenna <antenna_pattern>` due to the :command:`antenna_pattern.gain_adjustment` not being applied properly.
+* **(CR 10787)** Allow for proper script casting to :class:`WsfGuidanceComputer` from base classes (e.g., :class:`WsfProcessor`).
+* **(CR 10820)** Fixed a large computation delay in :class:`WsfRouteFinder` when many avoidance zones overlap and the target point is on the edge.
+* **(CR 10825)** Fixed an issue where copying a null object in script would crash the application.  eg:  WsfTrack t; WsfTrack s = WsfTrack(t);
+* **(CR 10840)** Fixed an issue with jamming perception on a :model:`WSF_RADAR_SENSOR` or :model:`WSF_OTH_RADAR_SENSOR` with multiple beams would not reports jamming perceptions properly if the first beam did not perceive jamming but a subsequent beam did and the SNR was less than that of previous beams.
+* **(CR 10847)** Corrected an issue where turning movers off had no real effect.  Now when they are turned off they are not updated by the parent platform.
+* **(CR 10853)** Fixed an issue in :command:`sensor_plot` :command:`horizontal_map` where the end cross/down-range limit was not being output due to a round-off error in software not  comparing this end limit value correctly in certain instances.
+* Fixed a bug where air-to-air intercepts were not computing a time-to-intercept value when the target is inbound  toward the interceptor _and_ the target speed is greater than the interceptor (i.e. incoming ICBM).
+* Fixed an issue in script where casting down to the wrong type would result in non-null variable, e.g.:
+  ::
+
+   WsfTrackMessage msg = (WsfTrackMessage)MESSAGE;
+   if (msg.IsValid()) {
+      // Now, msg is only valid if MESSAGE is really a track message
+   }
+* Fixed an issue where the :command:`transmitter propagation model <_.transmitter.propagation_model>` was not being applied for :model:`WSF_ESM_SENSOR` and :model:`WSF_RF_JAMMER`, as they were one-way interactions and code was not properly calling the propagation model routines.
+
+Enhancements
+============
+
+* **(CR 10815)** Added ability for behaviors to receive messages. See :command:`behavior.on_message` definition for behaviors.
+* **(CR 10817)** Added ability for user script to be used as scoring function for clustering.  See :method:`the new cluster function <WsfClusterManager.SetScriptDistanceFunction>`.
+* **(CR 10818)** Added ability for user script to be used as scoring function for threat importance for perception processor.  See :model:`the new perception processor input <WSF_PERCEPTION_PROCESSOR>`.
+* Various features on the Quantum Tasker:
+
+ * :class:`WsfQuantumTaskerProcessor` has many more query methods for ascertaining task assignments and debug info.
+ * :class:`WsfTask` automatically sets its task type to the resource type on creation.  User can also specify type.
+ * :class:`WsfTask` has an automatically generated unique id based on resource, track id, & task type. Alternatively, user can overwrite that with a custom id.
+ * :model:`WSF_QUANTUM_TASKER_PROCESSOR` has an :command:`WSF_QUANTUM_TASKER_PROCESSOR.asset_representation` setting of "resources' where each missile or sensor/jammer beam can be tasked separately.
+ * :model:`WSF_QUANTUM_TASKER_PROCESSOR` can specify a task type for allocators.
+ * :model:`WSF_QUANTUM_TASKER_PROCESSOR` can specify many allocators to be used in   sequence during an allocation pass.
+ * :class:`WsfTask` no longer required to be created with a track, however user should give it a unique ID then.
+ * :class:`WsfQuantumTaskerProcessor` assignment bug fixed - new cancels sent before new assigns.
+
+* :class:`WsfAssetPerception` for sensors & jammers adjusted: readyAssignment = total beams, quantityRemaining = untasked beams
+* Adjusted child node response in Behavior Trees: connector node preconditions now return true/false value if children run/failed.
+* **(CR 10794)** Added in the capability to specify the :command:`_.transmitter.duty_cycle` of a :command:`_.transmitter` to affect its average power used in calculations requiring power from the :command:`_.transmitter`.
+* **(CR 10838)** Allow for different size :model:`frequency_channels <WSF_RADAR_SENSOR>` and :model:`frequency_lists <WSF_RADAR_SENSOR>`  on :model:`WSF_RADAR_SENSOR`
+* **(CR 10846)** Added in ability to read in multi-polarization ANTGR antenna files, with more than one polarization defined within the file. (NON-EXPORTABLE version only)
+* **(CR 10858)** Sending a special SetData PDU in replay files to inform VESPA about the date and time of the start of the scenario.  This will result in VESPA's initializing to the start of the scenario rather than the current system time.
+* Added :ref:`WSF_User_Input_Format.Pre-Processor` variable substitution for WSF input files.
+* Added command line options to SAGE executable to suppress time interval messages ("-sm") or to print the time messages at  a custom interval ("-mi").
+* Added an input configuration item to :command:`weapon_effects` to read ":command:`weapon_effects.remove_weapon_platform` [true|false]".  Default is to remove platform (no change).  If set 'false', weapon platform is not removed.
+* Added an input configuration item to :model:`WSF_WEAPON_FUSE` to read ":command:`WSF_WEAPON_FUSE.on_intercept` [detonate|halt]".  Default is 'detonate' (no change).  If set 'halt', platform freezes motion, but remains in the simulation.
+* Enhanced the :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` to be able to target an interceptor to fire at a TSPI-moved threat missile model.
+* Added :ref:`WsfDraw timers <WsfDraw.Begin_Methods>` to display timed events and behaviors.
+* Augmented the :model:`WSF_TSPI_MOVER` to permit a defined TSPI path to be relocated and rotated to anywhere on earth, via the "relocate_and_rotate" input block.
+* Added :command:`terrain.cme_path` command to :command:`terrain` block to specify the path to CME configuration files. This command allows the :command:`terrain.load_cme_terrain` command to be used without the environment variable CME_REL_BASE defined.
+* Added :command:`dis_interface.suppress_emissions_data` command to :command:`dis_interface` block to suppress sending of Emissions PDUs for sensor and jammer events.
+* Added two new :command:`attenuation models <attenuation_model>` - :model:`WSF_OPTICAL_ATTENUATION` and :model:`WSF_TABULAR_ATTENUATION`. These are primarily for use for systems operating in the optical spectrum, such as :model:`WSF_EOIR_SENSOR` and :model:`WSF_IRST_SENSOR`.
+* Updated :model:`WSF_EOIR_SENSOR` and :model:`WSF_IRST_SENSOR` so they could use external attenuation models via the :command:`_.receiver.attenuation_model` command in the :command:`_.receiver` block.
+* Updated the atmospheric data used by the :command:`Spectral Optical Sensing Model (SOSM) <sosm_interface>` using data produced by MODTRAN 5.2. The previous data was based on data produced by MODTRAN 4.1.
+* Added :command:`dis_interface.map_external_type` command to :command:`dis_interface` block to extend the external DIS mover capability to include all entities of a given type.
+* Added in slant 45 and 135 polarization types to the :command:`_.transmitter` and :command:`_.receiver` as an option. Updated the :command:`_.receiver.polarization_effect` table for new polarization types.
+* Added ToString... and ToStringLocal... script methods in :class:`Calendar`.  These enable the use of the derived script class :class:`WsfDateTime` to print out the current simulation date / time.
+* Added several options for :ref:`satellite orientation <docs/wsf_space_mover:Orbital Propagator Commands>`.  Previously only the *nadir_with_eci_velocity_constraint* and *none* were available.
+* Added :class:`Sun` and :class:`Moon` script types.
+
+Developer Items
+===============
+
+* Major changes have been made to the top-level WSF architecture to:
+
+ * Support snapshotting.
+ * More robustly support :ref:`Monte_Carlo_Iteration` iterations and resets of a DIS/HLA exercise.
+ * Support the ability of an WSF interactive application to discard the current scenario in memory and read a new  scenario.
+ * Allow for the potential of multiple runs of a simulation to be run in parallel.
+
+ The changes include:
+
+ * Input and run-time dependent static/global variables have been moved to member variables, more concretely defining ownership and scope.
+ * Type list classes were extracted from their old static variables.  For instance, class WsfPlatformTypes replaces old functionality like WsfPlatform::FindType().
+ * WsfScenario was added.  This class replaces the functionality of WsfSimulationLoader, and encapsulates the various type lists (platform types, sensor types ...)
+ * New 'extension' classes (WsfApplicationExtension, WsfScenarioExtension, WsfSimulationExtension) were created. Subclassing these is the favored method of creating extensions to WSF.
+ * Developers of WSF applications will need to restructure their application, Sage should be used as the template.
+ * Added new WsfSnapshot class, providing the capability to save the state of a simulation to a file and load it
+   again later.
+
+ The developer documentation will be updated to reflect the preferred ways to use the new capabilities.
+
+* The target-tracking related architecture has been refactored to enable future enhancements.
+
+ * Tracks are now composed of atomic pieces of 'information' (see UtInformation).  Each piece of information consists of the data of interest (range, bearing, covariance, etc.), either an error or quality, and a validity flag.
+ * WsfTrack now derives from UtMeasurementData.  In future releases it is planned that UtMeasurementData will replace WsfEM_Interaction::Result, becoming the replacement for sensor measurements.
+ * Tracking filters have been moved into a separate tracking_filters library.
+ * Tracking filters have a new, more generic interface that accepts a UtMeasurementData object as input and produces a UtMeasurementData object as output.
+
+* Visual Studio project files are no longer included with the release.  The developer should now be using :doc:`cmake <../developer/build_instructions>` to build WSF.

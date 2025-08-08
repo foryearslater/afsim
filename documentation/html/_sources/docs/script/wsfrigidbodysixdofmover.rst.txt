@@ -1,0 +1,224 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WsfRigidBodySixDOF_Mover:
+
+WsfRigidBodySixDOF_Mover
+------------------------
+
+.. class:: WsfRigidBodySixDOF_Mover inherits WsfSixDOF_Mover
+   :arrow:
+
+**Input type:** :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`
+
+.. contents::
+   :local:
+
+
+Landing Gear
+============
+
+.. method:: void RetractLandingGear()
+   
+   Retract the landing gear. SixDOF includes the drag from extended landing gear.
+
+.. method:: void LowerLandingGear()
+
+   Extend the landing gear.
+
+.. method:: double GetLandingGearPosition()
+   
+   Returns the angle (deg) of the landing gear. Zero is retracted and 90 deg is full down and locked.
+   The angle is the average of all gear (left main gear, right main gear, and nose gear).
+
+.. method:: bool WeightOnWheels()
+   
+   Returns true if any landing gear is compressed due to weight being on it. This can be used to
+   detect when an aircraft is airborne (when taking off) or when an aircraft has touched down
+   (when landing).
+
+.. method:: bool WeightOnNoseWheel()
+   
+   Returns true if the nose landing gear is compressed due to weight being on the nose gear.
+
+.. method:: void SetEnableNWS(bool aEnable)
+   
+   Enable or disable nose wheel steering (NWS). When NWS is active, the nose wheel will be able to
+   rotate through a larger angle than when NWS is inactive, allowing a tighter turn radius. Nose-wheel
+   steering is often used when taxiing, but should typically be removed prior to the takeoff roll
+   and before landing.
+
+.. method:: double GetNoseWheelAngle()
+   
+   Returns the angle (deg) of the nose wheel steering. Zero is centered, positive is to the right
+   and negative is to the left.
+
+
+Ground Operations
+=================
+
+These functions allow script control of ground operations. In most cases, EnableDirectBraking should be
+called before calling these functions. When there is no further need for these functions,
+ReleaseDirectBraking should be called (unless the parking brake is set, in which case
+EnableDirectBraking should remain active, to hold the brakes).
+  
+.. method:: void EnableDirectBraking()
+   
+   This must be called to allow direct control of wheel brakes, overriding any autopilot control of
+   brakes. If no further direct control of wheel brakes is required, ReleaseDirectBraking should be called.
+
+.. method:: void SetParkingBrake()
+
+   Set the "parking brake", which applies full braking to both wheel brakes of the landing gear of the mover.
+
+.. method:: void ApplyLeftGearBrake(double aNormalizedBrakingValue)
+
+   Apply the specified braking level to the left wheel brake on the landing gear of the mover.
+   Values range from 0.0 (no braking) to 1.0 (full braking).
+
+.. method:: void ApplyRightGearBrake(double aNormalizedBrakingValue)
+
+   Apply the specified braking level to the right wheel brake on the landing gear of the mover.
+   Values range from 0.0 (no braking) to 1.0 (full braking).
+
+.. method:: void ReleaseWheelBrakes()
+
+   Release all wheel brakes.
+
+.. method:: void ReleaseDirectBraking()
+   
+   This disables direct control of wheel brakes, restoring control to the autopilot. It essentially
+   "cancels" the EnableDirectBraking function.
+
+
+External Forces
+===============
+
+The functions provide support to apply an external force to the vehicle or to remove such a force.
+
+.. method:: void ApplyExternalForce(double aMagnitude, double aAngle)
+
+   This method applies a force with magnitude equal to aMagnitude (in Newtons) with an angle of aAngle (deg)
+   to the nose wheel of the model. This method is only intended to be used on ground operations and is
+   useful to simulate pushing back from the gate or towing an aircraft. It can also be used to simulate
+   a catapult on an aircraft carrier. An angle of 0 deg represents a force being pushed against the nose
+   wheel such that the plane will back up, while a force at an angle of 180 will make the aircraft roll
+   forward. If the model does not have landing gear, this function will not do anything. The force is
+   applied until :method:`WsfRigidBodySixDOF_Mover.RemoveExternalForce` is called.
+
+.. method:: void RemoveExternalForce()
+   
+   Removes any external force being applied to the mover. For more information,
+   see :method:`WsfRigidBodySixDOF_Mover.ApplyExternalForce`
+
+
+Autopilot Commands
+==================
+
+RigidBodySixDOF autopilot adds support for taxiing to the base SixDOF autopilot.
+
+.. method:: void SetTaxiMode(bool aEnable)
+
+   Enable or disable "taxi mode". Taxi mode should be enabled when an aircraft is
+   operating on the ground so that the autopilot can utilize the appropriate controls
+   (rudder instead of stick right, for example) when performing ground operations.
+
+.. method:: void SetTaxiRadius()
+
+   Set the minimum radius for turns when in taxi mode.
+
+
+Autopilot Current Settings/Limits
+=================================
+
+.. method:: double GetTaxiSpeedMax()
+
+   Returns the maximum taxi speed in (m/s).
+
+.. method:: double GetTaxiYawRateMax()
+
+   Returns the maximum yaw rate (deg/s) when in taxi mode.
+
+
+Autopilot Limit Modifications
+=============================
+
+.. method:: void SetTaxiSpeedMax(double aSpeed)
+
+   This will limit the autopilot to the specified maximum taxi speed in (m/s).
+
+.. method:: void SetTaxiYawRateMax(double aRate)
+
+   Sets the maximum yaw rate (deg/s) when in taxi mode.
+
+
+Control Inputs
+==============
+
+.. method:: void SetThrustReverserPosition(double aPosition)
+
+   Sets the thrust reverser position. Valid values for aPosition are [0,1] -- 0 is
+   normal (non-reverse) thrust and 1 is full reverse thrust. If there are no thrust
+   reversers on the SixDOF model, this function does nothing.
+
+.. method:: double GetThrustReverserPosition()
+
+   Returns the current thrust reverser control input position (between 0 and 1).
+
+.. method:: double GetLandingGearLeverPosition()
+
+   Returns the current landing gear control input position (between 0 and 1).
+
+
+Control Surface Positions
+=========================
+
+.. method:: double GetAngleOfControlSurface(string aControlSurfaceName)
+
+   Returns the current angle (deg) of the specified control surface.
+
+.. method:: Array<string> GetListOfControlSurfaceNames()
+
+   Returns a list of control surface names for the vehicle.
+
+.. method:: double GetAileronsBothPosition()
+
+   Returns the angle (deg) of the ailerons. A positive value is trailing edge up on
+   the right aileron and trailing edge down on the left aileron.
+
+.. method:: double GetStabilatorLeftPosition()
+
+   Returns the angle (deg) of the left stabilator. A positive value is trailing edge up.
+
+.. method:: double GetStabilatorRightPosition()
+
+   Returns the angle (deg) of the left stabilator. A positive value is trailing edge up.
+
+.. method:: double GetRudderPosition()
+
+   Returns the angle (deg) of the rudder(s). A positive value is trailing edge right.
+
+
+Forces and Moments (F&M)
+========================
+
+.. method:: double GetYawMoment()
+
+   Returns the current yaw moment in Newton-meters.
+
+.. method:: double GetPitchMoment()
+
+   Returns the current pitch moment in Newton-meters.
+
+.. method:: double GetRollMoment()
+
+   Returns the current roll moment in Newton-meters.
+

@@ -1,0 +1,150 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ATA_LAUNCH_COMPUTER
+-----------------------
+
+.. model:: launch_computer WSF_ATA_LAUNCH_COMPUTER
+   
+.. parsed-literal::
+
+   launch_computer <name> WSF_ATA_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      ... WSF_ATA_LAUNCH_COMPUTER Commands_ ...
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_ATA_LAUNCH_COMPUTER` implements a launch computer for an air-to-air missile. (This type is deprecated, in favor
+of :model:`WSF_AIR_TO_AIR_LAUNCH_COMPUTER`.)  The missiles may have various engagement constraints that must be satisfied
+prior to launch of the :model:`WSF_EXPLICIT_WEAPON`.
+
+A weapon_tool has been developed to assist with creation of launch computers of this type.  See
+:model:`AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR`.
+
+.. block:: WSF_ATA_LAUNCH_COMPUTER
+
+Commands
+========
+
+.. command:: intercept_results ... end_intercept_results
+   
+   This block contains the data that defines the intercept envelope.  It is recommended that this data be generated using
+   the LAR generator weapon tool.
+
+      SUBCOMMANDS
+
+      .. command:: number_of_aspect_angle_bins *<number>*
+
+         Specifies the number of azimuth angle bins in the intercept envelope.  The azimuthal coverage will be from 0 to 180
+         degrees.  Azimuthal symmetry is assumed.
+
+      .. command:: azimuth_bin_count_end_limit <number> <angle>
+         
+         Similar to number_of_aspect_angle_bins_ but limits the azimuthal coverage to the specified value.
+
+      .. command:: elevation_bin_count_min_and_max_limits <number> <min-angle> <max-angle>
+         
+         Specifies the number of elevation angle bins in the intercept envelope between the specified minimum and maximum angles.
+
+      .. command:: range_rate_bin_count_min_and_max_limits <number> <min-range-rate> <max-range-rate>
+         
+         Specifies the number of range rate (i.e., closing velocity) bins in the intercept envelope between the specified
+         minimum and maximum rates.
+
+      .. command:: firing_range_bin_count_and_values <number> <range1> <range2> ... <rangen>
+         
+         Specifies the number of launch range bins and the corresponding range in the intercept envelope.
+
+      .. command:: time_of_flight_values ... end_time_of_flight_values
+         
+         The intercept envelope (a series of time-of-flight values) for the above specified (m X n X p X q X r) rectangular
+         matrix of engagement parameters. Any time-of-flight given as 0.0 indicates no intercept is possible under these
+         conditions.
+
+.. command:: generate_rectangular_results ... end_generate_rectangular_results
+
+This block is used by the offline LAR generator tool to generate the intercept_results_ block.  It is referred to
+as "rectangular" because the weapon_tool methodically (i.e., via "brute force") calculates a time-of-flight result for
+each group of engagement conditions in a (m X n X p X q X r) rectangular matrix of m aspect angles, n azimuth bins, p
+elevation bins, q range-rate bins, and r range bins.  Any 0.0 value of time-of-flight indicates no intercept is
+possible; there are likely to be many zero values in the table.
+
+      SUBCOMMANDS
+
+      .. command:: aspect_angle_bin_count <number>
+                  azimuth_bin_cint *<number>*
+         
+         Specifies how many azimuth bins that will be used to generate the intercept envelope.
+         
+         Default: 4
+
+      .. command:: azimuth_limit <angle>
+         
+         Specifies the maximum azimuth angle that will be used to generate the intercept envelope.
+         
+         Default: 90.0 deg
+
+      .. command:: elevation_bin_count <number>
+         
+         Specifies the number of elevation bins that will be used to generate the intercept envelope.
+         
+         Default: 4
+
+      .. command:: elevation_lower_limit <angle>
+         
+         Specifies the minimum elevation angle that will be used to generate the intercept envelope.
+         
+         Default: -45.0 deg
+
+      .. command:: elevation_upper_limit <angle>
+         
+         Specifies the maximum elevation angle that will be used to generate the intercept envelope.
+         
+         Default: 45.0 deg
+
+      .. command:: range_rate_bin_count number
+         
+         Specifies the number of range rate bins that will be used to generate the intercept envelope.
+         
+         Default: 4
+
+      .. command:: range_rate_lower_limit <range-rate>
+         
+         Specifies the minimum range rate that will be used to generate the intercept envelope.
+         
+         Default: -1000.0 ft/sec
+
+      .. command:: range_rate_upper_limit <range-rate>
+         
+         Specifies the maximum range rate that will be used to generate the intercept envelope.
+         
+         Default: 1000.0 ft/sec
+
+      .. command:: range_bin_count <number>
+         
+         Specifies the number of range bins that will be used to generate the intercept envelope.
+         
+         Default: 4
+
+      .. command:: minimum_ground_range <range>
+         
+         Specifies the minimum range that will be used to generate the intercept envelope.
+         
+         Default: 0.0
+
+      .. command:: maximum_ground_range <range>
+         
+         Specifies the maximum range that will be used to generate the intercept envelope.
+         
+         Default: 40.0 nautical miles

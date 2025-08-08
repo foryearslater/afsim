@@ -1,0 +1,200 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_OLD_GUIDANCE_COMPUTER
+-------------------------
+
+.. model:: processor WSF_OLD_GUIDANCE_COMPUTER
+
+.. note::
+
+   This refers to the 'old' implementation and should be avoided for new work.
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_OLD_GUIDANCE_COMPUTER`
+      ... :command:`base processor commands <processor>` ...
+      ... WSF_OLD_GUIDANCE_COMPUTER_ Commands_ ...
+   end_processor
+
+Overview
+========
+
+:model:`WSF_OLD_GUIDANCE_COMPUTER` implements a processor that models homing guidance.  It obtains the platform's current
+target track (:command:`track`) from the :command:`track_manager` and computes desired vertical and lateral forces that will steer
+the platform to intercept the track.  The desired side forces (possibly limited by max_commanded_g_) are set into
+a :model:`WSF_OLD_GUIDED_MOVER`, which ultimately determines the resulting trajectory.  It is important to note that
+:model:`WSF_OLD_GUIDED_MOVER` also internally consults a supplied :command:`aero` definition, which will further apply certain
+practical constraints.  For particular portions of the flight, often both at the beginning and near the intercept
+point, the resulting motion may differ significantly from the ideal due to physical limitations.
+
+Velocity Pursuit = Turn to place the velocity vector along line-of-sight to the target.  Since this guidance mode does
+not compensate for target velocity, air-to-air engagements against a high-speed target will tend to toward a tail chase
+into the target from behind.
+
+Proportional Navigation = Turn to null the inertial line-of-sight rates to zero.  Since this guidance mode compensates
+for target maneuver in real-time, it is a nearly ideal intercept scheme for air-to-air maneuvering engagements.
+
+The profile is modifiable, but the default trajectory flown will be a short period of velocity-pursuit guidance.  After
+the velocity vector is approximately directed at the target, a switch to proportional navigation will be made.  If the
+guided platform velocity is higher than the target velocity, and if no constraints intervene, a target intercept will
+occur.
+
+The processor contains a simple drift model to account for self-positional uncertainty.  Target positional uncertainty
+depends upon the accuracy of the platform current target track.  Default behavior is perfect self-positional awareness.
+See the :command:`WSF_OLD_GUIDANCE_COMPUTER.time_between_GPS_fixes` and :command:`WSF_OLD_GUIDANCE_COMPUTER.IMU_drift_rate` keywords.
+
+.. block:: WSF_OLD_GUIDANCE_COMPUTER
+
+Commands
+========
+
+.. command:: guide_to_truth <boolean-value>
+   
+   Specifies if the perceived target location (as defined by the current target track) or the truth target location should
+   be used in the guidance computations.
+   
+   Default: false
+
+.. command:: proportional_navigation_gain  <float-value>
+   
+   Specifies the gain to apply to a perceived inertial line-of-sight rate, to null the rate to zero.  The default value
+   may be inadequate, as the appropriate value is usually a matter of experimentation.  Reducing the value to 0.0 would
+   result in no guidance to intercept, and increasing the gain by an order of magnitude (10.0) would likely saturate the
+   control system into a "bang-bang" type of oscillation, and wash out any ability to simultaneously accomplish g-biasing.
+   
+   Default: 1.0
+
+.. command:: velocity_pursuit_gain  <float-value>
+   
+   Specifies the gain to apply to a perceived off-boresight target angle, to place the velocity vector back on the target.
+   (The gain comments made for proportional_navigation_gain_ also apply here.)
+   
+   Default: 1.0
+
+.. command:: g_bias  <float-value>
+   
+   Specifies the degree to which the trajectory should be compensated for vertical acceleration due to gravity.  The
+   default value of unity results in a somewhat flat trajectory along the line of sight to the target.  Some missiles may
+   be intentionally over-biased to fly an arcing trajectory to the target, descending upon it from above (use > 1.0, but <
+   10.0).  Some inexpensive infrared-guided missiles do not contain an attitude reference gyro, and cannot "know" which
+   way is up.  Because they cannot compensate for gravity, they tend to fly a "sagging" trajectory below the line-of-sight
+   to the target (use 0.0).  Extreme positive values of g-bias (> 10.0) may possibly vertically saturate the control
+   system, and wash out any ability to accomplish target homing guidance in the lateral direction.
+   
+   Default: 1.0
+
+.. command:: continuous_g_bias 
+   
+   This flag requests that g bias be used throughout the whole flight profile.  The default behavior is not to turn on g
+   bias compensation until the horizontal target distance is large relative to the vertical drop to the target.  If a
+   ballistic falling trajectory to the target has the ability to intercept, then further g-bias is not needed, and would
+   likely even increase the miss distance.
+
+.. command:: max_commanded_g  <acceleration-value>
+   
+   This sets the maximum commanded lateral turn acceleration that the guidance computer will request of the guided mover. 
+   This models a guidance-imposed structural limit constraint to prevent airframe destruction.
+   
+   Default: 25.0 g
+
+.. command:: guidance_delay  <time-interval-value>
+   
+   This keyword specifies a time interval after launch when guidance request is clamped to null.  This models a
+   no-guidance period to clear the launch rail, or perhaps a time before uplink guidance has been established.
+   
+   Default: 0.0
+
+.. command:: aspect_angle_for_pro_nav_switch  <angle-value>
+   
+   After the velocity-vector to target line-of-sight angle decreases below this value, the guidance algorithm will switch
+   from velocity pursuit to proportional navigation.  This value is not used if either omit_velocity_pursuit_ or
+   omit_proportional_navigation_ is specified.
+   
+   Default: 30.0 deg
+
+.. command:: omit_velocity_pursuit 
+   
+   This flag forces the trajectory guidance to include only pure proportional navigation, from the very beginning of the
+   flight, with no velocity pursuit segment.
+
+.. command:: omit_proportional_navigation 
+   
+   This flag forces the trajectory guidance to include only velocity pursuit, with no switch to proportional navigation.
+
+.. command:: time_between_GPS_fixes  <time-duration>
+   
+   For the drift model, this duration specifies how often a positional update is received. The value will not be used
+   unless the drift rate (below) is input as non-zero.
+   
+   Default: 5.0 minutes
+
+.. command:: IMU_drift_rate  <speed-value>
+   
+   For the drift model, this specifies the rate of drift of positional perception.
+   
+   Default: 0.0 - No drift
+
+.. command:: pitchover_guidance 
+   
+   Specifies that the weapon will use a proportional navigation guidance scheme only that is modified for weapons that
+   must perform a pitchover maneuver to point at the target.  The proportional_navigation_gain_ is adjusted
+   throughout the weapon's flight based upon the weapon's closure rate.  (All indented commands below require that this
+   option be enabled.)
+   
+.. command:: maximum_loft_time 
+
+   Specifies the time the missile will loft using the specified loft angle.
+   
+   Default: 0.0
+
+.. command:: loft_angle 
+   
+   Specifies the angle the missile will initially climb at for the specified maximum_loft_time.
+   
+   Default: 0.0
+
+.. command:: frequency_cutoff 
+   
+   A method of specifying the doppler frequency that determines the method of computing the pitchover gain.  The guidance
+   computer assumes a frequency of 10 GHz to compute the closing doppler frequency (i.e., doppler shift = 10.0e9 /
+   light_speed * doppler_range_rate).
+   
+   Default: 0.0 Hz
+
+.. command:: min_nav_gain 
+   
+   The minimum pitchover gain that is used when the doppler shift is less than zero.
+   
+   Default: 0.0
+
+.. command:: max_nav_gain 
+   
+   The maximum pitchover gain that is used when the doppler shift is equal to or greater than the frequency_cutoff.
+   
+   Default: 0.0
+
+.. command:: nav_gain_factor 
+   
+   A factor that is applied to the computed pitchover gain.
+   
+   Default: 0.0
+
+.. command:: nav_gain_slope_1 
+   
+   Used to compute the pitchover gain when the doppler shift is less than the specified frequency_cutoff.  The pitchover
+   gain is computed as follows:  Pitchover_gain = nav_gain_slope_1 * doppler_shift + min_nav_gain.
+
+.. command:: nav_gain_slope_2 
+   
+   Used to compute the pitchover gain when the doppler shift is greater than or equal to the specified frequency_cutoff. 
+   The pitchover gain is computed as follows, unless limited by the max_nav_gain:  Pitchover_gain = nav_gain_slope_2 *
+   (doppler_shift - frequency_cutoff) + 0.5.

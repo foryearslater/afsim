@@ -1,0 +1,117 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _SOSM_sensor_model:
+
+SOSM sensor model
+-----------------
+
+.. parsed-literal::
+
+ sensor_model default
+
+    response_limits_ *<lower-wavelength>* *<upper-wavelength>*
+
+    response_curve_
+       wavelength *<wavelength-value>* *<response>*
+       ...
+    end_response_curve
+
+    noise_equivalent_irradiance_ *<power/area-value>*
+
+    detection_threshold_ *<real-value>*
+    detection_threshold_above_horizon_ *<real-value>*
+    detection_threshold_below_horizon_ *<real-value>*
+
+    installation_adjustment_table_ *<file-name>*
+    atmosphere_ *<atmosphere-type>*
+    resolution_ *<wavenumber-increment>*
+ end_sensor_model
+
+This page describes how to create a sensor definition for use with the Spectral Optical Sensing Model (SOSM). Each
+sensor definition must be contained in its own file. A sensor definition is made available to a simulation by using the
+:command:`sosm_interface load_sensor <sosm_interface.load_sensor>` command.
+
+.. block:: _.sosm_sensor_model_commands
+
+Commands
+========
+
+.. command:: response_limits <lower-wavelength> <upper-wavelength>
+   
+   Defines the region in which the sensor can detect signals.
+   
+   **Default** None - must be provided.
+
+   Example::
+
+      response_limits 3 um 5 um
+
+.. command:: response_curve ... end_response_curve
+   
+.. command:: wavelength <wavelength-value> <response>
+
+   The **response_curve** block defines the response of the sensor as a function of wavelength. The sensor model will use
+   this curve to determine the response for the wavenumber bins.
+
+   **Default** Uniform response of 1.0
+
+.. command:: noise_equivalent_irradiance <power/area-value>
+
+   **Default** None - must be provided.
+
+.. command:: detection_threshold <real-value>
+
+   **Default** None - either this command or the detection_threshold_above/below_horizon command defined below must be
+   provided.
+
+.. command:: detection_threshold_above_horizon <real-value>
+.. command:: detection_threshold_below_horizon <real-value>
+
+**Default** None - either these commands or the detection_threshold command defined above must be provided.
+
+.. command:: installation_adjustment_table <file-name>
+
+   Specifies the name of a file which contains a table that defines a function whose independent variables are the azimuth
+   and elevation of the target with respect to the sensing platform, and the dependent variable is a factor between 0 and
+   1 inclusive that used to scale the target irradiance. This is typically used to account for occlusion by structure or
+   variable window transmittance.
+
+   The format of the file is as follows. The azimuth and elevation values are in degrees and the factors must be in the
+   range between 0 and 1 inclusive. A value of 1 indicates the signal is passed unmodified, while a value of zero means
+   the target is obscured by the structure or aperture. Intermediate values indicate partial obscuration.
+
+   ::
+
+    *header-line-1*
+    *header-line-2*
+    *header-line-3*
+    *<number-of-az-values> <number-of-el-values>*
+    *      el1   el2   el3      eln*
+    *az1   f11   f12   f13      f1n*
+    *az1   f21   f22   f23      f2n*
+    *az1   f31   f32   f33      f3n*
+    
+    *azm   fm1   fm2   fm3      fmn*
+
+   **Default** No installation adjustment.
+
+.. command:: atmosphere <atmosphere-type>
+
+   **Default** DEFAULT
+
+.. command:: resolution <wavenumber-value>
+
+   **Default** 20 cm-1
+
+Example::
+
+  resolution 20 cm-1

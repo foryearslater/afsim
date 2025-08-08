@@ -1,0 +1,245 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_MESSAGE_PROCESSOR
+---------------------
+
+.. model:: processor WSF_MESSAGE_PROCESSOR
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_MESSAGE_PROCESSOR`
+      :command:`processor` Commands ...
+      :ref:`Platform_Part_Commands` ...
+      ... :model:`WSF_SCRIPT_PROCESSOR Commands <WSF_SCRIPT_PROCESSOR>` ...
+
+      # Specify the parameters for handling messages to be delayed.
+
+      queuing_method_ ...
+      number_of_servers_ ...
+
+      # Specify message selection and processing rules.
+      # (May be repeated as necessary...)
+
+      process
+
+         # Specify the messages to be selected for this process.
+         # (May be repeated as necessary...)
+
+         select
+             ... `Message Selection Commands`_ ...
+         end_select
+
+         # Specify how the selected messages are to be processed `Message Processing Commands`_
+
+         ignore_message_
+         delay_time_ ...
+         'script ... <script commands> ... end_script'
+         ... `External Link Commands`_ ...
+         ... `Internal Link Commands`_ ...
+
+      end_process
+
+      # Define the processing for messages not selected by a process block.
+
+      default_process
+         ignore_message_
+         delay_time_ ...
+         'script ... <script_commands> ... end_script'
+         ... `External Link Commands`_ ...
+         ... `Internal Link Commands`_ ...
+      end_default_process
+
+      # Define the routing to be used when the selected process (or default_process)
+      # block does not include any routing commands.
+
+      default_routing
+         ... `External Link Commands`_ ...
+         ... `Internal Link Commands`_ ...
+      end_default_routing
+
+      # NOTE: `Message Processing Commands`_ that occur outside of process and
+      # default_process are assumed to be part of the default_process.
+
+      delay_time_ ...
+      ... `External Link Commands`_ ...
+      ... `Internal Link Commands`_ ...
+      ignore_message_
+   end_processor
+
+Overview
+========
+
+:model:`WSF_MESSAGE_PROCESSOR` provides the ability to control the flow of received messages by applying user-defined time
+delays and routing. The user provides **process** blocks which specifies the messages to which the accompanying message
+delays and routing are applied.
+
+Input Requirements
+******************
+
+Input to the processor consists of the following:
+
+* Zero or more **process** blocks which contain:
+
+   * One or more **select** blocks that define the messages to be acted upon.
+   * Commands that define the actions to be applied to the selected messages (e.g., `time delay, routing or ignoring <Message Processing Commands_>`_).
+
+* An optional **default_process** block that defines the actions to be applied to messages that are not selected by a
+  **process** block.
+
+* An optional **default_routing** block that defines the routing to be applied to messages that do not contain any
+  routing commands.
+
+* Commands to configure the queue manager that is responsible for processing messages with a non-zero delay_time_.
+
+Processing Flow
+***************
+
+The general flow of processing a received message is as follows:
+
+* Search the **process** blocks for the first entry that applies. If an applicable **process** block is not found, use
+  the default message handling as defined by the **default_process** block.
+* If the message handling specified ignore_message_, simply ignore the message and exit.
+* If the message handling specified a non-zero delay_time_, put the message in the processing queue according to
+  the queuing_method_ and number_of_servers_.
+* When any necessary delay has been completed (or immediately if no delay was selected), route the message as required:
+
+   * Use the internal and external link commands from the selected **process** or **default_process** block, if defined.
+   * If not defined, use the internal and external link commands from the **default_routing** block.
+
+.. block:: WSF_MESSAGE_PROCESSOR
+
+Message Queuing Commands
+========================
+
+These commands define the how messages are queued if they require a time_delay.
+
+.. command:: queuing_method [ first_in_first_out | last_in_first_out | none ]
+
+   Specifies how incoming messages are to be queued if all of the servers are busy. A value of **none** indicates the
+   message will be discarded if no server is available.
+
+   Default: first_in_first_out
+
+.. command:: number_of_servers [ <integer-reference> | infinite ]
+
+   Specifies the maximum number of messages that can be 'in process' at any given instant of time. If a new message is
+   received and all the servers are busy, the message will be queued according to the queuing_method_
+
+   If 'infinite' is specified (the default), received messages are simply delayed by the required amount before being
+   forwarded.
+
+   Default: infinite
+
+Message Selection Commands
+==========================
+
+The message selection commands occur inside **select** blocks and specify what messages are to be acted upon by the
+`Message Processing Commands`_ in the **process** block in which they occur. A message will be selected for
+processing if *all* of the selection criteria specified in any **select** block within the **process** block are
+true.
+
+Note that with the exception of the sender_ command, each of the selection criteria commands should occur at most
+once within a given **select** block. For example, if one desires to select two different types of messages then two
+**select** blocks must be provided, each with a different type_ selector.
+
+.. command:: type <message-type>
+
+   Returns true if the supplied message type matches the type from the message. Standard message types are as follows:
+
+   .. include:: message_types.txt
+
+.. command:: subtype <message-subtype>
+
+   Returns true if the supplied message subtype matches the type from the message.
+
+.. command:: sensor_name <sensor-name>
+
+   Returns true if the message is a WSF_TRACK_MESSAGE, WSF_IMAGE_MESSAGE or WSF_VIDEO_MESSAGE, and if the supplied sensor
+   name matches the sensor name from the message.
+
+.. command:: sensor_type <sensor-type>
+
+   Returns true if the message is a WSF_TRACK_MESSAGE, WSF_IMAGE_MESSAGE or WSF_VIDEO_MESSAGE, and if the supplied sensor
+   type matches the sensor type from the message.
+
+.. command:: sensor_mode <sensor-mode>
+
+   Returns true if the message is a WSF_TRACK_MESSAGE, WSF_IMAGE_MESSAGE or WSF_VIDEO_MESSAGE, and if the supplied sensor
+   mode matches the sensor mode from the message.
+
+.. command:: system_name <system-name>
+
+   Returns true if the message is a WSF_STATUS_MESSAGE and if the supplied system name matches the system name from the
+   message.
+
+.. command:: sender commander | peer | subordinate | self
+
+   Returns true if the sender of the message was one of the identified platforms.
+
+   .. note::
+
+      This command may be repeated to build the set of acceptable senders. The return value will be true if
+      any of the sender commands returns true.
+
+.. command:: script ... script commands ... end_script
+
+   Defines a script that returns true if the message is to be selected. The script variable MESSAGE refers to the current
+   message.
+
+Message Processing Commands
+===========================
+
+.. command:: delay_time <random-time-reference>
+
+   Specifies the amount of time the message should be delayed before being processed,
+
+   Default: delay_time 0 sec (no delay)
+
+   .. note::
+
+      This is a <random-time-reference>, and as such can specify a distribution from which the delay is
+      'drawn' for each received message.
+
+.. command:: ignore_message
+
+   Indicates the message should be ignored.
+
+   Default: false (The message will be processed)
+
+.. command:: script ... script commands ... end_script
+
+   Defines a script that will be called to 'process' the message. The script variable MESSAGE refers to the current
+   message.
+
+   This is similar to the **script** block inside of an :command:`WSF_SCRIPT_PROCESSOR.on_message` block in
+   :model:`WSF_SCRIPT_PROCESSOR`.
+
+   .. note::
+
+      This form of the **script** command (no return type, name and argument list) is allowed only within a
+      **process** or **default_process** block. The **script** command that occurs outside of these blocks is treated as a
+      normal script definition and must include a return type, name and argument list.
+
+External Link Commands
+**********************
+
+These commands are used to specify the routing of messages to offboard recipients (i.e., other platforms).
+
+:ref:`External_Link_Commands`
+
+Internal Link Commands
+**********************
+
+These commands are used the specify the routing of messages to on 'onboard' recipients (i.e., processors on the same
+platform).
+
+.. include:: internallinkcommands.txt

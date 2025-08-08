@@ -1,0 +1,326 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_P6DOF_MOVER
+---------------
+
+**Script Class:** :class:`WsfP6DOF_Mover`
+
+.. model:: mover WSF_P6DOF_MOVER
+
+.. parsed-literal::
+
+   mover <name> :model:`WSF_P6DOF_MOVER`
+
+      // `P6Dof Object Type Commands`_
+      p6dof_object_type_ ...
+      autopilot_no_control_ ...
+      enable_controls_ ...
+      enable_thrust_vectoring_ ...
+      engines_on_ ...
+      follow_vertical_track_ ...
+      ignore_all_crashes_ ...
+      landing_gear_down_ ...
+      nws_enabled_ ...
+      p6dof_alt_ ...
+      p6dof_initsetup_ ...
+      p6dof_ned_heading_ ...
+      p6dof_ned_pitch_ ...
+      p6dof_ned_roll_ ...
+      p6dof_position_ ...
+      p6dof_set_velocity_ned_fps_ ...
+      parking_brake_on_ ...
+      produces_launch_smoke_ ...
+      taxi_mode_enabled_ ...
+      throttle_afterburner_ ...
+      throttle_full_ ...
+      throttle_idle_ ...
+      wash_in_conditions_ ...
+
+      // `Route Commands`_
+      route_ ... end_route
+      use_route_ ... 
+
+      // Script Methods -- see :class:`WsfP6DOF_Mover`
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_P6DOF_MOVER` is a high-fidelity, pseudo-6DOF (six degrees of freedom) mover. P6DOF provides **six degrees of freedom** (allowing attitude/angular kinematics as well as translational kinematics), providing an ability for higher fidelity simulation than 3DOF-based models, with a physics-based model (using force and moment build-up) that includes
+Mach and altitude effects. P6DOF was designed from the start to integrate with AFSIM, simplifying its use within the framework.
+
+WSF_P6DOF_MOVER is a **pseudo** 6DOF model, meaning that it includes some simplifications in its attitude calculations as compared to a 'hard-core' 6DOF model. These involve some angular acceleration and inertia tensor simplifications, but the model retains a full six degrees of freedom in its motion calculations -- as a result, P6DOF is a true **6DOF** (unlike other models that are called pseudo-6DOF, but are really only 5DOF models). The attitude simplifications used in P6DOF actually have minimal impact on attitude kinematics. However, the result of these 'pseudo' design features is that P6DOF requires less data, requires fewer calculations, and is easier to use than a full-6DOF simulation, yet it still provides realistic modeling, including yaw, pitch, and roll as well as alpha (angle-of-attack) and beta (angle-of-sideslip) effects.
+
+The WSF_P6DOF_MOVER has been designed to support a wide range of mover vehicles, including fixed-wing aircraft, rotorcraft, missiles (including air-to-air (AAM), surface-to-air (SAM), air-to-ground (AGM), and anti-ballistic missiles (ABM)), ballistic missiles (including SRBM, MRBM, IRBM, and ICBM), space launch vehicles (including typical multi-stage linear-staged boosters, as well as parallel-staged configurations, and winged reentry vehicles), and spacecraft/satellites. The initial support is focused on fixed-wing aircraft, but others will be supported/expanded in future releases.
+
+WSF_P6DOF_MOVER uses "framework-agnostic" P6DOF core software, allowing its use within other simulation frameworks beyond AFSIM, if needed.
+
+The advantage of using WSF_P6DOF_MOVER over :model:`WSF_AIR_MOVER`, :model:`WSF_GUIDED_MOVER`, :model:`WSF_HYBRID_MOVER`,
+:model:`WSF_TBM_MOVER`, or :model:`WSF_KINEMATIC_MOVER` is that the platform's attitude is more accurately modeled, with realistic yaw,
+pitch, and roll as well as angle-of-attack (alpha) that are calculated via realistic force- and moment-based
+physics/aerodynamics models. The disadvantage of using WSF_P6DOF_MOVER is that its increased realism requires more
+calculations and computer processing time.
+
+.. note::
+
+   Due to its increased fidelity, the WSF_P6DOF_MOVER involves significantly more computations than most 3DOF models. It also must be iterated at a comparatively high update rate (typically 100 Hz) to obtain high-accuracy. As a result, it will consume more compute power, resulting in increased run times, as compared to simpler models such as :model:`WSF_AIR_MOVER`. As a result, the WSF_P6DOF_MOVER is best used in small-sized scenarios or for particular "platforms of interest" in larger scenarios where increased fidelity for particular platforms is important.
+
+   Scenarios using the WSF_P6DOF_MOVER **must** set :command:`minimum_mover_timestep`, and set it to no larger than 0.01 seconds -- smaller than the default minimum timestep of 0.05 seconds. This is necessary to allow guidance computers and sequencers to update in step with the P6DOF vehicle, particularly when using the explicit :command:`realtime` mode or when using real-time applications like Warlock. To be safe, 0.001 seconds (1 millisecond) is preferred. Note that this does not force an update every millisecond, but provides a buffer against floating-point errors that might otherwise cause an update to be missed.
+
+.. warning::
+
+   With the introduction of :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`, WSF_P6DOF_MOVER is now **DEPRECATED**. Users are strongly encouraged to avoid using WSF_P6DOF_MOVER in any new work and should instead use :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`. Furthermore, users should also modify their existing scenarios and data files to replace WSF_P6DOF_MOVER with WSF_RIGID_BODY_SIX_DOF_MOVER. WSF_P6DOF_MOVER will still be included in future releases of AFSIM for a period of time (approximately twelve months) but will then be removed from the AFSIM code base.
+
+.. block:: WSF_P6DOF_MOVER
+
+P6Dof Object Type Commands
+==========================
+
+The most important command for a WSF_P6DOF_MOVER is p6dof_object_type_, which defines the performance characteristics of of the object. The :command:`p6dof_object_type` is defined in a :command:`p6dof_object_types` block. The p6dof_object_type must be defined before it is referenced in the **mover WSF_P6DOF_MOVER** block.
+
+See :command:`p6dof_object_types` for information on how to create a :command:`p6dof_object_type`.
+
+.. command:: p6dof_object_type <string>
+   
+   This defines the type of p6dof object used by the mover. The :command:`p6dof_object_type` is defined in a :command:`p6dof_object_types` block and must be defined before being referenced.
+   
+   The simplest WSF_P6DOF_MOVER definition is something like this::
+   
+      mover WSF_P6DOF_MOVER
+         p6dof_object_type  F-15C
+      end_mover
+    
+   This indicates that the F-15C p6dof_object_type_ will be used.
+
+.. command:: autopilot_no_control <boolean-value>
+   
+   This will command the autopilot to "zero" all controls, which will center the stick and rudder and pull back throttle(s) to zero (idle). It is similar to enable_controls_ but is commanding the autopilot, rather than the controls themselves.   
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.SetAutopilotNoControl`
+  
+.. command:: enable_controls <boolean-value>
+   
+   This enables/disables control inputs from any source (autopilot, external manual pilot, P6Net interface, etc.). Controls are enabled by default, so this command is typically used to disable controls at the start. This is often used to allow a weapon to drop ballistically and without control inputs as it is released from the carrying aircraft and then calling the script method :method:`WsfP6DOF_Mover.EnableControls` with true to establish control input after the weapon is safely clear of the aircraft.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.EnableControls`
+  
+.. command:: enable_thrust_vectoring <boolean-value>
+   
+   Indicates whether thrust vectoring is enabled or not.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.EnableThrustVectoring`
+  
+.. command:: engines_on <boolean-value>
+   
+   Indicates whether the engines should be on or off when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfP6DOF_Mover.StartupEngines` or :method:`WsfP6DOF_Mover.ShutdownEngines`
+  
+.. command:: follow_vertical_track
+   
+   Normally, the autopilot will climb/dive as quickly as possible (within the current limits -- see :method:`WsfP6DOF_Mover.SetVerticalSpeedMax` and :method:`WsfP6DOF_Mover.SetVerticalSpeedMin`) when changing altitude, but when "follow_vertical_track" is set, the autopilot will instead use a vertical speed that will allow the object to smoothly/slowly change altitude along a straight line vertical track between waypoints.
+   
+   Although this is an option and the default is to **not** use follow_vertical_track, it will often be used, since many users prefer the resultant "gradual" vertical flight path over the default "quick" altitude change between waypoints.
+   
+.. command:: ignore_all_crashes <boolean-value>
+
+   Indicates whether the mover ignore all forms of crashes. This is often used in testing.
+   
+.. command:: landing_gear_down <boolean-value>
+   
+   Indicates whether the landing gear should be down or not when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfP6DOF_Mover.LowerLandingGear` or :method:`WsfP6DOF_Mover.RetractLandingGear`
+  
+.. command:: nws_enabled <boolean-value>
+   
+   Indicates whether nose-wheel steering should be enabled or not.  Nose-wheel steering is commonly used when taxiing but should be removed prior to the takeoff roll.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.SetEnableNWS`
+  
+.. command:: p6dof_alt <length-value>
+   
+   This command sets the initial altitude of the mover.
+
+.. command:: p6dof_initsetup
+   
+   This is deprecated -- use wash_in_conditions_ instead.
+
+.. command:: p6dof_ned_heading <angle-value>
+   
+   This command sets the initial heading of the mover.
+
+.. command:: p6dof_ned_pitch <angle-value>
+   
+   This command sets the initial pitch angle of the mover.
+   
+.. command:: p6dof_ned_roll <angle-value>
+   
+   This command sets the initial roll angle of the mover.  
+
+.. command:: p6dof_position <real-value> <real-value>
+   
+   This command sets the initial position (using decimal latitude longitude) of the mover.
+
+.. command:: p6dof_set_velocity_ned_fps <real-value> <real-value> <real-value>
+   
+   This command sets the initial velocity of the mover in NED coordinates using ft/sec.
+   
+.. command:: parking_brake_on <boolean-value>
+   
+   This command sets whether the parking brake should be on or off when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfP6DOF_Mover.SetParkingBrake` or :method:`WsfP6DOF_Mover.ReleaseWheelBrakes`
+   
+.. command:: produces_launch_smoke <time-value>
+   
+   This command sets how long the vehicle will produce a launch smoke/flash effect (appearance only) when launched. If no launch effect is desired, this should not be defined at all.
+  
+.. command:: taxi_mode_enabled <boolean-value>
+   
+   This command set whether the autopilot should be in taxi mode when the scenario begins.  This should be used only be used when the platform is on ground.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.SetTaxiMode`
+  
+.. command:: throttle_afterburner <boolean-value>
+   
+   This command sets the throttle to afterburner when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.MoveThrottleToAfterburner`
+  
+.. command:: throttle_full <boolean-value>
+   
+   This command sets the throttle to mil power when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.MoveThrottleToFull`
+  
+.. command:: throttle_idle <boolean-value>
+   
+   This command sets the throttle to idle when the scenario begins.
+   
+   For the corresponding script method, see :method:`WsfP6DOF_Mover.MoveThrottleToIdle`
+  
+.. command:: wash_in_conditions <boolean-value>
+    
+   Including this flag indicates that this mover should "wash-in" conditions on initialization. This means that the object will run in a special mode to help "ramp-in" and "stabilize" the object on initialization by allowing it to have some time to settle in the needed angle of attack (alpha) as well as the proper throttle setting. This is useful to ensure vehicles are stable when they start the simulation -- they may otherwise lack the correct alpha, for example, when they start in the simulation.
+   
+   Since the wash-in operation actually performs numerous "update" functions to arrive at a stable condition, it is computationally expensive and should only be used when needed. In addition, it should not be used for subobjects.
+   
+   During the stabilization wash-in operation, parameters must meet various tolerances in order to be considered stable. Parameters include altitude, vertical speed, angle of attack, speed, pitch control input, and throttle control input.
+   
+   This has replaced p6dof_initsetup_.
+    
+Route Commands
+==============
+
+The WSF_P6DOF_MOVER supports the following :command:`route` commands.
+
+.. note::
+
+   WSF_P6DOF_MOVER does not support all the :command:`route` commands.
+
+.. command:: route ... end_route
+   :block:
+
+   .. parsed-literal::
+
+      route
+         position_ ...
+         altitude_ ...
+         speed_ ...
+         label_ ...
+         goto_ ...
+         bank_angle_limit_ ...
+         radial_acceleration_ ...
+         turn_g_limit_ ...
+         switch_on_passing_ ...
+         switch_on_approach_ ...
+      end_route
+
+   .. command:: position <latitude-value> <longitude-value>
+      
+      Specifies the latitude and longitude of the waypoint.
+
+   .. command:: altitude <length-value>
+      
+      Specifies the altitude (MSL) at the waypoint.
+
+   .. command:: speed <speed-value>
+      
+      Specifies the speed at the waypoint.
+
+   .. command:: label <label-name>
+   
+      Associates a label with the immediately following waypoint definition. This can be used as the target of a goto_
+      command.
+   
+   .. command:: goto <label>
+   
+      Go to the waypoint with the specified label in the current route.
+   
+   .. command:: bank_angle_limit <angle-value>
+         
+      Specifies the maximum bank angle to be used for turns when making heading changes on the route segment that starts with
+      this waypoint.  This effectively sets the radial_acceleration to :math:`g * tan(bank\_angle\_limit)`.
+
+   .. command:: radial_acceleration <acceleration-value>
+         
+      Specifies the radial acceleration to be used for turns when making heading changes on the route segment that starts
+      with this waypoint.
+      
+   .. command:: turn_g_limit <acceleration-value>
+         
+      Specifies the maximum turn g-load to be used for turns when making heading changes on the route segment that starts with
+      this waypoint.  This effectively sets the radial_acceleration to :math:`sqrt(turn\_g\_limit^2 - g^2)`.
+      
+   .. command:: switch_on_passing
+   .. command:: switch_on_approach
+      
+      Defines the condition when the mover should declare that it has reached this waypoint and should start moving towards
+      the next waypoint. **switch_on_passing** is sometimes known as 'turn long' and causes the switch to occur when the
+      platform passes over or along side of the waypoint. **switch_on_approach** is sometimes known as 'turn short' and
+      causes the switch to occur before the waypoint.
+      
+      .. note:: 
+         WSF_P6DOF_MOVER defaults to switch_on_approach, which is different from most other movers.
+   
+.. end::
+
+.. command:: use_route <route-name>
+
+   Supplies the name of the route to follow. The route is assumed to be a predefined absolute route.
+   
+Sample WSF_P6DOF_MOVER Route
+============================
+
+A sample route definition is shown below. The simplest route includes multiple lines using the position_,
+altitude_, and speed_ commands like this::
+
+   route
+      position 21.325n 158.000w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.941w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.250n 157.800w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.260n 157.700w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.400n 157.700w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.700n 157.900w   altitude 13000.0 ft   speed 600.0 kts
+      position 21.900n 158.300w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.600n 158.200w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.550n 158.120w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.941w   altitude  9000.0 ft   speed 600.0 kts
+      position 21.325n 157.900w   altitude  9000.0 ft   speed 600.0 kts
+   end_route
+
+Script Methods
+==============
+
+To learn about the various script methods supported by WSF_P6DOF_MOVER, see :class:`WsfP6DOF_Mover`

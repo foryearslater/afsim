@@ -1,0 +1,380 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Rigid_Body_Vehicle_Type_Label:
+
+rigid_body_vehicle_type
+-----------------------
+
+A rigid_body_vehicle_type_ is a critical component of a :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`. It is the rigid_body_vehicle_type_ that defines the characteristics of the various components (mass properties, aerodynamics, propulsion, etc.) that determine how a :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` will perform. A rigid_body_vehicle_type_ must be defined before being referenced in a :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`. A rigid_body_vehicle_type_ may be derived from another rigid_body_vehicle_type_ or from **BASE_TYPE** (the base class for RB6 object types).
+
+.. command:: rigid_body_vehicle_type <type_name> <derived_from_object_name> ... end_rigid_body_vehicle_type
+   
+   The definition of a rigid_body_vehicle_type is performed within a rigid_body_vehicle_type block. Each rigid_body_vehicle_type defines a 'type' of vehicle, ranging from a simple, hand-launched drone to a complex spacecraft. A rigid_body_vehicle_type_ may include the definition of mass properties, primary aerodynamics, propulsion system components (including engines and fuel systems), subobjects (such as weapons, fuel tanks, etc.), sequencers (which can produce an "action" based on an "event"), controls providers (which include manual pilots, synthetic pilots, autopilots, and guidance systems), flight control systems (which determine how control inputs are routed/mixed to move control surfaces), secondary aerodynamics (which includes control surface aerodynamics), size factor parameters (which allow an object's size to vary, such as that of a parachute or balloon), relative positioning (which defines how a subobject is positioned relative to its parent while captive), separation effects (which impart a delta-V or angular rate to a subobject when it is jettisoned from its parent), and other special properties.
+   
+   .. parsed-literal::
+
+    rigid_body_vehicle_type F-86_Saber BASE_TYPE
+   
+       // `Mass Properties`_
+       mass_ ...
+       moment_of_inertia_ixx_ ...
+       moment_of_inertia_iyy_ ...
+       moment_of_inertia_izz_ ...
+       center_of_mass_x_ ...
+       center_of_mass_y_ ...
+       center_of_mass_z_ ...
+
+       // :ref:`SixDOF_Mass_Properties_Data_Label`
+       :command:`mass_properties` ... end_mass_properties
+       
+       // :ref:`SixDOF_Aerodynamics_Data_Label`
+       :command:`aero_data` ... end_aero_data
+       :command:`aero_component` ... end_aero_component
+
+       // :ref:`SixDOF_Control_Inputs_Label`
+       :command:`pilot_manager` ... end_pilot_manager
+   
+       // :ref:`SixDOF_Flight_Control_System_Label`
+       :command:`flight_controls` ... end_flight_controls
+       
+       // :ref:`SixDOF_Propulsion_System_Label`
+       :command:`propulsion_data` ... end_propulsion_data
+
+       // `SixDOF Integrator`_       
+       integrator_ ...
+
+       // :ref:`SixDOF_Landing_Gear_Label`
+       :command:`landing_gear` ... end_landing_gear
+       
+       // `Fuel Transfers`_
+       fuel_transfer_ ... end_fuel_transfer
+       remove_fuel_transfer_ ...
+
+       // `Fuel System Modification`_       
+       remove_fuel_tank_ ...
+       modify_fuel_quantity_ ... end_modify_fuel_quantity
+       
+       // :ref:`SixDOF_Subobjects_Label`
+       :command:`subobject` ... end_subobject
+   
+       // :ref:`SixDOF_Sequencers_Label`
+       :command:`sequencer` ... end_sequencer
+       :command:`remove_sequencer` ...
+  
+       // `Parent-Relative Positioning and Separation`_
+       parent_rel_x_ ...
+       parent_rel_y_ ...
+       parent_rel_z_ ...
+       parent_rel_yaw_ ...
+       parent_rel_pitch_ ...
+       parent_rel_roll_ ...
+       separation_vx_ ...
+       separation_vy_ ...
+       separation_vz_ ...
+       separation_omega_x_ ...
+       separation_omega_y_ ...
+       separation_omega_z_ ...
+
+       // `Size Factor Parameters`_
+       size_factor_radius_ ...
+       size_factor_min_ ...
+       size_factor_max_ ...
+       size_factor_volume_rate_m3_per_sec_ ...
+       size_factor_area_rate_m2_per_sec_ ...
+       size_factor_radius_rate_m_per_sec_ ...
+
+       // `Special Properties`_
+       use_spherical_earth_ ...
+       use_rotating_earth_ ...
+       ignore_jettisoned_objects_ ...
+       fixed_object_ ...
+       
+       // `Object Creation Support`_
+       nominal_max_mach_ ...
+       nominal_max_alpha_ ...
+       nominal_min_alpha_ ...
+       nominal_max_beta_ ...
+
+    end_rigid_body_vehicle_type
+
+
+Mass Properties
+^^^^^^^^^^^^^^^
+
+Mass properties include the mass and moments of inertia for the object when empty (no fuel or payload). Additional mass properties contributions by fuel and payload are considered separately.
+
+.. command:: mass <mass-value>
+   
+   The (empty) mass of the object, not including fuel.
+
+.. command:: moment_of_inertia_ixx <angular-inertia-value>
+   
+   The (empty) moment of inertia about the x-axis the object, not including fuel.
+
+.. command:: moment_of_inertia_iyy <angular-inertia-value>
+   
+   The (empty) moment of inertia about the y-axis the object, not including fuel.
+
+.. command:: moment_of_inertia_izz <angular-inertia-value>
+   
+   The (empty) moment of inertia about the z-axis the object, not including fuel.
+
+.. command:: center_of_mass_x <length-value>
+   
+   The empty center of mass (in the object's x-direction) relative to the reference point.
+
+.. command:: center_of_mass_y <length-value>
+   
+   The empty center of mass (in the object's y-direction) relative to the reference point.
+   
+.. command:: center_of_mass_z <length-value>
+   
+   The empty center of mass (in the object's z-direction) relative to the reference point.
+   
+
+SixDOF Integrator
+^^^^^^^^^^^^^^^^^
+
+.. command:: integrator <string>
+
+   This sets the object's integrator type to the specified name. If no integrator with the specified name exists, an exception will be thrown, since SixDOF objects cannot function without an integrator.
+   
+   If no integrator_ is specified, the object will use the default integrator. 
+
+       
+Fuel Transfers
+^^^^^^^^^^^^^^
+
+Typically, fuel transfers are defined within the :command:`propulsion_data` block. However, when external tanks (in subobjects) are present, fuel transfers may be defined outside of the propulsion system block (but still within the rigid_body_vehicle_type_ block).
+
+.. command:: fuel_transfer ... end_fuel_transfer
+   :block:
+
+   Regardless of whether a fuel transfer is defined within the :command:`propulsion_data` block or the rigid_body_vehicle_type_ block, a fuel transfer always consists of a source tank and a target tank. During runtime, the source tank will attempt to transfer fuel to the target tank, limited by the transfer rates of the two tanks.
+
+   .. parsed-literal::
+
+    fuel_transfer <string>
+       source_tank_ ...
+       target_tank_ ...
+    end_fuel_transfer
+
+    Each transfer is named, using the first argument after **fuel_transfer**.
+    
+   .. command:: source_tank <string>
+      
+      The source tank is defined by its string name.
+
+   .. command:: target_tank <string>
+      
+      The target tank is defined by its string name.
+   
+
+.. command:: remove_fuel_transfer <string>
+
+   This removes the fuel transfer with the specified name. If a no transfer exists with the name, the command is ignored.
+   
+
+Fuel System Modification
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A fuel system can be modified (often modifying an inherited fuel system from a parent object), using the remove_fuel_tank_ and modify_fuel_quantity_ commands.
+
+.. command:: remove_fuel_tank <string>
+
+   This removes the fuel tank with the specified name. If a no tank exists with the name, the command is ignored.
+
+.. command:: modify_fuel_quantity .. end_modify_fuel_quantity
+   
+   .. parsed-literal::
+
+    modify_fuel_quantity <string>
+       fuel_quantity <mass-value>
+    end_modify_fuel_quantity
+   
+   This modifies the quantity of fuel in the fuel tank with the specified name. If a no tank exists with the name, the command is ignored.
+
+
+Parent-Relative Positioning and Separation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   The following commands specify how a subobject should be positioned relative to its parent while captive.
+
+   .. command:: parent_rel_x <length-value>
+
+      This specifies the x-location of the object's reference point relative to the parent's reference point using the parent's body coordinate system.
+
+      **Default**: 0.0
+
+   .. command:: parent_rel_y <length-value>
+
+      This specifies the y-location of the object's reference point relative to the parent's reference point using the parent's body coordinate system.
+
+      **Default**: 0.0
+
+   .. command:: parent_rel_z <length-value>
+
+      This specifies the z-location of the object's reference point relative to the parent's reference point using the parent's body coordinate system.
+
+      **Default**: 0.0
+
+   .. command:: parent_rel_yaw <angle-value>
+
+      This specifies the yaw of the object about its reference point relative to the parent's body coordinate system.
+
+      **Default**: 0.0
+
+   .. command:: parent_rel_pitch <angle-value>
+
+      This specifies the pitch of the object about its reference point relative to the parent's body coordinate system.
+
+   .. command:: parent_rel_roll <angle-value>
+
+      This specifies the roll of the object about its reference point relative to the parent's body coordinate system.
+
+      **Default**: 0.0
+
+   The following commands specify the perturbation that will be applied to a subobject when it is jettisoned from its parent.
+
+   .. command:: separation_vx <length-value>
+
+      This specifies the x-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+   .. command:: separation_vy <length-value>
+   
+      This specifies the y-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+   .. command:: separation_vz <length-value>
+   
+      This specifies the z-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+   .. command:: separation_omega_x <length-value>
+
+      This specifies the x-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+   .. command:: separation_omega_y <length-value>
+   
+      This specifies the y-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+   .. command:: separation_omega_z <length-value>
+   
+      This specifies the z-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.
+
+      **Default**: 0.0
+
+      
+.. _Rigid_Body_SixDOF_Size_Factor_Parameters:
+
+Size Factor Parameters
+^^^^^^^^^^^^^^^^^^^^^^
+
+The size factor parameters provide a means to adjust the size of an object. This is useful for things like parachutes or balloons which can change their size and their size determines (in part) their aerodynamic drag. Size factor supports rate of change based on radius, area, or volume. When enabled, using a sequencer action (action_enable_size_factor), the size factor will change based on the rate type selected and will "grow" or "shrink" until reaching a minimum or maximum size factor limit.
+
+.. command:: size_factor_radius <length-value>
+
+   This is the "reference" radius that is the starting radius of the object. This radius is also used to calculate a reference area and a reference volume.
+
+   **Default**: 1.0 m
+
+.. command:: size_factor_min <real-value>
+
+   This is the minimum factor (multiplier) that the reference radius is allowed to achieve.
+
+   **Default**: 1.0
+
+.. command:: size_factor_max <real-value>
+
+   This is the maximum factor (multiplier) that the reference radius is allowed to achieve.
+
+   **Default**: 1.0
+
+.. command:: size_factor_volume_rate_m3_per_sec <real-value>
+
+   This provides a volume-based rate of change of cubic meters per second. When volume-based mode is used, the area and radius modes should not be used.
+
+   **Default**: 0.0
+
+.. command:: size_factor_area_rate_m2_per_sec <real-value>
+
+   This provides an area-based rate of change of square meters per second. When area-based mode is used, the volume and radius modes should not be used.
+
+   **Default**: 0.0
+
+.. command:: size_factor_radius_rate_m_per_sec <real-value>
+
+   This provides an radius-based rate of change of meters per second. When radius-based mode is used, the volume and area modes should not be used.
+
+   **Default**: 0.0
+
+
+Special Properties
+^^^^^^^^^^^^^^^^^^
+
+Several 'special properties' are available to modify how a SixDOF object will behave.
+
+.. command:: use_spherical_earth <boolean-value>
+
+   If 'true', the SixDOF object will use a spherical earth model rather than a WGS84 (oblate) earth model. This is often a useful simplification when using ballistic missiles and space launch vehicles, since it eliminates latitude issues for guidance associated with an oblate earth.
+
+   **Default**: false
+
+.. command:: use_rotating_earth <boolean-value>
+
+   If 'true', the SixDOF object will use a rotating earth model rather than a non-rotating earth model.
+
+   **Default**: false
+   
+.. command:: ignore_jettisoned_objects <boolean-value>
+
+   If 'true', any subobjects that are jettisoned from the SixDOF object will be removed immediately and will never have an AFSIM platform. This is often used to speed up runtimes when spent stages from a ballistic missile or space launch vehicle are not needed.
+
+   **Default**: false
+
+.. command:: fixed_object <boolean-value>
+
+   If 'true', the SixDOF object will not perform kinematic calculations as part of its "update" but will instead remain motionless.
+
+   **Default**: false
+   
+
+Object Creation Support
+^^^^^^^^^^^^^^^^^^^^^^^
+
+These commands are used by functions that will help create SixDOF models. They are used to define limits to the performance envelope.
+
+.. command:: nominal_max_mach <real-value>
+   
+   This defines the maximum Mach expected by the object. This does not impose a limit on performance, rather it is a **hint** for functions that calculate performance and/or analysis.
+
+.. command:: nominal_max_alpha <angle-value>
+
+   This defines the maximum alpha (angle of attack) expected by the object. This does not impose a limit on performance, rather it is a **hint** for functions that calculate performance and/or analysis.
+
+.. command:: nominal_min_alpha <angle-value>
+
+   This defines the minimum alpha (angle of attack) expected by the object. This does not impose a limit on performance, rather it is a **hint** for functions that calculate performance and/or analysis.
+
+.. command:: nominal_max_beta <angle-value>
+
+   This defines the maximum beta (angle of sideslip) expected by the object. This does not impose a limit on performance, rather it is a **hint** for functions that calculate performance and/or analysis.
+
+   

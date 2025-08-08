@@ -1,0 +1,858 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _P6DOF_Thrust_Producer_Types:
+
+P6DOF Thrust Producer Types
+===========================
+
+Definitions of thrust producer types (including jet engines [turbojets and turbofans], ramjets/scramjets, liquid-propellant rocket engines, and solid-propellant rocket motors) are performed outside of a :command:`p6dof_object_type` block (but still within a :command:`p6dof_object_types` block). These define 'types' of engines which can then be referenced from within a :command:`propulsion_data` block within a :command:`p6dof_object_type` block.
+
+Thrust producers include:
+
+* `Jet Engines (Turbojets and Turbofans)`_ (jet_engine_type_)
+* `Ramjet/Scramjet Engines`_ (ramjet_engine_type_)
+* `Liquid-Propellant Rocket Engines`_ (liquid_propellant_rocket_type_)
+* `Solid-Propellant Rocket Motors`_ (solid_propellant_rocket_type_)
+
+Each is detailed below.
+
+.. _P6DOF_Jet_Engines:
+
+Jet Engines (Turbojets and Turbofans)
+-------------------------------------
+
+.. command:: jet_engine_type  <derived_type_name> <base_engine_name> ... end_jet_engine_type
+
+   Definitions for each type of jet engine are performed within the jet_engine_type_ block. Since the definition is for a 'type' of engine and not an 'instance' of an engine, no installation position/attitude data is included. Typically, the fuel_feed_ is specified at the instance-level rather than at the type-level.
+
+   .. parsed-literal::
+
+    jet_engine_type   J79-GE-7   P6DOF_JET_ENGINE
+
+          // Thrust Specific Fuel Consumption (TSFC)
+          tsfc_idle_pph_ ...
+          tsfc_mil_pph_ ...
+          tsfc_ab_pph_ ...
+
+          // Rated Thrust
+          rated_thrust_idle_ ...
+          rated_thrust_mil_ ...
+          rated_thrust_ab_ ...
+
+          // Idle Thrust Tables
+          thrust_table_idle_ ... end_thrust_table_idle
+          thrust_idle_mach_alt_table_ ... end_thrust_idle_mach_alt_table
+          thrust_idle_alt_mach_table_ ... end_thrust_idle_alt_mach_table
+
+          // Military (MIL) Thrust Tables
+          thrust_table_mil_ ... end_thrust_table_mil
+          thrust_mil_mach_alt_table_ ... end_thrust_mil_mach_alt_table
+          thrust_mil_alt_mach_table_ ... end_thrust_mil_alt_mach_table
+
+          // Afterburner (AB) Thrust Tables
+          thrust_table_ab_ ... end_thrust_table_ab
+          thrust_ab_mach_alt_table_ ... end_thrust_ab_mach_alt_table
+          thrust_ab_alt_mach_table_ ... end_thrust_ab_alt_mach_table
+          
+          // Spin-Up Data 
+          spin_up_mil_per_sec_ ...
+          spin_up_table_mil_per_sec_ ... end_spin_up_table_mil_per_sec
+          spin_up_ab_per_sec_ ...
+          spin_up_table_ab_per_sec_ ... end_spin_up_table_ab_per_sec
+
+          // Spin-Down Data
+          spin_down_mil_per_sec_ ...
+          spin_down_table_mil_per_sec_ ... end_spin_down_table_mil_per_sec
+          spin_down_ab_per_sec_ ...
+          spin_down_table_ab_per_sec_ ... end_spin_down_table_ab_per_sec
+
+          // Throttle Control Inputs
+          throttle_setting_mil_ ...
+          throttle_setting_ab_ ...
+          throttle_setting_reverser_ ...
+          throttle_setting_yaw_ ...
+          throttle_setting_pitch_ ...
+          
+          // Thrust Offset Location
+          thrust_offset_ ...
+          
+          // Reference Area When Inoperative
+          inop_ref_area_ ...          
+
+          // Fuel Source for Engine
+          fuel_feed_ ...
+
+          // Flag for smoking engines
+          engine_smokes_above_power_setting_ ...
+
+    end_jet_engine_type
+
+    
+   .. command:: tsfc_idle_pph <real-value>
+
+      This specifies the thrust specific fuel consumption at idle in lbs-thrust/lbs-fuel/hr.
+
+   .. command:: tsfc_mil_pph <real-value>
+
+      This specifies the thrust specific fuel consumption at military power (full power without afterburner) in lbs-thrust/lbs-fuel/hr.
+
+   .. command:: tsfc_ab_pph <real-value>
+
+      This specifies the thrust specific fuel consumption using full afterburner in lbs-thrust/lbs-fuel/hr.
+
+///////////////////////////////////////////////////////////////
+      
+   .. command:: rated_thrust_idle <force-value>
+
+      This specifies the thrust at idle. Since thrust varies with various conditions, this is a reference value.
+
+   .. command:: rated_thrust_mil <force-value>
+
+      This specifies the thrust at military power (full power without afterburner). Since thrust varies with various conditions, this is a reference value.
+
+   .. command:: rated_thrust_ab <force-value>
+
+      This specifies the thrust using full afterburner. Since thrust varies with various conditions, this is a reference value.
+
+///////////////////////////////////////////////////////////////
+      
+   .. command:: thrust_table_idle
+
+      This is a simple table of idle thrust versus altitude. Note that is does not consider Mach-effects. The thrust_idle_mach_alt_table_ or thrust_idle_alt_mach_table_ are preferable, but if no Mach data is available, this table can be used.
+      ::
+
+       thrust_table_idle
+        #  alt_ft   thrust_lbs
+              0.0    10000.0
+          50000.0     2000.0
+          59000.0      100.0
+          60000.0        0.0
+       end_thrust_table_idle
+
+       
+   .. command:: thrust_idle_mach_alt_table
+
+      This is an improved table over thrust_table_idle_, since it includes Mach-effects. However, most users will prefer the format of the thrust_idle_alt_mach_table_ instead.
+      ::
+
+       thrust_idle_mach_alt_table
+         irregular_table
+           independent_variable mach precision float
+           independent_variable alt units ft
+           dependent_variable precision float
+           mach  0.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+               
+           ...
+
+           mach  2.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+           mach  3.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   0.0      0.0      0.0      0.0      0.0
+         end_irregular_table
+       end_thrust_idle_mach_alt_table
+       
+       
+   .. command:: thrust_idle_alt_mach_table
+
+      This is typically the best thrust table format -- it includes Mach-effects and organizes its data in a preferred manner. The thrust_idle_mach_alt_table_ is an alternative format.
+      ::
+
+       thrust_idle_alt_mach_table
+         irregular_table
+           independent_variable alt units ft
+           independent_variable mach precision float
+           dependent_variable precision float
+           alt  0.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+               
+           ...
+            
+           alt  59000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+           alt  60000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+         end_irregular_table
+       end_thrust_idle_alt_mach_table
+       
+///////////////////////////////////////////////////////////////
+       
+   .. command:: thrust_table_mil
+
+      This is a simple table of military (MIL) thrust versus altitude. Note that is does not consider Mach-effects. The thrust_mil_mach_alt_table_ or thrust_mil_alt_mach_table_ are preferable, but if no Mach data is available, this table can be used.
+      ::
+
+       thrust_table_mil
+        #  alt_ft   thrust_lbs
+              0.0    10000.0
+          50000.0     2000.0
+          59000.0      100.0
+          60000.0        0.0
+       end_thrust_table_mil
+
+       
+   .. command:: thrust_mil_mach_alt_table
+
+      This is an improved table over thrust_table_mil_, since it includes Mach-effects. However, most users will prefer the format of the thrust_mil_alt_mach_table_ instead.
+      ::
+
+       thrust_mil_mach_alt_table
+         irregular_table
+           independent_variable mach precision float
+           independent_variable alt units ft
+           dependent_variable precision float
+           mach  0.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+               
+           ...
+
+           mach  2.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+           mach  3.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   0.0      0.0      0.0      0.0      0.0
+         end_irregular_table
+       end_thrust_mil_mach_alt_table
+       
+       
+   .. command:: thrust_mil_alt_mach_table
+
+      This is typically the best thrust table format -- it includes Mach-effects and organizes its data in a preferred manner. The thrust_mil_mach_alt_table_ is an alternative format.
+      ::
+
+       thrust_mil_alt_mach_table
+         irregular_table
+           independent_variable alt units ft
+           independent_variable mach precision float
+           dependent_variable precision float
+           alt  0.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+               
+           ...
+            
+           alt  59000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+           alt  60000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+         end_irregular_table
+       end_thrust_mil_alt_mach_table
+       
+///////////////////////////////////////////////////////////////
+
+   .. command:: thrust_table_ab
+
+      This is a simple table of afterburner (AB) thrust versus altitude. Note that is does not consider Mach-effects. The thrust_ab_mach_alt_table_ or thrust_ab_alt_mach_table_ are preferable, but if no Mach data is available, this table can be used.
+      ::
+
+       thrust_table_ab
+        #  alt_ft   thrust_lbs
+              0.0    10000.0
+          50000.0     2000.0
+          59000.0      100.0
+          60000.0        0.0
+       end_thrust_table_ab
+
+       
+   .. command:: thrust_ab_mach_alt_table
+
+      This is an improved table over thrust_table_ab_, since it includes Mach-effects. However, most users will prefer the format of the thrust_ab_alt_mach_table_ instead.
+      ::
+
+       thrust_ab_mach_alt_table
+         irregular_table
+           independent_variable mach precision float
+           independent_variable alt units ft
+           dependent_variable precision float
+           mach  0.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+               
+           ...
+
+           mach  2.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   10000.0  8000.0   4000.0   100.0    0.0
+           mach  3.0
+             alt      0.00     10000.0  30000.0  59000.0  60000.0
+             values   0.0      0.0      0.0      0.0      0.0
+         end_irregular_table
+       end_thrust_ab_mach_alt_table
+       
+       
+   .. command:: thrust_ab_alt_mach_table
+
+      This is typically the best thrust table format -- it includes Mach-effects and organizes its data in a preferred manner. The thrust_ab_mach_alt_table_ is an alternative format.
+      ::
+
+       thrust_ab_alt_mach_table
+         irregular_table
+           independent_variable alt units ft
+           independent_variable mach precision float
+           dependent_variable precision float
+           alt  0.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+               
+           ...
+            
+           alt  59000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+           alt  60000.0
+             mach     0.00     0.60     1.00     2.00     3.00
+             values   10000.0  10000.0  10000.0  10000.0  10000.0
+         end_irregular_table
+       end_thrust_ab_alt_mach_table
+       
+///////////////////////////////////////////////////////////////
+          
+   .. command:: spin_up_mil_per_sec <real-value>
+   
+      This defines how quickly the engine will "spool-up" as the power level is advanced. A value of 1.0 implies that the engine will spin-up from idle to MIL power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-up from idle to MIL power.
+      
+
+   .. command:: spin_up_table_mil_per_sec
+   
+      This defines how quickly the engine will "spool-up" as the power level is advanced. Rather than a single value, this command uses a table that is a function of the throttle level (normalized), allowing a more realistic spin-up as a function of current power condition. A value of 1.0 implies that the engine will spin-up from idle to MIL power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-up from idle to MIL power.
+      ::
+      
+       spin_up_table_mil_per_sec
+        # throttle_level  spin_up_per_sec
+          0.0             0.05
+          0.2             0.10
+          0.4             0.20
+          0.6             0.30
+          0.8             0.40
+          1.0             0.50
+       end_spin_up_table_mil_per_sec
+
+
+   .. command:: spin_up_ab_per_sec <real-value>
+   
+      This defines how quickly the engine will "spool-up" as the power level is advanced. A value of 1.0 implies that the engine will spin-up from MIL to Full AB power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-up from MIL to Full AB power.
+
+   .. command:: spin_up_table_ab_per_sec
+   
+      This defines how quickly the engine will "spool-up" as the power level is advanced. Rather than a single value, this command uses a table that is a function of the throttle level (normalized), allowing a more realistic spin-up as a function of current power condition. A value of 1.0 implies that the engine will spin-up from MIL to Full AB power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-up from MIL to Full AB power.
+      ::
+      
+       spin_up_table_ab_per_sec
+        # throttle_level  spin_up_per_sec
+          0.0             0.05
+          0.2             0.10
+          0.4             0.20
+          0.6             0.30
+          0.8             0.40
+          1.0             0.50
+       end_spin_up_table_ab_per_sec
+          
+   .. command:: spin_down_mil_per_sec <real-value>
+   
+      This defines how quickly the engine will "spool-down" as the power level is reduced. A value of 1.0 implies that the engine will spin-down from MIL power to idle in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-down from MIL power to idle.
+
+
+   .. command:: spin_down_table_mil_per_sec
+   
+      This defines how quickly the engine will "spool-down" as the power level is reduced. Rather than a single value, this command uses a table that is a function of the throttle level (normalized), allowing a more realistic spin-down as a function of current power condition. A value of 1.0 implies that the engine will spin-down from MIL power to idle in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-down from MIL power to idle.
+      ::
+      
+       spin_down_table_mil_per_sec
+        # throttle_level  spin_down_per_sec
+          0.0             0.05
+          0.2             0.10
+          0.4             0.20
+          0.6             0.30
+          0.8             0.40
+          1.0             0.50
+       end_spin_down_table_mil_per_sec
+
+
+   .. command:: spin_down_ab_per_sec <real-value>
+   
+      This defines how quickly the engine will "spool-down" as the power level is reduced. A value of 1.0 implies that the engine will spin-down from Full AB power to MIL power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-down from Full AB power to MIL power.
+
+
+   .. command:: spin_down_table_ab_per_sec
+   
+      This defines how quickly the engine will "spool-down" as the power level is reduced. Rather than a single value, this command uses a table that is a function of the throttle level (normalized), allowing a more realistic spin-down as a function of current power condition. A value of 1.0 implies that the engine will spin-down from Full AB power to MIL power in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-down from Full AB power to MIL power.
+      ::
+      
+       spin_down_table_ab_per_sec
+        # throttle_level  spin_down_per_sec
+          0.0             0.05
+          0.2             0.10
+          0.4             0.20
+          0.6             0.30
+          0.8             0.40
+          1.0             0.50
+       end_spin_down_table_ab_per_sec
+
+///////////////////////////////////////////////////////////////
+       
+   .. command:: throttle_setting_mil <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the MIL (military) power throttle setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_ab <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the AB (afterburner) power throttle setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_reverser <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the thrust-reverser control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_yaw <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the yaw thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_pitch <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the pitch thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+      
+///////////////////////////////////////////////////////////////
+          
+   .. command:: thrust_offset <length-value>
+
+      This is the location of the thrust relative to the engine's reference point along the x-axis. A positive value is forward of the engine, negative is aft.      
+   
+   .. command:: inop_ref_area <area-value>
+       
+      This specifies aerodynamic CD-area product for the engine when it is inoperative. It is the drag coefficient multiplied by the reference area.
+      
+   .. command:: fuel_feed <string>
+
+      This specifies the name of the :command:`fuel_tank` from which the engine will draw fuel. This is typically specified for a :command:`jet_engine_type` instance rather than in the type definition.
+      
+   .. command:: engine_smokes_above_power_setting <real-value>
+
+      This specifies the throttle level (MIL power) above which the engine will produce smoke. For example, a value of 0.8 will produce smoke when the throttle is above 80% power. If afterburner is selected, the smoke will cease. The default is a value of 1.0, which will not produce any smoke. This is useful for simulating engines that produce excessive smoke, such as old F-4 Phantoms and MiG-29s.
+      
+///////////////////////////////////////////////////////////////
+
+Return to `P6DOF Thrust Producer Types`_, :doc:`p6dof_object_type`, or :doc:`p6dof_object_types`
+
+.. comment --------------------------------------------------------------------------------------
+
+.. _P6DOF_Ramjet_Scramjet_Engines:
+
+Ramjet/Scramjet Engines
+-----------------------
+      
+.. command:: ramjet_engine_type  <derived_type_name> <base_engine_name> ... end_ramjet_engine_type
+
+   Definitions for each type of ramjet engine are performed within the ramjet_engine_type_ block. Since the definition is for a 'type' of engine and not an 'instance' of an engine, no installation position/attitude data is included. Typically, the fuel_feed_ is specified at the instance-level rather than at the type-level.
+   
+   .. parsed-literal::
+
+    ramjet_engine_type   MarquardtRamjet   P6DOF_RAMJET_ENGINE
+
+          // Thrust Specific Fuel Consumption (TSFC)
+          tsfc_alt_mach_table_ ... end_tsfc_alt_mach_table
+          
+          // Thrust Table
+          thrust_alt_mach_table_ ... end_thrust_alt_mach_table
+
+          // Throttle Control Inputs
+          throttle_setting_yaw_ ...
+          throttle_setting_pitch_ ...
+          
+          // Thrust Offset Location
+          thrust_offset_ ...
+          
+          // Reference Area When Inoperative
+          inop_ref_area_ ...          
+
+          // Fuel Source for Engine
+          fuel_feed_ ...
+
+          // Use afterburner appearance when operating
+          afterburner_appearance_when_operating_ ...
+
+          // Latch fuel injection control
+          latch_fuel_injection_ ...
+
+          // Use proportional throttle (rather than on/off throttle)
+          use_proportional_throttle_ ...
+
+          // Minimum thrust multiplier for proportional throttle
+          minimum_proportional_thrust_ ...
+
+    end_ramjet_engine_type
+
+    
+   .. command:: tsfc_alt_mach_table
+
+      This specifies the thrust specific fuel consumption as a function of altitude and Mach in lbs-thrust/lbs-fuel/hr. Altitude units are feet.
+      ::
+
+       tsfc_alt_mach_table
+         irregular_table
+           independent_variable alt units ft
+           independent_variable mach precision float
+           dependent_variable precision float
+           
+           alt  0.0
+             mach     1.90     2.00     2.50     2.6
+             values   1.96     1.96     1.96     1.96
+               
+           ...
+            
+           alt  89000.0
+             mach     1.90     2.00     2.50     2.6
+             values   1.96     1.96     1.96     1.96
+           alt  90000.0
+             mach     1.90     2.00     2.50     2.6
+             values   1.96     1.96     1.96     1.96
+         end_irregular_table
+       end_tsfc_alt_mach_table
+      
+      
+   .. command:: thrust_alt_mach_table
+
+      This specifies the thrust as a function of altitude and Mach in lbs. Altitude units are feet. Since the table will **clamp** rather than interpolate at the end values, it is important to ensure that data at the extreme points goes to zero values. Failure to do so could result in increasing thrust at high Mach, for example.
+      ::
+
+       thrust_alt_mach_table_
+         irregular_table
+           independent_variable alt units ft
+           independent_variable mach precision float
+           dependent_variable precision float
+           
+           alt  0.0
+             mach     1.90     2.00     2.50     2.6
+             values   0.0      10000.0  12000.0  0.0
+               
+           ...
+            
+           alt  89000.0
+             mach     1.90     2.00     2.50     2.6
+             values   0.0      10000.0  12000.0  0.0
+           alt  90000.0
+             mach     1.90     2.00     2.50     2.6
+             values   0.0      0.0      0.0      0.0
+         end_irregular_table
+       end_thrust_alt_mach_table_
+      
+   
+///////////////////////////////////////////////////////////////
+
+   .. command:: throttle_setting_yaw <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the yaw thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_pitch <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the pitch thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+///////////////////////////////////////////////////////////////
+      
+   .. command:: thrust_offset <length-value>
+
+      This is the location of the thrust relative to the engine's reference point along the x-axis. A positive value is forward of the engine, negative is aft.      
+   
+   .. command:: inop_ref_area <area-value>
+       
+      This specifies aerodynamic CD-area product for the engine when it is inoperative. It is the drag coefficient multiplied by the reference area.
+      
+   .. command:: fuel_feed <string>
+
+      This specifies the name of the :command:`fuel_tank` from which the engine will draw fuel. This is typically specified for a :command:`ramjet_engine_type` instance rather than in the type definition.
+      
+   .. command:: afterburner_appearance_when_operating <boolean-value>
+
+      This specifies whether or not an afterburner appearance should be used when the ramjet is operating. This only effects the appearance, it has no physical/kinematic effect. When true, and the ramjet is operating, it will have the same appearance of a jet engine using afterburner.
+
+   .. command:: latch_fuel_injection <boolean-value>
+
+      When true, the fuel injection will be latched (locked) into the on condition. This will keep the engine operating, regardless of throttle command, as long as fuel is available. When false, normal throttle control is used. The default value is false.
+
+   .. command:: use_proportional_throttle <boolean-value>
+
+      When true, a proportional throttle control will be used. When false, normal on/off throttle control is used. The default value is false.
+
+   .. command:: minimum_proportional_thrust <real-value>
+
+      This is the minimum thrust level that may be used for proportional throttle control. It is often 0.8, but must always be greater than zero. The default value is 0.0.
+
+///////////////////////////////////////////////////////////////
+
+Return to `P6DOF Thrust Producer Types`_, :doc:`p6dof_object_type`, or :doc:`p6dof_object_types`
+
+.. comment --------------------------------------------------------------------------------------
+
+.. _P6DOF_Liquid_Propellant_Rocket_Engines:
+
+Liquid-Propellant Rocket Engines
+--------------------------------
+   
+.. command:: liquid_propellant_rocket_type  <derived_type_name> <base_engine_name> ... end_liquid_propellant_rocket_type
+
+   Definitions for each type of liquid-propellant rocket engine are performed within the liquid_propellant_rocket_type_ block. Since the definition is for a 'type' of engine and not an 'instance' of an engine, no installation position/attitude data is included. Typically, the fuel_feed_ is specified at the instance-level rather than at the type-level.
+   
+   .. parsed-literal::
+
+    liquid_propellant_rocket_type   SSME   P6DOF_LIQUID_PROPELLANT_ROCKET
+
+          // Max Thrust
+          max_thrust_sealevel_ ...
+          max_thrust_vacuum_ ...
+
+          // Altitude Effects
+          normalized_thrust_vs_alt_ ... end_normalized_thrust_vs_alt
+
+          // Specific Impulse
+          isp_vs_alt_ ... end_isp_vs_alt
+
+          // Spin-up/Spin-Down
+          normalized_spinup_ ...
+          normalized_spindown_ ...
+
+          // Throttle Control Inputs
+          throttle_setting_yaw_ ...
+          throttle_setting_pitch_ ...
+          
+          // Thrust Offset Location
+          thrust_offset_ ...
+          
+          // Reference Area When Inoperative
+          inop_ref_area_ ...          
+          
+          // Fuel Source for Engine
+          fuel_feed_ ...
+          
+          // Smoke Trail Appearance When Burning
+          creates_smoke_trail_ ...
+
+    end_liquid_propellant_rocket_type
+
+   .. command:: max_thrust_sealevel <force-value>
+
+      This specifies the maximum thrust that can be produced at sea level conditions. Either max_thrust_sealevel_ or max_thrust_vacuum_ should be specified, not both.
+
+   .. command:: max_thrust_vacuum <force-value>
+
+      This specifies the maximum thrust that can be produced at vacuum conditions. Either max_thrust_sealevel_ or max_thrust_vacuum_ should be specified, not both.
+      
+///////////////////////////////////////////////////////////////
+      
+   .. command:: normalized_thrust_vs_alt
+
+      This is a simple table of "normalized-thrust" versus altitude. Normalized thrust is a value that will be multiplied with a nominal isp-calculated thrust, typically computed using max_thrust_sealevel_ and isp_vs_alt_. This allows altitude-effects on thrust production::
+
+       normalized_thrust_vs_alt
+        #alt       normalized_thrust
+         0.0       1.0
+         300000.0  1.0
+       end_normalized_thrust_vs_alt
+
+   .. command:: isp_vs_alt
+
+      This is a simple table of specific impulse (Isp) versus altitude::
+
+       isp_vs_alt
+        #alt_feet  Isp(sec)
+         0.0       285.0
+         100000.0  290.0
+         300000.0  295.0
+       end_isp_vs_alt
+
+///////////////////////////////////////////////////////////////
+       
+   .. command:: normalized_spinup <real-value>
+
+      This specifies the spin-up rate in normalized-position/second. A value of 1.0 implies that the engine will spin-up from zero to full thrust in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-up from zero to full thrust.
+      
+   .. command:: normalized_spindown <real-value>
+
+      This specifies the spin-down rate in normalized-position/second. A value of 1.0 implies that the engine will spin-down from full thrust to zero thrust in 1 second, while a value of 0.1 implies that it will take 10 seconds to spin-down from full thrust to zero thrust.
+
+///////////////////////////////////////////////////////////////
+
+   .. command:: throttle_setting_yaw <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the yaw thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_pitch <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the pitch thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+///////////////////////////////////////////////////////////////
+      
+   .. command:: thrust_offset <length-value>
+
+      This is the location of the thrust relative to the engine's reference point along the x-axis. A positive value is forward of the engine, negative is aft.      
+   
+   .. command:: inop_ref_area <area-value>
+       
+      This specifies aerodynamic CD-area product for the engine when it is inoperative. It is the drag coefficient multiplied by the reference area.
+      
+   .. command:: fuel_feed <string>
+
+      This specifies the name of the :command:`fuel_tank` from which the engine will draw fuel. This is typically specified for a :command:`liquid_propellant_rocket_type` instance rather than in the type definition.
+      
+   .. command:: creates_smoke_trail <boolean-value>
+
+      This determines whether or not the rocket will generate a smoke trail appearance. By default, liquid-propellant rockets do not produce a smoke trail, but solid-propellant rockets do produce a smoke trail.
+
+///////////////////////////////////////////////////////////////
+
+Return to `P6DOF Thrust Producer Types`_, :doc:`p6dof_object_type`, or :doc:`p6dof_object_types`
+
+.. comment --------------------------------------------------------------------------------------
+
+.. _P6DOF_Solid_Propellant_Rocket_Motors:
+
+Solid-Propellant Rocket Motors
+------------------------------
+      
+.. command:: solid_propellant_rocket_type  <derived_type_name> <base_engine_name> ... end_solid_propellant_rocket_type
+   :block:
+
+   Definitions for each type of solid-propellant rocket motor are performed within the solid_propellant_rocket_type_ block. Since the definition is for a 'type' of engine/motor and not an 'instance' of an engine/motor, no installation position/attitude data is included. Note that unlike jet engines, ramjets/scramjets, and liquid-propellant rocket engines, a solid-propellant rocket motor does not specify a fuel_feed_, since it contains its own propellant.
+
+   .. parsed-literal::
+   
+    solid_propellant_rocket_type   XM-1J   P6DOF_SOLID_PROPELLANT_ROCKET
+
+          // Thrust Parameters
+          rated_thrust_ ...
+          thrust_vs_time_sealevel_ ... end_thrust_vs_time_sealevel
+          thrust_vs_time_vacuum_ ... end_thrust_vs_time_vacuum
+
+          // Specific Impulse
+          isp_vs_alt_ ... end_isp_vs_alt
+          
+          // Propellant Mass
+          propellant_mass_ ...
+
+          // Propellant Relative Position
+          propellant_rel_pos_x_ ...
+          propellant_rel_pos_y_ ...
+          propellant_rel_pos_z_ ...
+          
+          // Throttle Control Inputs
+          throttle_setting_yaw_ ...
+          throttle_setting_pitch_ ...
+          
+          // Thrust Offset Location
+          thrust_offset_ ...
+          
+          // Reference Area When Inoperative
+          inop_ref_area_ ...
+          
+          // Smoke Trail Appearance When Burning
+          creates_smoke_trail_ ...
+
+    end_solid_propellant_rocket_type
+
+   .. command:: rated_thrust <force-value>
+
+      This specifies the "rated thrust" of the solid-propellant motor. Since thrust depends on a range of conditions, this is a reference number, often used to calculate **percent thrust**.
+
+   .. command:: thrust_vs_time_sealevel
+
+      This is a simple table of thrust in lbs as a function of time in seconds at sea level pressure conditions. Either thrust_vs_time_sealevel_ or thrust_vs_time_vacuum_ should be specified, but not both.
+      ::
+
+       thrust_vs_time_sealevel
+        #time  thrust_lbs
+         0.0      0.0
+         0.1   2000.0
+         6.0   2000.0
+         6.5    200.0
+       end_thrust_vs_time_sealevel
+
+   .. command:: thrust_vs_time_vacuum
+
+      This is a simple table of thrust in lbs as a function of time in seconds at vacuum pressure conditions. Either thrust_vs_time_sealevel_ or thrust_vs_time_vacuum_ should be specified, but not both.
+      ::
+
+       thrust_vs_time_vacuum
+        #time  thrust_lbs
+         0.0      0.0
+         0.1   2000.0
+         6.0   2000.0
+         6.5    200.0
+       end_thrust_vs_time_vacuum
+
+///////////////////////////////////////////////////////////////
+       
+   .. command:: isp_vs_alt
+
+      This is a simple table of specific impulse (Isp) in seconds versus altitude in feet.
+      ::
+
+       isp_vs_alt
+        #alt_feet  Isp(sec)
+         0.0       200.0
+         100000.0  200.0
+         300000.0  200.0
+       end_isp_vs_alt
+
+///////////////////////////////////////////////////////////////
+       
+   .. command:: propellant_mass <mass-value>
+
+      This specifies the propellant mass in the solid-propellant motor.
+       
+///////////////////////////////////////////////////////////////
+
+   .. command:: propellant_rel_pos_x <length-value>
+       
+      This specifies the center of mass (in the x-direction of rocket-coordinates) of the propellant mass relative to the reference point of the rocket.
+
+   .. command:: propellant_rel_pos_y <length-value>
+       
+      This specifies the center of mass (in the y-direction of rocket-coordinates) of the propellant mass relative to the reference point of the rocket.
+
+   .. command:: propellant_rel_pos_z <length-value>
+       
+      This specifies the center of mass (in the z-direction of rocket-coordinates) of the propellant mass relative to the reference point of the rocket.
+      
+///////////////////////////////////////////////////////////////
+
+   .. command:: throttle_setting_yaw <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the yaw thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+   .. command:: throttle_setting_pitch <string>
+   
+      This specifies the :command:`flight_controls.control_value` defined in :command:`flight_controls` that will be used to control the pitch thrust vectoring control setting. This can be done at the engine-level or in the :command:`propulsion_data` of the :command:`p6dof_object_type`.
+
+///////////////////////////////////////////////////////////////
+      
+   .. command:: thrust_offset <length-value>
+
+      This is the location of the thrust relative to the engine's reference point along the x-axis. A positive value is forward of the engine, negative is aft.      
+   
+   .. command:: inop_ref_area <area-value>
+       
+      This specifies aerodynamic CD-area product for the engine when it is inoperative. It is the drag coefficient multiplied by the reference area.
+      
+   .. command:: creates_smoke_trail <boolean-value>
+
+      This determines whether or not the rocket will generate a smoke trail appearance. By default, liquid-propellant rockets do not produce a smoke trail, but solid-propellant rockets do produce a smoke trail.
+
+///////////////////////////////////////////////////////////////
+
+Return to `P6DOF Thrust Producer Types`_, :doc:`p6dof_object_type`, or :doc:`p6dof_object_types`

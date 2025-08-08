@@ -1,0 +1,245 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+false_target
+------------
+
+.. command:: false_target ... end_false_target
+    :block:
+
+    .. parsed-literal::
+
+     false_target_ *<false-target-name>* *WSF_FALSE_TARGET*
+        debug_ <boolean-value>
+        false_target_behavior_ *<false-target-behavior-type>*
+        multi_radar_behavior_ *<multi-radar-behavior-type>*
+        persistence_ <boolean-value>
+        quantity_ *<value>*
+        range_constrained_ <boolean-value>
+        scan_rate_ *<frequency-value>*
+        scan_time_ *<time-value>*
+        false_target_movement_ ... end_false_target_movement
+        track_movement_ ... end_track_movement
+        distribution_ ... end_distribution
+        distribution_centroid_ ... end_distribution_centroid
+     end_false_target
+
+Overview
+========
+
+:command:`false_target` specifies the characteristics of a false target technique, which is incorporated into electronic attack (EA) techniques.  The false target technique is used to generate and maintain false target representations without creating a platform instance for each false target. Thus, radar sensors can be forced to deal with large numbers of false targets without the processor loading of large numbers of platforms.  The :command:`false_target_screener` provides the mechanism for radars to manage and react to false target techniques.
+
+Commands
+========
+
+.. command:: debug
+
+   Set debug mode.
+
+.. command:: false_target_behavior ''<false-target-behavior-type>
+
+   Specifies the fidelity of the false target technique.
+
+   * **random_scan_to_scan**     -  False targets created randomly for each scan.
+   * **consistent_scan_to_scan** -  False target are maintained and updated for each scan (i.e., correlated).
+
+   **Default** random_scan_to_scan
+
+.. command:: multi_radar_behavior ''<multi-radar-behavior-type>
+
+   Specifies the fidelity of the false target technique across multiple radar sites.
+
+   * **random_to_multiple_radars**     -  False targets appear random to individual radars.
+   * **consistent_to_multiple_radars** -  False targets appear correlated to multiple radars (i.e., choreographed).
+
+   **Default** random_to_multiple_radars
+
+.. command:: persistence <real-value>
+
+   Specifies the persistence of the false target from scan to scan. The number of false targets will be reduced by 1 minus
+   this value from scan to scan.
+
+   **Default** 1.0
+
+.. command:: quantity <real-value>
+
+   Specifies the number of false targets to create.
+
+   **Default** The :model:`WSF_FALSE_TARGET_EFFECT` :model:`jamming_pulse_density <WSF_FALSE_TARGET_EFFECT>` input
+   is used with its default or input value
+
+.. command:: range_constrained <boolean-value>
+
+   Specifies whether false targets can be produced forward of the jammer's position.  To be able to produce false targets
+   forward of the jammer requires detailed knowledge of the targeted radar's PRF sequence.
+
+   **Default** false
+
+.. command:: scan_rate <frequency-value>
+.. command:: scan_time <time-value>
+
+   Specify the false-target scan rate/time for the random_scan_to_scan false_target_behavior_ type.
+
+   .. note::
+      This command is only valid when used with the random_scan_to_scan false_target_behavior_. Use of
+      this command with other false_target_behavior_ types will have no effect.
+
+   **Default** Scan rate/time (frame_time of the system being effected)
+
+
+.. command:: track_movement  ... end_track_movement
+.. command:: false_target_movement  ... end_false_target_movement
+    :block:
+
+    Defines the movement of the false target blips (i.e., tracks) in terms of direction (heading) and speed.
+    To define the false target movement:
+
+    .. parsed-literal::
+
+       false_target_movement_
+          headings_ <min-angle-value> <max-angle-value>
+          speeds_ <min-speed-value> <max-speed-value>
+          reference_ [ "jammer" | "none" ]
+       end_false_target_movement
+
+    .. command:: headings <min-angle-value> <max-angle-value>
+
+       Specifies the direction of movement for the false targets wrt due north. If minimum and maximum <angle-value> are
+       equal all headings will be the same on the blips, if they are not equal then random headings will be drawn with the
+       limits and set for each false target blip separately as to its speed.
+
+       **Default** 0.0 degrees 360.0 degrees
+
+    .. command:: speeds <min-speed-value> <max-speed-value>
+
+       Specifies the minimum and maximum <speed-value> at which the false targets will move in the direction of the heading.
+       If minimum and maximum speeds are equal all speeds will be the same on the blips, if they are not equal then random
+       speeds will be drawn with the limits and set for each false target blip separately as to its speed.
+
+       **Default** 0.0 m/s 0.0 m/s
+
+    .. command:: reference [ "jammer" | "none" ]
+
+       Specifies the heading reference for which to move the false target blips if a non-zero speed is entered desired.
+
+       **Default** "none"
+
+.. end::
+
+.. command:: distribution ... end_distribution
+    :block:
+
+    Defines the false target dispersion about the distribution_centroid_ in the direction of the
+    reference_bearing:
+
+    To define the dispersion:
+
+    .. parsed-literal::
+
+       distribution_
+          bearing_reference_ [ "jammer" | "north" ]
+          radius_ <length-value>
+          sector_arc_ <angle-value>
+          azimuth_extent_ <minimum-angle-value> ... <maximum-angle-value> end_azimuth_extent
+          range_extent_ <minimum-length-value> ... <maximum-length-value> end_range_extent
+          range_distribution_ ["uniform" | "exponential" | "log"]
+       end_distribution
+
+    .. command:: bearing_reference [ "jammer" | "north" ]
+
+       Specifies the bearing reference in which to display false-targets. Works in conjunction with the azimuth_extent_
+       input.
+
+       **Default** "jammer"
+
+    .. command:: radius <length-value>
+
+       Specifies the radius in which to generate false-targets around the reference_centroid if entered or the receiver
+       if not.
+
+       **Default** Minimum of the antenna's maximum range or the maximum pulse_repitition_interval (PRI) range on the effecting
+       system
+
+    .. command:: sector_arc <angle-value>
+
+       Specifies the sector arc in which to generate false-targets.
+
+       **Default** -180 degrees 180 degrees
+
+    .. command:: azimuth_extent <minimum-angle-value> ... <maximum-angle-value> end_azimuth_extent
+
+       Specifies the azimuth extents in the range of [-180 degrees, 180 deg] of which to produce false-targets. Reference
+       azimuth is to the bearing_reference_. This input can be repeated for multiple azimuth extents.
+
+       **Default** -180 degrees 180 degrees
+
+    .. command:: range_extent <minimum-length-value> ... <maximum-length-value> end_range_extent
+
+       Specifies the range extents in which to generate false targets around the centroid if entered or the receiver if not.
+       This input can be repeated for multiple range extents.
+
+       **Default** Minimum of the Antennas maximum range on the effecting system or the maximum pulse_repitition_interval (PRI)
+       range of the effecting system if a PRI is specified.
+
+    .. command:: range_distribution ["uniform" | "exponential" | "log"]
+
+       Specifies the range distribution statistical model type to use for the range distribution of the false targets.
+
+       .. note::
+          A "uniform" distribution will have a higher density towards the center, an "exponential" distribution
+          will have a more linear spacing at all ranges and a "log" distribution will have a higher density towards the outer
+          range limits for a radar.
+
+       **Default** "uniform"
+
+.. end::
+
+.. command:: distribution_centroid  ... end_distribution_centroid
+    :block:
+
+    Centroid coordinates for the false target distribution_. The centroid is able to move in any specified direction
+    so the false target distribution centroid may change to allow for a new distribution center for random_scan_to_scan
+    false_target_behavior_ type.
+
+    To initialize the distribution centroid:
+
+    .. parsed-literal::
+
+       distribution_centroid_
+          altitude_ <altitude>
+          position_ <latitude> <longitude>
+          heading_ <angle-value>
+          speed_ <speed-value>
+       end_distribution_centroid
+
+    .. command:: altitude <altitude>
+
+       Specifies the altitude of the reference centroid on which to generate false-target.
+
+    .. command:: position <latitude> <longitude>
+
+       Specifies the latitude and longitude of the reference centroid on which to generate false-target.
+
+       **Default** Centroid of the system that the false-target effect is effecting.
+
+    .. command:: heading <angle-value>
+
+       Specifies the heading (i.e., direction of movement) for the centroid.
+
+       **Default** 0.0
+
+    .. command:: speed <speed-value>
+
+       Specifies the speed at which the centroid will move.
+
+       **Default** 0.0
+
+.. end::

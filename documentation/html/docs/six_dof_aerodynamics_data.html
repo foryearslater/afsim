@@ -1,0 +1,886 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SixDOF Aerodynamics Data &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SixDOF Pilot Manager and Control Inputs" href="six_dof_control_inputs.html" />
+    <link rel="prev" title="six_dof demo" href="six_dof.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_control_inputs.html" title="SixDOF Pilot Manager and Control Inputs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="six_dof.html" title="six_dof demo"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sixdof-aerodynamics-data">
+<span id="sixdof-aerodynamics-data-label"></span><h1>SixDOF Aerodynamics Data<a class="headerlink" href="#sixdof-aerodynamics-data" title="Permalink to this headline">¶</a></h1>
+<p>Aerodynamics data is composed of two distinct categories – <a class="reference internal" href="#aero_data">aero_data</a> and <a class="reference internal" href="#aero_component">aero_component</a> blocks. The
+<a class="reference internal" href="#aero_data">aero_data</a> block includes the aerodynamics produced by the object without any controls input or effects
+from any movable surfaces/components. There is only one <a class="reference internal" href="#aero_data">aero_data</a> block, although it may contain additional
+<a class="reference internal" href="#aero_data">aero_data</a> blocks within it that serve as aero sub-modes. An RB6 object usually contains multiple <a class="reference internal" href="#aero_component">aero_component</a>
+blocks, with one of more for each axis of control and/or for each control surface, depending on the level
+of detail for the model.</p>
+<p>Each of these command blocks are detailed below.</p>
+<p>Point-mass vehicles and rigid-body vehicles share some aerodynamic data, but RB6 aero data is generally more involved.</p>
+<p>Both types of vehicles use lift, drag, and side force coefficient data, but these tables should be produced in different ways.
+While RB6 core data is produced with the control surfaces undeflected, PM6 data should be provided at the trimmed (net-zero-moment) condition.</p>
+<p>Non-trimming devices, like spoilers and speedbrakes, are treated specially for PM6, and provide lift and/or drag coefficient increments as
+requested.</p>
+<p>Beyond those tables, very little is shared. Rotation is acheived for RB6 vehicles via the deflection of several individual control surfaces,
+or, most simply, by a false control surface modeled as the sum of all contributions in a given axis. For example, a user could define effects for
+LeftElevator, RightElevator, LeftCanard, and RightCanard, or could approximate the sum effect with a pseudo-surface named StickBackSurfaces.
+In either case, coefficient increments for forces and moments are added to the system and contribute to translation and rotation.</p>
+<p>PM6 vehicles use a different approach, which requires fewer pieces of data, but may also be less precise. Instead of moment coefficient data,
+which must be compared to reasonable mass distribution data, PM6 uses data indicating the rotation acceleration available from a control axis.
+In other words, if an aircraft is capable of creating a roll acceleration of 5 degrees per second per second, that information is input directly.</p>
+<p>Similarly, stability is conferred to RB6 vehicles through moment coefficient tables. A restoring moment yields a stable aircraft, and a
+destabilizing moment must be managed by a well-tuned autopilot or a very attentive pilot. For PM6, this can be approximated by a stabilizing
+frequency. This frequency lacks a concrete physical analog, but can be considered as an inverse to a first-order lag response time. The aim
+of this feature is to improve the realism of projectile trajectories. Piloted vehicles may also use this feature, but will likely see little benefit.</p>
+<p>A positive frequency is stabilizing, and so confers a “weathervaning” effect where the vehicle rotates to point in the direction of travel. A
+negative frequency is destabilizing. This is permitted, but should be used with care, if at all. The default value of 0 confers neutral stability,
+so a tumbling object will continue to tumble, but a projectile with no initial rotation will glide unperturbed and perform visibly unrealistically.</p>
+</section>
+<section id="core-aerodynamics-data">
+<h1>Core Aerodynamics Data<a class="headerlink" href="#core-aerodynamics-data" title="Permalink to this headline">¶</a></h1>
+<p>This block defines the primary aerodynamics for the vehicle. The data includes one or more geometric parameters
+as well as multiple stability derivative tables.  See <a class="reference internal" href="p6dof_theory.html#p6dof-fm"><span class="std std-ref">P6DOF Theory</span></a> for information on how this data is used in rigid-body models.
+In addition, this block includes support for “aero modes”, which allow a vehicle to have discrete aerodynamic modes,
+such as a retarded-fall bomb that has two aero modes – clean and high-drag.</p>
+<dl class="command">
+<dt id="aero_data">
+aero_data … end_aero_data<a class="headerlink" href="#aero_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>The RB6 geometric data offers two modes: wing-based or reference area. When using wing-based mode, the <a class="reference internal" href="#wing_chord_ft">wing_chord_ft</a>, <a class="reference internal" href="#wing_span_ft">wing_span_ft</a>, and
+<a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a> should be specified. When using reference area mode, the <a class="reference internal" href="#ref_area_sqft">ref_area_sqft</a> should be specified. PM6 vehicles do not incorporate
+chord or span information, and so require only <a class="reference internal" href="#ref_area_sqft">ref_area_sqft</a>.</p>
+<p>The RB6 stability derivative tables are each a function of mach and alpha (angle-of-attack) or mach and beta (angle-of-sideslip), as
+appropriate. The tables affect the base, non-controls aerodynamics of the vehicle. The secondary aerodynamics consist of control surface
+aerodynamics and are defined using <a class="reference internal" href="#aero_component">aero_component</a>, which is completely separate from <a class="reference internal" href="#aero_data">aero_data</a>.</p>
+<p>Additional data for PM6, such as rotation acceleration, are input as a function of Mach, and are modified on execution to account for effects
+from angle of attack and from altitude.</p>
+<pre class="literal-block">aero_data # for RB6 vehicles
+
+   <a class="reference internal" href="#wing_chord_ft">wing_chord_ft</a> ...
+   <a class="reference internal" href="#wing_span_ft">wing_span_ft</a> ...
+   <a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a> ...
+   <a class="reference internal" href="#ref_area_sqft">ref_area_sqft</a> ...
+
+   <a class="reference internal" href="#use_reduced_frequency">use_reduced_frequency</a> ...
+
+   <a class="reference internal" href="#aero_center_x">aero_center_x</a> ...
+   <a class="reference internal" href="#aero_center_y">aero_center_y</a> ...
+   <a class="reference internal" href="#aero_center_z">aero_center_z</a> ...
+
+   <a class="reference internal" href="p6dof_aerodynamics_data.html#cL_alpha_beta_mach_table" title="cL_alpha_beta_mach_table"><span class="xref wsf wsf-command">cL_alpha_beta_mach_table</span></a> ...
+   <a class="reference internal" href="p6dof_aerodynamics_data.html#cLq_alpha_mach_table" title="cLq_alpha_mach_table"><span class="xref wsf wsf-command">cLq_alpha_mach_table</span></a> ...
+   <a class="reference internal" href="p6dof_aerodynamics_data.html#cL_alphadot_alpha_mach_table" title="cL_alphadot_alpha_mach_table"><span class="xref wsf wsf-command">cL_alphadot_alpha_mach_table</span></a> ...
+
+   <a class="reference internal" href="#cd_alpha_beta_mach_table">cd_alpha_beta_mach_table</a> ...
+
+   <a class="reference internal" href="#cy_alpha_beta_mach_table">cy_alpha_beta_mach_table</a> ...
+   <a class="reference internal" href="#cyr_beta_mach_table">cyr_beta_mach_table</a> ...
+   <a class="reference internal" href="#cy_betadot_beta_mach_table">cy_betadot_beta_mach_table</a> ...
+
+   <a class="reference internal" href="#cm_alpha_beta_mach_table">cm_alpha_beta_mach_table</a> ...
+   <a class="reference internal" href="#cmq_mach_table">cmq_mach_table</a> ...
+   <a class="reference internal" href="#cmp_mach_table">cmp_mach_table</a> ...
+   <a class="reference internal" href="#cm_alphadot_mach_table">cm_alphadot_mach_table</a> ...
+
+   <a class="reference internal" href="#cn_alpha_beta_mach_table">cn_alpha_beta_mach_table</a> ...
+   <a class="reference internal" href="#cn_betadot_mach_table">cn_betadot_mach_table</a> ...
+   <a class="reference internal" href="#cnr_mach_table">cnr_mach_table</a> ...
+   <a class="reference internal" href="#cnp_mach_table">cnp_mach_table</a> ...
+
+   <a class="reference internal" href="#cl_alpha_beta_mach_table">cl_alpha_beta_mach_table</a> ...
+   <a class="reference internal" href="#clp_mach_table">clp_mach_table</a> ...
+   <a class="reference internal" href="#cl_alphadot_mach_table">cl_alphadot_mach_table</a> ...
+   <a class="reference internal" href="#cl_betadot_mach_table">cl_betadot_mach_table</a> ...
+   <a class="reference internal" href="#clr_mach_table">clr_mach_table</a> ...
+   <a class="reference internal" href="#clq_mach_table">clq_mach_table</a> ...
+
+   <a class="reference internal" href="#aero_mode">aero_mode</a> ... end_aero_mode
+
+end_aero_data</pre>
+<pre class="literal-block">aero_data # for PM6 vehicles
+
+   <a class="reference internal" href="#ref_area_sqft">ref_area_sqft</a> ...
+
+   <a class="reference internal" href="p6dof_aerodynamics_data.html#cL_alpha_beta_mach_table" title="cL_alpha_beta_mach_table"><span class="xref wsf wsf-command">cL_alpha_beta_mach_table</span></a> ...
+   <a class="reference internal" href="#cd_alpha_beta_mach_table">cd_alpha_beta_mach_table</a> ...
+   <a class="reference internal" href="#cy_alpha_beta_mach_table">cy_alpha_beta_mach_table</a> ...
+
+   <a class="reference internal" href="#speedbrake_dcd_mach_table" title="speedbrake_dcd_mach_table"><span class="xref wsf wsf-command">speedbrake_dcd_mach_table</span></a> ...
+   <a class="reference internal" href="#flaps_dcd_mach_table" title="flaps_dcd_mach_table"><span class="xref wsf wsf-command">flaps_dcd_mach_table</span></a> ...
+   <a class="reference internal" href="#flaps_dcL_mach_table" title="flaps_dcL_mach_table"><span class="xref wsf wsf-command">flaps_dcL_mach_table</span></a> ...
+   <a class="reference internal" href="#spoilers_dcd_mach_table" title="spoilers_dcd_mach_table"><span class="xref wsf wsf-command">spoilers_dcd_mach_table</span></a> ...
+   <a class="reference internal" href="#spoilers_dcL_mach_table" title="spoilers_dcL_mach_table"><span class="xref wsf wsf-command">spoilers_dcL_mach_table</span></a> ...
+
+   <a class="reference internal" href="#maximum_roll_acceleration_mach_table" title="maximum_roll_acceleration_mach_table"><span class="xref wsf wsf-command">maximum_roll_acceleration_mach_table</span></a> ...
+   <a class="reference internal" href="#maximum_pitch_acceleration_mach_table" title="maximum_pitch_acceleration_mach_table"><span class="xref wsf wsf-command">maximum_pitch_acceleration_mach_table</span></a> ...
+   <a class="reference internal" href="#maximum_yaw_acceleration_mach_table" title="maximum_yaw_acceleration_mach_table"><span class="xref wsf wsf-command">maximum_yaw_acceleration_mach_table</span></a> ...
+
+   <a class="reference internal" href="#alpha_stabilizing_frequency_mach_table" title="alpha_stabilizing_frequency_mach_table"><span class="xref wsf wsf-command">alpha_stabilizing_frequency_mach_table</span></a> ...
+   <a class="reference internal" href="#beta_stabilizing_frequency_mach_table" title="beta_stabilizing_frequency_mach_table"><span class="xref wsf wsf-command">beta_stabilizing_frequency_mach_table</span></a> ...
+   <a class="reference internal" href="#roll_stabilizing_frequency_mach_table" title="roll_stabilizing_frequency_mach_table"><span class="xref wsf wsf-command">roll_stabilizing_frequency_mach_table</span></a> ...
+
+   <a class="reference internal" href="#aero_mode">aero_mode</a> ... end_aero_mode
+
+end_aero_data</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="wing_chord_ft">
+wing_chord_ft<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#wing_chord_ft" title="Permalink to this definition">¶</a></dt>
+<dd><p>The mean chord of the wing measured in feet. This should be used along with <a class="reference internal" href="#wing_span_ft">wing_span_ft</a> and <a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="wing_span_ft">
+wing_span_ft<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#wing_span_ft" title="Permalink to this definition">¶</a></dt>
+<dd><p>The wing span of the wing measured in feet. This should be used along with <a class="reference internal" href="#wing_chord_ft">wing_chord_ft</a> and <a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="wing_area_sqft">
+wing_area_sqft<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#wing_area_sqft" title="Permalink to this definition">¶</a></dt>
+<dd><p>The area of the wing measured in square feet. This should be used along with <a class="reference internal" href="#wing_chord_ft">wing_chord_ft</a> and <a class="reference internal" href="#wing_span_ft">wing_span_ft</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="ref_area_sqft">
+ref_area_sqft<a class="reference internal" href="argumenttypes.html#real-value" title="real-value"><em> &lt;real-value&gt;</em></a><a class="headerlink" href="#ref_area_sqft" title="Permalink to this definition">¶</a></dt>
+<dd><p>The aerodynamic reference area of the vehicle measured in square feet. If this is used, <a class="reference internal" href="#wing_chord_ft">wing_chord_ft</a>,
+<a class="reference internal" href="#wing_span_ft">wing_span_ft</a> and <a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a> should not be used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="use_reduced_frequency">
+use_reduced_frequency<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#use_reduced_frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>This should be <strong>true</strong> when using the “reduced frequency” stability derivatives. If <strong>false</strong>, the rate derivatives
+(e.g. <a class="reference internal" href="p6dof_aerodynamics_data.html#cLq_alpha_mach_table" title="cLq_alpha_mach_table"><span class="xref wsf wsf-command">cLq_alpha_mach_table</span></a>, <a class="reference internal" href="p6dof_aerodynamics_data.html#cnr_mach_table" title="cnr_mach_table"><span class="xref wsf wsf-command">cnr_mach_table</span></a>) will be multiplied by their corresponding angular rates.
+If <strong>true</strong>, the rate derivatives will instead be multiplied by a non-dimensional reduced frequency. For pitching moment and lift coefficient derivatives, the reduced frequency
+is calculated as the angular rate times the <a class="reference internal" href="p6dof_aerodynamics_data.html#wing_chord_ft" title="wing_chord_ft"><span class="xref wsf wsf-command">wing_chord_ft</span></a> divided by twice the speed. All other coefficient derivatives
+use <a class="reference internal" href="p6dof_aerodynamics_data.html#wing_span_ft" title="wing_span_ft"><span class="xref wsf wsf-command">wing_span_ft</span></a> instead of chord. See <a class="reference internal" href="p6dof_theory.html#reduced-frequency"><span class="std std-ref">P6DOF Theory</span></a> for more information.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="command">
+<dt id="aero_center_x">
+aero_center_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#aero_center_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>The aerodynamic center (x-axis) of the vehicle relative to the reference point in object coordinates. This
+“aero-center” is the “aerodynamic reference point” at which aerodynamic forces and moments will be calculated.
+The typical definition of aerodynamic center (as it relates to longitudinal stability) is the location at which
+the moment does not change regardless of the angle of attack. Thus, the pitching moment remains constant at
+that particular point. Hence, the aerodynamic center, rather than the center of pressure, is used in the
+analysis of longitudinal stability.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="aero_center_y">
+aero_center_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#aero_center_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>The aerodynamic center (y-axis) of the vehicle relative to the reference point in object coordinates.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="aero_center_z">
+aero_center_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#aero_center_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>The aerodynamic center (z-axis) of the vehicle relative to the reference point in object coordinates.</p>
+</dd></dl>
+
+<section id="lift-data-rb6-pm6">
+<h2>Lift Data (RB6, PM6)<a class="headerlink" href="#lift-data-rb6-pm6" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Sample 2-dimensional table:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_cL_alpha_mach_table</span>
+   <span class="n">regular_table</span>
+      <span class="n">independent_variable</span> <span class="n">mach</span> <span class="n">precision</span> <span class="nb">float</span>
+         <span class="mf">0.000</span> <span class="mf">0.900</span> <span class="mf">1.2</span>
+      <span class="n">end_independent_variable</span>
+      <span class="n">independent_variable</span> <span class="n">alpha</span> <span class="n">units</span> <span class="n">deg</span>
+         <span class="mf">0.0</span> <span class="mf">18.0</span> <span class="mf">20.0</span>
+      <span class="n">end_independent_variable</span>
+      <span class="n">dependent_variable</span> <span class="n">precision</span> <span class="nb">float</span>
+         <span class="mf">0.0</span> <span class="mf">1.2</span> <span class="mf">1.3</span> <span class="mf">0.0</span> <span class="mf">1.2</span> <span class="mf">1.3</span> <span class="mf">0.0</span> <span class="mf">1.2</span> <span class="mf">1.3</span>
+      <span class="n">end_dependent_variable</span>
+   <span class="n">end_regular_table</span>
+<span class="n">end_sample_cL_alpha_mach_table</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="command">
+<dt id="cL_alpha_beta_mach_table">
+cL_alpha_beta_mach_table<a class="headerlink" href="#cL_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the lift coefficient (cL) based on Mach, angle of attack
+(alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+</section>
+<section id="lift-derivative-data-rb6">
+<h2>Lift Derivative Data (RB6)<a class="headerlink" href="#lift-derivative-data-rb6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cLq_alpha_mach_table">
+cLq_alpha_mach_table<a class="headerlink" href="#cLq_alpha_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the lift coefficient (cL) based on Mach, angle of
+attack (alpha), and pitch rate (q), with a table order of Mach-alpha-q-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cL_alphadot_alpha_mach_table">
+cL_alphadot_alpha_mach_table<a class="headerlink" href="#cL_alphadot_alpha_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the lift coefficient (cL) based on Mach, angle of
+attack (alpha), and alpha-dot (the rate of change of alpha), with a table order of Mach-alpha-alphaDot-value.</p>
+</dd></dl>
+
+</section>
+<section id="lifting-device-data-pm6">
+<h2>Lifting Device Data (PM6)<a class="headerlink" href="#lifting-device-data-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="flaps_dcL_mach_table">
+flaps_dcL_mach_table<a class="headerlink" href="#flaps_dcL_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 1-dimensional table that outputs the lift coefficient (cL) increment from full flaps deployment based on Mach,
+with a table order of Mach-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="spoilers_dcL_mach_table">
+spoilers_dcL_mach_table<a class="headerlink" href="#spoilers_dcL_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 1-dimensional table that outputs the lift coefficient (cL) increment from full spoilers deployment based on Mach,
+with a table order of Mach-value.</p>
+</dd></dl>
+
+</section>
+<section id="drag-data-rb6-pm6">
+<h2>Drag Data (RB6, PM6)<a class="headerlink" href="#drag-data-rb6-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cd_alpha_beta_mach_table">
+cd_alpha_beta_mach_table<a class="headerlink" href="#cd_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the drag coefficient (cd) based on the Mach, angle of
+attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+</section>
+<section id="drag-device-data-pm6">
+<h2>Drag Device Data (PM6)<a class="headerlink" href="#drag-device-data-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="flaps_dcd_mach_table">
+flaps_dcd_mach_table<a class="headerlink" href="#flaps_dcd_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 1-dimensional table that outputs the cd increment from full flaps deployment based on Mach,
+with a table order of Mach-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="spoilers_dcd_mach_table">
+spoilers_dcd_mach_table<a class="headerlink" href="#spoilers_dcd_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 1-dimensional table that outputs the cd increment from full spoilers deployment based on Mach,
+with a table order of Mach-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="speedbrake_dcd_mach_table">
+speedbrake_dcd_mach_table<a class="headerlink" href="#speedbrake_dcd_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 1-dimensional table that outputs the cd increment from full speedbrake deployment based on Mach,
+with a table order of Mach-value.</p>
+</dd></dl>
+
+</section>
+<section id="side-force-data-rb6-pm6">
+<h2>Side-Force Data (RB6, PM6)<a class="headerlink" href="#side-force-data-rb6-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cy_alpha_beta_mach_table">
+cy_alpha_beta_mach_table<a class="headerlink" href="#cy_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the side force coefficient (cy) based on the Mach, angle of
+attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+</section>
+<section id="side-force-derivative-data-rb6">
+<h2>Side-Force Derivative Data (RB6)<a class="headerlink" href="#side-force-derivative-data-rb6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cyr_beta_mach_table">
+cyr_beta_mach_table<a class="headerlink" href="#cyr_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the cy based on the Mach, beta, and yaw rate (q), with a table order of Mach-beta-q-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cy_betadot_beta_mach_table">
+cy_betadot_beta_mach_table<a class="headerlink" href="#cy_betadot_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the cy based on the Mach, beta, and rate of change of sideslip (beta-dot), with a table order of Mach-beta-betaDot-value.</p>
+</dd></dl>
+
+</section>
+<section id="pitch-moment-data-rb6">
+<h2>Pitch Moment Data (RB6)<a class="headerlink" href="#pitch-moment-data-rb6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cm_alpha_beta_mach_table">
+cm_alpha_beta_mach_table<a class="headerlink" href="#cm_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the pitch coefficient (cm) based on the Mach, angle of
+attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cmq_mach_table">
+cmq_mach_table<a class="headerlink" href="#cmq_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the pitch damping coefficient due to pitch rate (cmq) based on Mach.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cmp_mach_table">
+cmp_mach_table<a class="headerlink" href="#cmp_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the pitch damping coefficient due to roll rate (cmp) based on Mach.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cm_alphadot_mach_table">
+cm_alphadot_mach_table<a class="headerlink" href="#cm_alphadot_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the pitch (damping) coefficient (cm) based on the Mach and the
+rate of change of alpha (alpha-dot), with a table order of Mach-alphaDot-value.</p>
+</dd></dl>
+
+</section>
+<section id="pitch-rotation-data-pm6">
+<h2>Pitch Rotation Data (PM6)<a class="headerlink" href="#pitch-rotation-data-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="maximum_pitch_acceleration_mach_table">
+maximum_pitch_acceleration_mach_table<a class="headerlink" href="#maximum_pitch_acceleration_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the maximum pitching acceleration from stick-back control at standard sea-level conditions,</dt><dd><p>in deg/s/s, based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of angle-of-attack.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="alpha_stabilizing_frequency_mach_table">
+alpha_stabilizing_frequency_mach_table<a class="headerlink" href="#alpha_stabilizing_frequency_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the stabilizing frequency in pitch at standard sea-level conditions, in Hz,</dt><dd><p>based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of angle-of-attack.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="yaw-moment-data-rb6">
+<h2>Yaw Moment Data (RB6)<a class="headerlink" href="#yaw-moment-data-rb6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cn_alpha_beta_mach_table">
+cn_alpha_beta_mach_table<a class="headerlink" href="#cn_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the yaw coefficient (cn) based on the Mach, angle of
+attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cn_betadot_mach_table">
+cn_betadot_mach_table<a class="headerlink" href="#cn_betadot_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the yaw coefficient (cn) based on the Mach and
+rate of change of sideslip angle (beta-dot), with a table order of Mach-betaDot-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cnr_mach_table">
+cnr_mach_table<a class="headerlink" href="#cnr_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the yaw damping coefficient due to yaw rate (cnr) based on Mach.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cnp_mach_table">
+cnp_mach_table<a class="headerlink" href="#cnp_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the yaw damping coefficient due to roll rate (cnp) based on Mach.</p>
+</dd></dl>
+
+</section>
+<section id="yaw-rotation-data-pm6">
+<h2>Yaw Rotation Data (PM6)<a class="headerlink" href="#yaw-rotation-data-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="maximum_yaw_acceleration_mach_table">
+maximum_yaw_acceleration_mach_table<a class="headerlink" href="#maximum_yaw_acceleration_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the maximum yawing acceleration from rudder-right control at standard sea-level conditions,</dt><dd><p>in deg/s/s, based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of sideslip.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="beta_stabilizing_frequency_mach_table">
+beta_stabilizing_frequency_mach_table<a class="headerlink" href="#beta_stabilizing_frequency_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the stabilizing frequency in yaw at standard sea-level conditions, in Hz,</dt><dd><p>based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of sideslip.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="roll-moment-data-rb6">
+<h2>Roll Moment Data (RB6)<a class="headerlink" href="#roll-moment-data-rb6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="cl_alpha_beta_mach_table">
+cl_alpha_beta_mach_table<a class="headerlink" href="#cl_alpha_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the roll coefficient (cl) based on the Mach, angle
+of attack (alpha), and angle of sideslip (beta), with a table order of Mach-alpha-beta-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clp_mach_table">
+clp_mach_table<a class="headerlink" href="#clp_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the roll damping coefficient due to roll rate (clp) based on Mach.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cl_alphadot_mach_table">
+cl_alphadot_mach_table<a class="headerlink" href="#cl_alphadot_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the roll coefficient (cl) based on the Mach and
+the rate of change of angle of attack (alpha), with a table order of Mach-alphaDot-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cl_betadot_mach_table">
+cl_betadot_mach_table<a class="headerlink" href="#cl_betadot_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the roll coefficient (cl) based on the Mach and
+the rate of change of angle of sideslip (beta), with a table order of Mach-betaDot-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clr_mach_table">
+clr_mach_table<a class="headerlink" href="#clr_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the roll damping coefficient due to yaw rate (clr) based on Mach.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clq_mach_table">
+clq_mach_table<a class="headerlink" href="#clq_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a simple table that outputs the roll damping coefficient due to pitch rate (clq) based on Mach.</p>
+</dd></dl>
+
+</section>
+<section id="roll-rotation-data-pm6">
+<h2>Roll Rotation Data (PM6)<a class="headerlink" href="#roll-rotation-data-pm6" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="maximum_roll_acceleration_mach_table">
+maximum_roll_acceleration_mach_table<a class="headerlink" href="#maximum_roll_acceleration_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the maximum rolling acceleration from stick-right control at standard sea-level conditions,</dt><dd><p>in deg/s/s, based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of total angle-of-attack.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="command">
+<dt id="roll_stabilizing_frequency_mach_table">
+roll_stabilizing_frequency_mach_table<a class="headerlink" href="#roll_stabilizing_frequency_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>This is a 1-dimensional table that outputs the stabilizing frequency in roll at standard sea-level conditions, in Hz,</dt><dd><p>based on Mach, with a table order of Mach-value. The output of this table is reduced with ambient air density, and is modified as a function of angle-of-attack.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="aero-modes">
+<h2>Aero Modes<a class="headerlink" href="#aero-modes" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="aero_mode">
+aero_mode<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a> … end_aero_mode<a class="headerlink" href="#aero_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aero modes may be defined to allow a vehicle to have discrete aerodynamic modes, such as a retarded-fall
+bomb that has two aero modes – clean and high-drag. Aero modes support all commands that aero data
+support with the exception of an aero_mode (aero_modes can not be nested within each other). Each aero
+mode name must be unique for that object.  Aero modes are typically changed using sequencers and the
+<a class="reference internal" href="p6dof_sequencers.html#action_change_aero_mode" title="action_change_aero_mode"><span class="xref wsf wsf-command">action_change_aero_mode</span></a>.</p>
+<pre class="literal-block">aero_mode &lt;string&gt;
+   ... <a class="reference internal" href="#aero_data">aero_data</a> commands ...
+end_aero_mode</pre>
+</dd></dl>
+
+</section>
+</section>
+<section id="movable-aerodynamics-data-control-surface-aero">
+<h1>Movable Aerodynamics Data (Control Surface Aero)<a class="headerlink" href="#movable-aerodynamics-data-control-surface-aero" title="Permalink to this headline">¶</a></h1>
+<p>Secondary aerodynamics include aerodynamic effects produced by control surfaces or other components, such as
+landing gear, that produce aero effects as a function of angle. For example, retractable landing gear produce
+significant drag when extended (angle of 90 deg) and no drag when retracted (angle of 0 deg).</p>
+<dl class="command">
+<dt id="aero_component">
+aero_component … end_aero_component<a class="headerlink" href="#aero_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>The use of aero components can be simple, such as having three “generic” yaw, pitch and roll aero components,
+or can be more complex and realistic, such as having sixteen specific components: LeftAileron, RightAileron,
+LeftStabilator, RightStabilator, LeftRudder, RightRudder, LeftSpeedbrake, RightSpeedbrake, LeftFlap, RightFlap,
+LeftSpoiler, RightSpoiler, NoseLandingGear, LeftLandingGear, RightLandingGear, and ArrestingHook. During runtime,
+the position of aero components is controlled by the <a class="reference internal" href="six_dof_flight_control_system.html#sixdof-flight-control-system-label"><span class="std std-ref">SixDOF Flight Control System Definition</span></a>.</p>
+<pre class="literal-block">aero_component
+
+   <a class="reference internal" href="#type">type</a> ...
+   <a class="reference internal" href="#ref_area_sqft">ref_area_sqft</a> ...
+
+   <a class="reference internal" href="#use_reduced_frequency">use_reduced_frequency</a> ...
+
+   <a class="reference internal" href="p6dof_aerodynamics_data.html#cL_angle_alpha_mach_table" title="cL_angle_alpha_mach_table"><span class="xref wsf wsf-command">cL_angle_alpha_mach_table</span></a> ...
+   <a class="reference internal" href="#cd_angle_alpha_mach_table">cd_angle_alpha_mach_table</a> ...
+   <a class="reference internal" href="#cd_angle_beta_mach_table">cd_angle_beta_mach_table</a> ...
+   <a class="reference internal" href="#cd_angle_mach_table">cd_angle_mach_table</a> ...
+   <a class="reference internal" href="#cy_angle_beta_mach_table">cy_angle_beta_mach_table</a> ...
+   <a class="reference internal" href="#cm_angle_alpha_mach_table">cm_angle_alpha_mach_table</a> ...
+   <a class="reference internal" href="#cmq_angle_mach_table">cmq_angle_mach_table</a> ...
+   <a class="reference internal" href="#cn_angle_beta_mach_table">cn_angle_beta_mach_table</a> ...
+   <a class="reference internal" href="#cnr_angle_mach_table">cnr_angle_mach_table</a> ...
+   <a class="reference internal" href="#cl_angle_alpha_beta_table">cl_angle_alpha_beta_table</a> ...
+   <a class="reference internal" href="#clp_angle_mach_table">clp_angle_mach_table</a> ...
+   <a class="reference internal" href="#clq_angle_mach_table">clq_angle_mach_table</a> ...
+   <a class="reference internal" href="#clr_angle_mach_table">clr_angle_mach_table</a> ...
+
+end_aero_component</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="type">
+type<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#type" title="Permalink to this definition">¶</a></dt>
+<dd><p>This sets the name/type of the aero component. The name must be unique within the set of aero components for
+the given <a class="reference internal" href="rigid_body_vehicle_type.html#rigid_body_vehicle_type" title="rigid_body_vehicle_type"><span class="xref wsf wsf-command">rigid_body_vehicle_type</span></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In order for an <strong>aero_component</strong> to operate, it must be “connected” to <a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a> via the <strong>control_surface</strong> command in <a class="reference internal" href="p6dof_flight_control_system.html#flight_controls" title="flight_controls"><span class="xref wsf wsf-command">flight_controls</span></a>.</p>
+<p>The <strong>control_surface</strong> name and the <strong>aero_component</strong> type must match exactly and are case-sensitive.</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="ref_area_sqft">
+ref_area_sqft<a class="reference internal" href="argumenttypes.html#area-value" title="area-value"><em> &lt;area-value&gt;</em></a><a class="headerlink" href="#ref_area_sqft" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the reference aerodynamic area for the aero component. If this is not specified, the <a class="reference internal" href="#wing_area_sqft">wing_area_sqft</a>
+defined in <a class="reference internal" href="#aero_data">aero_data</a> is used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cL_angle_alpha_mach_table">
+cL_angle_alpha_mach_table<a class="headerlink" href="#cL_angle_alpha_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the lift coefficient (cL) based on the Mach, angle of attack
+(alpha), and control surface angle, with a table order of Mach-alpha-angle-value. Sample 3-dimensional table:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_cL_angle_alpha_mach_table</span>
+   <span class="n">regular_table</span>
+      <span class="n">independent_variable</span> <span class="n">mach</span> <span class="n">precision</span> <span class="nb">float</span>
+         <span class="mf">0.000</span> <span class="mf">0.900</span> <span class="mf">1.2</span>
+      <span class="n">end_independent_variable</span>
+      <span class="n">independent_variable</span> <span class="n">alpha</span> <span class="n">units</span> <span class="n">deg</span>
+         <span class="mf">0.0</span> <span class="mf">18.0</span> <span class="mf">20.0</span>
+      <span class="n">end_independent_variable</span>
+      <span class="n">independent_variable</span> <span class="n">angle</span> <span class="n">units</span> <span class="n">deg</span>
+         <span class="o">-</span><span class="mf">10.0</span> <span class="mf">0.0</span> <span class="mf">10.0</span>
+      <span class="n">end_independent_variable</span>
+      <span class="n">dependent_variable</span> <span class="n">precision</span> <span class="nb">float</span>
+         <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>
+         <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>
+         <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>  <span class="o">-</span><span class="mf">1.0</span> <span class="mf">0.0</span> <span class="mf">1.0</span>
+      <span class="n">end_dependent_variable</span>
+   <span class="n">end_regular_table</span>
+<span class="n">end_sample_cL_angle_alpha_mach_table</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="cd_angle_alpha_mach_table">
+cd_angle_alpha_mach_table<a class="headerlink" href="#cd_angle_alpha_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the drag coefficient (cd) based on the Mach, angle of attack
+(alpha), and angle of the control surface, with a table order of Mach-alpha-angle-value.
+This derivative should be used when drag is only a function of alpha (not beta).
+When this derivative is used, <strong>cd_angle_beta_mach_table</strong> and <strong>cd_angle_mach_table</strong> should not be used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cd_angle_beta_mach_table">
+cd_angle_beta_mach_table<a class="headerlink" href="#cd_angle_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the drag coefficient (cd) based on the Mach, angle of sideslip
+(beta), and angle of the control surface, with a table order of Mach-beta-angle-value.
+This derivative should be used when drag is only a function of beta (not alpha).
+When this derivative is used, <strong>cd_angle_alpha_mach_table</strong> and <strong>cd_angle_mach_table</strong> should not be used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cd_angle_mach_table">
+cd_angle_mach_table<a class="headerlink" href="#cd_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the drag coefficient (cd) based on the Mach and
+the angle of the control surface, with a table order of Mach-angle-value.
+This derivative should be used when drag is a function of both alpha and beta. (Although this function
+does not include either alpha or beta, it is more appropriate than either the pro-alpha or pro-beta
+derivatives.)
+When this derivative is used, <strong>cd_angle_alpha_mach_table</strong> and <strong>cd_angle_beta_mach_table</strong> should not be used.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cy_angle_beta_mach_table">
+cy_angle_beta_mach_table<a class="headerlink" href="#cy_angle_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the side force coefficient (cy) based on the Mach, angle of
+sideslip (beta), and angle of the control surface, with a table order of Mach-beta-angle-value..</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cm_angle_alpha_mach_table">
+cm_angle_alpha_mach_table<a class="headerlink" href="#cm_angle_alpha_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the pitch coefficient (cm) based on the Mach, angle of attack
+(alpha), and angle of the control surface, with a table order of Mach-alpha-angle-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cmq_angle_mach_table">
+cmq_angle_mach_table<a class="headerlink" href="#cmq_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the pitch damping coefficient due to pitch rate (cmq) based on Mach
+and the angle of the control surface.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cn_angle_beta_mach_table">
+cn_angle_beta_mach_table<a class="headerlink" href="#cn_angle_beta_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the yaw coefficient (cn) based on the Mach, angle of sideslip
+(beta), and angle of the control surface, with a table order of Mach-beta-angle-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cnr_angle_mach_table">
+cnr_angle_mach_table<a class="headerlink" href="#cnr_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the yaw damping coefficient due to yaw rate (cnr) based on Mach
+and the angle of the control surface.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="cl_angle_alpha_beta_table">
+cl_angle_alpha_beta_table<a class="headerlink" href="#cl_angle_alpha_beta_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 3-dimensional <strong>regular_table</strong> that outputs the roll coefficient (cl) based on the angle of the attack (alpha),
+the angle of slideslip (beta) and the angle of the control surface, with a table order of alpha-beta-angle-value.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clp_angle_mach_table">
+clp_angle_mach_table<a class="headerlink" href="#clp_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the roll damping coefficient due to roll rate (clp) based on Mach
+and the angle of the control surface.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clq_angle_mach_table">
+clq_angle_mach_table<a class="headerlink" href="#clq_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the roll damping coefficient due to pitch rate (clq) based on Mach
+and the angle of the control surface.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="clr_angle_mach_table">
+clr_angle_mach_table<a class="headerlink" href="#clr_angle_mach_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a 2-dimensional <strong>regular_table</strong> that outputs the roll damping coefficient due to yaw rate (clr) based on Mach
+and the angle of the control surface.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<p>Return to <a class="reference internal" href="six_dof_object_types.html"><span class="doc">six_dof_object_types</span></a>, <a class="reference internal" href="rigid_body_vehicle_type.html"><span class="doc">rigid_body_vehicle_type</span></a>, <a class="reference internal" href="point_mass_vehicle_type.html"><span class="doc">point_mass_vehicle_type</span></a></p>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/six_dof_aerodynamics_data.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_control_inputs.html" title="SixDOF Pilot Manager and Control Inputs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="six_dof.html" title="six_dof demo"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

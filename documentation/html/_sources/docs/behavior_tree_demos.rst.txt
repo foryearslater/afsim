@@ -1,0 +1,92 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. demo:: behavior_tree
+
+.. |classification| replace:: Unclassified
+.. |date|           replace:: 2020-02-11
+.. |group|          replace:: Demos
+.. |image|          replace:: images/behavior_tree.png
+.. |tags|           replace:: n/a
+.. |title|          replace:: Behavior Tree Demos
+.. |startup|        replace:: sequence.txt
+.. |summary|        replace:: This provides multiple scenarios showing off the functionality of advanced behavior trees.  The behavior trees may be viewed in the Behavior Tree view in Mystic.
+
+.. |i| image:: images/behavior_tree.png
+   :height: 150 px
+   :width:  150 px
+
+.. include:: demo_template.txt
+
+blackboard.txt
+--------------
+
+| This scenario shows off the basic functionality of blackboards, using a shared blackboard.  Blackboards allow the user to store node data for use by itself and/or other nodes, and it is used in visualization.  They are similar to script variables.  Users can store one of four primitive types: int, bool, float, and string.  For this scenario, each time the sequence with memory starts fresh (memory resets), it will pick a random task using a weighted random.  When a task is chosen, it sets a blackboard variable and sets its weight to 0 so that it will not be chosen in the future.  The corresponding checkpoint task will check for this flag and run if it exists.  When the checkpoint task finishes, it will delete the shared blackboard variable.  Once every task has been chosen, the platform will have visited every checkpoint, and there will be no tasks left available.
+
+condition.txt
+-------------
+
+| This scenario shows off the basic functionality of condition nodes(nodes with only a precondition block).  These nodes cannot return Running, only Success or Failure.  In this example, all sequences are run in parallel.  Each checkpoint can only be flown towards if the previous checkpoint has been reached.  To save a flag for each checkpoint as it is reached a blackboard is used.
+
+decorator.txt
+-------------
+
+| This scenario shows off the basic functionality of decorator nodes, using a sequence.  The aircraft will fly to checkpoint_1 successfully.  Checkpoint_3 will then execute.  Checkpoint_3 is set to fail its precondition, which would normally stop the sequence.  We use an inverter (flips SUCCESS to FAILURE and FAILURE to SUCCESS) and a succeeder (always returns SUCCESS) to make these nodes pass, allowing the sequence to keep executing. The aircraft will then fly to checkpoint_4.  A repeater set to until_done will execute its child until the child is done (returns SUCCESS or FAILURE).  A repeater node inside that set to repeat 20 times (tick 20 times) will execute turn_right for 20 ticks (turn_right executes an 18 degree angle turn, where 20 * 18 is 360 degrees).  A repeater then repeats turn_left for 5 minutes (1 tick per 5 seconds = 60 ticks = 60 * 18 = 1080 degrees = 3 full loops) checkpoint_2 will then execute, but the negator parenting it will return Failure.  This will stop the tree from executing the next node.
+
+parallel.txt
+------------
+
+| This scenario shows off the basic functionality of a parallel node.  This node will run all of its children at the same time, succeeding depending on a policy (succeed_on_one, succeed_on_all) or a threshold set for the node.  In this example, we run 3 parallel sub-trees that involve turning while changing speed.  Our aircraft will make a wide loop left, slow down temporarily, and then speed back up while making a wide turn right.
+
+priority_selector.txt
+---------------------
+
+| This scenario shows off the basic functionality of a priority selector.  This node will evaluate each child's precondition for a fitness value(priority value/weight), and will select and run the highest priority child.  In this example, each of the 4 checkpoints are given a priority equal to their number.  The aircraft will fly to checkpoints in the order of 4, 3, 2, 1.  As each checkpoint is hit, its priority value (weight) will be set to 0, so that the next highest node will be run.
+
+run_tree.txt
+---------------------
+
+| This scenario shows off the technique of being able to choose and run specific sub-trees using a shared blackboard variable. The Blue_1 platform's behavior tree has 3 major sub-trees: Engage, Fly Checkpoints, and RTB.  Based on script behavior set in the choose_tree node,  A blackboard task variable will be set(tree_to_run) that decides which tree will be run on a given tick.  In this scenario, Blue_1 will do the following:  It will engage 3 enemy aircraft.  Once it runs out of ammo (all 3 MRMs shot), it will attempt to fly all 3 checkpoints.  It will reach BINGO fuel before hitting the 3rd checkpoint, and will return to base.
+
+selector.txt
+------------
+
+| This scenario shows off the basic functionality of a selector.  A selector will evaluate each node every tick.  It will fail if all children fail, and will succeed if all children succeed.  This is the pincer_fsm scenario.  Our blue platforms will fly in, pincering and attacking the red platforms.  The red platforms will attempt to fly their planned route, evading when attacked.
+
+selector_with_memory.txt
+------------------------
+
+| This scenario shows off the basic functionality of a selector with memory.  This node will skip previously failing nodes by incrementing memory until it finds a success or the whole selector fails.  If every node fails, or any node passes, the selector will reset memory and check from the start.  In this example, some range condition will evaluate true as the aircraft gets closer to the marked target, and they will start to fail again as it passes and gets further away.
+
+sequence.txt
+------------
+
+| This scenario shows off the basic functionality of a sequence.  This node will run each node in order from left to right (top to bottom in script) until it hits a failure, or every node succeeds.  Our aircraft should fly through each checkpoint in succession.
+
+sequence_with_memory.txt
+------------------------
+
+| This scenario shows off the basic functionality of a sequence with memory.  This node will run each node in order from left to right (top to bottom in script) until it hits a failure, or every node succeeds.  As each node succeeds, the sequence will move memory forward so that node does not need to be ticked again until memory is reset.  If you compare this scenario to the sequence without memory, you will notice that booleans need to be set for the sequence get the same functionality, as all nodes are ticked every tick normally.
+
+state_machine.txt
+------------------------
+
+| This scenario shows off the functionality of a platform having multiple trees inside of a state machine.  This scenario will run through three sequence driven trees, each flying its checkpoints from start to finish.  First the tree for blue checkpoints is executed, then the tree for green checkpoints, and lastly the tree for red checkpoints.
+
+subtrees.txt
+------------------------
+
+| This is a modified version of sequence.txt, showing off the functionality of having subtrees(trees within trees). The scenario will run 3 subtrees in sequence, checkpoints1234, checkpoints34, and checkpoints321.  Each tree flys to different checkpoints.  These trees can be selected and viewed separately in the Behavior Tree view in Mystic.
+
+weighted_random.txt
+-------------------
+
+| This scenario shows off the basic functionality of a weighted random.  This node will check each of its children's preconditions for a fitness value/weight.  It will then do a random draw to see which node should be executed.  Nodes with higher weights have a higher chance of being picked.  In this example, the aircraft will randomly fly to each checkpoint.  As a checkpoint is hit its weight will be set to 0 so that it will not be considered in the future.

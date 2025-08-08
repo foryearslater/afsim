@@ -1,0 +1,189 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_KINEMATIC_MOVER
+-------------------
+
+.. model:: mover WSF_KINEMATIC_MOVER
+
+.. parsed-literal::
+
+   mover :model:`WSF_KINEMATIC_MOVER`
+
+      :ref:`Platform_Part_Commands` ...
+
+      ... WSF_KINEMATIC_MOVER Commands_ ...
+
+      // Route Mover Commands_
+
+      use_route_ ...
+
+   end_mover
+
+Overview
+========
+
+When placed on a platform, the WSF_KINEMATIC_MOVER provides for a smooth motion in both horizontal and vertical
+directions. Unlike the :model:`WSF_AIR_MOVER`, vertical acceleration is modeled; transitions in both altitude and bearing
+are performed dynamically and at the same time.  Similar to the WSF_AIR_MOVER, no aerodynamics, mass properties, or
+propulsion are required to be known in order to use this mover.  In addition, flight characteristics are not affected
+by various flight altitudes of a platform with this mover definition (no air density variation effect).
+
+This mover type accepts two different values for gain (velocity_pursuit_gain_ and
+proportional_navigation_gain_), and some clarifying comments are in order.  The "correct" gain values for your
+particular scenario are truly implementation-defined, and no particular default values will work for all scenarios. 
+Higher values result in a more aggressive maneuver to intercept, with more angular, discontinuous trajectory turns,
+while a lower value tends toward a slow, wandering maneuver into the aimpoint.  The mover algorithms are written to be
+general purpose enough to intercept a dynamically maneuvering aimpoint, and in such a situation, it is best to use
+proportional_navigation gain for a more efficient use of energy during the intercept.  However, this mover type should
+always be given at least a small amount of velocity pursuit gain, because there are instances when the turn
+direction of the proportional navigation becomes ambiguous, and may lead to flying 180 degrees from the desired
+aimpoint; some velocity pursuit gain will step in when needed, to supply the turn direction.  If "wing-rocking" is
+observed, then the gain values should probably be reduced.
+
+Note that as with all mover types, slight timing differences during waypoint approaches will cause path-to-path
+variability when many platforms are following the same set of waypoints.  Tightening up the update intervals will
+mitigate this issue, but with increased run times.  Testing has shown that reducing update_interval from 1.0 second to
+0.01 second greatly reduces this tendency, for example.
+
+Also note that there is no logic devoted to maintaining a constant altitude.  Consider a two-waypoint ping-pong route: 
+When waypoint A is reached, there are an infinite number of 180-degree turn options (in 3-D) to get back to waypoint B;
+which could include an Immelmann turn, a lateral turn right or left, a rolling split-S, or anything in between.  The
+best course of action here is to assure that there are enough points in the assigned route, and spaced closely enough,
+to inform the mover what altitudes to fly.
+
+.. note::
+
+   The WSF_KINEMATIC_MOVER cannot completely replace the WSF_AIR_MOVER. Several scripting and route methods
+   available to the WSF_AIR_MOVER are not available to the WSF_KINEMATIC_MOVER. The WSF_KINEMATIC_MOVER should be
+   considered initial capability and by no means complete. It does not implement all guidance commands while switching
+   waypoints within a :ref:`Route` ..end_route definition.  It does honor the route commands of Latitude, Longitude,
+   Altitude (MSL-only) and Speed commands.  However, it currently ignores distance, time, climb rates, and flight path
+   angles.
+
+The underlying dynamics model of the WSF_KINEMATIC_MOVER is essentially a quaternion orientation mathematics model that
+is permitted to rotate within constrained angular rates in inertial space while the velocity vector is directed in the
+"forward" direction. The magnitude of the accelerations are determined by internal pursuit and proportional navigation
+gains, and the target point (waypoint) in three dimensions is determined by the :ref:`Route_Mover` waypoint-switching
+logic.  The current fly-to-point is advanced to the next (L,L,A) in the route when the platform is within one
+turn-radius of the current waypoint.  The waypoint_switch_on_ground_turning_radius_ flag affects what value is
+considered one "turn-radius".
+
+Velocity vector turn rates are constrained to the most restrictive of maximum_lateral_acceleration,
+maximum_body_roll_rate_, and maximum_body_turn_rate_, and ever increasing current platform speed will force
+the platform motion to approach a straight line if maximum_lateral_acceleration is held constant.
+
+Adjusting the default velocity_pursuit_gain_ (VP) and proportional_navigation_gain_ (PN) values are not
+trivial.  These two gains directly conflict with each other, and achieving proper values may become a trial and error
+process.  "Saturation" may occur if velocity vector constraints (see paragraph above) are so severe that the requested
+VP or PN requested accelerations are not achievable.  Setting VP and PN to zero values would result in a platform not
+turning at all to intercept a waypoint.  To adjust VP and PN gain values, start by setting PN to zero, and VP to a
+small value.  Keep increasing VP until turn aggressiveness toward a waypoint is sufficient to intercept.  If the target
+point is stationary (such as for a fixed waypoints), calibration is complete.  However, for moving or accelerating
+targets, pure VP will result in a sweeping turn to approach the target from behind.  Increasing PN until the platform
+"anticipates" the impact point, and flies to intercept in a straight line (provided the target is also moving in a
+straight line).  Setting PN with no VP results in flying away from the target if the target point begins behind the
+velocity vector (azimuth or elevation greater than 90 degrees). Generally, a brief period of VP is flown to get the
+platform moving toward the target, and then VP is ramped out, while PN is ramped in, so terminal intercept is pure PN. 
+The default values of a VP of 4 and PN of 40 should suffice in most cases.
+
+(Only of interest to software developers, the :model:`WSF_KINEMATIC_MOVER` underlying motion dynamics are implemented by the
+UtMath3D_Motion utility, which processes the input stream commands below.)
+
+.. block:: WSF_KINEMATIC_MOVER
+
+Commands
+========
+
+.. command:: detailed_debug <boolean-value>
+   
+   Enables debug output to the standard output.
+
+.. command:: prefer_canopy_up <boolean-value>
+   
+   Causes the platform to roll to the local vertical at all times.  Mutually exclusive to bank_to_turn_.
+
+.. command:: bank_to_turn <boolean-value>
+   
+   Causes the platform to roll into the acceleration vector, but still prefers the vertical when not accelerating in a
+   turn.  Mutually exclusive to prefer_canopy_up_.
+
+.. command:: broach_at_sea_level <boolean-value>
+   
+   This mover was originally developed to define a torpedo mover. However, the capability of the model is such that it can
+   be used above sea level.  This flag assures that the motion must remain below local sea level, once subsurface.
+
+.. command:: target_speed <speed-value>
+   
+   Once supplied, the platform will accelerate or decelerate to match the target (desired) speed, subject to
+   maximum_linear_acceleration_ constraint.
+
+.. command:: initial_speed <speed-value>
+   
+   Initial linear speed.  After initialization, speed is varied to maintain target_speed_.
+
+.. command:: initial_flight_path_angle <angle-value>
+   
+   Initial flight path angle.  After initialization, flight path angle will vary to guide to a desired waypoint in a
+   defined route.
+
+.. command:: maximum_linear_acceleration <acceleration-value>
+   
+   Defines the linear (velocity direction) acceleration limit constraint.
+   
+   Default: 0.25 G
+
+.. command:: maximum_radial_acceleration <acceleration-value>
+   
+   Defines the radial (normal to velocity direction) acceleration limit constraint.  This constraint is imposed
+   simultaneously with maximum_body_turn_rate_, the most restrictive is used.
+   
+   Default: 8.0 G
+
+.. command:: maximum_body_roll_rate <angular-rate-value>
+   
+   Defines the maximum rate at which the platform will try to capture desired target bank angle.
+   
+   Default: 180 deg/sec
+
+.. command:: maximum_body_turn_rate <angular-rate-value>
+   
+   Defines the maximum rate at which the velocity vector will rotate in three-dimensional space.  This constraint is
+   imposed simultaneously with maximum_radial_acceleration_, the most restrictive is used.
+   
+   Default: 45 deg/sec
+
+.. command:: velocity_pursuit_gain <non-negative-value>
+   
+   Defines the factor of proportion between target azimuth and elevation (in radians), and the applied lateral or vertical
+   acceleration (in m/sec^2) to null the velocity vector to point at the target.  See comments in header above.
+   
+   Default: 4.0
+
+.. command:: waypoint_switch_on_ground_turning_radius <boolean-value>
+   
+   If this input value is set to true, only horizontal offsets are considered when deciding to advance to the next
+   waypoint in a route; vertical miss values are ignored.  If set false, then a 3-dimensional slant offset is considered
+   when deciding if a waypoint is sufficiently close to be considered "hit".
+   
+   Default: true
+
+.. command:: proportional_navigation_gain <non-negative-value>
+   
+   Defines the factor of proportion between the target line-of-sight-rate (in rad/sec), and the applied lateral or
+   vertical acceleration (in m/sec^2) to null the velocity vector to intercept the target's future position at time of
+   intercept.  See comments in header above.
+   
+   Default: 40.0
+
+.. command:: use_route <route-name>
+   
+   Supplies the name of the route to follow. The route is assumed to be a predefined absolute route.

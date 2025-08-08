@@ -1,0 +1,227 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.7:
+
+WSF 1.6.7 - 30 Aug 2010
+-----------------------
+
+General
+=======
+
+* **IMPORTANT NOTE**: In the **NEXT** release **AFTER** this release the new guided movers and guidance computer
+  will become the default definitions:
+   
+   * **WSF_GUIDANCE_COMPUTER** and **WSF_NEW_GUIDANCE_COMPUTER** will refer to the new implementation currently
+     available as **WSF_NEW_GUIDANCE_COMPUTER**.
+   
+   * **WSF_GUIDED_MOVER** and **WSF_NEW_GUIDED_MOVER** will refer to the new implementation currently available as
+     **WSF_NEW_GUIDED_MOVER**.
+   
+   * **WSF_UNGUIDED_MOVER** and **WSF_NEW_UNGUIDED_MOVER** will refer to the new implementation currently available
+     as **WSF_NEW_UNGUIDED_MOVER**.
+  
+  The old models will continue to be available as **WSF_OLD_GUIDANCE_COMPUTER**, **WSF_OLD_GUIDED_MOVER** and
+  **WSF_OLD_UNGUIDED_MOVER**.
+
+Corrections
+===========
+
+* **(CR 6790)** Allow file names and path names to be quoted so they can contain embedded blanks.
+
+* **(CR 7734)** Fixed a bug where the script 'Set' container would fail with the list constructor (i.e. Set<string>
+  s = { "1", "2" };).
+
+* **(CR 7782)** The radar detection threshold and integration gain was being computed incorrectly if a
+  Marcum-Swerling detector was employed. Because of the implementation is was primarily an issue for those radars that
+  also employed 'one_m2_detect_range'. Radars that provided another means to determine receiver noise power were only
+  minimally affected.
+
+* **(CR 7792)** The Spectral Optical Sensor Model (:command:`SOSM <sosm_interface>`) was incorrectly selecting the first
+  :command:`_.target_model_sosm_table_commands.state` defined in the :ref:`target_model <SOSM_target_model_table>` rather than the last
+  one if no state matched the target conditions at the time of the detection attempt. The documentation was also improved
+  to more clearly define which state will be selected.
+
+* **(CR 7917)** A few colons were missing from the EM interaction data being printed out in an event output file.
+  This was causing problems when parsing the file by relying on the colons to separate the values and their corresponding
+  tags.
+
+* **(CR 7922)** Fixed a problem with the script methods :method:`MATH.AngleIsBetween <Math.AngleIsBetween>` and
+  :method:`MATH.AngleWithinTolerence <Math.AngleWithinTolerance>`. Both methods expected angles in radians not degrees. This is
+  inconsistent with other script functions.
+
+* **(CR 7938)** Fixed an issue with the :model:`WSF_AGILITY_EFFECT` not properly changing frequencies and modes. The
+  :model:`WSF_AGILITY_EFFECT` now schedules frequency and mode changes for the sensors to execute at a specified time, or the
+  next simulation frame if immediate. The scheduling of frequency and mode changes allow for the current interaction
+  results to carry out with the current states and simplifies the logic required in the interaction when a change occurs
+  mid-way through an interaction calculation.
+
+* **(CR 7961)** The :method:`SetCurrentTarget <WsfPlatform.SetCurrentTarget>` method assumed a local track as input and did
+  not handle sensor track input correctly.
+
+* **(CR 7970)** Fixed a bug with how data was being packed into the 32-bit parameter type field. This field is part
+  of the articulated part record, which is part of the entity state pdu.
+
+* **(CR 7982)** Fixed a bug where :class:`FileIO` was unable to read multiple files in a row on Windows.
+
+* Fixed an issue when false target jamming each beam of a multi-beam beam radar with diverse frequencies. Each beam
+  was not getting false target blips properly due to software name mismatches within the code.
+
+* Fixed a bug where the :command:`_.aux_data` input inside sensor blocks was sometimes being applied to a :command:`_.receiver`
+  instead of the sensor.
+
+* **(CR 8017)** Corrected a problem where the SUPPRESSOR-compatibility script method
+  :method:`WsfPlatform.RelativeOffsetOf` of :class:`WsfPlatform` was returning incorrect values. This problem was causing several
+  anomalies that were being observed in the classified scenarios that had been converted from SUPPRESSOR.
+
+* **(CR 8026)** Corrected an issue where the :command:`false_target_screener` would block the first real target track from
+  being created within the sensors tracker without any false targets present. Issue was that the screener was not
+  properly setup for the first track when a screener was attached.
+
+* Fixed some minor bugs related to using :command:`dis_interface.deferred_connection_time` with :class:`WsfDraw` or
+  :command:`dis_interface.record`.
+
+* Removed the source of several memory leaks. Major leaks were corrected in the :method:`write_str<__BUILTIN__.write_str>`
+  method, the :method:`MATH.LatToString <Math.LatToString>` and :method:`MATH.LonToString <Math.LonToString>` methods, and the routing
+  methods within :class:`WsfRouteNetwork`. Other leaks were corrected in capabilities that were infrequently used.
+
+* **(CR 8192)** Add :command:`terrain.raw-dted` as an alias to :command:`terrain.raw_dted` in the :command:`terrain` block for
+  compatibility with CME 'geodata'
+  commands.
+
+* **(CR 8197)** Updated :model:`WSF_TRACK_PROCESSOR` to include two new
+  :model:`report_methods <WSF_TRACK_PROCESSOR>` which provide SUPPRESSOR-like track reporting. These help to
+  eliminate problems associated with the bi-directional reporting of fused tracks.
+
+* **(CR 8234)** Corrected two problems hen using latitude/longitude limits with
+  :command:`sensor_plot horizontal_map <horizontal_map>`,
+
+  * The column headers for :command:`horizontal_map.gnuplot_file` indicated columns 1 and 2 were down-range
+    and cross-range when they should have read latitude and longitude.
+
+  * :command:`horizontal_map.pd_map_file` wasn't producing lat/lon values for the independent variables.
+
+Enhancements
+============
+
+* **(CR 7701)** Relocated the :command:`_.transmitter.frequency_channels`,
+  :command:`_.transmitter.frequency_list` and :command:`_.transmitter.alternate_frequency` from
+  :model:`WSF_RADAR_SENSOR` to the :command:`_.transmitter` to allow scenario file inputs to override type definition and
+  sensor input commands for frequency setups and selections.
+
+* **(CR 7702)** Added the capability :command:`electronic_protect` techniques to mitigate
+  :command:`electronic_attack` techniques by user selectable class names via the electronic_attack
+  :command:`WSF_EA_TECHNIQUE.mitigation_class_name` and electronic_protect
+  :command:`WSF_EP_TECHNIQUE.mitigated_technique_classes` input commands.
+
+* Renamed the :command:`electronic_protect` **WSF_RADAR_AGILITY_EFFECT** to :model:`WSF_AGILITY_EFFECT`.
+
+* Added the ability  for :command:`comm`  devices to change frequencies via the :model:`WSF_AGILITY_EFFECT`. This agility can be
+  setup by defining :command:`_.transmitter.frequency_channels`, :command:`_.transmitter.frequency_list`
+  or :command:`_.transmitter.alternate_frequency` coupled with the
+  :command:`comm.jamming_perception_threshold` and
+  :command:`comm.frequency_select_delay` and defining an :command:`electronic_protect`
+  technique with the :model:`WSF_AGILITY_EFFECT` and **frequency_changing** as the **agility_type**
+
+* **(CR 7734)** Added the ability dynamically set a :method:`scaling factor <WsfPlatform.SetRadarSigScaleFactor>` to be
+  applied to a platform signature. This allows off-design signatures to be created on a per-platform basis by simple
+  scaling. The scaling factors can be communicated to WSF over :command:`dis_interface` via articulated parts.
+
+* Added the capability to represent a "vegetation layer" as part of the :command:`terrain` elevation data.  This layer is
+  used to provide information about any vegetation (trees, shrubs, etc) above the standard "bare earth" terrain layer. 
+  Currently only the float_grid format can be used to specify a vegetation layer.  These new inputs are
+  :command:`terrain.float_grid_vegetation` and
+  :command:`terrain.float_grid_vegetation_file`.  The standard bare earth terrain layer must also be
+  specified (:command:`terrain.float_grid` or :command:`terrain.float_grid_file`).
+
+* Added :class:`WsfZone` script class for accessing Zone Definitions and Zone Sets defined on a platform.
+
+* Modified the :command:`WSF_WEAPON_FUSE.maximum_time_of_flight` in :model:`WSF_WEAPON_FUSE` to allow the specification to
+  come from the launch computer.
+
+* **(CR 7802)** Added the ability to model repeater jammer type weapons to the :model:`WSF_RF_JAMMER` via the
+  :model:`repeater ... end_repeater <WSF_RF_JAMMER>` input block with :model:`jammer mode <WSF_RF_JAMMER>`.
+  Current functionality is limited and will become more complex to meet user needs as time progresses and it is utilized.
+
+* **(CR 7841)** Added the :ref:`MaskedByTerrain <WsfPlatform.MaskedByTerrain>` script method to :ref:`WsfPlatform`.
+
+* **(CR 7921)** Added in the :command:`event_output` messages :ref:`docs/event/comm_events:COMM_FREQUENCY_CHANGED` and
+  :ref:`docs/event/sensor_events:SENSOR_FREQUENCY_CHANGED` to produce a message reflecting frequency changes on :command:`comm` and :command:`sensor` devices
+  during the simulation.
+
+* Added the ability to redefine :command:`zone` s and :command:`zone_set` s at either the global or platform level. Associated with
+  this, the binding of :command:`zone_set.use_zone` and :command:`zone_set.use_exclude_zone` in :command:`zone_set` and
+  :command:`platform.use_zone` in :command:`platform` was changed so it binds to the referenced zone when it is first used in the
+  simulation rather than when it appears in the input stream.
+
+* Added script methods to some existing classes:
+
+   * :class:`WsfRoute - Index operator '[]' for accessing waypoints <WsfRoute>`
+
+   * :class:`WsfRoute - Intersect(), TotalLength(), Remove(), LocationAtDistance(), DistanceAlongRoute(), DistanceFromRoute(), SubrouteByDistance() <WsfRoute>`
+
+   * :method:`WsfGeoPoint - Construct(string) <WsfGeoPoint.Construct>`
+
+   * :method:`WsfRouteNetwork - Routes() <WsfRouteNetwork.Routes>`
+
+   * :class:`WsfWaypoint - Speed(), SetSpeed(), Location(), SetLocation() <WsfWaypoint>`
+
+   * :class:`WsfGroup - Auxiliary Data Methods <WsfGroup>`
+
+* Added documentation for previously undocumented script class: :class:`QuadTree`
+
+* Added script classes :class:`Signal` and :class:`Method` which implements the 'Signals and Slots' language construct.
+
+* Added the :command:`event_output.flush_output` command to :command:`event_output`.
+
+* Added :model:`WSF_AIR_TO_AIR_LAUNCH_COMPUTER`, which is recommended over the previous (but still available)
+  :model:`WSF_ATA_LAUNCH_COMPUTER` implementation.
+
+* Weapons that use deferred launching (eg. CSIMS) now correctly report their spatial domain.
+
+* Added Auxiliary methods for storing objects - :ref:`AuxDataObject(),
+  SetAuxData(string, Object) <WsfPlatform.Auxiliary_Data_Methods>`
+
+* **(CR 7954)** Added the ability for a comm radio device to attempt to retransmit each message up to
+  :model:`retransmit_attempts <WSF_RADIO_TRANSCEIVER>` number of times if previous transmission attempts
+  were unsuccessful.  A delay of :model:`retransmit_delay <WSF_RADIO_TRANSCEIVER>` will occur between each
+  message retransmit attempt. In addition, added the ability for the message transfer rate of the radio message to depend
+  upon the current transmitter/receiver signal-to-noise-ratio by specifying a SNR->transfer-rate mapping table
+  (:model:`snr_transfer_rate_table <WSF_RADIO_TRANSCEIVER>`).  In addition, added the ability to specify
+  an onboard comm device that the originally-ordered comm device can order to attempt message transmission (using the
+  command :model:`retransmit_link <WSF_RADIO_TRANSCEIVER>`) if the originally-ordered comm device was unable to
+  successfully complete message transmission.
+
+* Added :model:`WSF_EXOATMOSPHERIC_LETHALITY`, which determines weapon Pk from tables of terminal impact velocity and
+  impact angle.  Intended to be used in hit-to-kill assessments.
+
+* **(CR 7891)** Added :command:`WSF_SOSM_SENSOR.ranging_time` to SOSM sensor.
+
+* **(CR 8010)** Modified TDOA algorithm for 3-platform solution and added
+  :model:`ground_target_altitude_error <WSF_ESM_SENSOR>` attribute.
+
+* **(CR 8023)** Added range, azimuth, elevation, and velocity errors to WSF_TRACK_EFFECT and the ability to walk-off
+  these errors at a linear rate.
+
+* :class:`Method` objects can now be used as callbacks on waypoints using :method:`WsfWaypoint.SetCallback` or
+  :method:`WsfRoute.AddCallbackToLastWaypoint`.
+
+* Added a lot of content to the :command:`behavior_tree` page and the :model:`WSF_RIPR_PROCESSOR` page.
+
+* Added the :model:`altitude_offset <WSF_ROAD_MOVER>` option.  The primary benefit to using this option is that
+  lines-of-sight calculations for ground targets are accurate, even when no altitude is specified in the routes
+  themselves.
+
+* **(CR 8145)** Added in the capability to multi-thread platform and sensor updates in event-stepped and
+  frame-stepped simulation executives. See :ref:`Simulation_Control_Commands` for more information.
+
+* Added the **switch_sides** command to the :command:`ATG_LAR_AND_LC_GENERATOR` to show the weapon generation lars on the
+  left side of the launching platform.

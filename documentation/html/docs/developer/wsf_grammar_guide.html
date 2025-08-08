@@ -1,0 +1,691 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF Grammar Guide &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Developer Training" href="../developer_training.html" />
+    <link rel="prev" title="WSF Grammar Format" href="wsf_grammar_format.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="../developer_training.html" title="Developer Training"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_grammar_format.html" title="WSF Grammar Format"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-grammar-guide">
+<h1>WSF Grammar Guide<a class="headerlink" href="#wsf-grammar-guide" title="Permalink to this headline">¶</a></h1>
+<p>The WSF grammar format, as outlined in <a class="reference internal" href="wsf_grammar_format.html"><span class="doc">WSF Grammar Format</span></a> defines the syntax of WSF commands. The grammar is used in many tools and applications for parsing WSF files. Grammar files already exist for many WSF modules and can be found in .ag files in the ‘grammar’ subdirectories of the WSF installation ‘bin’ directory.</p>
+<p>It is the developer’s responsibility when adding new types and commands to maintain the grammar files so that tools and applications can correctly process WSF files.</p>
+<section id="grammar-file-definition">
+<h2>Grammar File Definition<a class="headerlink" href="#grammar-file-definition" title="Permalink to this headline">¶</a></h2>
+<p>The grammar file has two main features: <strong>Rules</strong> to parse the WSF input and <strong>Actions</strong> to create data representing the input file.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#rules" id="id1">Rules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sequences" id="id2">Sequences</a></p></li>
+<li><p><a class="reference internal" href="#literals" id="id3">Literals</a></p></li>
+<li><p><a class="reference internal" href="#rule-references" id="id4">Rule References</a></p></li>
+<li><p><a class="reference internal" href="#recurrences" id="id5">Recurrences</a></p></li>
+<li><p><a class="reference internal" href="#built-in-rules" id="id6">Built-in Rules</a></p></li>
+<li><p><a class="reference internal" href="#named-rules" id="id7">Named Rules</a></p></li>
+<li><p><a class="reference internal" href="#struct" id="id8">Struct</a></p></li>
+<li><p><a class="reference internal" href="#symbol-table" id="id9">Symbol Table</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#proxy" id="id10">Proxy</a></p>
+<ul>
+<li><p><a class="reference internal" href="#variables" id="id11">Variables</a></p></li>
+<li><p><a class="reference internal" href="#actions" id="id12">Actions</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="rules">
+<h3><a class="toc-backref" href="#id1">Rules</a><a class="headerlink" href="#rules" title="Permalink to this headline">¶</a></h3>
+<p>Rules form the basis for the grammar.  Together the rules define how to parse the input file.  A single rule can either <em>match</em> or <em>not match</em> a given input.  The first rule found to match is used and consumes the text.</p>
+<section id="sequences">
+<h4><a class="toc-backref" href="#id2">Sequences</a><a class="headerlink" href="#sequences" title="Permalink to this headline">¶</a></h4>
+<p>The most basic rule is a sequence. Sequences are indicated by the ‘{’ ‘}’ symbols. Sequences define a list of sub-rules
+which each must be matched in succession.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">rule0</span> <span class="n">rule1</span>  <span class="o">...</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>Each rule in the sequence must be matched for the sequence to <em>match</em>.  Within a sequence, rules are counted starting at
+0. Later, rules may be referenced using the ‘$0’ notation.</p>
+</section>
+<section id="literals">
+<h4><a class="toc-backref" href="#id3">Literals</a><a class="headerlink" href="#literals" title="Permalink to this headline">¶</a></h4>
+<p>Literals match a single specific string of characters. Literals can either be quoted strings or plain text. The parser
+assumes space delimited tokens.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">end_time</span>
+<span class="s2">&quot;the end time&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="rule-references">
+<h4><a class="toc-backref" href="#id4">Rule References</a><a class="headerlink" href="#rule-references" title="Permalink to this headline">¶</a></h4>
+<p>Rules may be referenced after they are defined using the ‘&lt;rule-name&gt;’ format.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">my</span><span class="o">-</span><span class="n">rule</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="recurrences">
+<h4><a class="toc-backref" href="#id5">Recurrences</a><a class="headerlink" href="#recurrences" title="Permalink to this headline">¶</a></h4>
+<p>Recurrences are rule references that recur 0 to many or 0 to 1 times.  The ‘*’ character is used to denote a zero to many recurrence. ‘+’ for 1 to many. ‘?’ for 0 to 1.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{
+  string_list &lt;string&gt;* end_string_list
+  | A B C D { E F G }?
+}
+</pre></div>
+</div>
+<p>When using * or +, the existence of a terminating literal plays a role.  In <code class="docutils literal notranslate"><span class="pre">stuff</span> <span class="pre">&lt;string&gt;*</span> <span class="pre">end_stuff</span></code>, any number of strings will be read until <code class="docutils literal notranslate"><span class="pre">end_stuff</span></code> is found.  But using <code class="docutils literal notranslate"><span class="pre">stuff</span> <span class="pre">&lt;int&gt;*</span></code> will consume each token that matches the integer rule, and stop only after a non-integer token.  When possible, a terminating literal should be provided.</p>
+</section>
+<section id="built-in-rules">
+<h4><a class="toc-backref" href="#id6">Built-in Rules</a><a class="headerlink" href="#built-in-rules" title="Permalink to this headline">¶</a></h4>
+<dl>
+<dt>&lt;string&gt;</dt><dd><p>Matches a whitespace delimited character string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MY_PLATFORM</span>
+<span class="n">banana</span><span class="s1">&#39;s-apple</span>
+</pre></div>
+</div>
+</dd>
+<dt>&lt;quotable-string&gt;</dt><dd><p>Matches either a whitespace delimited string or a quoted string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MY_PLATFORM</span>
+<span class="s2">&quot;C:\Program Files\MyPath&quot;</span>
+</pre></div>
+</div>
+</dd>
+<dt>&lt;string-except&gt;</dt><dd><p>Matches any string with a list of exceptions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Match any space delimited string except invalid_word1 and invalid_word2</span>
+<span class="p">(</span><span class="n">string</span><span class="o">-</span><span class="k">except</span> <span class="n">invalid_word1</span> <span class="n">invalid_word2</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>&lt;integer&gt;</dt><dd><p>Matches an integer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">0</span>
+<span class="o">-</span><span class="mi">123</span>
+</pre></div>
+</div>
+</dd>
+<dt>&lt;real&gt;</dt><dd><p>Matches a real number:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="mi">2</span>
+<span class="o">-</span><span class="mf">2.0</span>
+<span class="o">-</span><span class="mf">2.0e-7</span>
+</pre></div>
+</div>
+</dd>
+<dt>(error {})</dt><dd><p>Defines a sequence which when matched triggers an error:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This matches any string.  If it is an integer, an error will be logged.</span>
+<span class="p">{</span>  <span class="p">(</span><span class="n">error</span> <span class="p">{</span> <span class="o">&lt;</span><span class="n">integer</span><span class="o">&gt;</span> <span class="p">})</span>
+ <span class="o">|</span> <span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt>(delimited …)</dt><dd><p>Defines a non-space delimited word. All rules are matched assuming whitespace
+delimited inputs. This provides a way to bypass this limitation. Each
+argument is matched without spaces. There are some limitations using this
+rule, most notably, every other argument must be a literal.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># this will match latitude values like 10.5n and 60s</span>
+<span class="p">{</span>
+ <span class="p">(</span><span class="n">delimited</span> <span class="o">&lt;</span><span class="n">real</span><span class="o">&gt;</span> <span class="n">n</span><span class="p">)</span>
+<span class="o">|</span> <span class="p">(</span><span class="n">delimited</span> <span class="o">&lt;</span><span class="n">real</span><span class="o">&gt;</span> <span class="n">s</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt>(name <em>name-kind</em>)</dt><dd><p>Matches the same as &lt;string&gt;, but identifies the word as the name of something.
+<em>name-kind</em> identifies the kind of name.  The purpose of this rule is to allow user interfaces to auto-populate
+suggestions to fill in this field.  Example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">icon</span> <span class="p">(</span><span class="n">name</span> <span class="n">icon</span><span class="p">)</span>
+<span class="o">|</span> <span class="n">category</span> <span class="p">(</span><span class="n">name</span> <span class="n">category</span><span class="p">)</span>
+<span class="o">|</span> <span class="n">ignore</span> <span class="p">(</span><span class="n">name</span> <span class="n">category</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>(typeref <em>type-prefix</em>)</dt><dd><p>Matches the same as &lt;string&gt;, but indicates that the matched word should be an existing type.
+<em>type-prefix</em> indicates the key prefix for the type in the <a class="reference internal" href="#symbol-table">Symbol Table</a>.  Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">exclusion_zone</span> <span class="p">(</span><span class="n">typeref</span> <span class="n">zone</span><span class="p">)</span>
+<span class="o">|</span> <span class="n">inlusion_zone</span> <span class="p">(</span><span class="n">typeref</span> <span class="n">zone</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>(nocase { … })</dt><dd><p>Takes any sequence and makes it case insensitive.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">nocase</span> <span class="p">{</span> <span class="n">true</span> <span class="o">|</span> <span class="n">false</span> <span class="p">})</span>
+</pre></div>
+</div>
+</dd>
+<dt>(file-reference <em>file-type</em>)</dt><dd><p>Same as &lt;quotable-string&gt;, but also marks the text as being the location of an input file of the specified type.</p>
+</dd>
+<dt>(output-file-reference <em>file-type</em>)</dt><dd><p>Same as &lt;quotable-string&gt;, but also marks the text as being the location of an output file of the specified type.</p>
+</dd>
+<dt>&lt;TypeCommand&gt;</dt><dd><p>Use the rule associated with the current symbol.  See <a class="reference internal" href="#symbol-table">Symbol Table</a>.</p>
+</dd>
+<dt>&lt;ScriptBlock&gt;, &lt;ScriptVariables&gt;, &lt;ScriptFunctionBlock&gt;</dt><dd><p>Used with a recurrence (*).  Matches any string, but marks the block of text as belonging to a script.
+The script contents is parsed in another project, this grammar simply annotates the block of text.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reads a script along with its return type, name, arguments</span>
+<span class="n">script</span> <span class="o">&lt;</span><span class="n">ScriptFunctionBlock</span><span class="o">&gt;*</span> <span class="n">end_script</span>
+
+<span class="c1"># Reads a script with no return type, name, arguments</span>
+<span class="n">on_exit</span> <span class="o">&lt;</span><span class="n">ScriptBlock</span><span class="o">&gt;*</span> <span class="n">end_on_exit</span>
+
+<span class="c1"># Reads a script variables block</span>
+<span class="n">script_variables</span> <span class="o">&lt;</span><span class="n">ScriptVariables</span><span class="o">&gt;*</span> <span class="n">end_script_variables</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="named-rules">
+<h4><a class="toc-backref" href="#id7">Named Rules</a><a class="headerlink" href="#named-rules" title="Permalink to this headline">¶</a></h4>
+<p>A new named rule is created using this syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">rule</span> <span class="o">*</span><span class="n">rule</span><span class="o">-</span><span class="n">name</span><span class="o">*</span> <span class="p">{</span>
+   <span class="o">*</span><span class="n">rules</span><span class="o">*</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a new rule</span>
+<span class="p">(</span><span class="n">rule</span> <span class="n">my</span><span class="o">-</span><span class="n">rule</span> <span class="p">{</span>
+   <span class="n">end_time</span> <span class="o">&lt;</span><span class="n">Time</span><span class="o">&gt;</span>
+<span class="p">})</span>
+<span class="c1"># Use the new rule</span>
+<span class="p">(</span><span class="n">rule</span> <span class="n">my</span><span class="o">-</span><span class="n">rule</span><span class="o">-</span><span class="mi">2</span> <span class="p">{</span>
+   <span class="o">&lt;</span><span class="n">my</span><span class="o">-</span><span class="n">rule</span><span class="o">&gt;</span>
+ <span class="o">|</span> <span class="ow">not</span> <span class="o">&lt;</span><span class="n">my</span><span class="o">-</span><span class="n">rule</span><span class="o">&gt;</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>Rule names are user-defined with the exception of the <code class="docutils literal notranslate"><span class="pre">root-command</span></code> rule.
+The <code class="docutils literal notranslate"><span class="pre">root-command</span></code> rule must be defined, and acts as the entry point to the
+grammar.  Any top-level input being processed should match the <code class="docutils literal notranslate"><span class="pre">root-command</span></code>
+rule in some way.</p>
+<p>To support extensibility, named rules can be re-opened.  For instance, these two
+blocks can exist anywhere in any grammar file, and both add new commands to the
+root-command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">rule</span> <span class="n">root</span><span class="o">-</span><span class="n">command</span> <span class="p">{</span>
+   <span class="n">apple</span> <span class="p">{</span> <span class="n">core</span> <span class="o">|</span> <span class="n">peel</span> <span class="p">}</span>
+<span class="p">})</span>
+<span class="p">(</span><span class="n">rule</span> <span class="n">root</span><span class="o">-</span><span class="n">command</span> <span class="p">{</span>
+   <span class="n">banana</span> <span class="p">{</span> <span class="n">seed</span> <span class="o">|</span> <span class="n">peel</span> <span class="p">}</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>which is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">rule</span> <span class="n">root</span><span class="o">-</span><span class="n">command</span> <span class="p">{</span>
+   <span class="n">apple</span> <span class="p">{</span> <span class="n">core</span> <span class="o">|</span> <span class="n">peel</span> <span class="p">}</span>
+ <span class="o">|</span> <span class="n">banana</span> <span class="p">{</span> <span class="n">seed</span> <span class="o">|</span> <span class="n">peel</span> <span class="p">}</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="struct">
+<h4><a class="toc-backref" href="#id8">Struct</a><a class="headerlink" href="#struct" title="Permalink to this headline">¶</a></h4>
+<p>A struct is special type of named rule which represents an object WSF
+understands. Platform, Sensor, and Processor are examples of structs. A struct
+may contain rule definitions just as the (rule ..) command, but also may contain
+variables. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>(struct MY_SENSOR :base_type Sensor
+                  :symbol (type sensorType MY_SENSOR)
+   (var String my_setting)
+{
+   my_command &lt;String&gt;       [my_setting=$1]
+ | &lt;Sensor&gt;
+})
+</pre></div>
+</div>
+<p>Structs may be referenced later using the <code class="docutils literal notranslate"><span class="pre">&lt;struct-name&gt;</span></code> syntax, just like
+<code class="docutils literal notranslate"><span class="pre">(rule</span> <span class="pre">...</span></code>.</p>
+<dl class="simple">
+<dt>:base_type <em>BaseTypeName</em></dt><dd><p>Indicates that this struct inherits all variables from another struct</p>
+</dd>
+<dt>:symbol …</dt><dd><p>specifies that the struct should be inserted in the symbol
+table used when parsing. Symbols are used by the <em>new</em> and <em>load</em> rules.
+See <a class="reference internal" href="#symbol-table">Symbol Table</a></p>
+</dd>
+</dl>
+<p>Variables are used in the <a class="reference internal" href="#proxy">Proxy</a> representation described later.  They have no
+effect on how the file is parsed.</p>
+</section>
+<section id="symbol-table">
+<h4><a class="toc-backref" href="#id9">Symbol Table</a><a class="headerlink" href="#symbol-table" title="Permalink to this headline">¶</a></h4>
+<p>To parse a file that uses types, we need a symbol table.  Symbols allow a file to reference
+previously defined types.  The symbol table is a mapping from key to a <a class="reference internal" href="#struct">Struct</a> type.
+A key is a tuple of strings.</p>
+<p>Given this example input file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform_type</span> <span class="n">newtype</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">processor</span> <span class="n">y</span> <span class="n">WSF_SCRIPT_PROCESSOR</span>  <span class="n">end_processor</span>
+   <span class="n">weapon</span> <span class="n">z</span> <span class="n">WSF_EXPLICIT_WEAPON</span>  <span class="n">end_weapon</span>
+<span class="n">end_platform_type</span>
+<span class="n">platform</span> <span class="n">x</span> <span class="n">newtype</span>
+   <span class="n">delete</span> <span class="n">weapon</span> <span class="n">z</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+<p>The resulting symbol table looks like this:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>platformType.newtype</p></td>
+<td><p>struct Platform</p></td>
+</tr>
+<tr class="row-odd"><td><p>platformType.newtype.processors.y</p></td>
+<td><p>struct WSF_SCRIPT_PROCESSOR</p></td>
+</tr>
+<tr class="row-even"><td><p>platformType.newtype.weapons.z</p></td>
+<td><p>struct WSF_EXPLICIT_WEAPON</p></td>
+</tr>
+<tr class="row-odd"><td><p>platform.x</p></td>
+<td><p>struct Platform</p></td>
+</tr>
+<tr class="row-even"><td><p>platform.x.processors.y</p></td>
+<td><p>struct WSF_SCRIPT_PROCESSOR</p></td>
+</tr>
+</tbody>
+</table>
+<p>As you can see, the symbol table contains exactly what’s needed to parse the file.
+If a <code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">platform</span> <span class="pre">x</span></code> block occurs next, we can determine that <code class="docutils literal notranslate"><span class="pre">platform.x</span></code> exists
+and that it has a processor named <code class="docutils literal notranslate"><span class="pre">y</span></code> of type <code class="docutils literal notranslate"><span class="pre">WSF_SCRIPT_PROCESSOR</span></code>.</p>
+<p>Maintenance of the symbol table is accomplished through the <a class="reference internal" href="#new">new</a>, <a class="reference internal" href="#new-replace">new_replace</a>, <a class="reference internal" href="#load">load</a>, and <a class="reference internal" href="#delete">delete</a> rules. Referencing locations (keys) in the symbol table is done with the <a class="reference internal" href="#type">type</a> and <a class="reference internal" href="#subtype">subtype</a> commands.</p>
+<dl id="type">
+<dt>(type …)</dt><dd><p>Specifies a position in the symbol table. Any number of arguments are allowed.
+Each argument may be a string or a sequence rule reference.
+A sequence rule reference inserts the text matched from a given rule as part of a type key.
+Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="nb">type</span> <span class="n">platform</span> <span class="n">x</span><span class="p">)</span>                               <span class="c1"># -&gt;  platform.x</span>
+<span class="p">(</span><span class="nb">type</span> <span class="n">platformType</span> <span class="n">newtype</span> <span class="n">processors</span> <span class="n">y</span><span class="p">)</span>        <span class="c1"># -&gt;  platformType.newtype.processors.y</span>
+</pre></div>
+</div>
+<p># using a sequence rule reference as part of a sequence (not shown)
+(type platform $1)                              # -&gt;  platform.&lt;text-from-parsed-file&gt;</p>
+</dd>
+</dl>
+<dl class="simple" id="subtype">
+<dt>(subtype …)</dt><dd><p>The same as <a class="reference internal" href="#type">type</a>, except appends the arguments to the current type.
+The current type is initially an empty tuple, but is changed through use of the <a class="reference internal" href="#new">new</a>,
+<a class="reference internal" href="#new-replace">new_replace</a>, or <a class="reference internal" href="#load">load</a> rules.</p>
+</dd>
+</dl>
+<dl id="new">
+<dt>(new <em>storage-address</em> <em>load-address</em> [:backup <em>load-address</em>])</dt><dd><p>Defines a rule which attempts to create a new symbol. The symbol at <em>load-address</em> is
+copied into <em>storage-address</em>. The addresses must be a <a class="reference internal" href="#type">type</a> or <a class="reference internal" href="#subtype">subtype</a> command.
+If storage-address isn’t used yet, and the load-address points to a valid symbol,
+the rule succeeds.  The storage-address becomes the new current symbol for subsequent
+commands until the end of the current sequence.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{
+   sensor &lt;string&gt; &lt;string&gt; (new (subtype sensors $1) (type sensorType $2)
+      &lt;TypeCommand&gt;*
+   end_sensor
+ | other_command &lt;string&gt;
+}
+</pre></div>
+</div>
+<p>In the above example, if the <code class="docutils literal notranslate"><span class="pre">new</span></code> rule succeeds, the current symbol is set to the
+new symbol table entry.  The <code class="docutils literal notranslate"><span class="pre">TypeCommand</span></code> will call the struct associated with the
+new symbol, and after the <code class="docutils literal notranslate"><span class="pre">end_sensor</span></code> token is matched, the current symbol is restored
+to its previous state.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">new</span></code> command fails – either a symbol already exists at the storage-address
+or no symbol exists at the load-address, the rule does not <em>match</em>.  This causes the entire
+sequence match to fail.</p>
+<dl class="simple">
+<dt>:backup <em>alternate-load-address</em></dt><dd><p>This option adds an alternate location to load the type if the first load location
+was not valid.  Additionally, an error is logged.  This is used primarily as a fallback
+when the user enters a type name that is unknown, the backup type provides at least
+partial understanding of the user’s intention.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="simple" id="new-replace">
+<dt>(new_replace <em>storage-address</em> <em>load-address</em> [:option…])</dt><dd><p>Same as (<a class="reference internal" href="#new">new</a> …), but will replace any existing symbol.</p>
+</dd>
+</dl>
+<dl class="simple" id="load">
+<dt>(load <em>load-address</em>)</dt><dd><p>Loads an existing symbol from the symbol table and sets it as the current symbol.
+If the symbol does not exist, this rule fails to <em>match</em>.</p>
+</dd>
+</dl>
+<dl class="simple" id="delete">
+<dt>(delete <em>address</em>)</dt><dd><p>Deletes an existing symbol.  The rule fails to <em>match</em> if there is no symbol at that address.</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Make a new sub-symbol on the current symbol named &#39;mover&#39;, loaded from &#39;moverType.WSF_AIR_MOVER&#39;
+(new (subtype mover) (type moverType WSF_AIR_MOVER))
+
+# Try to load a user-defined mover.  If the user-defined type isn&#39;t found, make a WSF_AIR_MOVER.  (Logs an error)
+(new (subtype mover) (type moverType $1) :backup (type moverType WSF_AIR_MOVER))
+
+# Load &#39;mover&#39; as the new current symbol
+(load (subtype mover)
+</pre></div>
+</div>
+</section>
+</section>
+<section id="proxy">
+<h3><a class="toc-backref" href="#id10">Proxy</a><a class="headerlink" href="#proxy" title="Permalink to this headline">¶</a></h3>
+<p>All constructs described above are required to parse an input file correctly.  Constructs in this section provide
+semantics to the grammar, building up a representation of what the input file means, which is what we call the Proxy.</p>
+<p>The Proxy has a similar structure to the symbol table.  A symbol table key corresponding to a platform would also
+correspond to the platform in the proxy.  Instead of storing the associated rules that parsed an object, the proxy
+stores information about that object.  For a platform we might store the side, icon, position, list of parts, etc…
+The intention is not to build an all-inclusive description of the objects in the input file, but to save the key bits of
+information needed to build specific user interfaces.  For this reason, some <a class="reference internal" href="#struct">struct</a> definitions have little or no
+variables, while others have many variables.</p>
+<section id="variables">
+<h4><a class="toc-backref" href="#id11">Variables</a><a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h4>
+<p>Variables are members of a <a class="reference internal" href="#struct">struct</a> that store pieces of data about an object.  A variable consists of a type and a name. The variable type defines what kind of data the variable contains.  A full list of available variable types can be found in the core grammar file – these are defined with the (value …) command.  Additionally there are two container types <code class="docutils literal notranslate"><span class="pre">List</span></code> and <code class="docutils literal notranslate"><span class="pre">ObjectMap</span></code>.  <code class="docutils literal notranslate"><span class="pre">List</span></code> is a ordered list of objects, used for things like waypoints of a route. <code class="docutils literal notranslate"><span class="pre">ObjectMap</span></code> is an associative array that maps a string to a value type.  For List and ObjectMap, the contained type must be specified with the following syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">List</span><span class="o">/</span><span class="n">Platform</span>
+<span class="n">List</span><span class="o">/</span><span class="n">Waypoint</span>
+<span class="n">ObjectMap</span><span class="o">/</span><span class="n">Platform</span>
+<span class="n">ObjectMap</span><span class="o">/</span><span class="n">Sensor</span>
+</pre></div>
+</div>
+<p>Lastly, any structs defined in the grammar have a dual use as variable types.</p>
+<p>Within a struct, a variable is defined with this syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">var</span> <span class="o">*</span><span class="nb">type</span><span class="o">*</span> <span class="o">*</span><span class="n">name</span><span class="o">*</span> <span class="p">[:</span><span class="n">default</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Where an optional default value may be provided.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">var</span> <span class="n">Real</span> <span class="n">earthRadiusMultiplier</span> <span class="p">:</span><span class="n">default</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="p">(</span><span class="n">var</span> <span class="n">String</span> <span class="n">myName</span> <span class="p">:</span><span class="n">default</span> <span class="s2">&quot;a name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="actions">
+<h4><a class="toc-backref" href="#id12">Actions</a><a class="headerlink" href="#actions" title="Permalink to this headline">¶</a></h4>
+<p>Actions may be placed before or after entries in a sequence rule.  Actions provide a mechanism to store data in the proxy. Actions are placed between ‘[’ ‘]’ characters. More than one action may be specified by using the ‘;’ character.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[my_setting1=&quot;ok&quot;;my_setting2=$1]
+</pre></div>
+</div>
+<p>There are multiple types of actions:</p>
+<p>Assignment: Assigns a new value to an attribute. <strong>attribute=value</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>side=blue
+icon=&quot;F-18&quot;
+width=&quot;24 inches&quot;
+height=$1
+</pre></div>
+</div>
+<p>Value can either be a literal value, or a reference to a value input by the user. The input ‘$0’ takes the result of the user’s input from the first rule in this sequence.  A <em>$$</em> indicates the result of the previous rule.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{ side &lt;string&gt;                  [side=$1]
+| set width &lt;Length&gt;             [width=$2]
+| make height equal to &lt;Length&gt;  [height=$$]
+}
+</pre></div>
+</div>
+<p>As a shortcut, the attribute name may be used in the rule reference to denote an automatic assignment. This is equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{ side &lt;$side&gt;
+| set width &lt;$width&gt;
+| make height equal to &lt;$height&gt;
+}
+</pre></div>
+</div>
+<dl>
+<dt>push(<em>attribute-name</em>)</dt><dd><p>Updates the current value to the specified attribute. Actions in the proxy operate on the current object, so this will affect how subsequent actions or sub-rules are processed until after the next subrule is complete:</p>
+<p>This sets the ‘auxData’ attribute as the current object to later be modified by commands in the ‘AuxData.block’
+rule.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+ <span class="p">[</span><span class="n">push</span><span class="p">(</span><span class="n">auxData</span><span class="p">)]</span> <span class="o">&lt;</span><span class="n">AuxData</span><span class="o">.</span><span class="n">block</span><span class="o">&gt;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt>new(<em>attribute-name</em>, <em>key-name</em>)</dt><dd><p>Adds a new entry to an ‘ObjectMap’
+attribute and sets the current object to the new value.</p>
+<p>This adds a new entry to the category.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Map the command chain name to the commander name
+(var ObjectMap/String commandChains)
+{
+   # When this rule is matched, add a new command chain entry with the first user input
+   # Then assign the value to the second user input.
+   command_chain &lt;string&gt; &lt;string&gt; [new(commandChains,$1);this=$2]
+}
+</pre></div>
+</div>
+</dd>
+<dt>apply($$)</dt><dd><p>Applies previous (new …) or (load …) rule to the proxy data structures.</p>
+<p>Normally (new …) and (load …) operate only on the symbol table and have no effect on struct attributes. This
+command effectively does the same action to the proxy structure as the symbol table.</p>
+</dd>
+<dt>skip()</dt><dd><p>Enters a mode where there is no current proxy object.  This allows execution of rules without applying any proxy
+changes.  For instance, when using the &lt;Platform&gt; rule, the current proxy object must be of type <em>Platform</em> or an
+error will be reported.  Using</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">skip</span><span class="p">()]</span> <span class="o">&lt;</span><span class="n">Platform</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>or the abbreviated form (rule name prefixed with a colon)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="p">:</span><span class="n">Platform</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/developer/wsf_grammar_guide.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="../developer_training.html" title="Developer Training"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_grammar_format.html" title="WSF Grammar Format"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

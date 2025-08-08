@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>DIS Articulation &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dis_interface" href="dis_interface.html" />
+    <link rel="prev" title="DIRECTED_ENERGY_WEAPON_SHOT_INFO" href="directed_energy_weapon_shot_info.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="dis_interface.html" title="dis_interface"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="directed_energy_weapon_shot_info.html" title="DIRECTED_ENERGY_WEAPON_SHOT_INFO"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="dis-articulation">
+<span id="id1"></span><h1>DIS Articulation<a class="headerlink" href="#dis-articulation" title="Permalink to this headline">¶</a></h1>
+<section id="updating-the-simulation-from-input-dis-articulation">
+<h2>Updating the simulation from input DIS articulation<a class="headerlink" href="#updating-the-simulation-from-input-dis-articulation" title="Permalink to this headline">¶</a></h2>
+<p>Articulated part records that are a part of entity state PDUs received by a WSF application may be used to update
+the state of the WSF platform that reflects the state of (shadows) the external entity.  This allows locally
+modeled sensors to utilize the proper signature when they perform detection chances against the shadow platform.</p>
+<p>Reflecting signature updates using articulated parts requires two sets of input:</p>
+<ul class="simple">
+<li><p>Additions to the <a class="reference internal" href="platform.html#platform" title="platform"><span class="xref wsf wsf-command">platform</span></a> for the shadow platform that define script variables and scripts. This
+information will be used by the <a class="reference internal" href="dis_interface.html#dis_interface" title="dis_interface"><span class="xref wsf wsf-command">dis_interface</span></a> to inform the platform when a change has been received. (Note that
+this information can be included even for platforms that aren’t externally controlled. It is simply ignored for local
+platforms.)</p></li>
+<li><p>Additional <a class="reference internal" href="dis_interface.html#dis_interface" title="dis_interface"><span class="xref wsf wsf-command">dis_interface</span></a> commands that define the identification of the parts to be tracked and how to inform
+the platform that a change has been received.</p></li>
+</ul>
+<p>Following is a trivial example in which a 737 has landing gear. When an articulation update is received, variables will
+get updated and scripts called so the platform can changes its signature as needed.</p>
+<p>Following is the additional platform_type data (all extraneous data has been omitted). ‘writeln’ statements may be
+omitted if desired</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">platform_type</span> <span class="mi">737</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">script_variables</span>
+      <span class="n">double</span> <span class="n">landing_gear_state</span>    <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+   <span class="n">end_script_variables</span>
+
+   <span class="n">script</span> <span class="n">void</span> <span class="n">landing_gear_state_changed</span><span class="p">()</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;T=&quot;</span><span class="p">,</span><span class="n">TIME_NOW</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="n">Name</span><span class="p">(),</span><span class="s2">&quot; landing_gear_state_changed&quot;</span><span class="p">);</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;  landing gear state: &quot;</span><span class="p">,</span> <span class="n">landing_gear_state</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">landing_gear_state</span>    <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot; Change signature to landing_gear_up&quot;</span><span class="p">);</span>
+         <span class="n">SetRadarSigState</span><span class="p">(</span><span class="s2">&quot;landing_gear_up&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">else</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot; Change signature to landing_gear_down&quot;</span><span class="p">);</span>
+         <span class="n">SetRadarSigState</span><span class="p">(</span><span class="s2">&quot;landing_gear_down&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="n">end_script</span>
+<span class="n">end_platform</span>
+</pre></div>
+</div>
+<p>Following is the additional <a class="reference internal" href="dis_interface.html#dis_interface" title="dis_interface"><span class="xref wsf wsf-command">dis_interface</span></a> data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">entity_type</span> <span class="mi">737</span>           <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">:</span><span class="mi">225</span><span class="p">:</span><span class="mi">57</span><span class="p">:</span><span class="mi">1</span><span class="p">:</span><span class="mi">7</span><span class="p">:</span><span class="mi">0</span>
+
+   <span class="n">entity_appearance</span>
+      <span class="nb">type</span> <span class="mi">737</span> <span class="n">articulation</span> <span class="mi">3087</span> <span class="n">landing_gear_state</span>   <span class="n">landing_gear_state_changed</span>
+   <span class="n">end_entity_appearance</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p>The DIS standard defines articulated part 3072 as the base parameter type value for the landing gear.
+In this example, the ‘rotation’ parameter is being used to signify an appearance change, which
+means 15 must be added to the base parameter type value. Thus, the resulting parameter types value is 3087 (3072 +
+15). A rotation value of zero indicates the landing gear is up while a non-zero value indicates it
+is down.</p>
+<p>The processing of received articulated parts records proceeds as follows:</p>
+<ul class="simple">
+<li><p>If the record does not have the ‘change’ flag set, ignore the record.</p></li>
+<li><p>If an entity_appearance articulation entry does not exists for the platform and parameter value, ignore the record.</p></li>
+<li><p>Update the script variable specified on the entity_appearance articulation entry and store the script name to be
+called upon completion of processing of all the records.</p></li>
+<li><p>Once all articulation records have been processed, invoke the scripts that correspond to the variables that were
+changed. If multiple variables were changed that referenced the same script, the script will only be called once.</p></li>
+</ul>
+<p>In this example, if an entity state is received in which parameter 3087 is marked as changed, the script
+variable ‘landing_gear_state’ will be set to the received values. Then, the script ‘landing_gear_state_changed’
+will be called.</p>
+</section>
+<section id="dis-output">
+<h2>DIS Output<a class="headerlink" href="#dis-output" title="Permalink to this headline">¶</a></h2>
+<p>Any WSF articulated part (<a class="reference internal" href="comm.html#comm" title="comm"><span class="xref wsf wsf-command">comm</span></a> or <a class="reference internal" href="sensor.html#sensor" title="sensor"><span class="xref wsf wsf-command">sensor</span></a>) can be included on the DIS entity state PDU.  In
+addition, explicit parts can be defined for articulations not associated with a platform’s system (<a class="reference internal" href="visualpart.html#visual_part" title="visual_part"><span class="xref wsf wsf-command">visual_part</span></a>).
+Parts are controlled using the :command`_.articulated_part`.</p>
+<p>A defined articulation then be included in the DIS output by explicitly including it in the <a class="reference internal" href="dis_interface.html#dis_interface" title="dis_interface"><span class="xref wsf wsf-command">dis_interface</span></a>, as
+showing in the example below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dis_interface</span>
+   <span class="n">articulated_part</span> <span class="mi">737</span> <span class="n">landing_gear</span> <span class="mi">1</span>
+      <span class="n">publish</span> <span class="n">azimuth</span>
+   <span class="n">end_articulated_part</span>
+
+   <span class="n">articulated_part</span> <span class="mi">737</span> <span class="n">landing_gear</span> <span class="mi">2</span>
+      <span class="n">parent</span> <span class="mi">1</span>
+      <span class="n">publish</span> <span class="n">elevation</span>
+   <span class="n">end_articulated_part</span>
+<span class="n">end_dis_interface</span>
+</pre></div>
+</div>
+<p>The articulated_part block includes three parameters.</p>
+<ul class="simple">
+<li><p>A platform_type that will include the articulation in its entity state PDUs.</p></li>
+<li><p>The name of the articulated part on the platform_type.</p></li>
+<li><p>An ID to associate with the part in the DIS entity state PDU.</p></li>
+</ul>
+<p>Contained within the block are a number of commands.</p>
+<ul class="simple">
+<li><p>The parent command informs DIS that a part is attached to another part.  This will allow an articulation to inherit
+its parent’s movements.</p></li>
+<li><p>The publish command informs DIS that a part will publish a particular piece of information.  These include:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>x - The x component of the part’s position.</p></li>
+<li><p>y - The y component of the part’s position.</p></li>
+<li><p>z - The z component of the part’s position.</p></li>
+<li><p>x_rate - The rate of change in the x component of the part’s position.</p></li>
+<li><p>y_rate - The rate of change in the y component of the part’s position.</p></li>
+<li><p>z_rate - The rate of change in the z component of the part’s position.</p></li>
+<li><p>azimuth - The rotation about the part’s z-axis.</p></li>
+<li><p>elevation - The rotation about the part’s y-axis.</p></li>
+<li><p>rotation - The rotation about the part’s x-axis.</p></li>
+<li><p>azimuth-rate - The rate of motion about the part’s z-axis.</p></li>
+<li><p>elevation-rate - The rate of motion about the part’s y-axis.</p></li>
+<li><p>rotation-rate - The rate of motion about the part’s x-axis.</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/dis_articulation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="dis_interface.html" title="dis_interface"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="directed_energy_weapon_shot_info.html" title="DIRECTED_ENERGY_WEAPON_SHOT_INFO"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

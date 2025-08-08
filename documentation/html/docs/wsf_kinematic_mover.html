@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF_KINEMATIC_MOVER &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF_LADAR_SENSOR" href="wsf_ladar_sensor.html" />
+    <link rel="prev" title="WSF_KEPLERIAN_PROPAGATOR" href="wsf_keplerian_propagator.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_ladar_sensor.html" title="WSF_LADAR_SENSOR"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_keplerian_propagator.html" title="WSF_KEPLERIAN_PROPAGATOR"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-kinematic-mover">
+<h1>WSF_KINEMATIC_MOVER<a class="headerlink" href="#wsf-kinematic-mover" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="WSF_KINEMATIC_MOVER">
+mover WSF_KINEMATIC_MOVER<a class="headerlink" href="#WSF_KINEMATIC_MOVER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<pre class="literal-block">mover <a class="reference internal" href="#WSF_KINEMATIC_MOVER" title="WSF_KINEMATIC_MOVER"><span class="xref wsf wsf-model">WSF_KINEMATIC_MOVER</span></a>
+
+   <a class="reference internal" href="platform_part_commands.html#platform-part-commands"><span class="std std-ref">Platform Part Commands</span></a> ...
+
+   ... WSF_KINEMATIC_MOVER <a class="reference internal" href="#commands">Commands</a> ...
+
+   // Route Mover <a class="reference internal" href="#commands">Commands</a>
+
+   <a class="reference internal" href="#use_route">use_route</a> ...
+
+end_mover</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>When placed on a platform, the WSF_KINEMATIC_MOVER provides for a smooth motion in both horizontal and vertical
+directions. Unlike the <a class="reference internal" href="wsf_air_mover.html#WSF_AIR_MOVER" title="WSF_AIR_MOVER"><span class="xref wsf wsf-model">WSF_AIR_MOVER</span></a>, vertical acceleration is modeled; transitions in both altitude and bearing
+are performed dynamically and at the same time.  Similar to the WSF_AIR_MOVER, no aerodynamics, mass properties, or
+propulsion are required to be known in order to use this mover.  In addition, flight characteristics are not affected
+by various flight altitudes of a platform with this mover definition (no air density variation effect).</p>
+<p>This mover type accepts two different values for gain (<a class="reference internal" href="#velocity_pursuit_gain">velocity_pursuit_gain</a> and
+<a class="reference internal" href="#proportional_navigation_gain">proportional_navigation_gain</a>), and some clarifying comments are in order.  The “correct” gain values for your
+particular scenario are truly implementation-defined, and no particular default values will work for all scenarios.
+Higher values result in a more aggressive maneuver to intercept, with more angular, discontinuous trajectory turns,
+while a lower value tends toward a slow, wandering maneuver into the aimpoint.  The mover algorithms are written to be
+general purpose enough to intercept a dynamically maneuvering aimpoint, and in such a situation, it is best to use
+proportional_navigation gain for a more efficient use of energy during the intercept.  However, this mover type should
+always be given at least a small amount of velocity pursuit gain, because there are instances when the turn
+direction of the proportional navigation becomes ambiguous, and may lead to flying 180 degrees from the desired
+aimpoint; some velocity pursuit gain will step in when needed, to supply the turn direction.  If “wing-rocking” is
+observed, then the gain values should probably be reduced.</p>
+<p>Note that as with all mover types, slight timing differences during waypoint approaches will cause path-to-path
+variability when many platforms are following the same set of waypoints.  Tightening up the update intervals will
+mitigate this issue, but with increased run times.  Testing has shown that reducing update_interval from 1.0 second to
+0.01 second greatly reduces this tendency, for example.</p>
+<p>Also note that there is no logic devoted to maintaining a constant altitude.  Consider a two-waypoint ping-pong route:
+When waypoint A is reached, there are an infinite number of 180-degree turn options (in 3-D) to get back to waypoint B;
+which could include an Immelmann turn, a lateral turn right or left, a rolling split-S, or anything in between.  The
+best course of action here is to assure that there are enough points in the assigned route, and spaced closely enough,
+to inform the mover what altitudes to fly.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The WSF_KINEMATIC_MOVER cannot completely replace the WSF_AIR_MOVER. Several scripting and route methods
+available to the WSF_AIR_MOVER are not available to the WSF_KINEMATIC_MOVER. The WSF_KINEMATIC_MOVER should be
+considered initial capability and by no means complete. It does not implement all guidance commands while switching
+waypoints within a <a class="reference internal" href="route.html#route"><span class="std std-ref">route</span></a> ..end_route definition.  It does honor the route commands of Latitude, Longitude,
+Altitude (MSL-only) and Speed commands.  However, it currently ignores distance, time, climb rates, and flight path
+angles.</p>
+</div>
+<p>The underlying dynamics model of the WSF_KINEMATIC_MOVER is essentially a quaternion orientation mathematics model that
+is permitted to rotate within constrained angular rates in inertial space while the velocity vector is directed in the
+“forward” direction. The magnitude of the accelerations are determined by internal pursuit and proportional navigation
+gains, and the target point (waypoint) in three dimensions is determined by the <a class="reference internal" href="route_mover.html#route-mover"><span class="std std-ref">Route Mover</span></a> waypoint-switching
+logic.  The current fly-to-point is advanced to the next (L,L,A) in the route when the platform is within one
+turn-radius of the current waypoint.  The <a class="reference internal" href="#waypoint_switch_on_ground_turning_radius">waypoint_switch_on_ground_turning_radius</a> flag affects what value is
+considered one “turn-radius”.</p>
+<p>Velocity vector turn rates are constrained to the most restrictive of maximum_lateral_acceleration,
+<a class="reference internal" href="#maximum_body_roll_rate">maximum_body_roll_rate</a>, and <a class="reference internal" href="#maximum_body_turn_rate">maximum_body_turn_rate</a>, and ever increasing current platform speed will force
+the platform motion to approach a straight line if maximum_lateral_acceleration is held constant.</p>
+<p>Adjusting the default <a class="reference internal" href="#velocity_pursuit_gain">velocity_pursuit_gain</a> (VP) and <a class="reference internal" href="#proportional_navigation_gain">proportional_navigation_gain</a> (PN) values are not
+trivial.  These two gains directly conflict with each other, and achieving proper values may become a trial and error
+process.  “Saturation” may occur if velocity vector constraints (see paragraph above) are so severe that the requested
+VP or PN requested accelerations are not achievable.  Setting VP and PN to zero values would result in a platform not
+turning at all to intercept a waypoint.  To adjust VP and PN gain values, start by setting PN to zero, and VP to a
+small value.  Keep increasing VP until turn aggressiveness toward a waypoint is sufficient to intercept.  If the target
+point is stationary (such as for a fixed waypoints), calibration is complete.  However, for moving or accelerating
+targets, pure VP will result in a sweeping turn to approach the target from behind.  Increasing PN until the platform
+“anticipates” the impact point, and flies to intercept in a straight line (provided the target is also moving in a
+straight line).  Setting PN with no VP results in flying away from the target if the target point begins behind the
+velocity vector (azimuth or elevation greater than 90 degrees). Generally, a brief period of VP is flown to get the
+platform moving toward the target, and then VP is ramped out, while PN is ramped in, so terminal intercept is pure PN.
+The default values of a VP of 4 and PN of 40 should suffice in most cases.</p>
+<p>(Only of interest to software developers, the <a class="reference internal" href="#WSF_KINEMATIC_MOVER" title="WSF_KINEMATIC_MOVER"><span class="xref wsf wsf-model">WSF_KINEMATIC_MOVER</span></a> underlying motion dynamics are implemented by the
+UtMath3D_Motion utility, which processes the input stream commands below.)</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.detailed_debug">
+<span id="detailed_debug"></span>detailed_debug<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.detailed_debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enables debug output to the standard output.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.prefer_canopy_up">
+<span id="prefer_canopy_up"></span>prefer_canopy_up<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.prefer_canopy_up" title="Permalink to this definition">¶</a></dt>
+<dd><p>Causes the platform to roll to the local vertical at all times.  Mutually exclusive to <a class="reference internal" href="#bank_to_turn">bank_to_turn</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.bank_to_turn">
+<span id="bank_to_turn"></span>bank_to_turn<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.bank_to_turn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Causes the platform to roll into the acceleration vector, but still prefers the vertical when not accelerating in a
+turn.  Mutually exclusive to <a class="reference internal" href="#prefer_canopy_up">prefer_canopy_up</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.broach_at_sea_level">
+<span id="broach_at_sea_level"></span>broach_at_sea_level<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.broach_at_sea_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>This mover was originally developed to define a torpedo mover. However, the capability of the model is such that it can
+be used above sea level.  This flag assures that the motion must remain below local sea level, once subsurface.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.target_speed">
+<span id="target_speed"></span>target_speed<a class="reference internal" href="argumenttypes.html#speed-value" title="speed-value"><em> &lt;speed-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.target_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Once supplied, the platform will accelerate or decelerate to match the target (desired) speed, subject to
+<a class="reference internal" href="#maximum_linear_acceleration">maximum_linear_acceleration</a> constraint.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.initial_speed">
+<span id="initial_speed"></span>initial_speed<a class="reference internal" href="argumenttypes.html#speed-value" title="speed-value"><em> &lt;speed-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.initial_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initial linear speed.  After initialization, speed is varied to maintain <a class="reference internal" href="#target_speed">target_speed</a>.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.initial_flight_path_angle">
+<span id="initial_flight_path_angle"></span>initial_flight_path_angle<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.initial_flight_path_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initial flight path angle.  After initialization, flight path angle will vary to guide to a desired waypoint in a
+defined route.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.maximum_linear_acceleration">
+<span id="maximum_linear_acceleration"></span>maximum_linear_acceleration<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.maximum_linear_acceleration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the linear (velocity direction) acceleration limit constraint.</p>
+<p>Default: 0.25 G</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.maximum_radial_acceleration">
+<span id="maximum_radial_acceleration"></span>maximum_radial_acceleration<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.maximum_radial_acceleration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the radial (normal to velocity direction) acceleration limit constraint.  This constraint is imposed
+simultaneously with <a class="reference internal" href="#maximum_body_turn_rate">maximum_body_turn_rate</a>, the most restrictive is used.</p>
+<p>Default: 8.0 G</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.maximum_body_roll_rate">
+<span id="maximum_body_roll_rate"></span>maximum_body_roll_rate<em> &lt;angular-rate-value&gt;</em><a class="headerlink" href="#WSF_KINEMATIC_MOVER.maximum_body_roll_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the maximum rate at which the platform will try to capture desired target bank angle.</p>
+<p>Default: 180 deg/sec</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.maximum_body_turn_rate">
+<span id="maximum_body_turn_rate"></span>maximum_body_turn_rate<em> &lt;angular-rate-value&gt;</em><a class="headerlink" href="#WSF_KINEMATIC_MOVER.maximum_body_turn_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the maximum rate at which the velocity vector will rotate in three-dimensional space.  This constraint is
+imposed simultaneously with <a class="reference internal" href="#maximum_radial_acceleration">maximum_radial_acceleration</a>, the most restrictive is used.</p>
+<p>Default: 45 deg/sec</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.velocity_pursuit_gain">
+<span id="velocity_pursuit_gain"></span>velocity_pursuit_gain<em> &lt;non-negative-value&gt;</em><a class="headerlink" href="#WSF_KINEMATIC_MOVER.velocity_pursuit_gain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the factor of proportion between target azimuth and elevation (in radians), and the applied lateral or vertical
+acceleration (in m/sec^2) to null the velocity vector to point at the target.  See comments in header above.</p>
+<p>Default: 4.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.waypoint_switch_on_ground_turning_radius">
+<span id="waypoint_switch_on_ground_turning_radius"></span>waypoint_switch_on_ground_turning_radius<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_KINEMATIC_MOVER.waypoint_switch_on_ground_turning_radius" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this input value is set to true, only horizontal offsets are considered when deciding to advance to the next
+waypoint in a route; vertical miss values are ignored.  If set false, then a 3-dimensional slant offset is considered
+when deciding if a waypoint is sufficiently close to be considered “hit”.</p>
+<p>Default: true</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.proportional_navigation_gain">
+<span id="proportional_navigation_gain"></span>proportional_navigation_gain<em> &lt;non-negative-value&gt;</em><a class="headerlink" href="#WSF_KINEMATIC_MOVER.proportional_navigation_gain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the factor of proportion between the target line-of-sight-rate (in rad/sec), and the applied lateral or
+vertical acceleration (in m/sec^2) to null the velocity vector to intercept the target’s future position at time of
+intercept.  See comments in header above.</p>
+<p>Default: 40.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_KINEMATIC_MOVER.use_route">
+<span id="use_route"></span>use_route<em> &lt;route-name&gt;</em><a class="headerlink" href="#WSF_KINEMATIC_MOVER.use_route" title="Permalink to this definition">¶</a></dt>
+<dd><p>Supplies the name of the route to follow. The route is assumed to be a predefined absolute route.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_kinematic_mover.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_ladar_sensor.html" title="WSF_LADAR_SENSOR"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_keplerian_propagator.html" title="WSF_KEPLERIAN_PROPAGATOR"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

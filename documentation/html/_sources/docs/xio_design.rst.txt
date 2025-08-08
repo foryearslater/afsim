@@ -1,0 +1,102 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _XIO_Design:
+
+XIO Design
+----------
+
+.. contents::
+   :local:
+   :depth: 4
+
+Overview
+========
+
+XIO is the WSF external interface.  XIO defines the protocol used to communicate between WSF applications.  XIO does not replace but instead supplements the :command:`dis_interface`.
+
+Networking
+==========
+
+XIO allows communication between any number of WSF applications using both TCP and UDP.  Participation in a UDP 'network' is determined by the :command:`xio_interface.broadcast` or :command:`xio_interface.multicast` command given in the :command:`xio_interface`.  This command determines the parameters for the UDP communication between WSF applications.  Using the UDP messaging, WSF applications perform the necessary handshaking to establish reliable TCP connections where appropriate.  WSF applications with different protocol versions will ignore each other.
+
+Protocol
+========
+
+There are two ways to communicate between applications:
+
+**TCP**
+
+* Guaranteed sent messages will arrive and in the same order
+* Messages must be sent separately to each recipient and have a larger network overhead
+
+**UDP**
+
+* No guarantee of arrival or order of arrival
+* Lower overhead of sending a message
+* Broadcast or unicast allow sending a single message for multiple recipients
+
+Generally, there are 3 types of communication over XIO.
+
+1. Commands
+
+ * Usually a one-way message issuing a command or request
+ * Can be sent reliably or unreliably
+
+2. Queries
+
+ * Consist of a single query message and response message
+ * Must be sent reliably
+
+3. Subscriptions
+
+ * Initialized and maintained through reliable TCP messaging.
+ * The subject of the subscription can be sent using UDP or TCP.
+
+Capabilities
+============
+
+The following is a summary of the information transmitted over XIO.  This is not intended to be an all-encompassing list but instead an introduction to XIO's capabilities.
+
+**Commands:**
+
+XIO Supports commands to do the following
+
+* Delete a platform from the simulation
+* Changing a platform's target heading, speed, altitude, or entire route
+* Turning a platform part (comm, sensor, processor, ...) on or off
+
+**Subscription services:**
+
+   **Platform List Service**
+
+   * Provides listing of platforms owned by an application as well as updates to that platform list when platforms are added or removed from the simulation
+
+   **Platform Info Service**
+
+   * Provides information about a specific platform
+   * Provides information about platform parts attached to that platform.
+   * Provides information about platform part state changes
+
+   **Track Service**
+
+   * Sends track update and track drop messages for either tracks in a platform's track manager, or from a specific sensor attached to a platform.
+
+   **Simulation Sensor Service**
+
+   * The application models a sensor for an external platform
+   * The sensor's tracks are optionally sent back to the requestor
+
+**Queries**
+
+   Sensor rehost query
+
+   * Queries an application for its ability to model a specific sensor type

@@ -1,0 +1,71 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.5.4:
+
+WSF 1.5.4 - 7 April 2009
+------------------------
+
+General
+=======
+
+* A new implementation of the standard waypoint movers (:model:`WSF_AIR_MOVER`, :model:`WSF_GROUND_MOVER`,
+  :model:`WSF_SURFACE_MOVER` and :model:`WSF_SUBSURFACE_MOVER`) are provided as an option in this release. The new implementation
+  can be used in place of the existing implementation by defining the environment variable **WSF_NEW_MOVER** with a
+  non-empty value prior to running your application.
+
+  This is the final 1.5.x release and the new movers will remain an option for at least this release and the 1.6.0
+  release. Pending no problems, the new movers will become the default with the 1.6.1 release. **It would be much
+  appreciated if users would attempt to use the new movers and report any deficiencies.**
+
+Corrections
+===========
+
+* **(CR 6398)** Jamming corrections.
+
+  * Fixed an issue with multi-beam radars interacting with :model:`false-targets <WSF_FALSE_TARGET_EFFECT>` caused a
+    segmentation fault.
+  
+  * Fixed an issue with the :model:`WSF_RF_JAMMER` interactions where secondary interactions gain patterns were incorrect.
+  
+  * Fixed an issue where the :command:`event_output` for :ref:`JAMMING_ATTEMPT` was incorrect.
+
+  * **(CR 6451)** Corrected an issue where calling :method:`FollowRoute <WsfPlatform.FollowRoute>` after modifying route would
+    cause the platform to stop moving.
+
+* **(CR 6456)** Corrected an issue where corrupted DIS Electromagnetic Emission PDU's were being produced if a
+  sensor was tracking a large number of entities and the :command:`dis_interface` command
+  :command:`dis_interface.maximum_track_jam_entries` was specified with a small value (e.g.: 10). If the sensor tracked more
+  objects than the specified maximum, a corrupted PDU would be produced occur when the number of objects tracked
+  internally exceeded 255. It could also occur earlier with multi-beam radars.
+
+* **(CR 6496)** Fixed an issue with :command:`weighted average fusion <track_manager.fusion_method>`, where in certain cases
+  very small or zero entries in covariance matrices were causing a singular matrix exception and segmentation fault.
+
+Enhancements
+============
+
+* **(CR 6352)** Enhanced the :model:`WSF_FALSE_TARGET_EFFECT` input commands to allow for defining different false-target
+  effects and :command:`false_target` types to be defined for different system-types (i.e. sensors).
+
+* **(CR 6483)** Added the :method:`SetAppearance <WsfPlatform.SetAppearance>` method to :class:`WsfPlatform` which allows
+  modification of the DIS Entity State Appearance word (excluding bits 3-4,21 & 23).
+
+* Added **transmit_antenna_gain** and **receive_antenna_gain** to the list of variables that can be selected in the
+  :command:`horizontal_map` function of :command:`sensor_plot`.
+
+* Added **print_track_covariance** as an option for track data output from then :command:`event_output`.  This new option
+  prints the 2-D major and minor axes, and bearing in local NED coordinates, as well as printing out all values in the
+  covariance matrix.
+
+* **(CR 6438)** Added documentation for the previously undocumented scriptable simulation :command:`observer`, and added
+  many new events for which a script observer can be provided. This capability allows analyst provided scripts to be
+  called when certain events within the simulation occur to gather information as required for any platform interaction.

@@ -1,0 +1,194 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ROTORCRAFT_MOVER
+--------------------
+
+.. model:: mover WSF_ROTORCRAFT_MOVER
+
+    .. parsed-literal::
+
+     mover <name> WSF_ROTORCRAFT_MOVER
+
+        :ref:`Platform_Part_Commands` ...
+
+        // `Rotorcraft Mover Commands`_
+
+        update_interval ...
+        update_time_tolerance ...
+
+        // `Rotorcraft Mover Commands`_
+
+        weathercock_speed_
+        maximum_attitude_rate_
+        maximum_total_acceleration_
+        minimum_upward_acceleration_
+        body_rates_gain_
+        maximum_ground_speed_
+        maximum_rate_of_climb_
+        maximum_rate_of_descent_
+        maximum_impact_speed ...
+
+        mode <name>
+           // `Mode Commands`_ ...
+        end_mode
+
+        vertical_acceleration_rate_pid_ ... end_vertical_acceleration_rate_pid
+        vertical_acceleration_value_pid_ ... end_vertical_acceleration_value_pid
+        lateral_acceleration_rate_pid_ ... end_lateral_acceleration_rate_pid
+        lateral_acceleration_value_pid_ ... end_lateral_acceleration_value_pid
+
+     end_mover
+
+Overview
+========
+
+:model:`WSF_ROTORCRAFT_MOVER` is a :ref:`route_mover` designed to model rotorcraft motion characteristics.  It permits a
+decoupling of the desired platform heading (body pointing direction) from the velocity vector.  At low speed, the
+platform may assume any desired heading, regardless of direction of translation, but at high speed the heading assumes
+the direction of flight.  Scripted commands to assume a desired orientation or heading (body pointing direction) is
+taken as a request but may not be immediately honored.  The mover will maintain a desired heading angle and, upon
+slowing to below weathercocking speed, will once again assume the desired heading.  Orientation of the platform rotor
+plane in the North-East-Down frame is canted in the direction of the acceleration vector when accelerating laterally or
+turning but is horizontal under cruise conditions.
+
+Some terminology discussion is necessary here (see comment at :class:`WsfPlatform` SetHeading command).  Much WSF
+infrastructure has inadvertently developed that incorrectly refers to Course angles (compass direction of the velocity
+vector) as Heading.  So a scripted request to GoToHeading is actually honored as a request to go to Course.  This will
+continue to be the case even in this :model:`WSF_ROTORCRAFT_MOVER` type, but because this is the case it does raise
+ambiguity when commanding this Mover.  There are two ways to insert a desired body pointing direction into this Mover
+type:  Platform commands SetHeading() and SetOrientationNED().  Either of these will insert into the
+:model:`WSF_ROTORCRAFT_MOVER` a desired true compass pointing angle, one that will be honored when below weathercocking
+speed.  All other "Heading" related functions will match the implementations in the rest of the WSF Movers, and
+honored as a Course command.
+
+:model:`WSF_ROTORCRAFT_MOVER` is the first WSF Mover type to implement Mover "Modes", see `Mode Commands`_ below.
+When a mover mode is changed, either in script or as a result of crossing a waypoint, all motion attributes change to
+those defined for that motion mode.  For example, a script command 'PLATFORM.Mover().SetMode("CRUISE")' would
+immediately adopt speed, rates of climb, and acceleration values as predefined in motion mode "CRUISE."  One might
+define modes appropriate for "HOVER", "LOITER", "DASH", or any other desired mover mode for the Rotorcraft Mover.  If
+the Mode is not defined by the Mover the command is ignored.
+
+Rotorcraft Mover Commands
+=========================
+
+.. command:: desired_heading  <angle-value>
+
+   Sets the desired heading for the mover, which will take effect at speeds below the "weathercocking speed."
+
+.. command:: position_hold_capture_radius   <length-value>
+
+   The rotorcraft mover uses a rate guidance mechanism when transiting from one location to another.  When approaching a
+   target point, guidance fundamentally changes to capture a position value, and so must decelerate in anticipation of
+   capturing and holding the target position.  This value determines the transition point from one guidance type to the
+   other.  The default value is set to 200 meters, which should suffice for the vast majority of Rotorcraft models.
+
+.. command:: start_mode   <mode-name>
+
+   Specifies the initial mover mode of the platform.  The mover mode may be changed externally via script settings or at
+   waypoint transitions.  Mover modes are discussed separately.
+
+.. command:: ned_filter_time_constant   <time-value>
+
+   Specifies a filter time constant to apply to commanded acceleration values to smooth transient responses.  A larger
+   value will apply a greater amount of smoothing to the commands.  Value must be greater than zero.  The default is 1
+   second and is adequate for most purposes.
+
+.. command:: altitude_error_to_rate_of_climb_gain   <floating-point-value>
+
+   Specifies a gain to apply to an altitude error to arrive at a vertical acceleration value.  The default is 1 and is
+   adequate for most purposes.
+
+.. command:: vertical_acceleration_rate_pid  ... end_vertical_acceleration_rate_pid
+
+.. command:: vertical_acceleration_value_pid  ... end_vertical_acceleration_value_pid
+
+.. command:: lateral_acceleration_rate_pid  ... end_lateral_acceleration_rate_pid
+
+.. command:: lateral_acceleration_value_pid  ... end_lateral_acceleration_value_pid
+
+   Each of the above four input blocks may contain tuning parameters to apply to the Proportional Integral Derivative
+   (PID) controllers, which determine acceleration values which drive the motion state of the platform.  It is not
+   necessary for the end-user to modify the default gains, unless a particular dynamic response is required. Tuning PID
+   controllers is outside the scope of this document, but many separate resources are available to assist.  PID controller
+   response should be adequate for most purposes.
+
+   See `PID Controller Commands`_ for valid commands.
+
+Mode Commands
+*************
+
+.. command:: mode ... end_mode
+    :block:
+
+    .. command:: weathercock_speed   <speed_value>
+
+       Ground speed above which the platform will assume a heading that matches the course angle.  Below this speed, the
+       platform will assume a desired heading angle, as set by script commands.
+
+    .. command:: maximum_attitude_rate   <angular_rate_value>
+
+       Maximum angular rate for body attitude changes.  This is primarily used in concert with weathercock_speed_ to
+       determine how quickly the platform will transition in and out of weathercocking mode.
+
+    .. command:: maximum_total_acceleration   <acceleration_value>
+
+       Maximum magnitude of linear acceleration.  Sets the upper limit during hard lateral accelerations.
+
+    .. command:: minimum_upward_acceleration   <acceleration_value>
+
+       Minimum upward acceleration value.  When aircraft is rising, and then a command is given to descend quickly, this value
+       sets the minimum vertical acceleration constraint.  Note that many rotorcraft with teetering rotor heads are not
+       permitted to pull negative g, by design.
+
+    .. command:: body_rates_gain   <floating_point_value>
+
+       Gain to apply to an angular heading error to obtain the rate at which the heading error is removed.  Used primarily in
+       removing a heading error when transitioning to fast forward flight, above weathercock speed.
+
+    .. command:: maximum_ground_speed   <speed_value>
+
+       Maximum permitted ground speed in this motion mode.  Typical use would be for <mode> speed constraint.
+
+    .. command:: maximum_rate_of_climb   <speed_value>
+
+       Maximum permitted rate of climb in this motion mode.  Typical use would be to set a realistic climb rate for <mode>.
+
+    .. command:: maximum_rate_of_descent   <speed_value>
+
+       Magnitude of maximum permitted rate of descent in this motion mode.  Value must be greater than zero but will be
+       negated when applied.  Typical use would be to set a realistic descent rate for <mode>.
+
+.. end::
+
+PID Controller Commands
+***********************
+
+.. command:: proportional_gain   <floating_point_value>
+
+   Gain to apply to current error to attempt to null the error to zero.  Larger values will more forcibly attempt to null
+   the error but are prone to induce oscillation in the output.
+
+.. command:: derivative_gain   <floating_point_value>
+
+   Gain to apply to current rate-of-change of error to attempt to prevent the error from overshooting the desired target
+   value.  Larger values will oppose any change in the output, causing drift.
+
+.. command:: integral_gain   <floating_point_value>
+
+   Gain to oppose a steady-state bias, which attempts to drive the bias to zero.
+
+.. command:: input_threshold   <floating_point_value>
+
+   Comparison value to determine whether to apply integral summing of the input error sample.  While the input value
+   differs more than <input_threshold> from the target value no input integration is performed.  Once the input threshold
+   is near the target value, a continuous integration is performed to discern and react to an input bias.  If so,
+   integral_gain_ is applied to the bias to remove it over time.

@@ -1,0 +1,545 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Communications &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Weapons" href="p2-8_primer_weapons.html" />
+    <link rel="prev" title="Behaviors and Behavior Trees" href="p2-6_primer_behavior_btree.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p2-8_primer_weapons.html" title="Weapons"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="p2-6_primer_behavior_btree.html" title="Behaviors and Behavior Trees"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="communications">
+<h1>Communications<a class="headerlink" href="#communications" title="Permalink to this headline">¶</a></h1>
+<p><strong>Communication</strong> devices lay the groundwork to enable many AFSIM features, including remote task assignment, chains of command, and many other simulation and modeling options.</p>
+<p>They are platform parts which facilitate remote communications between and among platforms.  These devices transmit and receive messages between platforms and can be wired or wireless.
+Communication devices must use the same <em>network</em> to communicate with each other.</p>
+<p>AFSIM provides a number of predefined communication devices, the most common of which include:</p>
+<table class="hlist"><tr><td><ul class="simple">
+<li><p>WSF_COMM_RCVR</p></li>
+<li><p>WSF_COMM_XMTR</p></li>
+</ul>
+</td><td><ul class="simple">
+<li><p>WSF_COMM_TRANSCEIVER</p></li>
+<li><p>WSF_RADIO_RCVR</p></li>
+</ul>
+</td><td><ul class="simple">
+<li><p>WSF_RADIO_XMTR</p></li>
+<li><p>WSF_RADIO_TRANSCEIVER</p></li>
+</ul>
+</td></tr></table>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p>To get started with communications devices, the following <cite>comm</cite> command block can be added to an existing platform or platform type:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="n">perfect_transceiver</span> <span class="n">WSF_COMM_TRANSCEIVER</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Any platforms which have a <cite>perfect_transceiver</cite> will be able to communicate with each other by default, allowing platforms to pass messages to others on the network. Higher fidelity communication
+networks may be modeled by introducing transmitter and receiver specifications, antenna commands, articulated part commands, bandwidth limitations, error rates, and signal-to-noise ratios.</p>
+<p>Internal links may be added to processors to enable the communication of tracks from one platform to others.</p>
+</section>
+<section id="closer-look">
+<h2>Closer Look<a class="headerlink" href="#closer-look" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following steps assume that the “simple_flight” scenario is present as discussed in <a class="reference internal" href="p2-6_primer_behavior_btree.html"><span class="doc">Behaviors and Behavior Trees</span></a>.</p>
+</div>
+<section id="adding-communications">
+<h3>Adding Communications<a class="headerlink" href="#adding-communications" title="Permalink to this headline">¶</a></h3>
+<p>To implement communications between the two aircraft in <em>simple_flight</em>, complete the following steps:</p>
+<ol class="arabic">
+<li><p>Create a new file called <em>communications.txt</em>.</p></li>
+<li><p>Add the following code line to <em>cargo_aircraft.txt</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">include_once</span> <span class="n">communications</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</li>
+<li><p>Open <em>communications.txt</em> in a Wizard text editor.</p></li>
+<li><p>Add the following code to <em>communications.txt</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># communications.txt</span>
+<span class="c1"># A component of the simple_flight demo</span>
+
+<span class="n">comm</span> <span class="n">AIR_RADIO_TRANSCEIVER</span> <span class="n">WSF_RADIO_TRANSCEIVER</span>
+   <span class="n">transmitter</span>
+      <span class="n">frequency</span> <span class="mi">120</span> <span class="n">mhz</span>
+   <span class="n">end_transmitter</span>
+
+   <span class="n">receiver</span>
+      <span class="n">frequency</span> <span class="mi">120</span> <span class="n">mhz</span>
+   <span class="n">end_receiver</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+</li>
+<li><p>Add the following code to the platform type definition of <cite>CARGO_AIRCRAFT</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">add</span> <span class="n">comm</span> <span class="n">atc</span> <span class="n">AIR_RADIO_TRANSCEIVER</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>At this point, the two aircraft have an open communication channel on which to pass messages. However, they currently have no messages to send to one another.</p>
+</section>
+<section id="add-behaviors-and-processors-to-send-a-message-over-comms">
+<h3>Add Behaviors and Processors to Send a Message over Comms<a class="headerlink" href="#add-behaviors-and-processors-to-send-a-message-over-comms" title="Permalink to this headline">¶</a></h3>
+<p>Currently, the automated behavior in <em>behaviors.txt</em> will cause each aircraft to move out of the others way. This isn’t necessary,
+as it would be sufficient to have just one of the aircraft change altitude to avoid a collision.</p>
+<ol class="arabic">
+<li><p>Update <em>behavior.txt</em> to reflect the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># behaviors.txt</span>
+<span class="c1"># A component of the simple_flight demo</span>
+
+<span class="n">behavior</span> <span class="n">next_selector</span>
+   <span class="n">precondition</span>
+      <span class="k">return</span> <span class="n">true</span><span class="p">;</span>
+   <span class="n">end_precondition</span>
+<span class="n">end_behavior</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>behavior all_clear
+   precondition
+      WsfLocalTrackList trackList = PLATFORM.TrackList(&quot;track_proc&quot;);
+      return (trackList.Empty() &amp;&amp; !PLATFORM.AuxDataBool(&quot;collisionExpected&quot;));
+   end_precondition
+
+   execute
+      WsfPlatform plat = PLATFORM;
+      writeln(plat.Name(), &quot; Report: All Clear&quot;);
+   end_execute
+end_behavior
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>behavior entity_detected
+   precondition
+      WsfLocalTrackList trackList = PLATFORM.TrackList(&quot;track_proc&quot;);
+      return !trackList.Empty();
+   end_precondition
+
+   execute
+      WsfPlatform plat = PLATFORM;
+      WsfTrack firstTrack = plat.TrackList(&quot;track_proc&quot;)[0];
+      writeln(plat.Name(), &quot; Report: Entity Detected&quot;);
+
+      if (!plat.AuxDataBool(&quot;collisionWarningRcvd&quot;))
+      {
+         plat.SetAuxData(&quot;collisionExpected&quot;, false);
+      }
+
+      if (plat.AuxDataBool(&quot;collisionWarningCooldown&quot;))
+      {
+         plat.SetAuxData(&quot;collisionWarningCooldown&quot;, false);
+      }
+      else
+      {
+         WsfLocalTrackList trackList = plat.TrackList(&quot;track_proc&quot;);
+         int index = 0;
+         foreach (WsfTrack t in trackList)
+         {
+            if (t.Target().IsValid())
+            {
+                  writeln(&quot;\t - Entity: &quot;, t.Target().Name());
+               double lastDist = plat.AuxDataDouble(&quot;lastKnownDistance&quot;);
+               double currDist = plat.GroundRangeTo(t.CurrentLocation());
+
+
+              if (Math.Ceil(plat.Altitude()/100) == Math.Ceil(t.Altitude()/100) &amp;&amp;
+                  (lastDist == -1 || lastDist &gt; currDist))
+               {
+                  plat.SetAuxData(&quot;lastKnownDistance&quot;, currDist);
+                  writeln(&quot;\t    - WARNING: Collision Expected!\n&quot;);
+                  plat.SetAuxData(&quot;collisionExpected&quot;, true);
+                  plat.SetAuxData(&quot;collisionTrackIdx&quot;, index);
+               }
+               else
+               {
+                  plat.SetAuxData(&quot;collisionExpected&quot;, false);
+               }
+            }
+            index = index + 1;
+         }
+      }
+   end_execute
+end_behavior
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behavior</span> <span class="n">reroute</span>
+   <span class="n">precondition</span>
+      <span class="nb">bool</span> <span class="n">collisionExpected</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">AuxDataBool</span><span class="p">(</span><span class="s2">&quot;collisionExpected&quot;</span><span class="p">);</span>
+      <span class="nb">bool</span> <span class="n">collisionWarningRcvd</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">AuxDataBool</span><span class="p">(</span><span class="s2">&quot;collisionWarningRcvd&quot;</span><span class="p">);</span>
+      <span class="k">return</span> <span class="p">(</span><span class="n">collisionExpected</span> <span class="o">||</span> <span class="n">collisionWarningRcvd</span><span class="p">);</span>
+   <span class="n">end_precondition</span>
+
+   <span class="n">execute</span>
+      <span class="n">WsfPlatform</span> <span class="n">plat</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="p">;</span>
+      <span class="n">double</span> <span class="n">altDelta</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">Math</span><span class="o">.</span><span class="n">Ceil</span><span class="p">(</span><span class="n">RANDOM</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">-</span> <span class="mi">20</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">GoToAltitude</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Altitude</span><span class="p">()</span> <span class="o">+</span> <span class="n">altDelta</span><span class="p">);</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; Report: Rerouting&quot;</span><span class="p">);</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - New Target Altitude = &quot;</span><span class="p">,</span> <span class="n">plat</span><span class="o">.</span><span class="n">Altitude</span><span class="p">()</span> <span class="o">+</span> <span class="n">altDelta</span><span class="p">,</span> <span class="s2">&quot;m</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;collisionWarningRcvd&quot;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;collisionExpected&quot;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;offRoute&quot;</span><span class="p">,</span> <span class="n">true</span><span class="p">);</span>
+   <span class="n">end_execute</span>
+<span class="n">end_behavior</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>behavior send_warning_message
+   precondition
+      bool collisionExpected = PLATFORM.AuxDataBool(&quot;collisionExpected&quot;);
+      bool collisionWarningRcvd = PLATFORM.AuxDataBool(&quot;collisionWarningRcvd&quot;);
+      bool trackListEmpty = PLATFORM.TrackList(&quot;track_proc&quot;).Empty();
+      return (collisionExpected &amp;&amp; !collisionWarningRcvd &amp;&amp; !trackListEmpty);
+   end_precondition
+
+   execute
+      WsfPlatform plat = PLATFORM;
+      if (plat.AuxDataBool(&quot;collisionWarningCooldown&quot;))
+      {
+         plat.SetAuxData(&quot;collisionWarningCooldown&quot;, false);
+      }
+      else
+      {
+         writeln(plat.Name(), &quot; Report: Sending Warning&quot;);
+         WsfLocalTrackList trackList = plat.TrackList(&quot;track_proc&quot;);
+         int collisionTrackIdx = plat.AuxDataInt(&quot;collisionTrackIdx&quot;);
+         WsfPlatform trackPlat = trackList[collisionTrackIdx].Target();
+         WsfComm platComm = plat.CommEntry(0);
+         writeln(&quot;\t - Comm: &quot;, platComm.Name());
+         writeln(&quot;\t - Destination: &quot;, trackPlat.Name());
+         if (trackPlat.CommCount() &gt; 0)
+         {
+            WsfComm trackComm = trackPlat.CommEntry(0);
+            WsfMessage warningMessage = WsfMessage();
+            warningMessage.SetType(&quot;WARNING&quot;);
+            warningMessage.SetSubType(&quot;collision-expected&quot;);
+            platComm.SendMessage(warningMessage, trackComm);
+            writeln(&quot;\t - Warning Sent(&quot;, warningMessage.Type(), &quot;)&quot;);
+            plat.SetAuxData(&quot;collisionWarningCooldown&quot;, true);
+         }
+         else
+         {
+            writeln(&quot;\t - Warning Failed: Target has no comms!&quot;);
+         }
+      }
+   end_execute
+end_behavior
+</pre></div>
+</div>
+</li>
+<li><p>Update the <cite>CARGO_TASK_MANAGER</cite> as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">processor</span> <span class="n">CARGO_TASK_MANAGER</span> <span class="n">WSF_TASK_PROCESSOR</span>
+   <span class="n">update_interval</span> <span class="mi">10</span> <span class="n">sec</span>
+   <span class="n">behavior_tree</span>
+      <span class="n">sequence</span>
+         <span class="n">selector</span>
+            <span class="n">behavior_node</span> <span class="n">all_clear</span>
+            <span class="n">behavior_node</span> <span class="n">entity_detected</span>
+            <span class="n">behavior_node</span> <span class="n">next_selector</span>
+         <span class="n">end_selector</span>
+         <span class="n">selector</span>
+            <span class="n">behavior_node</span> <span class="n">send_warning_message</span>
+            <span class="n">behavior_node</span> <span class="n">reroute</span>
+         <span class="n">end_selector</span>
+      <span class="n">end_sequence</span>
+
+   <span class="n">end_behavior_tree</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+</li>
+<li><p>Create a <cite>WARNING PROCESSOR</cite> as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">processor</span> <span class="n">WARNING_PROCESSOR</span> <span class="n">WSF_SCRIPT_PROCESSOR</span>
+   <span class="n">on_message</span>
+      <span class="nb">type</span> <span class="n">WARNING</span>
+         <span class="n">script</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="n">PLATFORM</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; Report: Message Received&quot;</span><span class="p">);</span>
+            <span class="n">WsfMessage</span> <span class="n">warningMessage</span> <span class="o">=</span> <span class="p">(</span><span class="n">WsfMessage</span><span class="p">)</span><span class="n">MESSAGE</span><span class="p">;</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - Type: &quot;</span><span class="p">,</span> <span class="n">warningMessage</span><span class="o">.</span><span class="n">Type</span><span class="p">());</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - Subtype: &quot;</span><span class="p">,</span> <span class="n">warningMessage</span><span class="o">.</span><span class="n">SubType</span><span class="p">());</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - Origin: &quot;</span><span class="p">,</span> <span class="n">warningMessage</span><span class="o">.</span><span class="n">Originator</span><span class="p">());</span>
+            <span class="n">PLATFORM</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;collisionWarningRcvd&quot;</span><span class="p">,</span> <span class="n">true</span><span class="p">);</span>
+            <span class="n">PLATFORM</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;collisionExpected&quot;</span><span class="p">,</span> <span class="n">true</span><span class="p">);</span>
+         <span class="n">end_script</span>
+      <span class="nb">type</span> <span class="n">default</span>
+         <span class="n">script</span>
+            <span class="n">writeln</span><span class="p">(</span><span class="n">PLATFORM</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot;Report: Message Received&quot;</span><span class="p">);</span>
+         <span class="n">end_script</span>
+   <span class="n">end_on_message</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+</li>
+<li><p>Add a <cite>WARNING_PROCESSOR</cite> to the platform type definition of <cite>CARGO_AIRCRAFT</cite> as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">add</span> <span class="n">processor</span> <span class="n">warning_proc</span> <span class="n">WARNING_PROCESSOR</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update the <cite>AIR_RADIO_TRANSCEIVER</cite> command block in the <cite>CARGO_AIRCRAFT</cite> platform type definition as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">add</span> <span class="n">comm</span> <span class="n">atc</span> <span class="n">AIR_RADIO_TRANSCEIVER</span>
+   <span class="n">internal_link</span> <span class="n">warning_proc</span>
+<span class="n">end_comm</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update the aux_data command block in the <cite>CARGO_AIRCRAFT</cite> platform type definition as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">aux_data</span>
+   <span class="n">struct</span> <span class="n">CARGO_AUX_DATA</span>
+      <span class="nb">bool</span>   <span class="n">collisionExpected</span> <span class="o">=</span> <span class="n">false</span>
+      <span class="nb">bool</span>   <span class="n">collisionWarningCooldown</span> <span class="o">=</span> <span class="n">false</span>
+      <span class="nb">bool</span>   <span class="n">collisionWarningRcvd</span> <span class="o">=</span> <span class="n">false</span>
+      <span class="nb">int</span>    <span class="n">collisionTrackIdx</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="n">double</span> <span class="n">lastKnownDistance</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+   <span class="n">end_struct</span>
+<span class="n">end_aux_data</span>
+</pre></div>
+</div>
+</li>
+<li><p>Finally, in <em>platform_laydown.txt</em>, increase the range of the <cite>cargo_radar</cite> for cargo-1 by adding the following code to the <cite>cargo-1</cite> platform definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">edit</span> <span class="n">sensor</span> <span class="n">cargo_radar</span>
+   <span class="n">maximum_range</span> <span class="mi">40</span> <span class="n">nm</span>
+<span class="n">end_sensor</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>These additions will provide cargo-1 with a longer range radar. When it detects cargo-2, and calculates that the two aircraft are on a collision course, it will create a warning message,
+and send it to cargo-2. Upon receiving the message, cargo-2 will reroute by changing its altitude, thus avoiding the collision without requiring cargo-1 to alter its route.</p>
+</section>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>Communications devices are a means of connecting platforms to share information and tracks. Tracks are shared between platforms intuitively as detailed in <a class="reference internal" href="#quick-start">Quick Start</a>,
+but tracks are not the only information that can be shared. Though it may require scripting, behaviors, processors, or sensors, nearly any information may be
+communicated between or among platforms.</p>
+</section>
+<section id="related-topics">
+<h2>Related Topics<a class="headerlink" href="#related-topics" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="p2-3_primer_sensors_signatures.html"><span class="doc">Sensors and Signatures</span></a></p>
+<p><a class="reference internal" href="p2-5_primer_processors.html"><span class="doc">Processors</span></a></p>
+<p><a class="reference internal" href="p2-6_primer_behavior_btree.html"><span class="doc">Behaviors and Behavior Trees</span></a></p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/user_manual/p2-7_primer_communications.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p2-8_primer_weapons.html" title="Weapons"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="p2-6_primer_behavior_btree.html" title="Behaviors and Behavior Trees"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,425 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfTaskManager
+--------------
+
+.. class:: WsfTaskManager inherits WsfProcessor
+
+.. contents::
+   :local:
+   :depth: 1
+
+Overview
+========
+
+:class:`WsfTaskManager` is a processor that provides functions to manage **tasks**. **Tasks** represent a request to a
+**resource** (i.e., a processor, sensor or weapon) to perform some 'work.' The **resource** may exist on the initiating
+platform or on another platform (resources will be discussed more in the section `Resource Types`_).
+
+There are several categories of functions involved in managing tasks:
+
+* Assignment functions - issued by the assigning task manager to start or update a task.
+* Control functions - issued by the assigning task manager to cancel a task.
+* Status reporting functions - issued by the assigned resource indicating it has completed the assignment.
+* Query functions - issued by either the assigning task manager, or by the assignee (if the assigned resource was a processor.)
+
+.. note::
+
+   Methods involving external assignment, control, or query of a task attempt to find a sending comm (when not specified) and a receiving comm within the same network with assumed connectivity.
+   In legacy use cases of AFSIM, network membership implied connectivity - this is no longer a supported assumption.
+   In some cases, and depending on user configuration, such selected comm devices may not actually have connectivity and fail the assignment of the task due to communication failure.
+   Updates to the communications framework have not been fully integrated with tasking to minimize interface changes and maintain backward compatibility until a future release of AFSIM where such changes are expected and acceptable.
+   Until such changes have been implemented, users may need to modify the communications laydown to ensure the correct selection of communication devices in regard to tasking, which can be
+   accomplished in a myriad of ways: e.g., using a dedicated communications network for tasking, or the user checking for communications viability prior to selection of an appropriate tasking method.
+
+Resource Names
+==============
+
+The functions to perform the above depend on the type of resource involved and are summarized in the following table. 
+Note that some resources have multiple functions that can be used.
+
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+|                | Processor                                                                       | Sensor                                                  | Weapon                                                                                        | Jammer                                                |
++================+=================================================================================+=========================================================+===============================================================================================+=======================================================+
+| **Assignment** |- :method:`AssignTask<WsfTaskManager.AssignTask>`                                |- :method:`StartTracking <WsfTaskManager.StartTracking>` |- :method:`Fire <WsfTaskManager.Fire>`                                                         |- :method:`StartJamming <WsfTaskManager.StartJamming>` |
+|                |- :method:`DelayTask<WsfTaskManager.DelayTask>`                                  |                                                         |- :method:`FireAt <WsfTaskManager.FireAt>`                                                     |                                                       |
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+| **Control**    |- :method:`CancelTask <WsfTaskManager.CancelTask>`                               |- :method:`StopTracking <WsfTaskManager.StopTracking>`   |- :method:`AbortFiringAt <WsfTaskManager.AbortFiringAt>`                                       |- :method:`StopJamming <WsfTaskManager.StopJamming>`   |
+|                |                                                                                 |- :method:`CancelTask <WsfTaskManager.CancelTask>`       |- :method:`CancelTask <WsfTaskManager.CancelTask>`                                             |- :method:`CancelTask <WsfTaskManager.CancelTask>`     |
+| By assigner    |                                                                                 |                                                         |                                                                                               |                                                       |
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+| **Status**     |- :method:`TaskComplete <WsfTaskManager.TaskComplete>`                           | **N/A**                                                 | **N/A**                                                                                       | **N/A**                                               |
+|                |                                                                                 |                                                         |                                                                                               |                                                       |
+| By assignee    |                                                                                 |                                                         |                                                                                               |                                                       |
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+| **Query**      |- :method:`TasksAssigned <WsfTaskManager.TasksAssigned>`                         | **Same as Processor Methods**                           |- :method:`WeaponsActiveFor <WsfTaskManager.WeaponsActiveFor>`                                 | **Same as Processor Methods**                         |
+|                |- :method:`TasksAssignedTo <WsfTaskManager.TasksAssignedTo>`                     |                                                         |- :method:`RoundsFiredAt <WsfTaskManager.RoundsFiredAt>`                                       |                                                       |
+|                |- :method:`TasksAssignedFor <WsfTaskManager.TasksAssignedFor>`                   |                                                         |- :method:`WeaponsFiredAt <WsfTaskManager.WeaponsFiredAt>`                                     |                                                       |
+|                |- :method:`TimeSinceAssigned <WsfTaskManager.TimeSinceAssigned>`                 |                                                         |- :method:`WeaponsFiredFor <WsfTaskManager.WeaponsFiredFor>`                                   |                                                       |
+|                |- :method:`TimeSinceLastTaskAssigned <WsfTaskManager.TimeSinceLastTaskAssigned>` |                                                         |- :method:`SalvosFiredAt <WsfTaskManager.SalvosFiredAt>`                                       |                                                       |
+|                |- :method:`AssignedTaskList <WsfTaskManager.AssignedTaskList>`                   |                                                         |- :method:`TimeSinceWeaponLastFiredFor <WsfTaskManager.TimeSinceWeaponLastFiredFor>`           |                                                       |
+|                |- :method:`AssigneesForTask <WsfTaskManager.AssigneesForTask>`                   |                                                         |- :method:`TimeSinceWeaponLastTerminatedFor <WsfTaskManager.TimeSinceWeaponLastTerminatedFor>` |                                                       |
+|                |- :method:`AssigneeForTask <WsfTaskManager.AssigneeForTask>`                     |                                                         |                                                                                               |                                                       |
+| By assigner    |                                                                                 |                                                         | **Same as Processor Methods**                                                                 |                                                       |
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+| **Query**      |- :method:`TasksReceived <WsfTaskManager.TasksReceived>`                         | **N/A**                                                 | **N/A**                                                                                       | **N/A**                                               |
+|                |- :method:`TasksReceivedFor <WsfTaskManager.TasksReceivedFor>`                   |                                                         |                                                                                               |                                                       |
+|                |- :method:`TimeSinceLastTaskReceived <WsfTaskManager.TimeSinceLastTaskReceived>` |                                                         |                                                                                               |                                                       |
+| By assignee    |- :method:`ReceivedTaskList <WsfTaskManager.ReceivedTaskList>`                   |                                                         |                                                                                               |                                                       |
++----------------+---------------------------------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------------------------------------------------------+-------------------------------------------------------+
+
+
+Resource Types
+==============
+
+As mentioned in the introduction, task assignments involve the concept of a **resource**, which represents the
+processor, sensor, or weapon object involved in the task assignment. Depending on the command used to assign the task,
+the name of the resource is:
+
+* The value of **aProcessorName** for :method:`AssignTask <WsfTaskManager.AssignTask>` forms that include the **aProcessorName** argument.
+* The value of **aWeaponName** for :method:`FireAt <WsfTaskManager.FireAt>`/:method:`Fire <WsfTaskManager.Fire>`.
+* The value of **aSensorName** for :method:`StartTracking <WsfTaskManager.StartTracking>`.
+* The value of **aJammerName** for :method:`StartJamming <WsfTaskManager.StartJamming>`.
+
+When any of the :method:`CancelTask <WsfTaskManager.CancelTask>`, :method:`TaskComplete <WsfTaskManager.TaskComplete>` 
+or :method:`TasksAssignedTo <WsfTaskManager.TasksAssignedTo>` methods is called that has the
+**aResourceName** argument, the value of **aResourceName** must match the value specified in the associated
+:method:`AssignTask <WsfTaskManager.AssignTask>`, :method:`FireAt <WsfTaskManager.FireAt>`, :method:`StartTracking <WsfTaskManager.StartTracking>` or 
+:method:`StartJamming <WsfTaskManager.StartJamming>`. In most common use this is not a
+problem for weapon and sensors because they are generally canceled with the methods specific to the resource type
+(:method:`StopTracking <WsfTaskManager.StopTracking>`, :method:`StopJamming <WsfTaskManager.StopJamming>` or 
+:method:`AbortFiringAt <WsfTaskManager.AbortFiringAt>`. And in many cases canceling tasks typically involves
+canceling **ALL** the tasks associated with a particular track (i.e., CancelTask(<trackId>, "")). However, there
+exists one mistake made by users:
+1) When :method:`AssignTask <WsfTaskManager.AssignTask>` is made to a specific processor, the :method:`TaskComplete <WsfTaskManager.TaskComplete>` method and a directed
+:method:`CancelTask <WsfTaskManager.CancelTask>` request must include the same name.
+2) When :method:`AssignTask <WsfTaskManager.AssignTask>` is self-assigned to the same processor (i.e., made by AssignTask(track, tasktype)),
+TaskComplete(track, tasktype) and CancelTask(trackid, tasktype, resourcename) must be used.
+
+Processor Task Methods
+======================
+
+.. method:: bool AssignTask(WsfTrack aTrack, string aTaskType)
+            bool AssignTask(WsfTrack aTrack, string aTaskType, string aProcessorName)
+            bool AssignTask(WsfTrack aTrack, string aTaskType, WsfPlatform aAssignee)
+            bool AssignTask(WsfTrack aTrack, string aTaskType, WsfPlatform aAssignee, string aCommDeviceName)
+            bool AssignTask(WsfTrack aTrack, string aTaskType, string aProcessorName, WsfPlatform aAssignee)
+            bool AssignTask(WsfTrack aTrack, string aTaskType, string aProcessorName, WsfPlatform aAssignee, string aCommDeviceName)
+   
+   Make a task assignment associated with the indicated track.  For those methods that do not have an Assignee argument,
+   the task is made to the assigning platform (i.e., the task is self-assigned).  Returns 'true' if the task assignment is
+   successful.
+   
+   .. note::
+
+      See the section `Resource Names`_ if a form is used that included the **aResourceName** argument. 
+
+.. method:: bool AssignTask(WsfTrack aTrack, WsfTask aTask)
+
+   Make a task assignment associated with the indicated track.  The task is assigned to the assignee field in aTask. 
+   Returns 'true' if the task assignment is successful.
+
+.. method:: bool CancelTask(WsfTrackId aTrackId)
+            bool CancelTask(WsfTrackId aTrackId, string aTaskType)
+            bool CancelTask(WsfTrackId aTrackId, string aTaskType, string aResourceName)
+            bool CancelTask(WsfPlatform aAssignee, WsfTrackId aTrackId)
+            bool CancelTask(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType)
+            bool CancelTask(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aResourceName)
+   
+   Cancel any tasks that match all of the specified parameters. If aTrackId is a null track ID, CancelTask will match
+   ignoring the track ID.
+   
+   In addition to canceling tasks started with :method:`AssignTask <WsfTaskManager.AssignTask>`, :method:`CancelTask <WsfTaskManager.CancelTask>` can be used to cancel tasks initiated
+   by :method:`FireAt <WsfTaskManager.FireAt>`, :method:`StartTracking <WsfTaskManager.StartTracking>`, :method:`StartJamming <WsfTaskManager.StartJamming>` and :method:`StartUplinking <WsfTaskManager.StartUplinking>`.
+   
+   .. note::
+
+      See the section `Resource Types`_ if a form is used that included the **aResourceName** argument.
+
+   Example::
+
+      WsfPlatform plat1 ...;
+   
+      # This cancels any task assigned to platform plat1 with the task type FIRE.
+      CancelTask(plat1, WsfTrackId(), "FIRE");
+   
+      # This cancels any task assigned with the given track ID.
+      CancelTask(TRACK.TrackId());
+
+.. method:: bool DelayTask(double aDelayTime, WsfTrack aTrack, string aTaskType)
+   
+   Create a delay pseudo-task associated with the indicated track.
+
+.. method:: bool TaskComplete(WsfTrackId aTrackId, string aTaskType)
+            bool TaskComplete(WsfTrackId aTrackId, string aTaskType, string aResourceName)
+            bool TaskComplete(string aStatusMessage, WsfTrackId aTrackId, string aTaskType)
+            bool TaskComplete(string aStatusMessage, WsfTrackId aTrackId, string aTaskType, string aResourceName)
+   
+
+   Tell the task assigner that the task associated with the indicated track ID has been completed.  The assigner can
+   handle the completion though the :command:`WSF_TASK_PROCESSOR.on_task_complete` script.  The optional **aStatusMessage**
+   parameter sets the :class:`WsfTask`'s :method:`SubStatus <WsfTask.SubStatus>` for the assigner to query.
+   
+   .. note::
+
+      See the section `Resource Names`_ if a form is used that included the **aResourceName** argument.
+
+Task Query Methods
+==================
+   
+.. method:: int TasksAssigned()
+
+   Return the total number of uncompleted task assignments that have been made.
+
+.. method:: int TasksAssignedTo(WsfPlatform aAssignee)
+            int TasksAssignedTo(WsfPlatform aAssignee, string aTaskType)
+            int TasksAssignedTo(WsfPlatform aAssignee, string aTaskType, string aResourceName)
+            int TasksAssignedTo(WsfPlatform aAssignee, WsfTrackId aTrackId)
+            int TasksAssignedTo(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType)
+            int TasksAssignedTo(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aResourceName)
+   
+   Return the number of uncompleted tasks that have been made to the indicated platform.
+   
+   .. note::
+
+      See the section `Resource Names`_ if a form is used that included the **aResourceName** argument.
+
+.. method:: int TasksAssignedFor(WsfTrackId aTrackId)
+            int TasksAssignedFor(WsfTrackId aTrackId, string aTaskType)
+
+   Return the number of task assignments that have been made for the indicate track ID.
+
+.. method:: int TasksReceived()
+            int TasksReceivedFor(WsfTrackId aTrackId)
+            int TasksReceivedFor(WsfTrackId aTrackId, string aTaskType)
+
+   Return the total number of active task assignments that have been received.
+
+.. method:: double TimeSinceAssigned(WsfTrackId aTrackId, string aTasktype, WsfPlatform aAssignee)
+   
+   Return the time that has elapsed since the last task associated with the indicated track ID was assigned to the
+   platform indicated by 'aAssignee'.  If no assignment has been made, the returned value will be less than zero.
+
+.. method:: double TimeSinceLastTaskAssigned()
+   
+   Return the elapsed time since the last assignment was made.  If no assignment has been made, the returned value will be
+   less than zero.
+
+.. method:: double TimeSinceLastTaskReceived()
+   
+   Return the elapsed time since the last task was received.  If no task has been received, the returned value will be
+   less than zero.
+
+.. method:: WsfPlatformList AssigneesForTask(WsfTrackId aTrackId, string aTaskType)
+   
+   Return the list of platforms that are associated with the indicated track ID and task type.
+
+.. method:: WsfPlatform AssigneeForTask(WsfTrackId aTrackId, string aTaskType)
+   
+   Return the platform that is associated with the indicated track ID and task type. The return value should be tested for
+   validity (using the IsValid() method) as nobody may be assigned to the indicated task.
+
+.. method:: WsfTaskList AssignedTaskList()
+            WsfTaskList AssignedTaskList(WsfTrackId aTrackId, string aTaskType)
+   
+   Return the list of tasks that have been assigned (made) by this task manager. The first form returns the list of all
+   assigned tasks while the second form returns only those whose track ID and task type match the specified values.  If
+   aTrackId is null (i.e., created with WsfTrackId() ) this method will match tasks ignoring the track ID.  If aTaskType =
+   "", this method will match tasks ignoring the task type.
+   
+   .. note::
+
+      This method is not as efficient as the other task query methods documented above and should be used
+      only when those are not adequate.
+
+
+.. method:: WsfTaskList ReceivedTaskList()
+            WsfTaskList ReceivedTaskList(WsfTrackId aTrackId, string aTaskType)
+   
+   Return the list of tasks that have been received by this task manager. The first form returns the list of all received
+   tasks while the second form returns only those whose track ID and task type match the specified values. If aTrackId is
+   null (i.e., created with WsfTrackId() ) this method will match tasks ignoring the track ID.  If aTaskType = "", this
+   method will match tasks ignoring the task type.
+   
+   .. note::
+
+      This method is not as efficient as the other task query methods documented above and should be used
+      only when those are not adequate.
+
+
+
+Weapon Task Methods
+===================
+
+.. method:: double TimeSinceWeaponLastFiredFor(WsfTrackId aTrackId)
+   
+   Return the amount of time that has elapsed since a weapon fire was last requested against the track with the indicated
+   track ID.  NOTE: a weapon may or may not have actually been fired, this time is in reference to the last fire request. 
+   If no weapon fire has been requested, the return value will be less than zero.
+
+.. method:: double TimeSinceWeaponLastTerminatedFor(WsfTrackId aTrackId)
+   
+   Return the amount of time that has elapsed since a weapon last terminated against the track with the indicated track
+   ID.  If no weapon has terminated, the return value will be less than zero.
+
+.. method:: int WeaponsActiveFor(WsfTrackId aTrackId)
+            int WeaponsActiveFor(WsfTrackId aTrackId, WsfPlatform aAssignee)
+   
+   Return the number of weapon rounds that are currently active (in the process of being fired or in-flight) against track
+   with the indicated track ID and assignee platform (if supplied).
+
+.. method:: int RoundsFiredAt(WsfTrackId aTrackId)
+            int RoundsFiredAt(WsfTrackId aTrackId, WsfPlatform aAssignee)
+            int WeaponsFiredAt(WsfTrackId aTrackId)
+            int WeaponsFiredAt(WsfTrackId aTrackId, WsfPlatform aAssignee)
+            int WeaponsFiredFor(WsfTrackId aTrackId)
+            int WeaponsFiredFor(WsfTrackId aTrackId, WsfPlatform aAssignee)
+   
+   Return the number of weapon rounds that have been fired against the track with the indicated ID and assignee platform
+   (if supplied). This includes rounds that are in-flight and complete (terminated) rounds.
+
+.. method:: int SalvosFiredAt(WsfTrackId aTrackId)
+   
+   Return the number of salvos fire requests that have been asked for against the track with the indicated ID.  This
+   includes salvos that are in-flight, and salvos that were requested even when no weapons were left.
+
+.. method:: bool Fire(WsfTrack aTrack, string aTaskType, WsfWeapon aWeapon, int aQuantity)
+            bool FireAt(WsfTrack aTrack, string aTaskType, WsfWeapon aWeapon, int aQuantity)
+            bool Fire(WsfTrack aTrack, string aTaskType, string aWeaponName, int aQuantity, WsfPlatform aAssignee)
+            bool FireAt(WsfTrack aTrack, string aTaskType, string aWeaponName, int aQuantity, WsfPlatform aAssignee)
+            bool Fire(WsfTrack aTrack, string aTaskType, string aWeaponName, int aQuantity, WsfPlatform aAssignee, string aCommDeviceName)
+            bool FireAt(WsfTrack aTrack, string aTaskType, string aWeaponName, int aQuantity, WsfPlatform aAssignee, string aCommDeviceName)
+   
+   Make a firing assignment associated with the indicated track. Use the indicated weapon and "aQuantity' rounds against
+   the target track. Returns 'true' if the assignment of a firing task is successful. This not an indication that a weapon 
+   has successfully been fired. An assignment will fail if the aAssignee or aCommDeviceName cannot be found.
+   
+   Note: Both Fire and FireAt perform exactly the same function. They are both here for backward compatibility.
+   
+   .. note::
+
+      See the section `Resource Names`_ for a discussion of weapon names and resource names.
+
+
+.. method:: void AbortFiringAt(WsfTrackId aTrackId))
+   
+   Abort firing at the specified track. This causes the immediate destruction of any rounds that have been released and
+   halts the launching of any rounds in a salvo that have yet to be released.
+   
+   If the supplied argument is a null track (e.g., AbortFiringAt(WsfTrackId())), then the request will apply to all active
+   firing requests.
+
+.. method:: bool HaveFiredAt(WsfTrackId aTrackId)
+   
+   Returns true if the indicated track ID has been fired on before.
+
+
+Tracking Task Methods
+=====================
+
+.. method:: bool StartTracking(WsfTrack aTrack, string aTaskType, WsfSensor aSensor, string aSensorMode)
+            bool StartTracking(WsfTrack aTrack, string aTaskType, string aSensorName, string aSensorMode, WsfPlatform aAssignee)
+            bool StartTracking(WsfTrack aTrack, string aTaskType, string aSensorName, string aSensorMode, WsfPlatform aAssignee, string aCommDeviceName)
+   
+   Make a tracking assignment associated with the indicated track. The sensor and sensor mode to use are supplied by
+   "aSensor' and "aSensorMode', respectively.
+   
+   .. note::
+
+      See the section `Resource Types`_ for a discussion of sensor names and resource types.
+
+
+.. method:: bool StopTracking(WsfTrackId aTrackId, string aTaskType, string aSensorName)
+            bool StopTracking(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aSensorName)
+   
+   Cancel any tracking assignments given to the sensor indicated by "aSensorName' in association with the track with the
+   indicated track ID.
+   
+   .. note::
+
+      See the section `Resource Names`_ for a discussion of sensor names and resource types.
+
+
+
+Uplinking Task Methods
+======================
+
+.. method:: bool StartUplinking(WsfTrack aTrack, string aTaskType, WsfPlatform aDestination)
+            bool StartUplinking(WsfTrack aTrack, string aTaskType, WsfPlatform aDestination, WsfPlatform aAssignee)
+   
+   Assigns an uplink task to the local platform, or aAssignee.  *aDestination* is the platform to receive the uplinked
+   tracks.  See :command:`WSF_TASK_PROCESSOR uplink commands <WSF_TASK_PROCESSOR.uplink_source>`.  For more uplink options, use
+   :method:`AssignTask <WsfTaskManager.AssignTask>` with :class:`WsfUplinkTask.Create() <WsfUplinkTask>`.
+
+
+Jamming Task Methods
+====================
+
+.. method:: bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer, string aTechniqueName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer, double aFrequency, double aBandwidth)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer, double aFrequency, double aBandwidth, int aBeamNumber)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer, double aFrequency, double aBandwidth, int aBeamNumber, string aTechniqueName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, WsfWeapon aJammer, double aFrequency, double aBandwidth, string aTechniqueName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, WsfPlatform aAssignee, string aCommDeviceName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, string aTechniqueName, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, string aTechniqueName, WsfPlatform aAssignee, string aCommDeviceName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, WsfPlatform aAssignee, string aCommDeviceName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, string aTechniqueName, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, string aTechniqueName, WsfPlatform aAssignee, string aCommDeviceName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber, WsfPlatform aAssignee, string aCommDeviceName)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber, string aTechniqueName, WsfPlatform aAssignee)
+            bool StartJamming(WsfTrack aTrack, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber, string aTechniqueName, WsfPlatform aAssignee, string aCommDeviceName)
+   
+   Make a jamming assignment associated with the indicated track on the specified beam number and/or with technique name,
+   if supplied. The frequency and bandwidth to use are supplied by "aFrequency' and "aBandwidth', respectively. If The
+   frequency and bandwidth are omitted then the track signal data is used to supply the necessary parameters and an
+   assignment is made for each signal in the track up to the limitations of the jammer selected.
+   
+   .. note::
+
+      See the section `Resource Names`_ for a discussion of jammer names and resource names.
+
+
+.. method:: bool StopJamming(WsfTrackId aTrackId, string aTaskType, string aJammerName)
+            bool StopJamming(WsfTrackId aTrackId, string aTaskType, string aJammerName, double aFrequency, double aBandwidth)
+            bool StopJamming(WsfTrackId aTrackId, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber)
+            bool StopJamming(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aJammerName)
+            bool StopJamming(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aJammerName, double aFrequency, double aBandwidth)
+            bool StopJamming(WsfPlatform aAssignee, WsfTrackId aTrackId, string aTaskType, string aJammerName, double aFrequency, double aBandwidth, int aBeamNumber)
+   
+   Cancel any jamming assignments with the indicated frequency and bandwidth on the specified beam number, if supplied,
+   given to the jammer indicated by "aResourceName' in association with the indicated track ID. If the frequency and
+   bandwidth are not supplied then each jamming assignment on the specified jammer for the associated track is stopped.
+   
+   .. note::
+
+      See the section `Resource Names`_ for a discussion of jammer names and resource names.
+
+
+
+Operating Level Methods
+=======================
+
+.. method:: int OperatingLevelFor(string aTaskType)
+            int OperatingLevelFor(string aTaskType, WsfPlatform aAssignee)
+   
+   Returns the current operating level for the indicated task type.
+
+.. method:: bool ChangeOperatingLevel(string aTaskType, int aOperatingLevel)
+            bool ChangeOperatingLevel(string aTaskType, int aOperatingLevel, WsfPlatform aAssignee)
+            bool ChangeOperatingLevel(string aTaskType, int aOperatingLevel, WsfPlatform aAssignee, string aCommDeviceName)
+   
+   Change the operating level of the current processor for the specified task type to the specified value.

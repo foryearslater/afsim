@@ -1,0 +1,179 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.5:
+
+WSF 1.6.5 - 25 Feb 2010
+-----------------------
+
+Important Notes
+===============
+
+* In preparation for a change in an upcoming release, all uses of :model:`WSF_GUIDANCE_COMPUTER`, :model:`WSF_GUIDED_MOVER` and
+  :model:`WSF_UNGUIDED_MOVER` and should be either:
+
+   * **replaced** with the synonyms **WSF_OLD_GUIDANCE_COMPUTER**, **WSF_OLD_GUIDED_MOVER** and
+     **WSF_OLD_UNGUIDED_MOVER** respectively.
+   
+   * or **upgraded** to use **WSF_NEW_GUIDANCE_COMPUTER**, **WSF_NEW_GUIDED_MOVER** and **WSF_NEW_UNGUIDED_MOVER**.
+     These models have been available for quite some time and are in widespread use.
+
+  In a future release(either 1.6.7 or 1.7.0) the new guided movers and guidance computer will become the default
+  definitions:
+
+   * **WSF_GUIDANCE_COMPUTER** and **WSF_NEW_GUIDANCE_COMPUTER** will refer to the new implementation currently
+     available as **WSF_NEW_GUIDANCE_COMPUTER**.
+   
+   * **WSF_GUIDED_MOVER** and **WSF_NEW_GUIDED_MOVER** will refer to the new implementation currently available as
+     **WSF_NEW_GUIDED_MOVER**.
+   
+   * **WSF_UNGUIDED_MOVER** and **WSF_NEW_UNGUIDED_MOVER** will refer to the new implementation currently available
+     as **WSF_NEW_UNGUIDED_MOVER**.
+
+  The old models will continue to be available as **WSF_OLD_GUIDANCE_COMPUTER**, **WSF_OLD_GUIDED_MOVER** and
+  **WSF_OLD_UNGUIDED_MOVER**.
+
+Corrections
+===========
+
+* **(CR 7202)** Corrected two problems related when creating SAR dwell_time plot in
+  sensor_plot.
+
+  * If 'sar_constraint_plotting' was enabled, reasonable dwell times were being returned for sample points in back of
+    the array face.
+  
+  * If 'sar_constraint_plotting' was not enabled and the target was outside the electronic beam steering limits, the
+    dwell time was incorrect. (It was being set to approximately the same value as would have been computed if right at the
+    edge of the steering limits).
+
+* **(CR 7303)** Corrected a problem where :ref:`sosm_interface.WSF_SOSM_SENSOR` did not have the correct
+  position when the **AttemptToDetect** method was called directly from :command:`sensor_plot`. This only affected plots where
+  the sensor was being moved over the sample grid and the target was being held static (which is not the normal mode of
+  operation).
+
+  .. note::
+
+      This would only affect programs that called **AttemptToDetect** directly instead of via **Update**.
+
+* **(CR 7304)** Corrected a problem where the WCS->NED transformation matrix for a sensor was not being updated after
+  the host platform moved. This problem exhibited itself when performing a :command:`sensor_plot` horizontal_map using a
+  :ref:`sosm_interface.WSF_SOSM_SENSOR`, and where the sensing platform was being moved over the sample grid
+  instead of the target. The problem affected :ref:`sosm_interface.WSF_SOSM_SENSOR`, :model:`WSF_IRST_SENSOR` and
+  some relative geometry output in :command:`event_output`
+
+* **(CR 7319)** Fixed a problem where the source track number in the header of the J11.0 WIFT message was not
+  correct when the comm device being used was not a JTIDS terminal.
+  The track number was defaulting to the entity ID.
+
+* **(CR 7358)** Fixed a problem with the platform 3-D intercept script method. The altitude being returned was the
+  track altitude not the intercept altitude.
+
+* **(CR 7371)** Corrected several issues in the WsfEM_SurfaceClutter model. Incorrect angles between the beam and
+  the clutter patch were being computed, thus causing incorrect gains to be used in the computation of the Transmitted
+  and Received Powers. Also exclude the contributions from clutter cells at extremely close range because these were
+  dominating the result. The antenna patterns are not real accurate enough at high off-boresight angles and could result
+  in gains that are just a little too large. The resulting clutter return for short ranges could therefore be way too
+  large.
+
+* **(CR 7372)** The SENSOR_DETECTION_ATTEMPT event was not getting called because it was missing in the SALRAM
+  AttemptToDetect function.
+
+* **(CR 7373)** Added default values for each of the native script types (bool (false), int (0), double (0.0), char
+  ('0'), and string ("")).
+
+* **(CR 7374)** Fixed a bug where the Map::Exists method would cause a crash if a complex type was supplied as an
+  argument to a map that contained native types.
+
+* Changed GotoLabel and Label script methods on the Waypoint script class to SetGotoLabel and SetLabel for
+  consistency within the scripting language.
+
+* **(CR 7436)** When a weapon is fired a :class:`WsfStatusMessage` is sent which is supposed to contain the name of the
+  weapon that was fired and the track ID of the target as supplied in the firing request. Enhancements added to 1.6.4
+  resulted in the message containing a different track ID. This CR makes changes to once again have the message contain
+  the track ID supplied in the firing request.
+
+* **(CR 7442)** Corrected an situation where the 'apparent position' of and object (i.e. the position of an object
+  with respect to a viewer, accounting for atmospheric refraction) was sometimes incorrect if the ranges were very, very
+  long (e.g.: a sensor interaction between geostationary satellite and near-Earth object).
+
+* **(CR 7445)** Corrected an issue in :model:`WSF_RADIUS_EFFECT` where the incorrect value was being returned for hte
+  effect due to a comparison error.
+
+* **(CR 7469)** Corrected an issue in **WSF_NEW_GUIDED_MOVER** that prevented empty non-terminal stages (stages other
+  than the last that don't consume fuel) from transitioning to the next stage.
+
+Enhancements
+============
+
+* Added script methods NetworkName, IsDefaultGateway,
+  NetworkConnections and IsConnectionEnabled to :class:`WsfComm`.
+
+* **(CR 7317)** Added script methods :method:`WsfMessage.SetSizeInBits` and :method:`WsfMessage.SetSizeInBytes` to
+  :class:`WsfMessage` to allow setting message size.
+
+* Added new script methods to execute global scripts and scripts on platforms and processors.  See
+  WsfPlatform.:method:`WsfPlatform.Execute`, WsfProcessor.:method:`WsfProcessor.Execute`, and
+  WsfSimulation.:method:`WsfSimulation.Execute`
+
+* **(CR 7341)** Added in :model:`signal_power_gain <WSF_POWER_EFFECT>` and
+  :model:`receiver_noise_power_gain <WSF_POWER_EFFECT>` in :model:`WSF_POWER_EFFECT`, primarily to increase the
+  receiver noise when using the :model:`WSF_SLC_EFFECT` effect.
+
+* Added :model:`WSF_DIRECTION_FINDER_PROCESSOR`, a specialized processor that is used to fuse multiple bearing-only
+  tracks into a track with valid location.  It provides the effect of implementing a triangulation algorithm.
+
+* Added :command:`route.bank_angle_limit` to the route commands.  The route movers will now respond to bank angle limits
+  either on the mover or the route.
+
+* **(CR 7344)** Added the :command:`WSF_GUIDANCE_COMPUTER.aimpoint_altitude_offset`,
+  :command:`WSF_GUIDANCE_COMPUTER.aimpoint_azimuth_offset`, :command:`WSF_GUIDANCE_COMPUTER.aimpoint_range_offset` and
+  :command:`WSF_GUIDANCE_COMPUTER.commanded_azimuth_offset` commands to **WSF_NEW_GUIDANCE_COMPUTER** to aid in
+  generating approach geometries that meet sensor constraints.
+ 
+* Numerous enhancements for ballistic missile engagements:
+      
+   * Made numerous internal improvements to :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` to improve its speed and
+     accuracy.
+   
+   * Updated :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` to allow selection of intercepts in which the intercept angle
+     is 'acceptable'. Updated :model:`BALLISTIC_MISSILE_LAUNCH_COMPUTER_GENERATOR` to produce the additional data needed by the launch computer.
+  
+  .. note::
+
+      launch computer data must be regenerated to make use of this feature.
+
+   * Added many methods to :class:`WsfLaunchComputer` to facilitate battle management decision making processes.
+
+* **(CR 7354)**  Added to set of conditions required for successful :model:`WSF_RADIO_TRANSCEIVER` communication
+  :model:`relay <WSF_RADIO_TRANSCEIVER>`.  Two additional conditions have been applied to the receiver configured to relay. 
+  First additional: the relay receiver must be on the same subnetwork as the transmitter attempting to relay the message.
+  Second additional: the relay receiver must be configured to relay to at least one transmitter that is on the same
+  subnetwork as that of one of the receivers on the destination platform.
+
+* **(CR 7381)** Added support for dynamic casting in WSF script using the standard casting syntax (i.e.
+  '(<type>)'). If a cast fails dynamically a NULL reference is returned.
+
+* **(CR 7384)** Added the ability to define the platform :command:`platform.creation_time` and the route
+  :command:`_.route_mover.start_time` using a draw from a statistical distribution in addition to a constant value.
+  
+  .. note::
+
+      Vespa has not been upgraded to handle the new syntax and will not be able to read files that make use
+      of the enhancement. It will still, however, be able to read files that use old form where just a <time-value> is
+      specified.
+
+* **(CR 7386)** Added a script 'set' container that mirrors the functionality of the STL set. It supports union,
+  difference, and intersection.
+
+* **(CR 7446)** Numerous changes have been made to :command:`false_target`, :command:`false_target_screener` and
+  :model:`WSF_FALSE_TARGET_EFFECT` to aid in better input data encapsulation and to improve some runtime performance issues
+  for this release. Please refer to these sections for changes and updates. More changes will be coming out in the next
+  release further improving performance and capability.

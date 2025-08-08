@@ -1,0 +1,97 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CYBER_SCRIPT_EFFECT_ENHANCED
+--------------------------------
+
+.. model:: cyber_effect WSF_CYBER_SCRIPT_EFFECT_ENHANCED
+
+.. parsed-literal::
+
+   cyber_effect <effect_name> :model:`WSF_CYBER_SCRIPT_EFFECT_ENHANCED`
+
+      platform_type_ <type>
+         script void Attack_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+         script void Restore_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+      end_platform_type
+
+      platform_ <name>
+         script void Attack_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+         script void Restore_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+      end_platform
+
+      default_
+         script void Attack_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+         script void Restore_\ (:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters) ... end_script
+      end_default
+
+   end_cyber_effect
+
+Overview
+========
+
+:model:`WSF_CYBER_SCRIPT_EFFECT_ENHANCED` is a :command:`cyber_effect` that can be defined using the scripting language. This effect is equivalent in functionality with
+:model:`WSF_CYBER_SCRIPT_EFFECT` except that it supports the usage of user supplied
+parameters in the script context provided during the attack call. As a result, the signature
+of the script method overloads for this effect have been modified to provide these additional
+parameters.
+
+.. note:: The functionality of this script effect is expected to replace the standard script effect in AFSIM 3.0.
+
+.. note:: This effect does NOT require user supplied data during a CyberAttack initiation call. However, this type supports the usage of such data if provided.
+
+Commands
+========
+
+.. command:: platform_type <type> ... end_platform_type
+
+   Define the effect scripts for a platform type.
+   This command may be repeated as necessary.
+
+.. command:: platform <name> ... end_platform
+
+   Define the effect scripts for a specific platform.
+   This command may be repeated as necessary.
+
+.. command:: default ... end_default
+
+   Define the effect scripts for any victim that is not specified by platform_ or platform_type_.
+   This command is only valid once, and multiple instances of this block will only use the last declared
+   instance of this block.
+
+Enhanced Effect Scripts
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Two scripts must be defined to implement an effect:
+
+.. command:: attack
+   
+   .. parsed-literal::
+   
+      script void Attack(:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters)
+      end_script
+   
+   The 'Attack' script is invoked when the attack has been determined that it will occur. The method should
+   take the necessary actions to cause whatever is needed to implement the effect.
+
+.. command:: restore
+   
+   .. parsed-literal::
+
+      script void Restore(:class:`WsfCyberEngagement` aEngagement, :class:`WsfCyberAttackParameters` aParameters)
+      end_script
+
+   The 'Restore' script is invoked when it has been determined that the victim has recovered from the attack.
+   The method should take the necessary actions to rescind whatever actions were taken by the Attack_ script
+   (essentially restoring the platform to the state that existed prior to the attack).
+
+User supplied parameters passed during the attack instantiation are available for usage in the context
+of these script method overloads.

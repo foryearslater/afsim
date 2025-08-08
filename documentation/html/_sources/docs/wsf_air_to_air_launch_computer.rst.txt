@@ -1,0 +1,211 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_AIR_TO_AIR_LAUNCH_COMPUTER
+------------------------------
+
+.. model:: launch_computer WSF_AIR_TO_AIR_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_AIR_TO_AIR_LAUNCH_COMPUTER_
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+	  
+      load_table_ ...
+      launch_computer_table_ ... end_launch_computer_table
+
+   end_launch_computer
+
+Overview
+========
+
+WSF_AIR_TO_AIR_LAUNCH_COMPUTER_ implements a launch computer for an air-to-air missile. This launch computer accepts
+a target track, and evaluates which tabulated engagement condition most closely matches the track parameters.
+It supplies the (Ranges and Times-of-flight) expected, to use for launch logic.
+
+Air-to-air missiles are designed with a preferred range of employment:  short, medium, or long.  Regardless, all
+missiles will have a minimum range below which they cannot properly arm and guide to intercept, a maximum range beyond
+which they cannot successfully intercept, and a "no-escape" range of maximum lethality.  The minimum and maximum ranges
+usually assume a level non-maneuvering target.  The "no-escape" range is between the min and max, and assume some
+representative target ability (a G-loading) to turn and run away from the missile the instant it is launched.  Within
+the no-escape range, there is a low probability that the target can be expected to escape.
+
+Method of Operation
+===================
+
+The engagement results are functions of 6 independent variables (IVs):  **shooter altitude and Mach**,
+**target altitude and Mach**, **target aspect angle** (nose on = 0 deg), and **target lead angle**.
+and 6 dependent variables (DVs): **maximum range and time-of-flight**, **no-escape range and time-of-flight**,
+and **minimum range and time-of-flight**.
+
+The data tables can be quite large.  So that many launch computer instances may share common data tables, the input processing
+is dedicated primarily to reading in a table of engagement results, which all computers of this type will collectively
+reference.  The table is consulted to time the launch of a :model:`WSF_EXPLICIT_WEAPON` against a target :class:`WsfTrack`.
+The track must have valid WCS location and velocity.
+
+Results are found by first taking each IV and finding the nearest in entry in the data table. Then once indices for each IV is determine, this set of
+indices is used to lookup the result. In other words, the results are not interpolated values.
+
+**Target aspect** is defined as follows:  Target aspect angle is measured in the horizontal plane from the velocity vector
+of the target to the shooter line-of-sight vector, with a value from zero to 180 degrees.  This means nose on = 0 degrees target aspect!
+
+**Target lead** angle is also measured in the horizontal plane, from shooter velocity vector to the target line-of-sight (similar to azimuth), but
+positive if the target is converging laterally toward the shooter velocity vector, and negative if diverging away.
+
+The :command:`weapon_tools<weapon_tools>` application assists with creation of launch computers of this type.
+(See :command:`AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR`).
+
+.. block:: WSF_AIR_TO_AIR_LAUNCH_COMPUTER
+
+.. _WSF_AIR_TO_AIR_LAUNCH_COMPUTER.Commands:
+
+Commands
+========
+
+.. command:: load_table <file-name>
+
+   Specifies a separate file to include.  This included file must contain the launch_computer_table_
+   block.
+
+.. command:: launch_computer_table ... end_launch_computer_table
+   :block:
+
+   Specifies the data table for expected results for weapon engagements.  This block may be included in-line in the launch
+   computer block, and need not be in a separate file as in load_table_ above.  All of the subcommand inputs listed
+   below are to be embedded within this block.
+
+   .. command:: no_escape_manuever <acceleration-value>
+
+      The acceleration used to define the target "turn tail to missile" evade tactic capability. Begins at missile launch.
+
+   .. command:: independent_variables ... end_independent_variables
+      :block:
+
+      This block contains the data that defines the valid ranges of each of the independent variables for the engagement.
+      Each IV must be given in increasing values.  If there are N shooter altitudes, M shooter Machs, P target altitudes, Q
+      target Machs, R target aspect angles, and S target lead angles, then the intercept_results_ block must have
+      NxMxPxQxRxS x 6 data values in it.
+
+      .. command:: shooter_altitudes <distances> end_shooter_altitudes
+
+         Specifies the shooter altitudes. May be uneven but must be in increasing numerical order. (Minimum delta = 100.0 m)
+
+         .. parsed-literal::
+          shooter_altitudes 10000 ft 20000 ft 30000 ft end_shooter_altitudes
+
+      .. command:: shooter_machs <values> end_shooter_machs
+
+         Specifies the shooter Mach numbers. May be uneven but must be in increasing numerical order. (Minimum delta = 0.05)
+
+         .. parsed-literal::
+          shooter_machs 0.8 1.0 1.2 1.4 1.6 1.8 2.0 end_shooter_machs
+
+      .. command:: target_altitudes <distances> end_target_altitudes
+
+         Specifies the target altitudes. May be uneven but must be in increasing numerical order. (Minimum delta = 100.0 m)
+
+         .. parsed-literal::
+          target_altitudes 10000 ft 20000 ft 30000 ft end_target_altitudes
+
+      .. command:: target_machs <values> end_target_machs
+
+         Specifies the target Mach numbers. May be uneven but must be in increasing numerical order. (Minimum delta = 0.05)
+
+         .. parsed-literal::
+          target_machs 0.8 1.0 1.2 1.4 1.6 1.8 2.0 end_target_machs
+
+      .. command:: target_aspect_angles <angles> end_target_aspect_angles
+
+         Specifies the target aspect angles (nose on = 0 deg). May be uneven but must be in increasing numerical order. (Minimum delta = 2.0 deg)
+
+         .. parsed-literal::
+          target_aspects 0 deg 30 deg 60 deg 90 deg 135 deg 180 deg deg end_target_aspects
+
+      .. command:: target_lead_angles <angles> end_target_lead_angles
+
+         Specifies the target lead angles. May be uneven but must be in increasing numerical order. (Minimum delta = 2.0 deg)
+
+         .. parsed-literal::
+          target_lead_angles 0 deg 30 deg 60 deg 90 deg 135 deg 180 deg end_target_lead_angles
+
+      .. command:: target_lead_angle_limits from <angle-value> to <angle-value> by <angle-value>
+
+         Specifies the target lead angles using a shorten notation. This is an alternate to the previous target_lead_angles command. (Minimum delta = 2.0 deg)
+
+         .. parsed-literal::
+          target_lead_angle_limits from -180 deg to 180 deg by 10 deg
+
+   .. block:: WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table
+
+   .. command:: intercept_results ... end_intercept_results
+      :block:
+
+      This block contains all the data points that define the intercept envelope.  There must be as many entries/lines as there are engagement
+      conditions (see independent_variables_).  Any value of -1.0 indicates not-achievable.  It is recommended that
+      this data be generated using the LAR generator tool called :command:`weapon_tools<weapon_tools>`.
+
+      The format of the data is:
+
+      .. parsed-literal::
+       intercept_results
+          Rmin :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rne :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rmax :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>`
+          Rmin :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rne :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rmax :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>`
+          ...
+          Rmin :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rne :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>` Rmax :argtype:`\<length-value> <length-value>` :argtype:`\<time-value> <time-value>`
+       end_intercept_results
+
+      .. command:: Rmin <length-value> <time-value>
+
+         Minimum range and time-of-flight for this condition, below which intercept is unsuccessful.
+
+      .. command:: Rne <length-value> <time-value>
+
+         No-escape range and time-of-flight for this condition.
+
+      .. command:: Rmax <length-value> <time-value>
+
+         Maximum range and time-of-flight for this condition, beyond which intercept is unsuccessful.
+
+Examples
+========
+
+First Example Input Data::
+
+   launch_computer airToAirComputer WSF_AIR_TO_AIR_COMPUTER
+      launch_computer_table
+         no_escape_maneuver 7 g
+         independent_variables
+            shooter_altitudes 10000 ft 20000 ft 30000 ft end_shooter_altitudes
+            shooter_machs 0.8 1 1.2 1.4 1.6 1.8 2  end_shooter_machs
+            target_altitudes 10000 ft 20000 ft 30000 ft  end_target_altitudes
+            target_machs 0.8 1 1.2 1.4 1.6 1.8 2 end_target_machs
+            target_aspect_angles 0 deg 60 deg 120 deg 180 deg end_target_aspect_angles
+            target_lead_angles 0 deg 60 deg 90 deg 120 deg 180 deg end_target_lead_angles
+         end_independent_variables
+         intercept_results
+            # Shooter Alt=10000 ft, M=0.8, Tgt Alt=10000 ft, M=0.8, Aspect = 0 deg
+            Rmin 1096.54 m 1.90483 s  Rne 7237.79 m 17.35 s  Rmax 15904 m 20.4 s  # Lead = 0 deg
+            Rmin 4829.64 m 12.7495 s  Rne -1 m -1 s  Rmax -1 m -1 s  # Lead = 60 deg
+            Rmin 5003.26 m 9.83513 s  Rne -1 m -1 s  Rmax -1 m -1 s  # Lead = 90 deg
+            Rmin 4208.14 m 7.21605 s  Rne 5809.84 m 16.9783 s  Rmax -1 m -1 s  # Lead = 120 deg
+            Rmin 1096.54 m 1.90482 s  Rne 7284.14 m 17.4125 s  Rmax 15904 m 20.4 s  # Lead = 180 deg
+            # INCOMPLETE EXAMPLE ... Total Conditions = 3 X 7 X 3 X 7 X 4 X 5 = 8820 lines needed.
+         end_intercept_results
+      end_launch_computer_table
+   end_launch_computer
+
+Second Example Input Data::
+
+   launch_computer airToAirComputer2 WSF_AIR_TO_AIR_COMPUTER
+      # Pointed to file must contain the launch_computer_table ... end_launch_computer_table block.
+      load_table launch_computer_table_data.txt
+   end_launch_computer

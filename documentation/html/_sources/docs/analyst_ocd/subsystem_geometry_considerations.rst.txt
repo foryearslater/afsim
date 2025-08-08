@@ -1,0 +1,243 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Subsystem_Geometry_Considerations:
+
+Subsystem Geometry Considerations
+---------------------------------
+
+Overview
+========
+
+Because WSF attempts to represent subsystems (sensor, weapon or comm) that operate in a variety of ways, the
+mechanisms it provides to define attributes, such as geometric limits, can be rather daunting. This document provides
+some clarity into how these mechanisms operate as well as guidance on how to define subsystem models that will behave
+like the real subsystems.
+
+From a geometric standpoint, subsystems can be broadly separated into three categories:
+
+* **Fixed pointing** - the pointing angle is always in the same direction.
+* **Scanning** - the pointing angle is moved in a regular pattern.
+* **Commanded pointing** - the pointing angle is selected by command (like a track)
+
+A subsystem may exhibit characteristics of all three depending on its operating mode. In some cases commanded pointing
+and scanning may be employed together (e.g., cued acquisition or cued search). In a scanning or commanded pointing
+subsystem, the mechanism of how the pointing angle is changed may be mechanical, electrical, optical or through some
+other means. Regardless, the moving of the pointing angle may be constrained in direction (e.g., only move in azimuth,
+only move in elevation, or move in any direction) and also in the amount that it may move in the allowed directions.
+
+Coordinate Systems
+==================
+
+Ultimately, subsystems interact with other platforms or subsystems (e.g., sense, send a message). When an interaction
+occurs, the objects are located somewhere in space and have a certain orientation. The subsystem(s) themselves have a
+location and orientation with respect to their host platform, and may use scanning 'beams.' Because the eventual
+success or failure of an interaction depends a great deal on the geometry, it is fundamental to understand the
+coordinate systems that are employed and how their key parameters are defined.
+
+Up to seven coordinate systems are employed during the course of an interaction:
+
+* The `World Coordinate System`_ (WCS)
+* The `Entity Coordinate System`_ (ECS)
+* The `Part Coordinate System`_ (PCS)
+* The `Cued Coordinate System`_ (CCS)
+* The `Scan Coordinate System`_ (SCS)
+* The `Beam Coordinate System`_ (BCS)
+* The `Antenna Coordinate System`_ (ACS)
+
+Conventional weapons, such as missiles or guns, typically only employ the first four coordinate systems (i.e., WCS,
+ECS, PCS, and CCS). Sensors and communications devices also use the last three (i.e., SCS, BCS, and ACS). Note that the
+terms 'beam' and 'antenna' are probably too reflective of the radio frequency nature of things. You could consider the
+'beam' to be the instantaneous viewing angle and the 'antenna' as the aperture through which a signal is being
+transmitted or received.
+
+The following section defines how the various coordinate systems are formed and the commands that are used to define
+the parameters that are used in the process.
+
+World Coordinate System
+=======================
+
+The World Coordinate System (WCS) is a right-handed Cartesian system defined as follows:
+
+* The origin is at the center of the Earth.
+* The +X axis passes through 0N, 0E
+* The +Y axis passes through 0N, 90E
+* The +Z axis passes through 90N (the North Pole).
+
+The Earth's surface is modeled as an oblate ellipsoid as defined by the WGS-84 standard (NIMA TR-8350.2).
+
+Entity Coordinate System
+========================
+
+The Entity Coordinate System (ECS) is a coordinate frame rigidly attached to a platform (entity) and is a right-handed
+Cartesian system defined as follows:
+
+* The origin is at the center of the entity
+* The +X axis goes out the front of the entity. For an aircraft this would be forward out the nose.
+* The +Y axis goes out the right side of the entity (when looking down the +X axis). For an aircraft this would be out
+  the right wing with respect to the pilot.
+* The +Z axis goes out the bottom of the entity.
+* Yaw is a rotation about the Z axis.  Positive yaw is to the right. For an aircraft this would move the nose right with
+  respect to the pilot.
+* Pitch is a rotation about the Y axis. Positive pitch raises the +X axis. For an aircraft this would raise the nose up.
+* Roll is a rotation about the X axis.  Positive roll drops the +Y axis. For an aircraft this would drop the right wing.
+
+Part Coordinate System
+======================
+
+The Part Coordinate System (PCS) is a coordinate frame that is rigidly attached to the subsystem and is simply a
+translation and rotation of the Entity Coordinate System (ECS). **The location and orientation of the part are defined
+with respect to the ECS.** The relative location and orientation may be defined through one of two means:
+
+* Statically using the :command:`_.articulated_part.location`, :command:`_.articulated_part.yaw`,
+  :command:`_.articulated_part.pitch` and :command:`_.articulated_part.roll`.
+* Dynamically using the :method:`WsfArticulatedPart.SetYaw`, :method:`WsfArticulatedPart.SetPitch` and
+  :method:`WsfArticulatedPart.SetRoll` script commands.
+
+The slew limits defined by :command:`_.articulated_part.azimuth_slew_limits` and
+:command`_.articulated_part.elevation_slew_limits` are defined relative to this coordinate system and represent the
+absolute limits of pointing that can be achieved by the system. The sensor mode-specific cuing limit overrides (defined
+by :command:`sensor_mode.azimuth_cue_limits` and :command:`sensor_mode.elevation_cue_limits`) are also defined relative to this
+coordinate system.
+
+One common mistake is to use the :command:`_.articulated_part.pitch` command to define the tilt angle of antenna for
+a system that rotates about its Z axis (e.g., an airport surveillance radar, missile launcher). Unfortunately the
+:command:`_.articulated_part.pitch` tilts the entire coordinate frame, including the Z axis! For cases where it is
+desirable to have the Z axis remain vertical, one of the following commands should be used:
+
+* :command:`_.articulated_part.tilt` for platforms such as SAM launchers or tank turrets.
+* :command:`_.antenna_commands.antenna_tilt` for simple single aperture (beam) systems or for electronically steered systems
+  that use body coordinates for the scan limits.
+* :model:`beam_tilt <WSF_RADAR_SENSOR>` for stacked beam radar systems.
+
+Cued Coordinate System
+======================
+
+The Cued Coordinate System (CCS) is the PCS after *cueing* commands have been applied. A subsystem can be 'cued' if it
+has a :command`_.articulated_part.slew_mode` or :command:`sensor_mode.cue_mode` that is not **fixed**. The commands that
+'cue' the subsystem are:
+
+* Any of the **CueTo** commands in :class:`WsfArticulatedPart`
+* The :method:`StartTracking <WsfTaskManager.StartTracking>` or :method:`StartJamming <WsfTaskManager.StartJamming>` commands in
+  :class:`WsfTaskManager`
+  
+If a subsystem can be cued and a cue is present, the CCS is determined as follows:
+
+* Compute the azimuth and elevation cue angles as the aspect of the cue point **with respect to the PCS**.
+* Determine the 'active' azimuth and elevation cue modes and cue limits.
+
+ * In general these are defined by :command:`_.articulated_part.slew_mode`, and :command:`_.articulated_part.elevation_slew_limits`.
+ * The active cue mode and cue limits are optionally overridden by sensor mode-specific :command:`sensor_mode.cue_mode`,
+   :command:`sensor_mode.azimuth_cue_limits`, :command:`sensor_mode.elevation_cue_limits`.
+   
+* Determine the final azimuth cue angle **with respect to the PCS**.
+
+ * If the subsystem can cue in azimuth (active cue mode is **azimuth** or **azimuth_and_elevation**), limit the azimuth
+   cue angle by the active azimuth cue angle limits defined in the previous step.
+ * If the subsystem cannot cue in azimuth (active cue mode is **fixed** or **elevation**), the azimuth cue angle is
+   zero.
+   
+* Determine the final elevation cue angle **with respect to the PCS**.
+
+ * If the subsystem can cue in elevation (active cue mode is **elevation** or **azimuth_and_elevation**), limit the
+   elevation cue angle by the active elevation cue angle limits defined in the previous step.
+ * If the subsystem cannot cue in elevation (active cue mode is **fixed** or **azimuth**), the elevation cue angle is
+   zero.
+ * Compute the CCS transform by rotating the PCS transform by the azimuth and elevation cue angles determined in the
+   previous steps.
+
+If the subsystem cannot be cued or if a cue is not defined then the CCS is just the PCS.
+
+Scan Coordinate System
+======================
+
+The Scan Coordinate System (SCS) defines the origin and orientation of the 'scan pattern.' It is the same as the CCS
+except when :command:`_.antenna_commands.scan_stabilization` is something other than **none**. If scan
+stabilization is something other than **none then the SCS will be reoriented to implement the effects of scan**
+**stabilization**.
+
+The angles specified in the :command:`_.antenna_commands.azimuth_scan_limits`, :command:`_.antenna_commands.elevation_scan_limits`,
+:command:`_.antenna_commands.azimuth_field_of_view` and :command:`_.antenna_commands.elevation_field_of_view` commands are with
+respect to the SCS.
+
+Beam Coordinate System
+======================
+
+The Beam Coordinate System (BCS) defines the instantaneous position of a 'beam.' The X axis of the BCS is aligned with
+the center of the beam. For non-scanning systems (i.e., :command:`_.antenna_commands.scan_mode` is **fixed**), the BCS, the
+scan coordinate system (SCS) and cued coordinate system (CCS) should all be the same.
+
+The BCS is formed as follows:
+
+* Compute the target azimuth and elevation angles **with respect to the SCS**.
+* Determine the beam azimuth angle **with respect to the SCS**:
+
+ * If the beam can scan in azimuth (i.e., :command:`_.antenna_commands.scan_mode` is **azimuth** or
+   **azimuth_and_elevation**), the beam azimuth angle is the target azimuth angle limited to the range defined by the
+   :command:`_.antenna_commands.azimuth_scan_limits`.
+ * If the beam cannot scan in azimuth (i.e., :command:`_.antenna_commands.scan_mode` is **fixed** or **elevation**), the beam
+   azimuth angle is zero.
+
+* Determine the beam elevation angle **with respect to the SCS**:
+
+ * If the beam can scan in elevation (i.e., :command:`_.antenna_commands.scan_mode` is **elevation** or
+   **azimuth_and_elevation**), the elevation angle is the target elevation angled limited to the range defined by the
+   :command:`_.antenna_commands.elevation_scan_limits`.
+ * If the beam cannot scan in elevation (i.e., :command:`_.antenna_commands.scan_mode` is **fixed** or **azimuth**), the beam
+   elevation angle is zero.
+   
+* Ensure the beam position does not exceed the slew limits of the subsystem. This is done as follows:
+
+ * Convert the beam azimuth and elevation angles from the SCS back to the cued coordinate system.
+ * Adjust the converted beam azimuth and elevation angles, if necessary, so that the sum of the each angle and its
+   respective current cue angle does not exceed the respective limit defined by the :command:`_.articulated_part.azimuth_slew_limits`
+   and :command:`_.articulated_part.elevation_slew_limits`.
+   
+* The BCS is finally formed by rotating the CCS by the converted and limited beam azimuth and elevation angles
+  determined in the previous step.
+
+The azimuth and elevation aspect angles of the target with respect to the BCS are used to determine the antenna gain
+for RF interactions.
+
+Antenna Coordinate System
+=========================
+
+The Antenna Coordinate System (ACS) defines the orientation of an 'antenna.'  For systems that are not electronically
+steered (:command:`_.antenna_commands.electronic_beam_steering` is **none**), the BCS and ACS will be the same. For systems
+that are electronically steered, the X axis of the ACS will be normal to the face of the array.
+
+The angle between the X axis of the BCS and the X axis of the ACS is used to compute beam steering losses. See
+:command:`_.antenna_commands.electronic_beam_steering`, :command:`_.antenna_commands.electronic_beam_steering_limit` and
+:command:`_.antenna_commands.electronic_beam_steering_loss_exponent` for more information.
+
+General Flow of Sensor and Comm Processing
+==========================================
+
+This section attempts to describe the general flow of a sensor or communications attempt from a geometric point of
+view. It does not discuss the system-specific processing.
+
+* Compute the range to the target and compare against the mode-specific :command:`_.antenna_commands.minimum_range` and
+  :command:`_.antenna_commands.maximum_range`. Suppress the rest of the detection processing if not within the limits.
+* Compute the relative altitude between the target and the sensor, and then compare against the mode-specific
+  :command:`_.antenna_commands.minimum_altitude` and :command:`_.antenna_commands.maximum_altitude`. Suppress the rest of the
+  detection processing if not within the relative-altitude limits. Note that altitude limits below the sensor should be
+  negative numbers.
+* Update the orientation of the subsystem to reflect any potential cuing (computes the `Part Coordinate System`_
+  and `Cued Coordinate System`_).
+* Compute the aspect of the target with respect to the `Scan Coordinate System`_ and compare to the
+  :command:`_.antenna_commands.azimuth_field_of_view` and :command:`_.antenna_commands.elevation_field_of_view`. Suppress the rest of
+  the detection processing if not within the limits.
+* Set the transmitter/receiver beam positions (i.e., compute the `Beam Coordinate System`_ for the beams, and the
+  `Antenna Coordinate System`_).
+
+Beyond this the processing gets sensor specific. For something like a radar, the aspect of the target with respect to
+the transmitter and receiver BCS (and perhaps the ACS for electronically steered systems) will be used to derive the
+antenna gain.

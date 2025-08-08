@@ -1,0 +1,131 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TABULAR_ATTENUATION
+-----------------------
+
+.. model:: attenuation_model WSF_TABULAR_ATTENUATION
+
+    .. parsed-literal::
+
+     attenuation_model *<name-or-type>* :model:`WSF_TABULAR_ATTENUATION`
+        attenuation_ ...
+        adjustment_factor_ ...
+        sort_end_points_ ...
+        two_way_attenuation_ ...
+        spectral_data_conversion_ ...
+     end_attenuation_model
+
+    :model:`WSF_TABULAR_ATTENUATION` is an :command:`attenuation_model` that allows the user to define attenuation
+    using a table.
+
+.. command:: attenuation <table-value>
+   
+   Specifies a table that defines the attenuation values. The table must be a function of at least three independent
+   variables:
+
+   * altitude, elevation_angle and slant_range
+   * altitude_1, altitude_2 and ground_range
+
+   It may additionally include 'frequency' as an additional independent variable.
+   
+   Default: none (must be specified)
+
+.. command:: adjustment_factor <value>
+   
+   Specifies a multiplier to be applied to returned values. This would typically be used to account for the fact that
+   values integrated over a wide band (i.e.: visual) represent an average that may include many 'dead-zones'
+   that the sensor may exclude. Thus, the effective transmittance may be higher.
+
+   .. note:: The return values are transmittance, so to increase transmittance specify a factor greater than one.
+   
+   Default: 1.0 (no adjustment)
+
+.. command:: sort_end_points <boolean-value>
+   
+   Specifies end-points (source and target points) for a given interaction can be logically interchanged so the path goes
+   from the highest object to the lowest object. This would be applicable if the attenuation values are independent of
+   direction. This would allow a table to be computed for air-to-ground purposes to also be used for ground-to-air
+   purposes.
+   
+   Default: false
+
+.. command:: two_way_attenuation <boolean-value>
+   
+   Specifies if the table values represent two-way attenuation (transmitter-to-target-to-receiver).
+   
+   Default: false (the table values represent one-way attenuation)
+
+.. command:: spectral_data_conversion ... end_spectral_data_conversion
+   
+   This command is used to convert spectral data produced by a program like MODTRAN into a form that can be used as input
+   for the attenuation_ command.
+   
+   This command is used separately from the actual run of a simulation that employs the model. For instance, one would
+   first convert the file executing the following input within mission:
+   
+   .. parsed-literal::
+
+    :command:`attenuation_model` CONVERT :model:`WSF_TABULAR_ATTENUATION`
+       spectral_data_conversion_
+          sensor_to_target_transmittance_ example_stt.plt
+          output_                         example.txt
+       end_spectral_data_conversion
+    end_attenuation_model
+   
+   The resulting converted data would then be used as an attenuation model in a sensor:
+   
+   .. parsed-literal::
+
+     :command:`attenuation_model` EXAMPLE :model:`WSF_TABULAR_ATTENUATION`
+        attenuation_ file example.txt
+     end_attenuation_model
+
+   .. command:: sensor_to_target_transmittance <filename>
+   
+   Specifies the name of the file which contains the raw spectral sensor-to-target transmittance as a function of observer
+   altitude and elevation angle and slant range to the target. Using the current processes, this file name will be of the
+   form *<filename>_stt.plt*.
+   
+   Default: none - this is required.
+
+.. command:: target_to_background_radiance <filename>
+   
+   Specifies the name of the file which contains the raw spectral target-to-background radiance as a function of observer
+   altitude and elevation angle and slant range to the target. Using the current processes, this file name will be of the
+   form *<filename>_tbr.plt*.
+   
+   If this file is NOT provided, the output will simply contain the integrated transmittance for each point. If the file
+   is provided then the output will contain the 'line-of-sight atmospheric transmittance' or 'contrast transmittance'
+   needed by some sensor models.
+   
+   Default: none - the output contains the integrate transmittance.
+
+.. command:: spectral_response_curve  ... end_spectral_response_curve
+   
+   This defines the response of the sensor as a function of wavelength. The curve is defined as a series of points where
+   each point is defined as::
+   
+      wavelength response
+   
+   where the first item is the wavelength (with units) and the second item is the response for that wavelength. The
+   response must be in the range [0 .. 1]. At least two points must be specified and the points must be in monotonically
+   ascending of wavelength.
+   
+   Default: Uniform response of 1.0 for all wavelengths contained in the input files
+
+.. command:: output <filename>
+   
+   Specifies the name of the file to which the converted results are to be written. The file can be used at the argument
+   for the attenuation_ command (See the example at the start of the section.)
+   
+   Default: none - must be provided.
+

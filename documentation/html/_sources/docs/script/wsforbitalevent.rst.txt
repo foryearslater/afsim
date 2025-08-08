@@ -1,0 +1,105 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfOrbitalEvent
+---------------
+
+.. class:: WsfOrbitalEvent
+
+:class:`WsfOrbitalEvents<WsfOrbitalEvent>` are be passed to a :class:`WsfSpaceMover` to perform specific actions, such as changing the orbit of a platform using maneuvering.  The event may either be executed directly, using :method:`WsfSpaceMover.ExecuteEvent`, or as part of a :class:`mission sequence<WsfOrbitalMissionSequence>`, using :method:`WsfSpaceMover.ExecuteMissionSequence`.  Each :ref:`script orbital event<available_orbital_events>` type is meant to be configured with a :class:`WsfOrbitalEventCondition` object, passed in the object's *Construct* method.
+
+.. note:: 
+
+   Orbital events are considered to be *finite* (i.e., executing over a finite time), or *impulsive* (i.e., executing instantaneously), and they conditionally execute based on the provided orbital constraint (see :class:`WsfOrbitalEventCondition`).  Finite events execute at the provided update rate in :method:`SetUpdateInterval<WsfOrbitalEvent.SetUpdateInterval>` (otherwise, at the default update interval of one second), until complete.  If a duration is also set using the :method:`SetDuration<WsfOrbitalEvent.SetDuration>` method, the event will execute for that duration, if possible (depending on the event type).
+
+.. _available_orbital_events:
+
+Available Orbital Events
+========================
+
+Maneuver Events
+***************
+
+.. _orbital_maneuver_type_strings:
+
+.. include:: orbital_maneuver_type_strings.txt
+
+Non-Maneuver Events
+*******************
+
+.. _orbital_event_type_strings:
+
+.. include:: orbital_event_type_strings.txt
+
+Methods
+=======
+
+.. method:: WsfOrbitalEventCondition Condition()
+
+   Returns the condition required for the maneuver to execute.
+
+.. method:: string ConditionType()
+
+   Returns the event's execution condition type string.
+
+.. method:: double Duration()
+
+   Returns the duration of a maneuver.
+
+.. method:: string EventType()   
+.. method:: string ManeuverType()
+
+   Returns the type of event.
+
+.. method:: bool IsComplete()
+
+   Returns true if the maneuver has completed, otherwise false.
+
+.. method:: bool IsFinite()
+
+   Returns true if the maneuver is finite, otherwise false.
+
+.. method:: void SetRelativeTime(double aRelativeTime)
+
+   Sets the amount of time until the maneuver executes when the condition is :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`.
+
+.. method:: double Radius()
+
+   Returns the final radius of the maneuver when the co
+
+.. method:: double RelativeTime()
+
+   Returns the relative amount of time for the maneuver to execute when the condition is :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`.
+
+.. method:: void SetCondition(WsfOrbitalEventCondition aCondition)
+
+   Sets the condition required for the maneuver to execute.
+
+.. method:: void SetDuration(double aDuration)
+
+   Sets the nominal duration for which the event will execute.  If the duration is greater than zero, the event will be considered *finite*.
+   This method will do nothing if the provided duration is less than 0.
+
+.. method:: void SetFinite(bool aIsFinite)
+
+   Sets whether the event is to be considered finite.
+   
+.. note:: By default, orbital events are impulsive (not finite).   
+   
+.. method:: void SetUpdateInterval(double aUpdateInterval)
+
+   Sets the update interval for the event at which *finite* events are executed.
+
+.. note:: The default update interval is one second.   
+   
+.. method:: double TimeToConstraint()
+
+   Returns the amount of time until the event executes (i.e., its execution condition is satisfied).

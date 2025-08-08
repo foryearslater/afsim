@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>P6DOF Subobjects &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="P6DOF Terrain File Definition" href="p6dof_terrain_file_definition.html" />
+    <link rel="prev" title="P6DOF Sequencers" href="p6dof_sequencers.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_terrain_file_definition.html" title="P6DOF Terrain File Definition"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_sequencers.html" title="P6DOF Sequencers"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="p6dof-subobjects">
+<span id="p6dof-subobjects-label"></span><h1>P6DOF Subobjects<a class="headerlink" href="#p6dof-subobjects" title="Permalink to this headline">¶</a></h1>
+<p>A <a class="reference internal" href="p6dof_object_type.html#p6dof_object_type" title="p6dof_object_type"><span class="xref wsf wsf-command">p6dof_object_type</span></a> may include one or more subobjects that may represent bombs, missiles, fuel tanks, etc. Subobjects do not have an AFSIM platform until they are jettisoned. At that time, a platform will be created containing a <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-model">WSF_P6DOF_MOVER</span></a> and the jettisoned P6DofObject will be “injected” into the mover, automatically transferring to the platform its kinematic state. See <a class="reference internal" href="p6dof_platform_mappings.html#map_p6dof_object_to_platform" title="map_p6dof_object_to_platform"><span class="xref wsf wsf-command">map_p6dof_object_to_platform</span></a> for more information.</p>
+<dl class="command">
+<dt id="subobject">
+subobject<em> &lt;name&gt;</em><em> &lt;derived_from_type_name&gt;</em> … end_subobject<a class="headerlink" href="#subobject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depending on the defining data, subobjects may effect the performance of their parent platform. For example, a bomb carried on an external pylon may produce additional drag on the parent. It is also possible for a subobject to contribute thrust forces to the parent (such as running Hound Dog missiles on a B-52 during takeoff, or having SRB thrust contribute to the total thrust of a Space Shuttle orbiter). In addition, subobjects will contribute mass properties and inertia to their parent.</p>
+<p>A subobject is always derived from a previously defined <a class="reference internal" href="p6dof_object_type.html#p6dof_object_type" title="p6dof_object_type"><span class="xref wsf wsf-command">p6dof_object_type</span></a>. Although any parameter can be overridden, typical use involves setting relative positioning and separation effects for a subobject while using all other characteristics from the object type from which it was derived.</p>
+<pre class="literal-block">subobject   missile1   AIM9L
+
+   // <a class="reference internal" href="#relative-positioning-with-parent">Relative Positioning with Parent</a>
+   <a class="reference internal" href="#parent_rel_x">parent_rel_x</a> ...
+   <a class="reference internal" href="#parent_rel_y">parent_rel_y</a> ...
+   <a class="reference internal" href="#parent_rel_z">parent_rel_z</a> ...
+   <a class="reference internal" href="#parent_rel_yaw">parent_rel_yaw</a> ...
+   <a class="reference internal" href="#parent_rel_pitch">parent_rel_pitch</a> ...
+   <a class="reference internal" href="#parent_rel_roll">parent_rel_roll</a> ...
+
+   // <a class="reference internal" href="#separation-effects">Separation Effects</a>
+   <a class="reference internal" href="#separation_vx">separation_vx</a> ...
+   <a class="reference internal" href="#separation_vy">separation_vy</a> ...
+   <a class="reference internal" href="#separation_vz">separation_vz</a> ...
+   <a class="reference internal" href="#separation_omega_x">separation_omega_x</a> ...
+   <a class="reference internal" href="#separation_omega_y">separation_omega_y</a> ...
+   <a class="reference internal" href="#separation_omega_z">separation_omega_z</a> ...
+
+end_subobject</pre>
+</dd></dl>
+
+<section id="relative-positioning-with-parent">
+<h2>Relative Positioning with Parent<a class="headerlink" href="#relative-positioning-with-parent" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>The following commands specify how a subobject should be positioned relative to its parent while captive.</p>
+<dl class="command">
+<dt id="parent_rel_x">
+parent_rel_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#parent_rel_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the x-location of the object’s reference point relative to the parent’s reference point using the parent’s body coordinate system.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="parent_rel_y">
+parent_rel_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#parent_rel_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the y-location of the object’s reference point relative to the parent’s reference point using the parent’s body coordinate system.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="parent_rel_z">
+parent_rel_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#parent_rel_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the z-location of the object’s reference point relative to the parent’s reference point using the parent’s body coordinate system.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="parent_rel_yaw">
+parent_rel_yaw<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#parent_rel_yaw" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the yaw of the object about its reference point relative to the parent’s body coordinate system.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="parent_rel_pitch">
+parent_rel_pitch<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#parent_rel_pitch" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the pitch of the object about its reference point relative to the parent’s body coordinate system.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="parent_rel_roll">
+parent_rel_roll<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#parent_rel_roll" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the roll of the object about its reference point relative to the parent’s body coordinate system.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+</div></blockquote>
+</section>
+<section id="separation-effects">
+<h2>Separation Effects<a class="headerlink" href="#separation-effects" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>The following commands specify the perturbation that will be applied to a subobject when it is jettisoned from its parent.</p>
+<dl class="command">
+<dt id="separation_vx">
+separation_vx<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_vx" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the x-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="separation_vy">
+separation_vy<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_vy" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the y-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="separation_vz">
+separation_vz<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_vz" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the z-component of velocity (in parent body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="separation_omega_x">
+separation_omega_x<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_omega_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the x-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="separation_omega_y">
+separation_omega_y<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_omega_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the y-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="separation_omega_z">
+separation_omega_z<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="headerlink" href="#separation_omega_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>This specifies the z-component of angular velocity (in subobject body coordinates) that is imparted to the subobject when it separates from the parent.</p>
+<p><strong>Default</strong>: 0.0</p>
+</dd></dl>
+
+</div></blockquote>
+<p>Return to <a class="reference internal" href="p6dof_object_types.html"><span class="doc">p6dof_object_types</span></a> or <a class="reference internal" href="p6dof_object_type.html"><span class="doc">p6dof_object_type</span></a></p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/p6dof_subobjects.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_terrain_file_definition.html" title="P6DOF Terrain File Definition"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_sequencers.html" title="P6DOF Sequencers"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

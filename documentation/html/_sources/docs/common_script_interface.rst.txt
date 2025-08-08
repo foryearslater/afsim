@@ -1,0 +1,160 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Common_Script_Interface:
+
+Common Script Interface
+-----------------------
+
+Many WSF components use the WSF 'common script interface'. An WSF component that uses the interface will accept:
+
+* Definitions of script variables: **script_variables** ... **end_script_variables**
+* Definitions of scripts: **script** ... **end_script**
+* Scripting system control commands (e.g., :command:`_.script_commands.script_call_trace`)
+* `Common Scripts`_ (defined below)
+
+The WSF components that currently implement common script interface include:
+
+* The simulation.
+* The platform.
+* Some processors such as :model:`WSF_SCRIPT_PROCESSOR`, and many others.
+* Some other platform parts, such as sensors. 
+
+Example::
+
+ processor my-script-proc WSF_SCRIPT_PROCESSOR
+    update_interval 10 sec
+    on_update
+       writeln("T=", TIME_NOW, " ", PLATFORM.Name(), " is updating");
+    end_on_update
+ end_processor
+
+Predefined Variables
+====================
+
+All components that use the :ref:`Common_Script_Interface` will have the following predefined variables as is appropriate
+for the component:
+
+double TIME_NOW
+
+   The current simulation time in seconds. This is available to all scripts.
+
+:class:`WsfPlatform` PLATFORM
+
+   A reference to the platform. This is valid only within the platforms, sensors, and processors that implement the
+   common script interface
+
+   .. note::
+      This is not available in simulation-level scripts.
+
+:class:`WsfProcessor` PROCESSOR
+
+   A reference to the processor. This is valid only in processors that use the common script interface (e.g.,
+   :model:`WSF_SCRIPT_PROCESSOR`).
+
+   .. note::
+      This variable is not available in simulation-level or platform-level scripts
+
+:class:`WsfSensor` SENSOR
+
+   A reference to the :command:`sensor`. This is valid within AFSIM's predefined sensors, as well as any other sensors that use the common script interface. 
+
+   .. note::
+      This variable is not available in simulation-level or platform-level scripts
+	  
+:class:`WsfRandom` RANDOM
+
+   A reference to the random number generator used by the simulation. 
+   
+   .. note::
+      Use of this object will affect the simulation's random draws and therefore repeatability of simulation outcomes.
+   
+
+Common Scripts
+==============
+
+Every WSF component that uses the common script interface will accept the following common scripts:
+
+.. command:: execute at_time <time-value> [ absolute | relative ] ...script body... end_execute
+             execute at_interval_of <time-value> ...script body... end_execute
+
+   These commands allow you define a script that is to execute once at a specific time or repeatedly at a specified time
+   interval.
+
+   To execute a script at a specific time:
+
+   .. parsed-literal::
+
+    execute at_time :argtype:`\<time-value> <time-value>` [ absolute | relative ]
+       :ref:`Script Body <script>`
+    end_execute
+
+   If **absolute** is specified then the script will be executed at the specified simulation time.
+
+   If **relative** is specified then the script will be executed at the specified time relative to the creation time of the platform.
+
+   To execute a script repeatedly at a specified interval:
+
+   .. parsed-literal::
+
+    execute at_interval_of :argtype:`\<time-value> <time-value>`
+       :ref:`Script Body <script>`
+    end_execute
+
+   .. note::
+      If defined in the context of a processor, these scripts will execute even if the
+      system is turned off as the purpose of the script may be to turn the system on!
+
+.. command:: on_initialize ...script_body... end_on_initialize
+
+   This command lets one define a script that is executed during phase 1 of platform initialization, if defined within the context of a platform, or during simulation initialization, if defined in the global script context.
+
+   During phase 1 initialization one may not assume anything about the state of the platform or any other platform
+   component. If such a requirement is needed use the on_initialize2 script defined below.
+
+   .. parsed-literal::
+
+    on_initialize
+       :ref:`Script Body <script>`
+    end_on_initialize
+
+.. command:: on_initialize2 ...script_body... end_on_initialize2
+
+   This command lets one define a script that is executed during phase 2 of platform initialization. Phase 2
+   initialization occurs when all platforms and their components (including those in the same platform context)
+   have completed phase 1 initialization. Furthermore, phase 2 initialization at the platform context only occurs
+   after phase 1 initialization at the global context.
+
+   .. note::
+      The on_initialize2 command is not available in the global (simulation-level) script context.
+
+   .. parsed-literal::
+
+    on_initialize2
+       :ref:`Script Body <script>`
+    end_on_initialize2
+
+.. command:: on_update ...script_body... end_on_update
+
+   This command lets one define a script that is executed whenever the platform or processor is updated. When
+   specified within the context of a processor, the "update_interval' command defines the interval at which the
+   simulation invokes the "Update' method.
+
+   .. note::
+      Use this with great caution at the platform level as it can have severe performance impacts. The on_update command is not available in the global (simulation-level) script context.
+
+   .. parsed-literal::
+
+    on_update
+       :ref:`Script Body <script>`
+    end_on_update
+
+.. include:: _common_script_interface.wsf_mil.txt

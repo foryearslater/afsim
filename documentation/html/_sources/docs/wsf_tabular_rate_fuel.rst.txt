@@ -1,0 +1,175 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TABULAR_RATE_FUEL
+---------------------
+
+.. model:: fuel WSF_TABULAR_RATE_FUEL
+
+   .. parsed-literal::
+
+     fuel <name> :model:`WSF_TABULAR_RATE_FUEL`
+        :ref:`Platform_Part_Commands` ...
+        :command:`fuel` Commands ...
+
+        fuel_table_
+           mode_  <mode-name>
+           constant_  <mass-flow-value>
+           speeds_  units <speed-units> <speed_1> ... <speed_2> end_speeds
+           altitudes_  units <length-units> <altitude_1> ... <altitude_n> end_altitudes
+           weights_  units <mass-units> <mass_1> ... <mass_n> end_weights
+           masses_  units <mass-units> <mass_1> ... <mass_n> end_masses
+           rates_  units <mass-flow-units> <mass_flow_1> ... <mass_flow_n> end_rates
+        end_fuel_table
+     end_fuel
+
+
+Overview
+========
+
+:model:`WSF_TABULAR_RATE_FUEL` specifies a fuel consumption rate model.  It defines fuel consumption behavior at either
+constant rates (zero independent variables), or at variable rates based upon one to three independent variables (the
+choices are platform altitude, mass (weight), and speed).  By default, :command:`fuel` mode is ignored, and only one table is
+accepted; but multiple tables may be defined for different modes if desired.  The active table is switched by setting
+the :command:`fuel` mode, unless there is no table defined for the new mode, in which case the active table will not change.
+
+This model differs from the similar :model:`WSF_VARIABLE_RATE_FUEL`, in several ways; namely that :model:`WSF_TABULAR_RATE_FUEL`
+tables must be rectangular (the number of dependent variables (rates) must match the product of the number of each of
+the independent variables (number of speeds * number of weights * number of altitudes)), and :model:`WSF_TABULAR_RATE_FUEL`
+allows for 1-D, 2-D, or 3-D tables.   (:model:`WSF_VARIABLE_RATE_FUEL` input format is more flexible for the user, but it
+does not allow for 3-D table creation; it is maintained for backward compatibility with certain applications.)
+
+Inside the fuel_table_ block for multi-dimensional tables, the user may list the speeds, altitudes, or weights
+blocks in any order.  The IV listed first will be considered the "outer" slowest changing index in the table, while the
+last IV listed will be considered the "inner" fastest changing index.  The corresponding rates block must them have the
+outer, middle, and inner indices changing likewise.  (Internally, the table lookup routines are more computationally
+efficient if the IV which varies the most is selected as the inner index, which is preferred.)  See Example3D at bottom
+of page.
+
+.. note::
+   All independent variable arrays may be unevenly spaced, but there must be at least two values and the
+   values must be in ascending order.
+
+.. note::
+   In this parlance, a fuel_table is being defined, even if it is a single constant fuel flow rate value.
+
+Commands
+========
+
+.. command:: fuel_table ... end_fuel_table
+    :block:
+
+    One or more fuel_table blocks may be provided.
+
+    .. command:: mode  <mode-name>
+
+        This specifies the fuel mode that a table is valid for.  If only one fuel flow table is supplied, and is to be
+        used regardless of the :command:`fuel` mode, then do not supply this value.  If multiple fuel rate tables are provided, then
+        each table must be supplied this discriminator, to allow switching between tables.  Fuel mode is accessible for change
+        via script interface.
+
+    .. command:: constant  <mass-flow-value>
+
+        This specifies a constant fuel consumption rate.
+
+    .. command:: speeds  units <speed-units> <speed_1> ... <speed_2> end_speeds
+
+        This specifies an independent variable arbitrary-sized array of speed values (must be in increasing order) that
+        will apply to the independent fuel flow rate values that follow. This command is mutually exclusive with the mach command.
+
+    .. command:: mach <mach_1> ... <mach_2> end_mach
+
+        This specifies an independent variable arbitrary-sized array of mach values (must be in increasing order) that
+        will apply to the independent fuel flow rate values that follow. This command is mutually exclusive with the speeds command.
+
+    .. command:: altitudes  units <length-units> <altitude_1> ... <altitude_n> end_altitudes
+
+        This specifies an independent variable arbitrary-sized array of altitude values (must be in increasing order)
+        that will apply to the independent fuel flow rate values that follow.
+
+    .. command:: weights  units <mass-units> <mass_1> ... <mass_n> end_weights
+
+        This specifies an independent variable arbitrary-sized array of weight values (must be in increasing order) that
+        will apply to the independent fuel flow rate values that follow.  (The keyword "masses" is equivalent.)
+
+    .. command:: masses  units <mass-units> <mass_1> ... <mass_n> end_masses
+
+        This specifies an independent variable arbitrary-sized array of mass values (must be in increasing order) that
+        will apply to the independent fuel flow rate values that follow.  (The keyword "weights" is equivalent.)
+
+    .. command:: rates  units <mass-flow-units> <mass_flow_1> ... <mass_flow_n> end_rates
+
+        This specifies the dependent variable values corresponding to the 1-D, 2-D, or 3-D independent variables that
+        precede this keyword.  The number of values supplied *must* match the product of the number of independent values in
+        each supplied dimension (i.e. a table of 6 speeds and 4 altitudes must contain 24 fuel flow values).
+
+Tabular Rate Fuel Example
+*************************
+
+::
+
+ fuel FuelExample WSF_TABULAR_RATE_FUEL
+    maximum_quantity 7000 lb
+    initial_quantity 6750 lb
+    reserve_quantity 1500 lb
+    mode GROUND_IDLE # Sets the mode in the Fuel Object
+    fuel_table
+       mode FLIGHT_IDLE # Sets the mode ONLY for this table (optional)
+       constant 800 lb/hr
+    end_fuel_table
+    fuel_table
+       mode CLIMB # Sets the mode ONLY for this table (optional)
+       altitudes
+          units ft
+          0 20000 40000
+       end_altitudes
+       mach # mutually exclusive with speeds
+          .25 .5 .75 1.0
+       end_mach
+       speeds
+          units fps
+          200 400 600 800
+       end_speeds
+       rates
+          units lb/hr
+          # .25   .5   .75   1.0 mach
+          3000  4500  5500  7000  # Sea Level
+          2000  3500  4500  6000  # 20 kft
+          1000  2500  3500  5000  # 40 kft
+       end_rates
+    end_fuel_table
+    fuel_table
+       mode CRUISE # Sets the mode ONLY for this table (optional)
+       weights
+          units lb
+          5000 50000
+       end_weights
+       altitudes
+          units ft
+          0 20000 40000
+       end_altitudes
+       speeds # mutually exclusive with mach
+          units fps
+          200 400 600 800
+       end_speeds
+       rates
+          units lb/hr
+          # s1, s2, s3, s4
+             1   2   3   4  # w1 and a1
+             5   6   7   8  # w1 and a2
+             9  10  11  12  # w1 and a3
+                            #
+            13  14  15  16  # w2 and a1
+            17  18  19  20  # w2 and a2
+            21  22  23  24  # w2 and a3
+       end_rates
+    end_fuel_table
+ end_fuel

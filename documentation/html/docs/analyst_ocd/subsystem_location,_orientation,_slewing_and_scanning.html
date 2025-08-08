@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Subsystem location, orientation, slewing and scanning &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Synthetic Aperture Radar (SAR) Image Formation Equations" href="synthetic_aperture_radar_equations.html" />
+    <link rel="prev" title="Subsystem Geometry Considerations" href="subsystem_geometry_considerations.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="synthetic_aperture_radar_equations.html" title="Synthetic Aperture Radar (SAR) Image Formation Equations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="subsystem_geometry_considerations.html" title="Subsystem Geometry Considerations"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="subsystem-location-orientation-slewing-and-scanning">
+<h1>Subsystem location, orientation, slewing and scanning<a class="headerlink" href="#subsystem-location-orientation-slewing-and-scanning" title="Permalink to this headline">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The following subcommands are common to the definitions of communication, sensor, and weapon subsystems.  They define
+the location, orientation, slewing and scanning limits, and field-of-view of the object with respect to the host
+platform.</p>
+</section>
+<section id="defining-the-nominal-subsystem-location-and-orientation">
+<h2>Defining the nominal subsystem location and orientation<a class="headerlink" href="#defining-the-nominal-subsystem-location-and-orientation" title="Permalink to this headline">¶</a></h2>
+<p>These commands define the subsystem coordinate frame (i.e., the coordinate frame about which the sensor can slew or
+scan).</p>
+<p><strong>location &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;length-units&gt;</strong></p>
+<div class="line-block">
+<div class="line">Specify the location of the origin of the subsystem coordinate frame relative to the origin of the platform.  This is
+specified in the entity coordinate system where +X is forward, +Y is to the right (when looking forward) and +Z is
+down.  This value, along with the values of yaw, pitch, and roll define the location and orientation of the subsystem
+coordinate frame.</div>
+<div class="line">Default: 0 0 0 meters</div>
+</div>
+<p><strong>yaw &lt;angle&gt;</strong></p>
+<p><strong>pitch &lt;angle&gt;</strong></p>
+<p><strong>roll &lt;angle&gt;</strong></p>
+<div class="line-block">
+<div class="line">Specify the orientation of the subsystem coordinate frame.</div>
+<div class="line">Default: All 0.0 degrees</div>
+<div class="line">Note: These values should not be used to specify the antenna tilt angle for a scanning system.  Use the
+<strong>antenna_tilt</strong> subcommand in the <a class="reference internal" href="../receiver.html#_.receiver" title="receiver (_)"><span class="xref wsf wsf-command">receiver</span></a> and <a class="reference internal" href="../transmitter.html#_.transmitter" title="transmitter (_)"><span class="xref wsf wsf-command">transmitter</span></a> block for that purpose.</div>
+</div>
+</section>
+<section id="defining-the-slewing-mode-and-limits">
+<h2>Defining the slewing mode and limits<a class="headerlink" href="#defining-the-slewing-mode-and-limits" title="Permalink to this headline">¶</a></h2>
+<p>The slewing mode (and the corresponding limits) defines the ability of a subsystem to respond to cue.  If a system is
+not cued then it is oriented in the direction specified by <strong>yaw</strong>, <strong>pitch</strong>, and <strong>roll</strong>.</p>
+<p><strong>slew_mode [ fixed | azimuth | elevation | both ]</strong></p>
+<blockquote>
+<div><p>Indicates how the subsystem can respond in response to a cue:</p>
+<ul class="simple">
+<li><p>fixed  The system cannot be cued. This is the default.</p></li>
+<li><p>azimuth  The system can be cued only in azimuth.</p></li>
+<li><p>elevation  The system can be cued only in elevation.</p></li>
+<li><p>both  The system  in both azimuth and elevation.</p></li>
+</ul>
+<p>Default: fixed</p>
+</div></blockquote>
+<p><strong>azimuth_slew_limits &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum and maximum angle about which the
+subsystem can be slewed in azimuth.  These values are applicable only if slew_mode is azimuth or both.  The limits are
+specified in the subsystem coordinate frame.</div>
+<div class="line">Default: -180.0 degrees to 180 degrees</div>
+</div>
+</div></blockquote>
+<p><strong>elevation_slew_limits &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum and maximum angle about which the
+subsystem can be slewed in elevation.  These values are applicable only if <strong>slew_mode</strong> is <strong>elevation</strong> or <strong>both</strong>.
+The limits are specified in the system coordinate frame.</div>
+<div class="line">Default: -90.0 degrees to 90 degrees</div>
+</div>
+</div></blockquote>
+</section>
+<section id="define-the-scanning-mode-and-limits">
+<h2>Define the scanning mode and limits<a class="headerlink" href="#define-the-scanning-mode-and-limits" title="Permalink to this headline">¶</a></h2>
+<p>Scanning is the process of systematically searching about the current cue (or the nominal subsystem coordinate frame if
+no cue is defined).</p>
+<p><strong>scan_mode [ fixed | azimuth | elevation | both ]</strong></p>
+<blockquote>
+<div><p>Indicates how the subsystem scans in respect to the current cue:</p>
+<ul class="simple">
+<li><p>fixed  The subsystem does not move. This is the default.</p></li>
+<li><p>azimuth  The subsystem scans only in azimuth.</p></li>
+<li><p>elevation  The subsystem scans only in elevation.</p></li>
+<li><p>both  The subsystem scans in both azimuth and elevation.</p></li>
+</ul>
+<p>Default: fixed</p>
+</div></blockquote>
+<p><strong>azimuth_scan_limits &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum and maximum angle about which the subsystem can scan in azimuth.  These values are applicable only
+if scan_mode is azimuth or both.  The limits are with respect to the current cue.</div>
+<div class="line">Default: -180.0 degrees to 180 degrees.</div>
+</div>
+</div></blockquote>
+<p><strong>elevation_scan_limits &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum and maximum angle about which the subsystem can be scan in elevation.  These values are applicable
+only if scan_mode is elevation or both. The limits are with respect to the current cue.</div>
+<div class="line">Default: -90.0 degrees to 90 degrees</div>
+</div>
+</div></blockquote>
+</section>
+<section id="defining-the-field-of-view">
+<h2>Defining the field-of-view<a class="headerlink" href="#defining-the-field-of-view" title="Permalink to this headline">¶</a></h2>
+<p>The field of view definition (azimuth, elevation, and range) is totally optional. If the target object is outside the
+field of view then the remainder of the computations for the communication, jamming or sensing opportunity can be
+bypassed.</p>
+<p><strong>azimuth_field_of_view &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum and maximum angle about which the subsystem can see in azimuth.  The limits are with respect to
+the current cue.  In general these values should be greater than or equal to the azimuth_scan_limits (possibly
+accounting for the width of the beam when the subsystem is positioned to its scan limit).</div>
+<div class="line">Default: -180.0 degrees to 180 degrees.</div>
+<div class="line">Note: This value is only used for initial screening to determine if the object can potentially interact with another
+object.</div>
+</div>
+</div></blockquote>
+<p><strong>elevation_field_of_view &lt;min-angle-value&gt; &lt;max-angle-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specifies the minimum and maximum angle about which the subsystem can see in elevation.  The limits are with respect
+to the current.  In general these values should be greater than or equal to the azimuth_scan_limits (possibly
+accounting for the width of the beam when the subsystem is positioned to its scan limit).</div>
+<div class="line">Default: -90.0 degrees to 90 degrees.</div>
+<div class="line">Note: This value is only used for initial screening to determine if the subsystem can potentially interact with
+another object.</div>
+</div>
+</div></blockquote>
+<p><strong>minimum_range &lt;length-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specify the minimum range at which the system can interact with another object.</div>
+<div class="line">Default: 0 meters.</div>
+<div class="line">Note:  This value is only used for initial screening to determine if the subsystem can potentially interact with
+another object.</div>
+</div>
+</div></blockquote>
+<p><strong>maximum_range &lt;length-value&gt;</strong></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Specifies the maximum range at which the subsystem can interact with another object.</div>
+<div class="line">Default: infinity.</div>
+<div class="line">Note:  This value is only used for initial screening to determine if the subsystem can potentially interact with
+another object.</div>
+</div>
+</div></blockquote>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>The interaction of these subcommands can be confusing.  This section will attempt to provide some hints and examples.</p>
+<section id="a-mechanically-scanned-ground-based-early-warning-radar">
+<h3>A mechanically-scanned ground-based early warning radar<a class="headerlink" href="#a-mechanically-scanned-ground-based-early-warning-radar" title="Permalink to this headline">¶</a></h3>
+<p>A system of this type typically just rotates round and round.  It does not respond to a cue, so <strong>slew_mode</strong> is fixed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># The z coordinate gives the antenna height</span>
+<span class="n">location</span> <span class="mi">0</span> <span class="mi">0</span> <span class="o">-</span><span class="mi">10</span> <span class="n">meters</span>
+
+<span class="c1"># The antenna is tilted up 5 degrees from the scan plane</span>
+<span class="c1"># Do NOT use the &quot;pitch&#39; command for this as it will tilt the scan plane!</span>
+<span class="n">antenna_tilt</span> <span class="mi">5</span> <span class="n">degrees</span>
+
+<span class="n">slew_mode</span> <span class="n">fixed</span>
+<span class="n">scan_mode</span> <span class="n">azimuth</span>
+<span class="n">azimuth_scan_limits</span> <span class="o">-</span><span class="mi">180</span> <span class="n">degrees</span> <span class="mi">180</span> <span class="n">degrees</span>
+</pre></div>
+</div>
+</section>
+<section id="a-height-finding-system">
+<h3>A height-finding system<a class="headerlink" href="#a-height-finding-system" title="Permalink to this headline">¶</a></h3>
+<p>Systems of this type are typically cued to a specific azimuth and then it “nods’ up and down.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">slew_mode</span> <span class="n">azimuth</span>
+<span class="n">azimuth_slew_limits</span> <span class="o">-</span><span class="mi">180</span> <span class="n">degrees</span> <span class="mi">180</span> <span class="n">degrees</span>
+<span class="n">scan_mode</span> <span class="n">elevation</span>
+<span class="n">elevation_scan_limits</span> <span class="mi">0</span> <span class="n">deg</span> <span class="mi">50</span> <span class="n">deg</span>
+</pre></div>
+</div>
+</section>
+<section id="an-acquisition-system">
+<h3>An acquisition system<a class="headerlink" href="#an-acquisition-system" title="Permalink to this headline">¶</a></h3>
+<p>A system of this type is cued to an azimuth and elevation and then searches a small volume.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">slew_mode</span> <span class="n">both</span>
+<span class="n">azimuth_slew_limits</span> <span class="o">-</span><span class="mi">180</span> <span class="n">degrees</span> <span class="mi">180</span> <span class="n">degrees</span>
+<span class="n">elevation_slew_limits</span> <span class="mi">0</span> <span class="n">degrees</span> <span class="mi">40</span> <span class="n">degrees</span>
+<span class="n">scan_mode</span> <span class="n">both</span>
+<span class="n">azimuth_scan_limits</span> <span class="o">-</span><span class="mi">2</span> <span class="n">degrees</span> <span class="mi">2</span> <span class="n">degrees</span>
+<span class="n">elevation_scan_limits</span> <span class="o">-</span><span class="mi">2</span> <span class="n">degrees</span> <span class="mi">2</span> <span class="n">degrees</span>
+</pre></div>
+</div>
+</section>
+<section id="a-tracking-system">
+<h3>A tracking system<a class="headerlink" href="#a-tracking-system" title="Permalink to this headline">¶</a></h3>
+<p>This type of system is constantly being re-cued in response to a track.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">slew_mode</span> <span class="n">both</span>
+<span class="n">azimuth_slew_limits</span> <span class="o">-</span><span class="mi">180</span> <span class="n">degrees</span> <span class="mi">180</span> <span class="n">degrees</span>
+<span class="n">elevation_slew_limits</span> <span class="mi">0</span> <span class="mi">80</span> <span class="n">degrees</span>
+<span class="n">scan_mode</span> <span class="n">fixed</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/subsystem_location,_orientation,_slewing_and_scanning.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="synthetic_aperture_radar_equations.html" title="Synthetic Aperture Radar (SAR) Image Formation Equations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="subsystem_geometry_considerations.html" title="Subsystem Geometry Considerations"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

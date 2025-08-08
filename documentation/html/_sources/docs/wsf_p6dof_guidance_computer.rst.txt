@@ -1,0 +1,639 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_P6DOF_GUIDANCE_COMPUTER
+---------------------------
+
+**Derives From:** :model:`WSF_GUIDANCE_COMPUTER`
+
+**Script Class:** :class:`WsfP6DOF_GuidanceComputer`
+
+.. model:: processor WSF_P6DOF_GUIDANCE_COMPUTER
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_P6DOF_GUIDANCE_COMPUTER`
+
+      ... :model:`WSF_GUIDANCE_COMPUTER` Commands ...
+
+      # `Global Commands`_
+      
+      show_status_
+      show_commands_
+      show_evaluations_
+      guide_to_truth_ ...
+      
+      phase_ <phase-name-1>
+
+         # `General Subcommands`_
+      
+         guidance_delay_ ...
+         on_entry_ ... end_on_entry
+         on_exit_ ... end_on_exit
+         on_update_ ... end_on_update
+         maximum_commanded_g_ ...
+
+         # `Proportional Navigation Subcommands`_
+         
+         proportional_navigation_gain_ ...
+         proportional_navigation_limit_angle_ ...
+         proportional_navigation_method_ ...
+
+         # `Velocity Pursuit Subcommands`_
+
+         velocity_pursuit_gain_ ...
+         
+         # `Trajectory Shaping Subcommands`_
+         
+         g_bias_ ...
+         lateral_g_bias_ ...
+         commanded_azimuth_offset_ ...
+
+         # `Aimpoint Selection Subcommands`_
+         
+         guidance_target_ ... | guide_to_truth_
+         aimpoint_altitude_offset_ ...
+         aimpoint_azimuth_offset_ ...
+         aimpoint_range_offset_ ...
+         aimpoint_evaluation_interval_ ...
+
+         # `Phase Changing Subcommands`_
+         
+         next_phase_ ...
+         
+      end_phase
+
+      phase_ <phase-name-n>
+      end_phase
+
+      # `Script Interface`_
+
+      :command:`_.script_commands.script_variables` ... end_script_variables
+      :command:`_.script_commands.script` ... end_script
+      :command:`on_initialize` ... end_on_initialize
+      :command:`on_initialize2` ... end_on_initialize2
+      :command:`on_update` ... end_on_update
+      ... Other Script Commands ...
+
+   end_processor
+
+Overview
+========
+
+:model:`WSF_P6DOF_GUIDANCE_COMPUTER` is a processor that typically resides on a weapon and provides the guidance for a 
+weapon whose mover is a :model:`WSF_P6DOF_MOVER`.
+
+It uses the track provided through :method:`CurrentTargetTrack <WsfPlatform.CurrentTargetTrack>` to represent the target
+to be pursued. The mover invokes this processor to request guidance updates. The processor computes the desired 
+guidance and supplies commands back to the mover.
+
+
+.. block:: WSF_P6DOF_GUIDANCE_COMPUTER
+   
+Global Commands
+===============
+
+.. note::
+
+   The :command:`processor.update_interval` command should NOT be specified for this processor.
+   It is called as required from the mover.
+
+.. command:: show_status
+   
+   Specifies that information should be written to standard output whenever a phase or stage transition occurs.
+
+.. command:: show_commands
+   
+   Specifies that calls from script commands should be written to standard output.
+
+.. command:: show_evaluations
+   
+   Specifies that phase change rule evaluations should be written to standard output.
+
+.. command:: guide_to_truth <boolean-value>
+   
+   Specifies if the guidance target should be the location specified in the current target track (false), or should be the
+   true location of the platform specified in the current target track (true).
+   
+   This command exists both here and in the 'phase' block. This form specifies the default for a phase if the command was
+   not specified in the phase block.
+   
+   **Default:** false
+
+.. command:: phase <phase-name> phase-commands end_phase
+   
+   The 'phase' block is used to define the guidance for the various phases of flight and the rules to transition between
+   phases.
+   
+   The format of a phase block is:
+   
+   .. parsed-literal::
+   
+      phase <phase-name>
+         ... `phase commands`_ ...
+      end_phase
+   
+   The 'phase' block should be defined for each unique phase required. The first 'phase' block defines the phase to be
+   used then the weapon is fired.
+
+.. command:: edit phase <phase-name> phase-commands end_phase
+   
+   This command is typically used when creating a new guidance computer type by deriving from another guidance computer
+   type.
+   
+   For example:
+   
+   .. parsed-literal::
+   
+      processor DEMO_GUIDANCE WSF_P6DOF_GUIDANCE_COMPUTER
+         guide_to_truth true
+         phase TERMINAL
+            ...
+         end_phase
+      end_processor
+     
+      processor DEMO_GUIDANCE_MOD DEMO_GUIDANCE
+         edit phase TERMINAL
+            guide_to_truth false      # Overrides the base class value
+         end_phase
+      end_processor
+
+Phase Commands
+==============
+
+The subcommands in a phase_ block can be broken in the following broad categories:
+
+   * `General Subcommands`_
+   * `Proportional Navigation Subcommands`_ - specifies how to navigate to the target point.
+   * `Velocity Pursuit Subcommands`_ - specifies how to navigate to the target point.
+   * `Trajectory Shaping Subcommands`_ specifies how to modify the trajectory while navigating.   
+   * `Aimpoint Selection Subcommands`_ - specifies how to determine the target point.
+   * `Phase Changing Subcommands`_ transition to other phases based on a number of conditions.
+
+General Subcommands
++++++++++++++++++++
+
+.. command:: guidance_delay <time-value>
+   
+   Specifies the elapsed time **since the start** of the phase when guidance commands should start being computed. This is
+   useful during lift-off and other phases where pursuit of the target is not desirable.
+   
+   **Default:** 0 seconds (start computing guidance commands upon entry into the phase)
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetGuidanceDelay`.
+
+.. command:: on_entry ... end_on_entry
+             on_exit ... end_on_exit
+
+   These commands define scripts to be executed when entering and exiting the phase.
+   
+   ::
+   
+      on_entry
+         ... script commands ...
+      end_on_entry
+   
+   ::
+   
+      on_exit
+         ... script commands ...
+      end_on_exit
+      
+.. command:: on_update ...
+ 
+    Define a script to be executed on every phase update.
+    
+    ::
+   
+      on_update
+         ... script commands ...
+      end_on_update
+    
+    This script is generally only used when:
+    
+    * The values of guidance commands must be varied during a phase
+    * A phase change condition needs to be evaluated that cannot be accomplished with a next_phase_ command.
+    
+    .. note::
+    
+       Do not use this indiscriminately as it is executed at every integration timestep of the mover. Attempt to keep
+       the script as simple as possible
+
+.. command:: maximum_commanded_g <acceleration-value>
+   
+   Specifies the magnitude of the maximum acceleration that can be commanded.
+   
+   **Default:** 25.0 g
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetMaximumCommandedGees`.
+
+Proportional Navigation Subcommands
++++++++++++++++++++++++++++++++++++
+
+.. command:: proportional_navigation_gain <real-value>
+   
+   Specifies the gain for proportional navigation. A value of zero indicates proportional navigation will not be performed.
+   
+   **Default:** 3.0
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetProportionalNavigationGain`.
+   
+.. command:: proportional_navigation_limit_angle <angle-value>
+             aspect_angle_for_pro_nav_switch <angle-value>
+   
+   Specifies the 3D aspect angle of the target with respect to the weapon at which the navigation method will switch
+   between proportional and velocity pursuit. Proportional navigation will be used if the target aspect angle is less than
+   or equal to this value, otherwise velocity pursuit will be used.
+   
+   **Default:** 30.0 degrees
+   
+   **Script:** :method:`WsfP6DOF_GuidanceComputer.SetProportionalNavigationLimitAngle`.
+
+.. command:: proportional_navigation_method  [ pure | augmented ]
+   
+   Specifies whether additional acceleration should be commanded because of current target acceleration.
+   
+   **Default:** pure (target acceleration ignored)
+   
+   **Script:** :method:`WsfP6DOF_GuidanceComputer.SetProportionalNavigationMethod`.
+
+Velocity Pursuit Subcommands
+++++++++++++++++++++++++++++
+
+.. command:: velocity_pursuit_gain <real-value>
+   
+   Specifies the gain for velocity pursuit navigation. A value of zero indicates velocity pursuit navigation will not be
+   performed.
+   
+   **Default:** 10.0
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetVelocityPursuitGain`.
+
+Trajectory Shaping Subcommands
+++++++++++++++++++++++++++++++
+
+The trajectory shaping subcommands are used to modify the computed navigation commands to shape the trajectory.
+
+.. command:: g_bias <real-value>
+   
+   Specifies the bias factor used to overcome gravity. This is typically used during midcourse to prevent the trajectory
+   from sagging. If zero is specified then gravity bias will not be applied.
+   
+   **Default:** 1.0
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetGeeBias`.
+
+.. command:: lateral_g_bias <real-value>
+   
+   Specifies the bias factor used skew the horizontal component of the trajectory in a particular direction. If zero is specified then gravity bias will not be applied.
+   
+   **Default:** 0.0
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetLateralGeeBias`.
+
+.. command:: commanded_azimuth_offset <angle-value>
+
+   Specifies the azimuth angle to the target that should be maintained. The angle is defined to be the angle in the local horizontal
+   plane between the weapon velocity vector and the line-of-sight vector from the weapon to the target. (This is consistent with the
+   'target_azimuth' conditional tests in the next_phase_ command.) 
+
+   **Default:** No commanded azimuth offset angle.
+ 
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetCommandedAzimuthOffset`
+
+Aimpoint Selection Subcommands
+++++++++++++++++++++++++++++++
+
+.. command:: guidance_target [ predicted_intercept | perception | truth ]
+             guide_to_truth <boolean-value>
+
+   Overrides the top-level guide_to_truth_ command for the current phase. This is expanded to include the options:
+   
+   * predicted_intercept - Guidance computations are based on the predicted intercept location provided by the launch
+     computer. No consideration is given to the actual location of the target. This is often used used during the initial
+     phases when prediction of an intercept point based on CURRENT conditions is unreliable.
+   * perception - Guidance computations are made based on the perception of the target as provided by the current target track.
+     Because the track may have sensor errors, the weapon may be directed to a location other that where the target is located.
+     (This is the same as guide_to_truth_ false).
+   * truth - Guidance computations are made based on the actual location of the target.
+     (This is the same as guide_to_truth_ true).
+   * default - Use value from the global guide_to_truth_ command.
+
+   The **guide_to_truth** form is an older form. See the above for description for the equivalent values.
+   
+   **Default:** **default** (Use the value of the top-level guide_to_truth_ command.)
+   
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetGuidanceTarget`.
+
+.. command:: aimpoint_altitude_offset <length-value>
+
+   Modify the aimpoint to be above or below the perceived target location. This is typically used to create an air burst.
+
+   **Default:** 0 meters (no altitude offset)
+
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetAimpointAltitudeOffset`.
+
+   .. note: This value is not used if following a route of if a commanded_altitude_ is specified.
+   
+.. command:: aimpoint_azimuth_offset <angle-value> [ left | right | either ]
+             aimpoint_range_offset <length-value>
+   
+   These commands provide a method to produce an aimpoint that is laterally offset from the perceived target location. This is typically used
+   to meet some tactical requirement.
+
+   **aimpoint_azimuth_offset** is the desired relative bearing to the target ('angle off the nose') when the ground range to the target
+   is equal to the value specified by  **aimpoint_range_offset**. The **left**, **right** and **either** modifiers for **aimpoint_azimuth_offset** indicates where the target should be located with respect to the weapon. **either** will place the offset so as to minimize the
+   heading change of the weapon.
+
+   These commands may also be combined with aimpoint_altitude_offset_.
+
+   Following is a brief example of how to use this command::
+
+      phase PHASE_X
+         ...
+         aimpoint_altitude_offset     10000 m
+         aimpoint_azimuth_offset      45 deg either
+         aimpoint_range_offset        10 nm
+   
+         next_phase PHASE_Y when target_azimuth > 45 deg
+      end_phase
+
+   In this example the aimpoint will be created such that when the weapon reaches the point, the target will be 10
+   nautical miles away at relative bearing of 45 degrees and the weapon will be at an altitude of 10000 m above that of
+   the target. The comparison value in next_phase_ command for **target_azimuth** should be same value of the aimpoint_azimuth_offset.
+      
+   **Default:** No aimpoint offsets.
+
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetAimpointAzimuthOffset` and :method:`WsfP6DOF_GuidanceComputer.SetAimpointRangeOffset`.
+
+   .. note::
+
+      If either **aimpoint_azimuth_offset** or **aimpoint_range_offset** is non-zero then both must be non-zero.
+
+   .. note::
+
+      The aimpoint offset will not be applied while following a route.
+   
+   .. note::
+
+      This is typically only used for static or slowly moving surface targets. It has not been tested for air targets.
+
+.. command:: aimpoint_evaluation_interval <time-value>
+
+   Controls how often a new aimpoint is computed when using aimpoint_azimuth_offset_ and aimpoint_range_offset_. This is a fairly
+   time-consuming operation that does not need to be performed on every call to the guidance computer.
+   
+   **Default:** 5 seconds.
+
+   **Script Command:** :method:`WsfP6DOF_GuidanceComputer.SetAimpointEvaluationInterval`
+
+Phase Changing Subcommands
+++++++++++++++++++++++++++
+
+.. command:: next_phase <phase-name> [if | when] <event>
+             next_phase <phase-name> [if | when] <variable> [<operator> <reference-value>]
+   
+   The **next_phase** command defines a condition under which a phase transition occurs. A phase block may have multiple
+   **next_phase** commands to define a number of conditions that might trigger a phase change. The **next_phase** commands
+   are evaluated on each guidance update and are evaluated in the order specified.
+   
+   The first form of the command is used for detecting events.
+
+   end_of_route
+      The mover has indicated that the last point in a route has been passed (if the mover was following waypoints).
+
+   boost_complete
+      The mover has indicated that it is no longer boosting. This typically means that all thrust-producing stages have been used.
+      
+   stage_ignition
+      The mover has indicated the current stage has ignited.
+   
+   stage_burnout
+      The mover has indicated the current stage has burned-out.
+
+   stage_separation
+      The mover has indicated the current stage has separated.
+
+   on_commanded_flight_path_angle
+      The flight path angle of the weapon has reached the loft angle commanded by the launch computer (if provided)
+
+   sensor_track_initiated
+      The local on-board sensor has established autonomous track on the target.
+
+   The second form of the command is used for detecting when the *<variable>* achieves a certain relationship with the
+   *<reference-value>*.
+   
+   *<reference-value>* can either be a constant value of the form:
+   
+   ::
+   
+      *<real-value>* *<units>*
+   
+   Or a variable value of the form:
+   
+   ::
+   
+      /variable *<variable-name>*
+      variable *<variable-name>* *<units>*
+   
+   The last two forms indicate the *<reference-value>* is to be gotten from a **double** script variable. The variable **must**
+   be defined in a script_variables block that occurs before the command that references the variable and it **must not** appear
+   with a 'phase' block.
+   
+   If the variable is a dimensional quantity then the value of the variable must be in the proper units:
+   
+      * Standard WSF units if '/variable' is specified. The standard units are indicated in the 'Description' column below.
+      * In the units specified *<units>* if 'variable' is specified.
+      
+   When using the variable form, *<variable-name>* must be the name of an **double** script variable and *<units>*
+   represents the units of the data stored in the variable. The variable must be defined within a script_variables block
+   in the computer that appears before the reference.
+   
+   Valid *<operators>* are **<;**, **<;=**, **==**, **!=**, **>;=**, or **>;**. Valid *<variables>* are:
+   
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | **Variable**             | **Ref-Variable-Type** | Description                                                    |
+   +==========================+=======================+================================================================+
+   | phase_time               | <time-value>          | The time (seconds) that has elapsed since the start of the     |
+   |                          |                       | phase.                                                         |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | flight_time              | <time-value>          | The time (seconds) that has elapsed since the platform was     |
+   |                          |                       | launched.                                                      |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | altitude                 | <length-value>        | The current altitude (meters) of the weapon.                   |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | speed                    | <speed-value>         | The current speed (meters/second) of the weapon.               |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | vertical_speed           | <speed-value>         | The current vertical speed (meters/second) of the weapon.      |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | flight_path_angle        | <angle-value>         | The current flight path angle (radians) of the weapon.         |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | dynamic_pressure         | <pressure-value>      | The current dynamic pressure (Newtons/meter2) on the weapon.   |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_altitude          | <length-value>        | The current altitude (meters) of the target.                   |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_speed             | <speed-value>         | The current speed (meters/second) of the target.               |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_flight_path_angle | <angle-value>         | The current flight path angle (radians) of the target.         |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | closing_speed            | <speed-value>         | The closing speed (meters/second) between the weapon and the   |
+   |                          |                       | target. Positive values are closing.                           |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | time_to_intercept        | <time-value>          | The approximated predicted time (seconds) until the weapon and |
+   |                          |                       | target intercept.                                              |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | range_to_intercept       | <length-value>        | The approximate distance (meters) to the predicted point of    |
+   |                          |                       | intercept between weapon and the target.                       |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_slant_range       | <length-value>        | The slant range (meters) between the weapon and the target.    |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_ground_range      | <length-value>        | The approximate ground range (meters) between the weapon and   |
+   |                          |                       | the target.                                                    |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_elevation         | <angle-value>         | The angle (radians) above or below the local horizontal plane  |
+   |                          |                       | (tangent to the Earth's surface) and the line-of-sight vector  |
+   |                          |                       | from the weapon to the target. A positive value means the      |
+   |                          |                       | target is above the local horizontal plane while a negative    |
+   |                          |                       | value indicates it is below.                                   |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | target_azimuth           | <angle-value>         | The angle (radians) in the local horizontal plane (tangent to  |
+   |                          |                       | the Earth's surface) between the horizontal components of the  |
+   |                          |                       | weapon velocity vector and line-of-sight vector from the       |
+   |                          |                       | weapon to the target. This value is always positive.           |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | los_target_elevation     | <angle-value>         | The elevation angle (radians) of the target with respect to    |
+   |                          |                       | the current orientation of the weapon.                         |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | los_target_azimuth       | <angle-value>         | The azimuth angle (radians) of the target with respect to the  |
+   |                          |                       | current orientation of the weapon. This value is always        |
+   |                          |                       | positive.                                                      |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+   | los_target_angle         | <angle-value>         | The 3D angle (radians) of the target with respect to the       |
+   |                          |                       | current orientation of the weapon.                             |
+   +--------------------------+-----------------------+----------------------------------------------------------------+
+
+   Examples for using events::
+   
+    next_phase PHASE2 if end_of_route
+    next_phase PHASE2 if boost_complete
+    next_phase PHASE2 if stage_ignition
+    next_phase PHASE2 if stage_burnout
+    next_phase PHASE2 if stage_separation
+    next_phase PHASE2 when on_commanded_flight_path_angle
+    next_phase PHASE2 when sensor_track_initiated
+   
+   Examples for using a constant for reference-value::
+   
+    next_phase PHASE2 when phase_time > 200 sec
+    next_phase PHASE2 when flight_time > 25 sec
+    next_phase PHASE2 when altitude > 10000 m
+    next_phase PHASE2 when speed > 500 m/s
+    next_phase PHASE2 when vertical_speed > 100 m/s
+    next_phase PHASE2 when target_altitude > 10000 m
+    next_phase PHASE2 when target_speed    > 500 m/s
+    next_phase PHASE2 when closing_speed > 1000 m/s
+    next_phase PHASE2 when time_to_intercept < 1 sec
+    next_phase PHASE2 when range_to_intercept < 1 m
+    next_phase PHASE2 when target_slant_range < 1 m
+    next_phase PHASE2 when target_ground_range < 1 m
+    next_phase PHASE2 when target_azimuth > 179 deg
+    next_phase PHASE2 when target_elevation > 89 deg
+    next_phase PHASE2 when los_target_azimuth > 179 deg
+    next_phase PHASE2 when los_target_elevation > 89 deg
+    next_phase PHASE2 when los_target_angle > 179 deg
+    next_phase PHASE2 when altitude > 10 km
+    
+   Examples when using a script variable for a reference-value::
+   
+    # In this form the value of TARGET_ALTITUDE should be in meters.
+    next_phase PHASE2 when altitude > /variable TARGET_ALTITUDE
+    # In this form the value of TARGET_ALTITUDE should be in kilometers (km).
+    next_phase PHASE2 when altitude > variable TARGET_ALTITUDE km
+    
+   The script variable TARGET_ALTITUDE should have been defined in a 'script_variables' block and assigned a value in one of
+   the script blocks exposed by this processor.
+
+Script Interface
+================
+
+:model:`WSF_P6DOF_GUIDANCE_COMPUTER` utilizes the capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`, and
+supports the additional script methods defined in :class:`WsfP6DOF_GuidanceComputer`.
+
+Unsupported Methods
+===================
+
+The following methods (inherited from :model:`WSF_GUIDANCE_COMPUTER`) are not supported at this time.
+
+.. command:: commanded_altitude <length-value> [ msl | agl ]
+   
+   Specifies a commanded altitude. Typically used to climb or dive to a cruise altitude and hold the altitude. The
+   altitude reference tag ('**msl**', or 'above mean sea level'; '**agl**', or 'above ground level') may be omitted, in
+   which case '**msl**' is assumed.
+   
+   Specifying an altitude reference of '**agl**' is a crude mechanism for implementing terrain-following. When '**agl**'
+   is specified the mover will enforce an additional constraint that it always stays above the ground. However, no
+   look-ahead is performed (it only checks the height above the terrain directly under the platform), so it is possible
+   that the vehicle may make very abrupt changes if the terrain rises rapidly.
+   
+   **Default:** No commanded altitude
+   
+   **Script Command:** :method:`WsfGuidanceComputer.SetCommandedAltitude` and :method:`WsfGuidanceComputer.SetCommandedAltitudeAGL`.
+
+.. command:: commanded_flight_path_angle <angle-value>
+             commanded_flight_path_angle from_launch_computer
+   
+   Specifies a commanded flight path angle. If **from_launch_computer** is specified then the value produced by the launch
+   computer will be used (if present).
+   
+   This is typically used to produce lofted ballistic trajectories.
+   
+   **Default:** No commanded flight path angle.
+   
+   **Script Command:** :method:`WsfGuidanceComputer.SetCommandedFlightPathAngle`
+
+.. command:: commanded_mach <real-value>
+             commanded_speed <speed-value>
+   
+   Specifies the commanded speed/mach to be used during this phase. Typically used for cruise.
+   
+   **Default:** No commanded speed or Mach.
+   
+   **Script Command:** :method:`WsfGuidanceComputer.SetCommandedSpeed` and :method:`WsfGuidanceComputer.SetCommandedMach`.
+
+   .. note::
+   
+      Not all movers support this capability.
+   
+   .. note::
+   
+      Fuel utilization may not be properly modeled when using this command.
+
+.. command:: commanded_throttle <real-value>
+
+   Specifies a throttle factor in the range [0..1] that overrides and throttle specification in the mover.   
+   
+   This is not typically used as a command. It exists primarily to allow script calls to alter the throttle.
+   
+   **Default:** No commanded throttle.
+   
+   **Script Command:** :method:`WsfGuidanceComputer.SetCommandedThrottle`
+
+.. command:: allow_route_following <boolean-value>
+   
+   If true, the computer will follow a :command:`route` if it has been provided to the associated :command:`mover`. If the mover
+   does not have a route then this command has no effect. Conventional target point selection will resume at the end of the route.
+   
+   The command 'next_phase_ <phase-name> at_end_of_route' may be used to switch to a different phase when the end of the route
+   is encountered.
+   
+   **Default:** false
+
+   **Script Command:** :method:`WsfGuidanceComputer.SetAllowRouteFollowing`

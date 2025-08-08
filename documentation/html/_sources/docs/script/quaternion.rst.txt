@@ -1,0 +1,94 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Quaternion
+----------
+
+.. class:: Quaternion inherits Object
+   :constructible:
+   :cloneable:
+
+A :class:`Quaternion` is a four-valued mathematical construct, an alternative to three Euler rotation angles or a Direction Cosine Matrix (DCM) as a way to represent the orientation of a solid body in 3-D space.  It has the advantage of not producing a mathematical singularity at pitch angles of +/- 90 degrees. Euler rotation angles are performed in the following order:
+
+* Psi   = Yaw Rotation(+Z)
+* Theta = Pitch Rotation(+Y)
+* Phi   = Roll Rotation(+X)
+
+Static Methods
+==============
+
+.. method:: static Quaternion Construct(double aPsi, double aTheta, double aPhi)
+
+   Return a new quaternion with the provided Euler rotation angles given in degrees.
+
+.. method:: static Quaternion Construct(double aA, double aI, double aJ, double aK)
+
+   Return a new quaternion with the provided initial values for angle and vector.
+
+.. method:: static Quaternion Multiply(Quaternion aOrientation1, Quaternion aOrientation2)
+
+   Returns the product of the two given quaternions.
+
+.. method:: static Quaternion Slerp(Quaternion aOrientation1, Quaternion aOrientation2, double aInterpolationCoefficient)
+
+   Returns the spherical linear interpolation result given two quaternions and an interpolation coefficient [0..1]. An interpolation coefficient of 0 corresponds to the aOrientation1 quaternion and an interpolation coefficient of 1 corresponds to the aOrientation2 quaternion. (https://en.wikipedia.org/wiki/Slerp#Quaternion_Slerp)
+
+Methods
+=======
+
+.. method:: void Normalize()
+
+    Re-normalizes the quaternion.
+
+    .. note::
+
+       A quaternion orientation should always have a magnitude of one, so after constructing and/or extended time propagation, it should be re-normalized.
+
+.. method:: void SetRate(Quaternion aOrientation, Vec3 aBodyRate)
+
+   Sets a Quaternion to a Rate, from an orientation and local body rates.
+   The aBodyRate vector is (X,Y,Z) body-axis rates, in degrees per second.
+
+   .. note::
+
+     Do not re-normalize this vector before use, as it is an incremental change value, with non-unity magnitude.
+
+.. method:: void Set(double aPsi, double aTheta, double aPhi)
+
+   Set the quaternion as an orientation with the given Euler angles in degrees.
+
+.. method:: Vec3 Rotate(Vec3 aVector)
+
+   Rotate a vector by this quaternion.  The quaternion is assumed to be normalized.
+
+.. method:: Vec3 ReverseRotate(Vec3 aVector)
+
+   Reverse, or de-rotate a vector by this quaternion.  The quaternion is assumed to be normalized.
+
+.. method:: Quaternion Rotate(Vec3 aBodyRates, double aDeltaT)
+
+   Propagate the body-relative rotation rates forward to a new orientation.
+   The aBodyRate vector is (X,Y,Z) body-axis rates, in degrees per second, and aDeltaT specifies the
+   amount of time over which to integrate the body rates.
+
+   ..note:: This function degrades in accuracy at larger time steps with higher rotation rates; the context is assumed to be digital forward integration of platform motion state in small steps.
+
+.. method:: double Psi()
+
+   Return the psi Euler angle equivalent (in degrees) represented by this quaternion.
+
+.. method:: double Theta()
+
+   Return the theta Euler angle equivalent (in degrees) represented by this quaternion.
+
+.. method:: double Phi()
+
+   Return the phi Euler angle equivalent (in degrees) represented by this quaternion.

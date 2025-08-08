@@ -1,0 +1,212 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Antenna_Commands:
+
+Antenna Commands
+----------------
+
+Overview
+========
+
+.. note::
+   This section is just a reference for the various commands.
+
+.. note::
+   Antenna commands are valid for anything that uses an electromagnetic antenna, including :command:`_.transmitter`, :command:`_.receiver`, and :model:`radar beams <WSF_RADAR_SENSOR>`.
+
+.. note::
+   When the range and altitude limits are used in multiple places, such as on both transmitter and receiver, then precedence is given to the last entry that is read.
+
+.. block:: _.antenna_commands
+
+Commands
+========
+
+.. command:: antenna_height <length-value>
+
+   Defines the subsystem's height relative to the platform it is attached to.
+
+.. command:: antenna_pitch <angle-value>
+.. command:: antenna_tilt <angle-value>
+
+   Defines the subsystem's orientation in the pitch plane relative to the platform. This is primarily intended to specify
+   the tilt angle of antenna for simple rotating systems.
+
+   .. note::
+      This command **must not** be used for multi-beam radars (e.g., A :model:`WSF_RADAR_SENSOR` in which
+      multiple beams are defined). In those cases the **beam_tilt** command in the :command:`_.transmitter.beam_tilt` and
+      :command:`_.receiver.beam_tilt` blocks should be used.
+
+   .. note::
+      The :command:`_.articulated_part.pitch` command should be used to specify the tilt of fixed
+      mount systems, however fighter AESA systems should use this command if they are going to employ scan stabilization.
+
+   .. note::
+      This command **must not** be used if the :command`_.articulated_part.pitch` is used.
+
+.. command:: minimum_altitude <length-value>
+
+   Defines the minimum relative altitude the subsystem is able to observe a target.
+
+   **Default** negative infinity
+
+   .. note::
+      This value is only used for initial screening to determine if the subsystem can potentially interact
+      with another object.
+
+   .. note::
+      If the altitude limit is intended to be below an antenna, then the limit should be entered as a
+      negative number.
+
+
+.. command:: maximum_altitude <length-value>
+
+   Defines the maximum relative altitude the subsystem is able to observe a target.
+
+   **Default** infinity
+
+   .. note::
+      This value is only used for initial screening to determine if the subsystem can potentially interact
+      with another object.
+
+   .. note::
+      If the altitude limit is intended to be below an antenna, then the limit should be entered as a
+      negative number.
+
+.. command:: minimum_range <length-value>
+
+   Specify the minimum range at which the system can interact with another object.
+
+   **Default** 0.0
+
+   .. note::
+      This value is only used for initial screening to determine if the subsystem can potentially interact
+      with another object.
+
+
+.. command:: maximum_range <length-value>
+
+   Specifies the maximum range at which the subsystem can interact with another object.
+
+   **Default** infinity
+
+   .. note::
+      This value is only used for initial screening to determine if the subsystem can potentially interact
+      with another object.
+
+
+.. command:: electronic_beam_steering  [ none | azimuth | elevation | both | azimuth_and_elevation ]
+
+   Specifies that the subsystem uses an electronically-steered antenna that is capable of being electronically steered in
+   the specified directions.  When specified, the antenna gain is a function of the cosine of the angle relative to the
+   array center. When enabled, the command affects the returned beamwidths of
+   :command:`WSF_RADAR_SENSOR.error_model_parameters.azimuth_beamwidth` and
+   :command:`WSF_RADAR_SENSOR.error_model_parameters.elevation_beamwidth`.
+
+   * **none** - The beam is not electronically steered.
+   * **azimuth** - The beam is electronically steered in azimuth.
+   * **elevation** - The beam is electronically steered in elevation.
+   * **both** or **azimuth_and_elevation** - The beam is electronically steered in both azimuth and elevation.
+
+   **Default** **none**
+
+.. command:: electronic_beam_steering_loss_exponent <value>
+
+   Specifies the exponent that will be used in the beam steering loss computation.
+
+.. command:: electronic_beam_steering_limit <angle-value>
+
+   Specifies the angular limit that the electronic_beam_steering_loss_exponent will be applied.
+
+.. command:: scan_mode [ fixed | azimuth | elevation | both | azimuth_and_elevation]
+
+   Indicates how the subsystem scans in respect to the current cue:
+
+   * **fixed** - The subsystem does not move. This is the default.
+   * **azimuth** - The subsystem scans only in azimuth.
+   * **elevation** - The subsystem scans only in elevation.
+   * **both** or **azimuth_and_elevation** - The subsystem scans in both azimuth and elevation.
+
+   **Default** **fixed**
+
+.. command:: scan_stabilization [ none | pitch | roll | pitch_and_roll ]
+
+   Specify if the scan volume (defined by the azimuth_scan_limits_ and elevation_scan_limits_) are
+   'stabilized' to counter the effects of platform pitch and roll.
+
+   **Default** none
+
+.. command:: azimuth_scan_limits <angle-value> <angle-value>
+
+   Specify the minimum and maximum angle about which the subsystem can scan in azimuth.  These values are applicable only
+   if scan_mode_ is azimuth or both.  The limits are with respect to the current cue.
+
+   **Default** -180.0 degrees to 180 degrees
+
+.. command:: elevation_scan_limits <angle-value> <angle-value>
+
+   Specify the minimum and maximum angle about which the subsystem can be scan in elevation.  These values are applicable
+   only if scan_mode_ is elevation or both. The limits are with respect to the current cue.
+
+   **Default** -90.0 degrees to 90 degrees
+
+.. command:: azimuth_field_of_view <angle-value> <angle-value>
+
+   Specify the minimum and maximum angle about which the subsystem can see in azimuth.  The limits are with respect to the
+   current cue.  In general these values should be greater than or equal to the azimuth_scan_limits_ (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+
+   **Default** -180.0 degrees to 180 degrees
+
+   .. note::
+      If scan_stabilization_ is enabled, the 'field of view' volume will be stabilized in the same way
+      the scan volume is stabilized.
+
+   .. note::
+      These values are used only for initial screening to determine if the object can potentially interact with another
+      object.
+
+.. command:: elevation_field_of_view <angle-value> <angle-value>
+
+   Specifies the minimum and maximum angle about which the subsystem can see in elevation.  The limits are with respect to
+   the current cue.  In general these values should be greater than or equal to the elevation_scan_limits_ (possibly
+   accounting for the width of the beam when the subsystem is positioned to its scan limit).
+
+   **Default** -90.0 degrees to 90 degrees
+
+   .. note::
+      If scan_stabilization_ is enabled, the 'field of view' volume will be stabilized in the same way
+      the scan volume is stabilized.
+
+   .. note::
+      These values are used only for initial screening to determine if the subsystem can potentially
+      interact with another object.
+
+.. command:: field_of_view ... end_field_of_view
+
+   Specifies geometrical limits to determine if a subsystem can potentially interact with another object. Field of views are valid for anything that uses an electromagnetic antenna, including transmitter, receiver, and radar beams.
+ 
+   .. parsed-literal::
+
+      field_of_view :ref:`<field-of-view-type> <field_of_view_commands.available_field_of_views>`
+         ... :ref:`Type Commands <field_of_view_commands>` ...
+      end_field_of_view
+
+   :ref:`<field-of-view-type> <field_of_view_commands>` specify the types of field of views defined and their associated commands. Available types are:
+
+   .. include:: field_of_view_types.txt
+   
+   .. note::
+      If :command:`_.antenna_commands.scan_stabilization` is enabled, the 'field of view' volume will be stabilized in the same way the scan volume is stabilized.
+
+   .. note::
+      A :ref:`field_of_view_commands.rectangular` field of view is provided by default.  It can then be configured directly using the :command:`field_of_view.rectangular.azimuth_field_of_view` and :command:`field_of_view.rectangular.elevation_field_of_view` keywords.

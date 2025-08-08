@@ -1,0 +1,300 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Synthetic Aperture Radar (SAR) Image Formation Equations
+========================================================
+
+.. contents::
+   :local:
+
+References
+==========
+
+1.  :doc:`comm_sensor_and_jamming_equations`
+2.  'Performance Limits for Synthetic Aperture Radar', 2nd edition, Armin W. Doerry, Sandia National Laboratory Report SAND2006-0821.
+3.  'Synthetic Aperture Radar Mode Constraints', 7-May-2007, Matthew J. Renaud (Boeing)
+4.  'Radar Handbook', 2nd edition, Merrill Skolnik
+
+The Radar Range Equation
+========================
+
+The following equation is the standard equation used by WSF to compute the received power from a single pulse of a radio frequency signal that is transmitted, reflects of an object and is then received. This does not assume the transmitter and receiver are co-located, and does not account for any additional signal processing techniques such as pulse compression or integration of multiple pulses:
+
+:math:`P_r = P_{peak} \frac{G_x}{L_x} \frac{A_{xt}}{4{\pi}R_{xt}^2} \sigma \frac{A_{tr}}{4{\pi}R_{tr}^2} \frac{\lambda^2}{4{\pi}} \frac{G_r}{L_r} F_{40}F_{BW}F_{POL}`
+
+where:
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`P_{peak}`, "**transmitter power**", "The peak transmitted power"
+   :math:`\lambda`, "**transmitter frequency** or **wavelength**", "The wavelength of the radiated signal"
+   :math:`G_{x} / G_{r}`, "**transmitter / receiver antenna_pattern**", "The gain of the transmitter and receiver antennas"
+   :math:`L_{x} / L_{r}`, "**transmitter / receiver internal_loss**", "The internal losses within the transmitter and receiver"
+   :math:`A_{xt} / A_{tr}`, "**transmitter attenuation_model**", "The one-way atmospheric attenuation factor (0..1) computed by the attenuation mode."
+   :math:`R_{xt} / R_{tr}`, "Computed", "The range from the transmitter-to-target and target-to-receiver."
+   :math:`\sigma`, "", "The radar cross section of the target (which could be the target or a 'resolution cell')."
+   :math:`F_{40}`, "**transmitter propagation_model**", "The pattern propagation factor that accounts for the constructive and destructive interference between the direct and indirect reflections."
+   :math:`F_{BW}`, " ", "The factor that accounts for bandwidth mismatches between the bandwidth of the transmitted signal and the bandwidth of the receiver. This is primarily for interactions between radar transmitters and passive RF receivers, or jammers and radar receivers. It is not intended to capture the effects of non-ideal matched filters in a system."
+   :math:`F_{POL}`, "**transmitter / receiver polarization**", "The factor that accounts for the polarization mismatch of the transmitted signal and the receive antenna."
+
+For a SAR, the transmitter and receiver are co-located, so :math:`R = R_{xt} = R_{tr}` and :math:`A = A_{xt} = A_{tr}`. Also, the gain of the transmit and receive antennas will be assumed identical, so :math:`G = G_t = G_r`. Furthermore, the following will be assumed:
+
+ - There are no indirect signals to interfere with the main signal. Therefore :math:`F_{40} = 1`.
+ - The bandwidth of the receiver has been established to capture the full bandwidth of the transmitted signal. Therefore, :math:`F_{BW} = 1`.
+ - The polarization of the received signal is the same as the polarization of the transmitted signal. Therefore, :math:`F_{POL} = 1`.
+
+If we also define the total atmospheric attenuation loss as:
+
+.. math::
+   L_{atm} = \frac{1}{A_{xt} A_{tr}} = \frac{1}{A^2}
+
+With the above assumptions, we get the familiar equation for power received from a single pulse, where the transmitter and receiver are co-located:
+
+.. math::
+   P_r = P_{peak} \times \frac{G^2{\lambda^2} \sigma}{(4\pi)^3R^4L_{x}L_{r}L_{atm}}
+
+This is the same as equation (1) in reference 2, noting that:
+
+.. math::
+   L_{radar} = L_{x}L_{r}
+
+and that equation (8) has been used to replace :math:`A_{e}`:
+
+.. math::
+   A_{e} = \frac{G_A\lambda^2}{4{\pi}}
+
+Further note that reference 2 goes on to represent the effective aperture as a product of the actual aperture area multiplied by an 'aperture efficiency'. We will not perform that step here and assume that any aperture efficiency has been represented in the WSF antenna_pattern.
+
+The received signal must compete with the noise present within the system. WSF computes noise power using the following:
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`k`, "Internal constant", "Boltzmann's constant (1.3806505E-23 J/deg-K)"
+   :math:`B_N`, "**receiver bandwidth**", "The bandwidth of the receiver. If the bandwidth was not specified AND if the transmitter pulse_width is specified, the bandwidth will be computed as (1 / pulse_width) (i.e. a matched filter will be assumed)."
+   :math:`F_N`, "**receiver noise_figure**", "The receiver noise figure (default 1.0)"
+   :math:`N`, "Computed", "The noise power."
+   :math:`T_0`, "Internal constant", "The standard temperature (290 deg-K)"
+
+The receiver noise at the antenna port is computed as:
+
+.. math::
+   N = kT_0B_NF_N
+
+(Note: Section 2.6 in reference 1 describes other forms of computing the noise power, but these are primarily for surface-based systems.)
+
+The signal-to-noise ratio for a single pulse at the antenna port is then:
+
+.. math::
+   SNR_{ant} = \frac{P_r}{N} = P_{peak} \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0B_NF_N}
+
+(This is the same as equation (5) in reference 2, with the substitutions noted above.)
+
+A SAR utilizes two signal processing techniques to increase the effective SNR in the image.
+
+   - :math:`G_a =` SNR gain due to azimuth processing (coherent pulse integration).
+   - :math:`G_r =` SMR gain due to range processing (pulse compression)
+
+This will result in the signal-to-noise ratio a target within the image to be:
+
+.. math::
+   SNR_{image} = SNR_{ant} G_a G_r = \frac{P_r}{N} = P_{peak} \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} G_a G_r
+
+(This is the same as equation (11) in reference 2, with the substitutions noted above.)
+
+Azimuth Processing Gain (Coherent Pulse Integration)
+====================================================
+
+The creation of a SAR image involves the collection of a large number of pulses coherently over some duration of time that is suitable for producing an image of the desired quality.
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`f_p`, "**transmitter pulse_repetition_frequency**", "The pulse repetition frequency"
+   :math:`K_a`, "**doppler_filter_broadening_factor**",
+   :math:`K_d`, "**doppler_foldover_margin_factor**",
+   :math:`t_D`, "**dwell_time** or computed", "The dwell time, or image collection time."
+   :math:`\delta_a`, "**resolution** or computed", "The desired azimuth resolution."
+   :math:`V`, , "The vehicle velocity vector."
+   :math:`\theta_{sq}`, "computed", "The 'squint angle', defined as the angle between the velocity vector and the line-of-sight vector to the center of the image area.    Note: In some documents this will be measured as the angle-of-broadside, causing the use sin() and cos() to be reversed."
+   :math:`n_{image}`, "Computed", "The total number of pulses collected in forming the image"
+
+Equation (5) from Reference 3 is used to compute the dwell time from the desired cross range/azimuth resolution:
+
+.. math::
+   t_D = \frac{{\lambda}K_a R}{2V\delta_a \sin(\theta_{sq})}
+
+Note that WSF lets the user specify either the desired resolution or dwell time. In the later case WSF will use the above equation to solve for the achievable resolution given the dwell time.
+
+The azimuth gain is the total number of pulses collected, which is just the collection time times the pulse repetition frequency:
+
+.. math::
+   G_a = n_{image} = t_D f_p = \frac{{\lambda}K_a Rf_p}{2V\delta_a \sin(\theta_{sq})}
+
+Range Processing Gain (Pulse Compression)
+=========================================
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`\tau_u`, "**transmitter pulse_width**", "The uncompressed pulse width."
+   :math:`\frac{\tau_u}{\tau_c}`, "**transmitter pulse_compression_ratio**", "The pulse compression ratio."
+
+The range processing gain due to pulse compression is:
+
+.. math::
+   G_r = \frac{\tau_u}{\tau_c}
+
+Various Forms of the Signal-to-Noise Equation
+=============================================
+
+Substituting the results for :math:`G_a` and :math:`G_r` into the equation for :math:`SNR_{image}`:
+
+.. math::
+   SNR_{image} &= P_{peak}  \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} G_a G_r \\
+               &= P_{peak}  \frac{G^2 \lambda^2 \sigma}{(4{\pi})^3 R^4 L_x L_r L_{atm}} \frac{1}{kT_0 B_N F_N} \frac{{\lambda}K_a Rf_p}{2V\delta_a \sin(\theta_{sq})} \frac{\tau_u}{\tau_c}
+
+This is the form used by WSF to compute the return from an object with a radar cross section of :math:`\sigma`. This could be a target or a resolution cell.
+
+Additional forms of the equation are often seen in the literature. The remainder of this section will show how the above equation is equivalent.
+
+In the case of a matched filter:
+
+.. math::
+   B_N = \frac{1}{\tau_c}
+
+Substituting:
+
+.. math::
+   SNR_{image} &= P_{peak}  \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{\tau_c}{kT_0 B_N F_N} \frac{K_a f_p}{2V\delta_a \sin(\theta_{sq})} \frac{\tau_u}{\tau_c} \\
+               &= P_{peak}{\tau_u}f_p \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})} \\
+               &= P_{avg} \frac{G^2 \lambda^3 \sigma}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})}
+
+Where average power is defined to be:
+
+.. math::
+   P_{avg} = P_{peak} \tau_u f_p
+
+One form of interest is when the target is a bare resolution cell (i.e.: the ground). This is sometimes called the 'clutter-to-noise ratio', or CNR. Equation (23) of reference 2 defines the area of the resolution cell as:
+
+.. math::
+   \sigma = \sigma^0 \delta_a \delta_{rg} = \sigma^0 \delta_a  \frac{\delta_r}{\cos(\psi_g)}
+
+where:
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`\sigma^0`, "**backscatter_coefficient**", "The backscatter coefficient"
+   :math:`\delta_r`, " ", "Range resolution (as computed from the effective pulse width)"
+   :math:`\delta_{rg}`, " ", "Range resolution in the ground plane"
+   :math:`\psi_g`, " ", "Grazing angle. The angle between the line-of-sight vector and the plane tangent to the surface at the point being viewed."
+
+Substituting:
+
+.. math::
+
+   SNR_{image} &= P_{avg} \frac{G^2 \lambda^3}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \sigma^0 \delta_a  \frac{\delta_r}{\cos(\psi_g)} \frac{1}{kT_0 F_N} \frac{K_a}{2V\delta_a \sin(\theta_{sq})} \\
+               &= P_{avg} \frac{G^2 \lambda^3}{(4{\pi})^3 R^3 L_x L_r L_{atm}} \frac{\sigma^0 \delta_r}{\cos(\psi_g)} \frac{1}{kT_0 F_N} \frac{K_a}{2V\sin(\theta_{sq})}
+
+which is basically equivalent to the myriad of forms presented in Appendix B of reference 2 (however they always assumed broadside collection, so :math:`\sin(\theta_{sq})` was always 1).
+
+Creation of WSF Pseudo-Images
+===============================
+
+WSF does not produce true images, but rather produces pseudo-images that indicate the objects that are in the image, the number of resolution cells (pixels) occupied by the object, and the intensity of the object.
+
+ 1. The user cues the system to the desired location and turns the system on. The model constructs a list of the targets that could potentially be in the image. The target list will encompass targets that are slightly outside the image region in order to account for the fact that a target may move into the image.
+ 2. At periodic intervals (defined by 'frame_time', default of 1 second), the model compute and accumulate data for each of the targets from step 1. The results of these detection results will be accumulated, much as a SAR accumulates pulses. If the target is obscured by terrain during a given sample, it will not have any contributing pulses defined during that interval.
+ 3. At some point, the SAR will be turned off. At that point the model will take the accumulated results and produce the pseudo-image (WsfImage) and send a message containing the image (WsfImageMessage) to those who have subscribed.
+
+The following variables will be used in the following section:
+
+.. csv-table::
+   :header: "Variable", "WSF source", "Description"
+   :widths: 20 20 80
+
+   :math:`t_F`, "**frame_time**", "The update interval between samples when forming the image."
+   :math:`n_{actual}`, " ", "The actual number of pulses integrated. This may be different from n_image if the sensor was turned off before or after the required time."
+   :math:`t_{sample}`, " ", "The length of the sample. This will be t_F for all but the final sample."
+   :math:`n_{sample}`, " ", "The number of pulses received during a sample."
+   :math:`P_{sample}`, " ", "The received signal from a specific target during a sample."
+   :math:`NP_{sample}`, " ", "The number of resolution cells (pixels) covered by a specific target during a sample."
+   :math:`\sigma_{opt}`, "**optical_signature**", "The optical signature of the target."
+   :math:`P_{sum}`, " ", "The sum of the sampled received signals for a specific target."
+   :math:`NP_{sum}`, " ", "The sum of the sampled pixel counts for a specific target."
+   :math:`N_{seen}`, " ", "The number of samples in which a specific target was visible (not obscured by the terrain)."
+   :math:`P_{ref}`, " ", "The reference signal that corresponds to a zero intensity in the output image. This would typically be minimum clutter-to-noise ratio."
+   :math:`P_{range}`, " ", "A normalizing value used to scale the received signals into a range of [0..1]."
+   :math:`CNR`, " ", "The expected signal-to-noise ratio of a return from single resolution cell."
+   :math:`CNR_{min}`, "**detection_threshold**", "The minimum acceptable value for CNR for an image to be declared"
+
+Step 1 computes the anticipated dwell time (:math:`t_D`) and the number of pulses to be collected (:math:`n_{image}`). In addition, it calculates the anticipated value of :math:`CNR`
+
+For each samples in step 2, the number of pulses received during the sample interval is:
+
+.. math::
+   n_{sample} = f_p t_{sample}
+
+The number of resolution cells (pixels) occupied by the target for a given sample is just projected area of the target (optical cross section) divided by the size of a resolution cell:
+
+.. math::
+   NP_{sample} = \frac{\sigma_{opt}}{\delta_a \delta_r}
+
+The received power **per resolution cell** from the target during the sample interval is:
+
+.. math::
+   P_{sample} = \frac{SNR_{image}}{N} \frac{n_{sample}}{n_{image}} \frac{1}{NP_{sample}}
+
+Note that the noise has been removed from the accumulation. This must be done to account for the possibility that in some samples the target may not be visible, or that the actual dwell time may be longer or shorter what was initially computed. The other terms account for the fact that the internal routine that calculates :math:`SNR_{image}` computes the return for the entire target for the expected dwell time.
+
+For each sample of a target in which the target is not obscured by terrain, the following is performed:
+
+.. math::
+   N_{seen} = N_{seen} + 1
+
+.. math::
+   P_{sum} = P_{sum} + P_{sample}
+
+.. math::
+   NP_{sum} = NP_{sum} + NP_{sample}
+
+In step 3, the **achieved** clutter to noise ratio must be computed. It is done at this point because the actual number of pulses collected is now known (the user may choose to turn the system off before or after the time required).
+
+.. math::
+   CNR_{actual} = CNR \frac{n_{actual}}{n_{image}}
+
+If :math:`CNR_{actual}` is greater than or equal to :math:`CNR_{min}`, the image will be declared to be acceptable and will contain the targets as processed below. If image is declared to be unacceptable, the image will be produced with no targets.
+
+The reference signal level will be defined to be:
+
+.. math::
+   P_{ref} = \frac{CNR_{actual}}{N}
+
+If the image is declared to be acceptable, the following will be produced for each target:
+
+The number of pixels (resolution cells) occupied by the target. This will just be the average of the pixel counts from each sample where there target was not obscured by terrain:
+
+.. math::
+   NP = \frac{NP_{sum}}{N_{seen}}
+
+The intensity of the pixel is then computed. The integrated return from a resolution cell (aka, clutter cell) represents the 'zero' intensity, or the return that will return a pixel value of zero.
+
+.. math::
+   I = \frac{P_{sum} - P_{ref}}{P_{range}}
+
+A value less than zero is clamped to zero, while values greater than one are clamped to one.

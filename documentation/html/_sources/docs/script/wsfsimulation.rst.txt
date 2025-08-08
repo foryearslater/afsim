@@ -1,0 +1,215 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSimulation
+-------------
+
+.. class:: WsfSimulation
+
+Static Methods
+==============
+
+.. method:: static int PlatformCount()
+
+   Return the number of active platforms in the simulation.
+
+.. method:: static WsfPlatform PlatformEntry(int aEntry)
+
+   Return the WsfPlatform object at the given entry in the list of active platforms, if aEntry is in the range [0, :method:`PlatformCount()<WsfSimulation.PlatformCount>`). Otherwise a :method:`null<Object.IsNull>` reference will be returned.
+
+   .. note::
+
+      This is **not** the same as the platform's :method:`index <WsfPlatform.Index>` which can be used to retrieve a platform with FindPlatform, and which is constant for a given platform. PlatformEntry will therefore always return a valid :class:`WsfPlatform` if aEntry is within the necessary range.
+
+   The following example can be used to loop over all the active platforms in a simulation::
+
+      for (int i = 0; i < WsfSimulation.PlatformCount(); i = i + 1)
+      {
+         WsfPlatform p = WsfSimulation.PlatformEntry(i);
+         ...
+      }
+
+.. method:: static WsfPlatform FindPlatform(string aPlatformName)
+            static WsfPlatform FindPlatform(int aPlatformIndex)
+
+   Return the platform with the specified name or :method:`index<WsfPlatform.Index>`.
+
+   .. note::
+
+      The return value will be invalid if the specified platform does not exist. Use
+      :method:`IsValid() <WsfObject.IsValid>` method on the return value to ensure it is valid before performing any operations on
+      it.
+
+.. method:: static WsfPlatform AddPlatform(WsfPlatform aPlatform, string aName)
+
+   Adds an instance of the supplied platform template (created by :method:`WsfSimulation.CreatePlatform` below) to the simulation. The name
+   to be assigned to the platform instance is specified by the 'aName' parameter. If the name is specified as a null
+   string ("") or "<default>", a unique name will be generated and assigned.
+
+   The return value is a reference to the platform instance in the simulation, and is a **COPY** of the platform template
+   supplied by the input argument.
+
+   .. note::
+
+      The return value will be a null reference if the platform could not be added to the simulation.
+      :method:`IsValid() <WsfObject.IsValid>` can be used on the return value to ensure to determine if the operation was successful.
+
+
+   Example::
+
+      WsfPlatform p = WsfSimulation.CreatePlatform("TARGET");
+      p.ProcessInput("side red");
+      p.ProcessInput("position 40n 89.5w heading 45 deg");
+      WsfPlatform pa = WsfSimulation.AddPlatform(p, "");    // Use a generated name
+      if (! pa.IsValid()) writeln("***** ERROR T=", TIME_NOW, " Could not add platform of type ", p.Type());
+
+.. method:: static WsfPlatform CreatePlatform(string aPlatformType)
+
+   Creates a platform template of the specified type. The return value is a reference to the created template which can
+   subsequently be populated with the desired values and added to the simulation using :method:`WsfSimulation.AddPlatform` above.
+
+   .. note::
+
+      The return value will be a null reference if the platform template could note be created.
+      :method:`IsValid() <WsfObject.IsValid>` can be used on the return value to ensure to determine if the operation was successful.
+
+
+.. method:: static void DeletePlatform(string aPlatformName)
+            static void DeletePlatform(int aPlatformIndex)
+
+   Remove the platform with the specified name or index from the simulation.
+
+.. method:: static string PlatformName(int aPlatformIndex)
+
+   Return the name of the platform given the index.
+
+   .. note::
+
+      The platform may not be active in the simulation.
+
+.. method:: static string PlatformType(int aPlatformIndex)
+
+   Return the type of the platform given the index.
+
+   .. note::
+
+      The platform may not be active in the simulation.
+
+.. method:: static int RandomSeed()
+
+   Returns the current simulation random seed.
+
+.. method:: static int RunNumber()
+
+   Returns the current simulation run number.
+
+.. method:: static Atmosphere GetAtmosphere()
+
+   Returns the current simulation Atmosphere object. This is a different object from the object created via :method:`Atmosphere.Construct()<Atmosphere.Construct>`.
+
+.. method:: static double EndTime()
+
+   Returns the scheduled end-time of the simulation, in seconds.
+
+.. method:: static void SetEndTime(double aEndTime)
+
+   Sets the scheduled end-time of the simulation, in seconds, to the greater of *aEndTime* and the current simulation time.
+
+.. method:: static void Terminate()
+
+   Terminates the simulation at the current time.
+
+.. method:: static bool IsRealtime()
+
+   Flag to check if the current simulation mode is :command:`realtime`.
+
+.. method:: static double ClockRate()
+
+   Gets the current simulation :command:`clock_rate`.  This only has effect in realtime mode.
+
+.. method:: static void SetClockRate(double aClockRate)
+
+   Changes the simulation :command:`clock_rate`.  This only has effect in realtime mode.
+
+.. method:: static bool ScriptExists(string aScript)
+
+   Returns 'true' if a global script with the given name exists.
+
+.. method:: static Object Execute(string aScript)
+            static Object Execute(string aScript, Array<Object> aArgs)
+
+   Execute a global script with the given name and optional argument list.  Returns the return value of the executed
+   script.
+
+   Example::
+
+      int count = (int)WsfSimulation.Execute("SensorCount", {"airliner"} );
+
+.. method:: static bool ExecuteAtTime(double aSimTime, string aScript)
+            static bool ExecuteAtTime(double aSimTime, string aScript, Array<Object> aArgs)
+
+   Execute a global script at the given future simulation time with the given name and optional argument list. Return value indicates whether the supplied script exists in the global context.
+
+.. method:: static void SetStartDate(int aYear, int aMonth, int aDay)
+
+   Set the start date for the simulation.
+
+   .. note::
+
+      The methods SetStartDate, SetStart SetStartTime, and SetStartEpoch are special use methods and must be
+      called before the initialization of any platforms that depend on the start date and time.
+
+.. method:: static void SetStartTime(int aHour, int aMinute, int aSecond)
+
+   Set the start time for the simulation.
+
+   .. note::
+
+      The methods SetStartDate, SetStart SetStartTime, and SetStartEpoch are special use methods and must be
+      called before the initialization of any platforms that depend on the start date and time.
+
+.. method:: static void SetStartEpoch(double aEpoch)
+
+   Set the start :argtype:`epoch-value` for the simulation.
+
+   .. note::
+
+      The methods SetStartDate, SetStart SetStartTime, and SetStartEpoch are special use methods and must be
+      called before the initialization of any platforms that depend on the start date and time.
+
+.. method:: static string ExpandPathVariables(string aString)
+
+   Returns the input string after path variable substitution.  See :command:`define_path_variable`.
+
+   Example:
+
+   .. parsed-literal::
+   
+      string CASE = WsfSimulation.ExpandPathVariables("$(CASE)"); # use to retrieve :command:`define_path_variable` CASE MyCaseString
+
+.. method:: static Array<string> MainInputFiles()
+
+   Returns the list of top-level scenario files.  These are the same files given to mission on the command line.
+
+.. method:: static string ClassificationString()
+
+   Returns the classification string of the scenario. See :command:`classification` command for more details.
+
+.. method:: static Color ClassificationColor()
+
+   Returns the color {R, G, B} associated with the classification level of the scenario. See :command:`classification_levels` command for more details.
+
+.. method:: static string Name()
+
+   Returns the name set by the :command:`simulation_name` command.
+   If no name was set, returns an empty string.
+
+.. include:: _wsfsimulation.wsf_cyber.txt

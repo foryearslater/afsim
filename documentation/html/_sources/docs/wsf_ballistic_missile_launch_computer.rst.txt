@@ -1,0 +1,207 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER
+-------------------------------------
+
+.. model:: launch_computer WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer <name> WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER
+      ... :command:`launch_computer` Commands ...
+      ... :model:`WSF_LAUNCH_COMPUTER` Commands ...
+      ... :ref:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER Commands<WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.Commands>` ...
+      ... :ref:`target_data<WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.Target_Data_Commands>` <target-type> ... end_target_data ...
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` implements a launch computer for a ballistic missile.  This missile can be
+either a surface-to-surface or surface-to-air missile (which includes space objects).  For surface-to-surface missiles an intercept table must be
+specified with the surface_to_surface_table_ command.  For surface-to-air missiles an intercept table must be
+specified with the surface_to_air_table_ command.
+
+For surface-to-surface calculations the computer will use the location in the target track. If a location is not
+defined in the target track then the computer will use the location of the 'truth platform' from the target track, if
+the platform exists. The target is assumed to be non-moving.
+
+For surface-to-air calculations, the computer will always use the 'truth platform' from the target track.
+
+Tables for this launch computer should be generated with the :command:`weapon_tools` utility. (See
+:model:`BALLISTIC_MISSILE_LAUNCH_COMPUTER_GENERATOR`).
+
+.. block:: WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER
+
+.. _WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.Commands:
+
+Commands
+========
+
+.. command:: surface_to_surface_table <table_file_name>
+
+   Specify the file name to use when computing a launch solution associated with this missile.  The launch computer
+   assumes that the missile is computing a ground intercept.
+
+   .. note::
+      If a preexisting table does not exist, it should be generated with the :command:`weapon_tools` utility.
+
+.. command:: surface_to_air_table <table_file_name>
+
+   Specify the file name to use when computing a launch solution associated with this missile.  The launch computer
+   assumes that the missile is computing an air intercept.
+
+   .. note::
+      If a preexisting table does not exist, it should be generated with the :command:`weapon_tools` utility.
+
+.. command:: maximum_launch_slant_range <length-value>
+
+   Specify the maximum slant range to the target that is defined to be acceptable for launch. This is typically used to
+   enforce the need for the target to be within range of a tracking sensor (assumed to be colocated with the launcher) at
+   the time of launch.
+
+   This can be used to model what is known as 'Launch or Organic Engagement', where the target must be tracked locally at the time of launch.
+
+   .. note::
+      A value of zero can be used to disable this constraint.
+
+   **Default:** 0 meters (launch slant range is not a constraint).
+
+.. command:: maximum_intercept_slant_range <length-value>
+
+   Specify the maximum allowable slant range to the intercept point. This is typically used to enforce the need for the
+   target to be within the range of a tracking sensor (that is is colocated with the launcher) at the time of intercept.
+
+   .. note::
+      A value of zero indicates this is not a constraint.
+
+   This can be used to model what is known as 'Launch on Remote', where the target can be fired upon using an externally
+   provided track but must be tracked locally before intercept can occur.
+
+   **Default:** 0 meters (intercept slant range is not a constraint).
+
+.. command:: minimum_intercept_altitude <length-value>
+
+   Specify the minimum altitude at which a surface-to-air intercept is defined to be acceptable.
+
+   **Default:** 0 meters
+
+.. command:: maximum_intercept_altitude <length-value>
+
+   Specify the maximum altitude at which a surface-to-air intercept is defined to be acceptable.
+
+   **Default:** No limit
+
+.. command:: maximum_intercept_angle <angle-value>
+
+   Specify the maximum intercept angle for which a surface-to-air intercept is defined to be acceptable. A value of 0
+   degrees represents a head-on impact while a value of 180 degrees is an impact from the rear.
+
+   **Default:** Intercept angle is not a constraint.
+
+.. command:: minimum_intercept_velocity <speed-value>
+
+   Specify the minimum relative intercept velocity for which a surface-to-air intercept is defined to be acceptable.
+
+   **Default:** Intercept velocity is not a constraint.
+
+.. command:: integration_timestep <time-value>
+
+   For surface-to-air launch solutions, specify the integration step for which the ballistic target representation is
+   propagated forward in time.  The smaller the time interval, the more accurate the forward ballistic representation, and
+   the more accurate the launch solution will be.  Typically this value should be of the same order as the time steps of
+   entries in the launch computer's table.  For example if the time steps in the table are spaced 0.1 sec apart, a good
+   value would also be 0.1 sec.
+
+   **Default:** 0.05 seconds
+
+.. command:: ground_range_sample_interval <length-value>
+
+   Specify the sample interval for creating the internal surface-to-air intercept table.
+
+   **Default:** 500 meters
+
+.. command:: allow_boost_phase_intercept <boolean-value>
+
+   Specify if intercepts are allowed during boost phase. By default intercept calculations are not performed while the
+   target is still in 'boost phase' because trajectory prediction is very inaccurate. Setting this to 'true' allows
+   intercepts to be attempted.
+
+   **Default:** false
+
+.. command:: compute_end_point <boolean-value>
+
+   Specify if the launch computer should compute the weapon 'end point and time' for surface-to-air intercept
+   calculations. The 'end point and time' is an estimate of where the weapon (interceptor) would hit the Earth's surface
+   if it followed a ballistic trajectory and did not hit its intended target. The results can be extracted using the
+   methods described in :class:`WsfLaunchComputer`.
+
+   .. note::
+      Prior to using this command you must provide a :ref:`target_data <WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.Target_Data_Commands>` block for the **interceptor** that
+      defines the mass and aerodynamic characteristics of the final stage of the weapon. This is used by by the ballistic
+      trajectory computation.
+
+   **Default:** false
+
+   .. note::
+      This value may be temporarily overridden by the :class:`WsfLaunchComputer` method
+      :method:`WsfLaunchComputer.ComputeEndPoint`.
+
+.. command:: predicted_trajectory_error_limit <length-value>
+
+   Specify the maximum allowable error between the predicted target trajectory and the actual target trajectory before forcing a recalculation of the predicted target trajectory.
+
+   In order to reduce computation overhead, the predicted trajectory for a target is computed only when *necessary*. A recalculation is forced if the eventual true position of the target differs from the predicted position by more than the value specified in this command.
+
+   **Default:** 250 meters
+
+.. command:: show_graphics
+
+   For surface-to-air engagements, show graphics for maximum kinematic envelope, projected ballistic trajectory, intercept calculation, and intercept points (these graphical displays are drawn in many visualization tools). The kinematic envelope shows the maximum extent to which intercepts can occur from the parent platform's launcher, displayed in cyan.  Projected ballistic trajectory is drawn in green when an initial intercept time is calculated, and a green point is plotted at the first possible intercept point.  Otherwise, for detailed intercept solutions, the trajectories are plotted in red, with red points indicating test points at which the launch computer attempts to calculate a solution (these may not be valid, however). Valid intercept points are plotted along these red trajectories in purple.
+
+.. command:: show_results
+
+   Show the results of a surface-to-air or surface-to-surface intercept calculation. If successful, the intercept point and loft angle / burn time will be displayed on the standard output and will be transmitted/saved in the DIS stream as a comment.
+
+.. command:: debug
+
+   In addition to show_results_, display detailed information associated with the determination of the launch solution.
+
+.. _WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.Target_Data_Commands:
+
+Target Data Commands
+====================
+
+Target data commands specify the aerodynamic data of drag and expended mass of ballistic target representations.  They
+are used to better calculate the trajectories of these targets for surface-to-air solutions.  Target data definitions need
+not be provided, but are often essential for computing lower-atmosphere intercepts.  As an example, the following
+illustrates a target_data block for a target of WSF :command:`platform` DF-21B:
+
+::
+
+   target_data DF-21B
+      aero DF_21B_RV_AERO
+      mass 500 kg
+   end_target_data
+
+
+.. note::
+   A target_data definition only needs to be specified once, in one
+   :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` definition.  All instances of the launch computer then have access to it.
+
+.. command:: aero <aero-type-name>
+
+   Specify the name of the :command:`aero` type to be used for computing drag data.
+
+.. command:: mass  <mass-value>
+
+   Specify the expended mass to be associated with this target type.

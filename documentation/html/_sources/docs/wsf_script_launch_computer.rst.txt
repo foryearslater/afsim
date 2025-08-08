@@ -1,0 +1,74 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SCRIPT_LAUNCHER_COMPUTER
+----------------------------
+
+.. model:: launch_computer WSF_SCRIPT_LAUNCH_COMPUTER
+
+.. parsed-literal::
+
+   launch_computer *<name>* WSF_SCRIPT_LAUNCH_COMPUTER
+     ... :command:`launch_computer` Commands ...
+
+     script void compute_intercept(WsfTrack aTrack, double aLaunchDelay)
+     end_script
+   end_launch_computer
+
+Overview
+========
+
+:model:`WSF_SCRIPT_LAUNCH_COMPUTER` implements a launch computer that uses the scripting language for determining if an
+intercept can occur.
+
+The following example demonstrates how to implement a script-based launch computer. This example is very simple in that
+it assumes the target is flying straight-and-level at a constant speed, and that the weapon flies at the defined
+average speed. It shows:
+
+* The required method name and signature.
+* The predefined script variables.
+* How to report the intercept results.
+
+Note that the :method:`WsfLaunchComputer.SetInterceptTime` call is required to report a successful intercept. Failure to
+call this method will indicate that an intercept is not possible.
+
+Example
+=======
+
+.. parsed-literal::
+
+   launch_computer EX_LAUNCH_COMPUTER WSF_SCRIPT_LAUNCH_COMPUTER
+
+      # This is the required script method name and signature.
+
+      script void compute_intercept(:class:`WsfTrack` aTrack, double aLaunchDelay)
+
+         # If needed the following additional script variables are pre-defined:
+         #
+         #       WEAPON   references the :class:`WsfWeapon` to which the launch computer is attached.
+         #       PLATFORM references the :class:`WsfPlatform` to which the weapon is attached.
+
+         double weaponSpeed = 500.0;         # Assumed weapon speed
+         :class:`WsfWaypoint` intercept = WsfWaypoint();
+         double tti = PLATFORM.InterceptLocation2D(aTrack, intercept, weaponSpeed, aLaunchDelay);
+         if (tti > 0.0)
+         {
+            :class:`WsfGeoPoint` interceptPoint =
+            WsfGeoPoint.Construct(intercept.Latitude(), intercept.Longitude(), aTrack.Altitude());
+            SetInterceptPoint(interceptPoint);
+            # The next call is the **minimum** requirement for reporting an intercept.
+            SetInterceptTime(TIME_NOW + tti);
+            SetLaunchTime(TIME_NOW + aLaunchDelay);
+            SetTimeOfFlight(tti - aLaunchDelay);
+         }
+      end_script
+
+   end_launch_computer

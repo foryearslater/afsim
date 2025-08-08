@@ -1,0 +1,285 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _scheduler_commands:
+
+Scheduler Commands
+------------------
+
+.. parsed-literal::
+
+   scheduler :ref:`<scheduler-type-name> <scheduler_commands.available_schedulers>`
+      :ref:`Type Commands <scheduler_commands>`
+   end_scheduler
+
+***<scheduler-type>*** can be:
+
+.. include:: scheduler_types.txt
+
+Each type have their own unique input keywords.
+
+.. _scheduler_commands.available_schedulers:
+
+Available Schedulers
+====================
+
+.. _scheduler_commands.default:
+
+.. block:: scheduler_type
+
+default
+*******
+
+.. parsed-literal::
+
+   scheduler default
+      scan_scheduling_ ...
+   end_scheduler
+
+.. block:: scheduler_type.default
+
+The default sensor scheduler.  Detection chances are evenly distributed across the frame time based on the
+total number of targets.  The order for the detection chances can be modified for the default scheduler by using the
+keyword scan_scheduling_.  If no scan_scheduling is applied, then scan scheduling defaults to a randomized order
+for detection chances versus individual platforms.
+ 
+.. command:: scan_scheduling [random | input_order | reverse_input_order]
+   
+   Specifies how new platforms are added to the scan scheduling queue when using the `default`_ sensor scheduler:
+   
+   * **random** - new platforms are added to the list randomly.
+   * **input_order** - new platforms are added to the back of the queue. This means that a sensor will perform detection
+     attempts against the platforms in the order that platforms appear in the input file.
+   * **reverse_input_order** - new platforms are added to the front of the queue. This means that a sensor will perform
+     detection attempts against platforms in the reverse order that platforms appear in the input file.
+
+   **Default** random
+
+.. _scheduler_commands.physical_scan:
+
+.. block:: scheduler_type
+
+physical_scan
+*************
+
+.. parsed-literal::
+
+   scheduler physical_scan
+      initial_heading_ ...
+   end_scheduler
+
+.. block:: scheduler_type.physical_scan
+
+A physical-scanning scheduler.  Detection chances are taken along a sweeping angle.  This option is
+intended for 360-degree surveillance radars that use a single mode. The underlying methods will divide the 360-degree
+sector into smaller sectors.  The smaller sectors are based on the keyword :command:`sensor_mode.update_interval` in addition to the
+:command:`sensor_mode.frame_time` value defined within the final mode that is read in from the input file for the sensor.  The sectors
+are set during initialization and are not modified by mode changes.  The moving sectors are simply used to
+geographically screen target sets for detection events.  Sectors begin sweeping in a clockwise-only direction from a
+randomized orientation, unless an initial_heading_ is provided. It does not perform back-and-forth sector scanning.  There is no correlated interaction
+between the radar detections and passive sensor interactions.
+
+.. command:: initial_heading <angle-value>
+
+   Specifies the initial heading of the sensor where the sectors begin sweeping. If not specified, a random value is chosen.
+   
+   **Default** none (randomized)
+
+.. _scheduler_commands.sector_scan:
+
+.. block:: scheduler_type
+
+sector_scan
+***********
+
+.. parsed-literal::
+
+   scheduler sector_scan
+      frame_based_scheduling_ <boolean-value>
+      sector_ ... end_sector
+   end_scheduler
+
+.. block:: scheduler_type.sector_scan
+
+A scheduler providing a scanning function that is more temporally correct for choosing detection targets than the default scheduler.  It is intended for use with mechanically scanned sensor representations (parabolic antenna radars, telescopes, etc.)  It allows for definition of scan "sectors" in azimuth, elevation, or both azimuth and elevation simultaneously. Using it, one can define multi-bar radar scans or scan patterns for optical sensors.  Also, as the sensor is cued to the instantaneous scan location, script methods and visualizations have access to the correct pointing location.  
+
+.. note::
+  In order to use this scheduler, the :ref:`slew_mode <Articulated_Part_Commands>` of *azimuth_and_elevation* or *both* must be specified.
+
+.. note::
+  The :command:`sensor_mode.update_interval` keyword controls how often the scan is updated; this keyword must be defined and should be less than or equal to the smallest value of field of view extent divided by the scan rate. For example, in defining an azimuth scan with 5 degree total azimuth field of view and azimuth rate of 10 degrees/s the :command:`sensor_mode.update_interval` would be set less than or equal to to 5/10 = 0.5 sec.
+
+.. command:: frame_based_scheduling <boolean-value>
+
+   Non-imaging sensors perform framed-based sector scan scheduling by default. This default behavior provides only one detection chance per target to take place for all sectors in a scan (or one detection chance per frame). To override frame-based scheduling for a non-imaging sensor, set this command to false. This command is not applicable to imaging sensors.
+
+   **Default** true, for non-imaging sensors
+
+.. command:: sector ... end_sector
+  :block:
+
+   .. parsed-literal::
+ 
+      sector
+         type ...
+         start_azimuth_ ...
+         end_azimuth_ ...
+         start_elevation_ ...
+         end_elevation_ ...
+         azimuth_ ...
+         elevation_ ...
+         azimuth_rate_ ...
+         elevation_rate_ ...
+         azimuth_scan_direction_ ...
+      end_sector
+
+Sector Commands
+"""""""""""""""
+   
+.. command:: type [azimuth | elevation | azimuth_and_elevation]
+
+   Specify the type of sector.
+
+   * **azimuth** - sector implements scanning in azimuth only with a fixed elevation
+   * **elevation** - sector implements scanning in elevation only with a fixed azimuth.
+   * **azimuth_and_elevation** - sector provides scanning in both azimuth and elevation.
+        
+.. command:: start_azimuth <angle-value>
+
+   Define the start azimuth of an azimuth or azimuth_and_elevation scan sector.  Allowed values are in the range from -180.0 degrees to 180 degrees.
+    
+.. command:: end_azimuth <angle-value>
+
+   Define the end azimuth of an azimuth or azimuth_and_elevation scan sector. Allowed values are in the range from -180.0 degrees to 180 degrees.
+    
+.. command:: start_elevation <angle-value>
+ 
+   Define the start elevation of an elevation or azimuth_and_elevation scan sector.  Allowed values are in the range from -90.0 degrees to 90.0 degrees.
+
+.. command:: end_elevation <angle-value>
+ 
+   Define the end elevation of an elevation or azimuth_and_elevation scan sector.  Allowed values are in the range from -90.0 degrees to 90.0 degrees.
+
+   .. parsed-literal::
+ 
+      Example Azimuth and Elevation Sector Definition:
+
+      sector
+         type azimuth_and_elevation
+         start_azimuth_ 0 deg
+         end_azimuth_ 90 deg
+         start_elevation_ 0 deg
+         end_elevation_ 80 deg
+      end_sector
+
+.. command:: azimuth <angle-value>
+ 
+    Specify a fixed azimuth in an elevation scan.
+
+   .. parsed-literal::
+    
+      Example Elevation Sector Definition with Fixed Azimuth:
+
+      sector
+         type elevation
+         azimuth_ 40 deg
+         start_elevation_ 0 deg
+         end_elevation_ 40 deg
+      end_sector
+    
+.. command:: elevation <angle-value>
+ 
+   Specify a fixed elevation in an azimuth scan.
+
+   .. parsed-literal::
+    
+      Example Azimuth Sector Definition with Fixed Elevation:
+
+      sector
+         type azimuth
+         start_azimuth_ 0 deg
+         end_azimuth_ 40 deg
+         elevation_ 0 deg   
+      end_sector
+
+.. command:: azimuth_rate <angular-speed-units>
+ 
+   Specify an azimuth rate value to use for an azimuth or azimuth_and_elevation scan sector.
+
+   .. note::
+      Either an azimuith_rate must be defined for each sector, or the sensor's slew rates must be defined; otherwise an initialization error will occur.
+ 
+.. command:: elevation_rate <angular-speed-units>
+        
+   Specify an elevation rate value to use for an elevation or azimuth_and_elevation scan sector.
+
+   .. note::
+      Either an elevation_rate must be defined for each sector, or the sensor's slew rates must be defined; otherwise an initialization error will occur.
+
+.. command:: azimuth_scan_direction [positive | negative]
+      
+   Define the azimuth scan direction for *azimuth* and *azimuth_and_elevation* sector :command:`types<scheduler_type.sector_scan.sector.type>` to be either in the positive (clockwise) or negative (counter-clockwise) direction.
+   
+   .. note::
+      Using this keyword allows for azimuth scans that span the :math:`\scriptstyle\pm{180}` degree azimuth angle.
+      
+   **Default** The direction is determined by the start_azimuth_ and end_azimuth_ angles, proceeding from the start angle towards the end angle.
+   
+.. _scheduler_commands.spin:
+
+.. block:: scheduler_type
+
+spin
+*******
+
+.. parsed-literal::
+
+   scheduler spin
+      scan_period_ ...
+      clockwise_ ...
+      starting_beam_azimuth_ ...
+      starting_azimuth_randomized_ ...
+   end_scheduler
+
+.. block:: scheduler_type.spin
+
+The spin scheduler provides a sensor scanning function that aims to capture the behavior of a spinning radar system in a temporally accurate manner.
+No explicit scanning or slewing of the sensor beam is visible in Mystic, as the spin scheduler assumes the sensor it is scheduling has a 360 degree field of view. 
+The scheduler will attempt to schedule detections on moving targets to occur at the time where the sensor beam will intersect the future location of the target. This assumes that the future location of a target can be accurately predicted up to one ``scan_period`` ahead of the current simulation time. 
+
+.. command:: scan_period <time-value>
+   
+   Specifies the amount of time necessary for the sensor to complete 1 full rotation.
+   
+   **Default** 10 seconds
+ 
+.. command:: clockwise <boolean-value>
+   
+   Specifies whether the sensor scans clockwise or counter-clockwise. A value of **true** indicates clockwise scanning, and a value of **false** indicates counter-clockwise scanning.
+   
+   **Default** true
+ 
+.. command:: starting_beam_azimuth <angle-value>
+   
+   Specifies the starting angle of the sensor scan. This angle is relative to the +X axis of the sensor's Part Coordinate System. 
+   
+   **Default** 0 degrees
+ 
+.. command:: starting_azimuth_randomized <boolean-value>
+   
+   Specifies the starting angle of the sensor scan to be determined randomly. Unlike most AFSIM commands, this will warn user if it is subsequently overridden by the **starting_beam_azimuth** command.
+   
+   **Default** false.
+
+Performance Considerations
+""""""""""""""""""""""""""
+
+Predicting the future location of platforms can be an expensive operation. Thus, the runtime of the spin scheduler will, in cases with many moving platforms, exceed that of the default scheduler. In general, this behavior is approximately quadratic with respect to the number of moving platforms in the scenario. More concretely, in a scenario with 10000 moving platforms, the runtime of the scenario increases by a factor of 18 if the spin scheduler is utilized instead of the default scheduler.

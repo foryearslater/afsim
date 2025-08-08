@@ -1,0 +1,231 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+cyber_attack
+------------
+
+Navigation: :ref:`cyber_overview`
+
+.. command:: cyber_attack <type> <base_type> ... end_cyber_attack
+    :block:
+
+    .. parsed-literal::
+
+     cyber_attack <type> <base_type>
+
+        # Define the effect(s) of the attack on the victim
+ 
+        effect_ ...
+        duration_ ...
+        scan_delay_time_ ...
+        delivery_delay_time_ ...
+ 
+        # Define default probability thresholds.
+ 
+        probability_of_scan_detection_ ...
+        probability_of_scan_attribution_ ...        
+        probability_of_attack_success_ ...
+        probability_of_status_report_ ...
+        probability_of_attack_detection_ ...
+        probability_of_attack_attribution_ ...        
+        probability_of_future_immunity_ ...
+        
+        # Random draw frequencies.
+        
+        scan_detection_draw_frequency_ ...
+        scan_attribution_draw_frequency_ ...        
+        attack_success_draw_frequency_ ...
+        status_report_draw_frequency_ ...
+        attack_detection_draw_frequency_ ...
+        attack_attribution_draw_frequency_ ...        
+        future_immunity_draw_frequency_ ...
+ 
+     end_cyber_attack
+
+<type>
+   The name of the cyber_attack type being defined.
+   
+<base_type>
+   The name of an existing cyber_attack type or WSF_CYBER_EFFECT, whose definition will be used as the initial
+   definition of the new type.
+
+Overview
+========
+
+A cyber_attack_ object defines the types of effects that affect the victim of the attack and defines default
+responses on the victim should they not have a defined response in their :command:`cyber_protect` object.
+
+Commands
+========
+
+.. command::  effect <effect_type>
+   
+   A :doc:`cyber_effect <predefined_cyber_effect_types>` type that models the effect of the attack on the victim. This command may be
+   repeated to specify multiple effects. If multiple effects are associated with this attack, the effects will resolve in 
+   the order in which they are listed.
+    
+   **Default** None. At least one effect must be provided.
+   
+   .. warning:: Specific effect types may require user input at the time an attack is initiated, via the :ref:`CyberAttack <wsfplatform.cyber_methods>`
+                method call, as noted in each of effects documentation available :ref:`here <Predefined_Cyber_Effect_Types>`.
+                The user is restricted to a single variable input via these calls. Multiple effects
+                with this requirement will share the same variable. Multiple effects with different variable types on a single attack
+                are currently not supported at this time, and can be placed on a separate attack type definition as a current workaround.
+
+.. command:: duration <time-value>
+
+   A duration will specify how long the :command:`cyber_attack.effect` lasts. When duration is not set but there exists a :command:`cyber_protect` block associated with the cyber_attack effect then duration will be the summation of the attack_detection_delay_time and attack_recovery_delay_time. 
+
+   **Default** 0 seconds
+   
+   .. note:: If :command:`cyber_attack.duration` < :command:`cyber_protect.attack_detection_delay_time` then the victim will not be able to draw for cyber immunity to the attack. 
+
+.. command:: scan_delay_time <random-time-value>
+
+   This specifies the amount of time it takes to perform a scan. This is the amount of time between the call
+   to :method:`WsfPlatform.CyberScan` and when :method:`WsfPlatform.CyberScanStatus` returns a non-negative value.
+   Any call to :method:`WsfPlatform.CyberScanStatus` that occurs before this time elapses will return a negative value,
+   indicating the scan is in progress.
+   
+   **Default** 0 secs
+   
+.. command:: delivery_delay_time <random-time-value>
+
+   This specifies the amount of time it would take to deliver an exploit. This is the amount of time between the call
+   to :method:`WsfPlatform.CyberAttack` and when :method:`WsfPlatform.CyberAttackStatus` returns a non-negative value.
+   Any call to :method:`WsfPlatform.CyberAttackStatus` that occurs before this time elapses will return a negative value,
+   indicating the delivery is in progress.
+   
+   **Default** 0 secs
+
+Probability Threshold Commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These commands specify the default probability threshold to be used if the corresponding
+value is not provided in the :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+
+.. command:: probability_of_scan_detection [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_scan_detection` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 0
+   
+.. command:: probability_of_scan_attribution [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_scan_attribution` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 0
+   
+.. command:: probability_of_attack_success [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_attack_success` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 1
+
+.. command:: probability_of_status_report [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_status_report` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 1
+
+.. command:: probability_of_attack_detection [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_attack_detection` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 0
+
+.. command:: probability_of_attack_attribution [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_attack_attribution` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 0
+   
+.. command:: probability_of_future_immunity [ 0 .. 1 ]
+
+   This specifies the default value for :command:`cyber_protect.probability_of_future_immunity` of a corresponding
+   :command:`cyber_protect.attack_response` in :command:`cyber_protect`.
+   
+   **Default** 0
+
+Random Draw Frequency Commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following commands define how often uniform random draws are performed. Each categorical use of random numbers
+within an attack type is controlled by a separate command. 
+
+.. _draw_frequency.:
+
+In each of the following commands *<draw_frequency>* can have the following values:
+
+* **always** - A new random value is drawn for each evaluation.
+
+* **once_per_simulation** - A random value is drawn for the first evaluation in the simulation and used for all
+  subsequent evaluations.
+
+* **once_per_target** - A random value is drawn for the first evaluation involving a specific target and is used for
+  all subsequent evaluations involving the same target.
+
+* **interval_per_simulation <random-time-value>** - A random value is drawn if the simulation time since the last
+  draw exceeds the threshold.
+
+* **interval_per_target <random-time-value>** A random value is draw if the simulation time since the last draw
+  INVOLVING THE SAME TARGET exceeds the threshold.
+
+.. command:: scan_detection_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if a scan is detected.
+   
+   **Default** **always**
+
+.. command:: scan_attribution_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if a scan is attributed.
+   
+   **Default** **always**
+   
+
+.. command:: attack_success_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if an attack is successful.
+   
+   **Default** **always**
+   
+.. command:: status_report_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if a status report is to be made.
+   
+   **Default** **always**
+   
+.. command:: attack_detection_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if an attack is detectable by the victim.
+   
+   **Default** **always**
+
+.. command:: attack_attribution_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if an attack is attributed by the victim.
+   
+   **Default** **always**
+   
+
+.. command:: future_immunity_draw_frequency <draw_frequency_>
+
+   The frequency of random draws for determining if the victim will be immune to future attacks of the same type.
+   
+   **Default** **always**
+   

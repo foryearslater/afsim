@@ -1,0 +1,179 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+false_target_screener
+---------------------
+
+.. command:: false_target_screener ... end_false_target_screener
+    :block:
+
+    .. parsed-literal::
+
+     false_target_screener_ *<name>* WSF_FT_SCREENER
+        debug_
+        plot_capacity_ <real-value>
+        track_capacity_ <real-value>
+        transfer_capacity_ <real-value>
+        initial_reject_ *<behavior-type>* <real-value>
+        reject_ *<behavior-type>* <real-value>
+        allow_track_reporting_when_flooded_ <boolean-value>
+        request_based_tracking_ <boolean-value>
+        only_screen_false_target_track_requests_ <boolean-value>
+        force_target_tracks_ ... end_force_target_tracks
+     end_false_target_screener
+
+Overview
+========
+
+The false_target_screener block specifies the characteristics of a false target screener.  The false target
+screener is responsible for determining how a :command:`false_target` is interpreted by targeted radars.  For false targets
+to affect a radar a false_target_screener block must be defined within the :command:`sensor` block.
+
+The screener manages the radar's ability to develop and transfer target tracks for both real and false targets.  The
+number of target tracks developed and transferred by the radar is determined by the track_capacity and
+transfer_capacity inputs.  The screener utilizes these capacities in addition to the total number of real and false
+targets detected to determine the number of tracks (real and false) to be maintained and transferred by the radar. **A
+real target that has a range from the sensor that is less than that of the closest false target will be allowed as a
+track.**
+
+Real target track probabilities are calculated based on the number of detectable false target blips (i.e., trackable
+blips) are impinging upon the sensor and the number of real targets per the following. If the number of false target
+blips plus the number of real targets are less than the track_capacity_ then all the false targets and real
+targets will be allowed to be tracked. If on the other hand the number of false targets plus the number of real targets
+exceeds the track_capacity_ then the following equation is applied to see how many real targets will be allowed
+through::
+
+  *AllowedRealTargets = (integer) (track_capacity_ * NumberOfRealTargets / (NumberOfRealTargets + NumberFalseTargets*))
+
+Commands
+========
+
+.. command:: debug
+
+   Set debug mode.
+
+.. command:: plot_capacity <real-value>
+
+   Specifies the total number of targets (real and false) which will be allowed to be displayed at a given time.
+
+   **Default:** 1000
+
+.. command:: track_capacity <real-value>
+
+   Specifies the total number of targets the radar can track at a given time.
+
+   **Default:** 1000
+
+.. command:: transfer_capacity <real-value>
+
+   Specifies the total number of targets the radar is allowed to pass to a command or :model:`fusion center <WSF_FUSION_CENTER>`.
+
+   **Default:** 250
+
+.. command:: initial_reject <behavior-type> <real-value>
+
+   *<behavior-type>* : A string input of the false-target behavior-type the following data applies to, valid values are
+   **["random_scan_to_scan" | "consistent_scan_to_scan"]**.
+   Specifies an initial rejection ratio which characterizes the screener's ability to initially reject some number of
+   false targets configured with the specified **<behavior-type>**. An input of 'random_scan_to_scan 0.10' would allow the
+   screener to reject 10% of false targets configured with 'random_scan_to_scan behavior' whether detected or not by the
+   sensor.
+
+   **Default:** 0.0
+
+.. command:: reject <behavior-type> <real-value>
+
+   <behavior-type>
+       A string input of the false-target blip behavior-type the following data applies to, valid values
+       are **["random_scan_to_scan" | "consistent_scan_to_scan"]**.
+       Specifies a rejection ratio which characterizes the screener's ability to reject some number of total false target
+       blips configured with the specified **<behavior-type>** each update of the screener. An input of 'random_scan_to_scan
+       0.10' would allow the screener to reject 10% of false targets blips that are being detected by the sensor with
+       'random_scan_to_scan behavior'.
+
+   **Default:** 0.0
+
+.. command:: allow_track_reporting_when_flooded <boolean-value>
+
+   Specifies as to whether or not false target tracks are to be reported when the transfer capacity is met. If '**true**'
+   the screener will allow the :command:`sensor's <sensor>` to report a number of randomly selected tracks up to the transfer
+   capacity each frame; if '**false** then the screener will not allow the :command:`sensor's <sensor>` tracker to report any
+   tracks if transfer capacity is exceeded. The current track capacity includes active and forced false and real targets.
+
+   **Default:** true
+
+.. command:: request_based_tracking <boolean-value>
+
+   Specifies as to whether the radar/screener should collect all trackable false targets based on track requests. If set
+   'true' will cause false targets to only be screened if a request has been scheduled for a track to be initially
+   detected or updated. Primarily used for tracking type radars and radars that respond to requests only.
+
+   **Default:** false
+
+.. command:: only_screen_false_target_track_requests <boolean-value>
+
+   Specifies as to whether the radar/screener should collect all false targets (i.e., 'false') or just the ones in which
+   requests have been made (i.e., 'true'). If set 'true' will cause only the requested false target to only be screened.
+   Primarily used for tracking type radars and radars that respond to requests only.
+
+   **Default:** false
+
+.. command:: force_target_tracks ... end_force_target_tracks
+
+   Defines the conditions in which a target track can be forced to be tracked by the :command:`false_target_screener`. To define the dispersion,
+
+   .. parsed-literal::
+
+       force_target_tracks
+          range_force_ *<range-type>*
+          sector_force_ *<angle-value>* *<integer-value>*
+          range_sector_force_ *<length-value>* *<angle-value>* *<integer-value>*
+          j_to_s_delta_threshold_ *<db-ratio-value>*
+       end_force_target_tracks
+
+   .. command:: range_force <range-type>
+
+      Specifies the range_type criteria that will check to see if a target track should be forced or not based on false
+      target blip constraining. Allowed types are:
+
+      * **none**                                    - No forcing of target tracks due to range constraining of blips.
+      * **inside_blip_range**                       - If a target track is inside the minimum blip range it will be forced.
+      * **outside_blip_range**                      - If a target track is outside the maximum blip range it will be forced.
+      * **both** or **inside_outside_blip_range** - If a target track is inside or outside the minimum or maximum blip range
+        respectively it will be forced.
+
+      **Default:** none
+
+   .. command:: sector_force <angle-value> <integer-value>
+
+      Specifies the sector arc, centered around the target track location, along with the maximum false target count in which
+      the target track will be forced.
+
+      **Default:** No sector forcing
+
+   .. command:: range_sector_force <length-value> <angle-value> <integer-value>
+
+      Specifies the range extent and sector arc, centered around the target track location, along with the maximum false
+      target count in which the target track will be forced.
+
+      **Default:** No sector forcing
+
+   .. command:: j_to_s_delta_threshold <db-ratio-value>
+
+      Specifies the J/S delta in which the false targets will be **counted** within the defined sector, for use by the sector
+      forcing commands input maximum false target counts. Any false target with a J/S within the delta threshold defined will
+      count towards a competing false target within the sector of interest.
+
+      .. note::
+         It is necessary to have the :command:`sensor_mode.reports_signal_to_noise` flag
+         set to enable the J/S checks.
+
+      **Default:** No J/S checks

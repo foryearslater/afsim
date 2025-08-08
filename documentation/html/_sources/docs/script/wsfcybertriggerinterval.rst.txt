@@ -1,0 +1,104 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCyberTriggerInterval
+-----------------------
+
+.. class:: WsfCyberTriggerInterval
+   :constructible:
+   :cloneable:
+
+WsfCyberTriggerInterval is an object based representation of a defined span of time and an associated period.
+They are used by :command:`cyber_trigger` objects to determine when triggers should evaluate and attempt execution.
+
+Triggers require a set method to be called to provide the parameters of the interval before successful usage.
+
+Any subsequent usage of a set method on any interval will invalidate the previously set values for an interval.
+
+.. note::
+   Any distribution draw provided for a trigger interval is only drawn once. It remains constant after the
+   initial draw. As an example, a period with a normal distribution that results in a draw of 1.473 seconds
+   will remain 1.473 seconds throughout the simulation.
+
+Methods
+=======
+
+.. method:: bool SetEvery(WsfRandomVariable aEvery)
+
+   Sets the period of the interval. This version does not accept explicit 'from' or 'to' values, so these
+   values are implicitly set to start at time 0 (the beginning of the simulation) and end upon simulation termination.
+
+   Returns true if successful, false otherwise.
+
+.. method:: bool SetFromEvery(WsfRandomVariable aFrom, WsfRandomVariable aEvery)
+
+   Sets the period of the interval, as well as the start time of the interval. This version does not accept an
+   explicit 'to' value, so this value is implicitly set to end upon simulation termination.
+
+   Returns true if successful, false otherwise.
+
+.. method:: bool SetToEvery(WsfRandomVariable aTo, WsfRandomVariable aEvery)
+
+   Sets the period of the interval, as well as the end time of the interval. This version does not accept an
+   explicit 'from' value, so the start time is implicitly set to 0 (the beginning of the simulation).
+
+   Returns true if successful, false otherwise.
+
+.. method:: bool SetFromToEvery(WsfRandomVariable aFrom, WsfRandomVariable aTo, WsfRandomVariable aEvery)
+
+   Sets the period, start, and ending time of the interval.
+
+   Returns true if successful, false otherwise.
+
+.. method:: bool IsFromSet()
+
+   Returns true if an explicit start time has been set for an interval, false otherwise.
+
+.. method:: bool IsToSet()
+
+   Returns true if an explicit end time has been set for an interval, false otherwise.
+
+.. method:: bool IsEverySet()
+
+   Returns true if an explicit period has been set for an interval, false otherwise.
+
+   .. note::
+      Intervals are non-functional without an explicit period. All set methods require the
+      provision of a period associated with an interval. Thus, if this method returns
+      false, the interval has never had a set method called.
+
+.. method:: double GetFrom()
+
+   Returns the simulation time that this interval is set to start from (seconds).
+
+.. method:: double GetTo()
+
+   Returns the simulation time that this interval is set to end (seconds).
+
+.. method:: double GetEvery()
+
+   Returns the period (seconds) of this interval.
+
+.. method:: double NextEvaluationTime()
+            double NextEvaluationTime(double aSimTime)
+
+   Returns the simulation time (seconds) that the interval will next reach an 'evaluation' point, or
+   in other words, the next point in simulation time that the interval is within its duration and the
+   time elapsed from the previous evaluation point is equivalent to the period ("every" time).
+
+   The first version of this method takes no parameters, and evaluates the next interval time from the
+   current simulation time.
+
+   The second version of this method takes a user provided simulation time, and will return the next evaluation time for the interval at or beyond the time provided.
+
+   In all cases, a negative value will be returned if there is not a valid next evaluation time.
+
+

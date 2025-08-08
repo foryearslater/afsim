@@ -1,0 +1,76 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_VARIABLE_RATE_FUEL
+----------------------
+
+.. model:: fuel WSF_VARIABLE_RATE_FUEL
+
+.. parsed-literal::
+
+ fuel <name> WSF_VARIABLE_RATE_FUEL
+    :ref:`Platform_Part_Commands` ...
+    :ref:`Fuel.Commands <Fuel.Commands>` ...
+    table_for_mode_ <mode-name>
+    rates_
+       altitude_ <length-value>
+       speed_ <length-value> rate <mass-flow-value>
+    end_rates
+ end_fuel
+
+Overview
+========
+
+WSF_VARIABLE_RATE_FUEL is a fuel consumption rate model.  This class defines fuel consumption behavior, at either
+constant rates, or at variable rates based upon one or two independent variables (the choices are platform altitude and
+speed).  By default, one fuel table is accepted, independent of fuel mode.  However, multiple tables may be defined for
+different fuel modes, if supplied, and the active table will be switched by setting the fuel mode.  (This model differs
+from the similar :model:`WSF_TABULAR_RATE_FUEL` in that :model:`WSF_VARIABLE_RATE_FUEL` input format is more flexible, and need
+not be rectangular.  :model:`WSF_TABULAR_RATE_FUEL` should be preferred for allowing for up to three independent variables,
+but :model:`WSF_VARIABLE_RATE_FUEL` is maintained for backward compatibility with several legacy applications.)
+
+Commands
+========
+
+.. command:: table_for_mode <mode-name>
+
+    Indicates that the following rate definitions are for the named mode. Modes are typically used to specify the rate of
+    consumption for various configurations (e.g., 'cruise'). The user is responsible for changing modes either through the
+    script interface or from custom code.  If this command is not supplied then the rate definitions apply universally, and
+    fuel mode is ignored.
+
+.. command:: rates ... end_rates
+    :block:
+
+    .. parsed-literal::
+
+        rates
+          altitude_ ...
+            speed_ ...
+            .
+            .
+          altitude_ ...
+          .
+          .
+        end_rates
+
+    .. command:: altitude <length-value>
+
+       Specifies the altitude that the subsequent speed_ data is valid for.  The altitude blocks must be in increasing
+       numerical order.  The consumption rate will be computed using a linear interpolation on the current altitude.
+
+    .. command:: speed <length-value> rate <mass-flow-value>
+
+        Specifies the speed that the listed consumption rate is valid for.  The speed entries must be in increasing numerical
+        order.  The consumption rate will be computed using a linear interpolation on the current altitude and speed.
+
+.. end::
+

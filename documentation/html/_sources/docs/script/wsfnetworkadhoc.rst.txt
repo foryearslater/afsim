@@ -1,0 +1,51 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfNetworkAdHoc
+---------------
+
+.. class:: WsfNetworkAdHoc inherits WsfNetworkGeneric
+   :constructible:
+
+.. warning:: The comm framework does not initialize until all platforms have initialized in the simulation. Most comm script methods are invalid during :command:`on_initialize` and :command:`on_initialize2`.
+
+Methods
+=======
+
+.. method:: void ChangeUpdateRate(WsfRandomVariable aRate)
+
+   Changes the general update rate for the network. Any members of the network that do not have an update rate
+   specific to that comm instance use the general update rate, and will be affected by this method.
+
+   This update rate only takes effect **after** the next update occurs. If the current update rate is set to never occur,
+   calling this method will schedule an update to occur at the rate which was specified.
+
+.. method:: bool AddMemberUpdateRate(WsfAddress aComm, WsfRandomVariable aRate)
+
+   This method either adds an update rate specific to the comm instance provided, or modifies the currently existing rate
+   associated with that interface.
+
+   If a specific update rate was not previously specified for this comm interface, the user provided rate will immediately
+   be used to schedule the next update for this interface, and this interface will not be updated during any normally occurring
+   general updates.
+
+   If this is a modification to an existing rate specified for this comm interface, then the new update rate will take effect
+   **after** the next update occurs using the rate being replaced.
+
+   Returns true if this update modification or addition was successful, false otherwise.
+
+.. method:: bool RemoveMemberUpdateRate(WsfAddress aComm)
+
+   This method removes any specific rate associated with the specified comm interface. The specified comm will now update
+   at the general time interval for the network. This change takes place immediately, and any future scheduled update
+   using the specific rate that was just removed will not occur.
+   
+   Returns true if a member update rate was found and removed with the provided address, false otherwise.

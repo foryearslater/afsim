@@ -1,0 +1,129 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ROAD_MOVER
+--------------
+
+.. Navigation: Predefined Mover Types
+
+Script Class: :class:`WsfMover`
+
+.. model:: mover WSF_ROAD_MOVER
+
+.. parsed-literal::
+
+   mover <name> WSF_ROAD_MOVER
+
+      :ref:`Platform_Part_Commands` ...
+      ... :ref:`WSF_GROUND_MOVER commands <WSF_GROUND_MOVER.Route_Mover_Commands>`
+
+      road_network_ ...
+      start_position_ ... end_position_ ...
+      speed_ ...
+      off_road_speed_ ...
+      linear_acceleration_ ...
+      pause_time_ ...
+      use_closest_waypoint_
+      consider_off_road_shortcut_ ...
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_ROAD_MOVER` is a specialization of :model:`WSF_GROUND_MOVER` that moves on a road network. It calculates the shortest path between a start and end point and uses it as its waypoint path. A pause time can be set to offset the start time of the mover. As well, a flag can be set (use_closest_waypoint_) that causes the mover to plot a shortest path based on the closest waypoints to the user-specified start and end positions.
+
+At it simplest, the mover calculates a path that consists of:
+
+* An optional segment that goes from start_position_ to the closest point on the road network. This segment will not be generated if the start position is on the road.
+* The shortest path on the road that gets closest to the end_position_.
+* An optional segment that goes from the last point on the road to end_position_. This segment will not be generated if the end position is on the road.
+
+You may also specify a :command:`route`, which represents various intermediate points (and possibly the start_position and end_position if they were omitted). For instance, you may want to start at home, and then go to the grocery store, post office and hardware store, and finally return home (in that order). The route would simply define the locations of those points, and the mover will find the shortest path on the road that takes you between those points in the order specified.
+
+Road Mover Commands
+===================
+
+.. command:: road_network <road-network-name>
+
+   The name of the :command:`route_network` to follow.
+
+   **Default:** none (must be specified)
+
+.. command:: start_position <latitude-value> <longitude-value>
+
+.. command:: end_position <latitude-value> <longitude-value>
+
+   Defines the starting location and ending locations. The resulting path will be the points from the road network that define the shortest path between the specified locations.
+
+   **Default:** none
+
+   .. note:: A :command:`route` may also be used to specify intermediate positions.
+
+   .. warning:: If either start_position_ or end_position_ is specified then both must be specified. If neither is specified then a :command:`route` can be used to define the start, end, and possibly intermediate positions.
+
+.. command:: speed <speed-value>
+
+   Defines the platform speed while traveling on the road network.
+
+   **Default:** none (must be specified)
+
+.. command:: off_road_speed <speed-value>
+
+   Defines the platform speed while traveling off the road network.
+
+   **Default:** Same value as speed_.
+
+.. command:: linear_acceleration <acceleration-value>
+
+   The linear acceleration to be used to accelerate the platform.
+
+   **Default:** 12 m/s^2
+
+.. command:: pause_time <time-value>
+
+   The time the mover is paused at the user-specified start position.
+
+   **Default:** 0 seconds
+
+.. command:: use_closest_waypoint
+
+   The mover will use the closest waypoints to the user-specified start and end positions when calculating the shortest path along the road network. No off-road segments at the start or the end will be generated.
+
+.. command:: consider_off_road_shortcut <boolean-value>
+
+   If this command has a value of true, a second path will be considered as a possible route, that being an off-road 'shortcut' path between the start position and the end position. If the shortcut path takes less time to traverse using the off_road_speed_ than the normal path, it will be used as the route.
+
+   This is analogous to cutting across your backyard to get to the house behind you rather than going around the block on the street or sidewalk.
+
+   **Default:** false
+
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover will be called only when it is necessary to determine the position of the containing platform.
+
+   .. note::
+      May be overridden by the specific mover implementation
+
+   Default: 0 seconds.
+
+.. command:: update_time_tolerance <time-value>
+
+   When a position update is requested by the simulation, if the time since the previous update is less than or equal to this value then the mover will ignore the update.
+
+   .. note::
+      Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is appropriate for the implementation.
+
+   .. note::
+      A mover implementation may choose to ignore this command.

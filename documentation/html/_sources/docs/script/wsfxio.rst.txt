@@ -1,0 +1,75 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfXIO
+------
+
+.. class:: WsfXIO
+
+WsfXIO provides access to some of the :command:`xio_interface` functionality.
+
+Static Methods
+==============
+
+.. method:: WsfXIO_Connection Connection(int aIndex)
+.. method:: WsfXIO_Connection Connection(string aName)
+
+   Returns the connection with the specified index or :command:`xio_interface.application` name if it exists.  Returns null if
+   the connection is not found.
+
+Publish Subscribe Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following are methods that support a user-defined publish/subscribe mechanism within XIO.  This allows users to send and receive data between WSF applications over the :command:`xio_interface`.  <u>This is only valuable for users interested in running two or more WSF applications in conjunction.</u>
+
+To publish some piece of information it needs to have a key.  The key gives the publication a unique identifier.  When some data is published, it stays available for any application until an :method:`WsfXIO.Unpublish` command removes it, or a subsequent :method:`WsfXIO.Publish` command overwrites the data using the same key.
+
+The key consists of four fields -- essentially four strings (see :class:`WsfXIO_PublishKey`).  An example key might be: ("MY_APP", "PlatformDestroyed", "su27-1", "") .  The first field usually identifies the broad usage of the publication, perhaps an exercise name.  The next field might represent a particular type of information contained in the publication.  Lastly, there is usually one or two fields representing the unique instance of a publication.  In this example, "su27-1" might be the name of the platform.
+
+Subscribing for publications is similar.  A key must be constructed that 'matches' the key from the publisher end.  To subscribe to the example publication, you might use a key of ("MY_APP", "PlatformDestroyed", "*", "*").  This will match any key containing the first two fields "MY_APP", "PlatformDestroyed".
+
+.. method:: void Publish(WsfXIO_PublishKey aKey, Object aObject)
+
+   Publish some data for connected XIO applications.  aObject can be a standard script data type, or WsfTrack, WsfLocalTrack, WsfTrackId, WsfGeoPoint, or Array (containing one of the previous types).
+
+   Example::
+
+     platform plat WSF_PLATFORM
+      ...
+      # This will get called whenever we get a publication matching the key specified execute at_time 10 s absolute
+         # publish the first 2 tracks out of the track manager
+         WsfXIO_PublishKey key = WsfXIO_PublishKey.Construct("MY_APP", "TRACK_LIST");
+         WsfXIO.Publish(key, {MasterTrackList.Entry(0), MasterTrackList.Entry(1)} );
+      end_execute
+    end_platform
+
+.. method:: void Unpublish(WsfXIO_PublishKey aKey)
+
+   Stop sending a previously published publication.  aKey can contain wildcard("*") characters.
+
+.. method:: void Subscribe(WsfXIO_PublishKey aKey, WsfPlatform aPlatform, string aScriptName)
+.. method:: void Subscribe(WsfXIO_PublishKey aKey, WsfProcessor aProcessor, string aScriptName)
+
+   Subscribe for data that is being published by some other XIO application.  Any publication that matches aKey will be cause the script provided to be executed.  The two forms of Subscribe are for subscribing with platform scripts and processor scripts.
+
+   Example::
+
+    platform plat WSF_PLATFORM
+      # This will get called whenever we get a publication matching the key specified
+      script void HandlePublication(WsfXIO_PublishKey key, Array<WsfTrack> values)
+         writeln("Received publication: ", key.ToString());
+         writeln("Received ", values.Size(), " tracks);
+      end_script
+      on_initialize
+         WsfXIO_PublishKey key = WsfXIO_PublishKey.Construct("MY_APP", "TRACK_LIST");
+         WsfXIO.Subscribe(key, PLATFORM, "HandlePublication");
+      end_on_initialize
+    end_platform

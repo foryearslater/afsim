@@ -1,0 +1,175 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+cyber_constraint
+----------------
+
+Navigation: :ref:`cyber_overview`
+
+**Script Class:** :class:`WsfCyberConstraint`
+
+.. command:: cyber_constraint <type> <base_type> ... end_cyber_constraint
+    :block:
+
+    .. parsed-literal::
+
+     cyber_constraint <type> <base_type>
+     
+        # Defines the amount of total cyber resource available to the platform to use
+        # when launching a cyber_attack
+
+        resources ...
+     
+        # Defines the a degradation to the attack *<attack_type>*.
+        # Repeat as necessary to handle additional attack types
+        
+        attack_degrade ...
+            ...
+        end_attack_degrade
+       
+        # Define the default attack degrade should an attack be placed from this platform
+        # for an attack type that does not have an accompanying response.
+               
+        attack_degrade default
+           ...
+        end_attack_degrade
+        
+     end_cyber_constraint
+
+<type>
+   The name of the cyber_constraint type being defined.
+   
+<base_type>
+   The name of an existing cyber_constraint type or WSF_CYBER_CONSTRAINT, whose definition will be used as the initial
+   definition of the new type.
+
+Instantiation on a platform type:
+
+.. parsed-literal::
+
+    platform_type <type> <base_type>
+       cyber_constraint <type>
+          ...
+       end_cyber_constraint
+    end_platform_type
+   
+Adding cyber_constraint to a platform:
+
+.. parsed-literal::
+
+    platform <name> <type>   # or edit platform <name>
+       add cyber_constraint <type>
+         ...
+       end_cyber_constraint
+    end_platform
+   
+Editing a cyber_constraint object on a platform:
+
+.. parsed-literal::
+
+    platform <name> <type>   # or edit platform <name>
+       edit cyber_constraint
+          ...
+       end_cyber_constraint
+    end_platform
+
+Overview
+========
+
+The cyber_constraint object defines any restrictions on a platforms ability to make cyber attacks, which includes the methods for C2 information, a cyber resource system, and the ability to affect the offensive probability of an scan/attack. 
+Every active platform active in a simulation will have either an explicitly or implicitly define cyber_constraint object.
+
+The object contains zero or more attack_degrade blocks, each of which defines any offensive scan/attack degradation to a particular
+type of attack as defined by :command:`cyber_attack`. When an attack is attempted the degrade value will be selected
+according to the following algorithm:
+
+1. Attempt to locate the :command:`cyber_constraint.attack_degrade` with the name '<T>'.
+2. If step 1 fails, for each :command:`cyber_attack` type that '<T>' inherits from, attempt to locate the
+   :command:`cyber_constraint.attack_degrade` whose name matches the inherited type. 
+3. If steps 1 and 2 fail attempt to locate the :command:`cyber_constraint.attack_degrade` entry named 'default'.
+4. If steps 1, 2 and 3 fail there will be no degradation in probability draws for cyber scans/attacks.
+     
+For more information about the implementation of a cyber attack please see :ref:`cyber_overview`.
+
+Commands
+========
+
+.. command:: resources <double>
+
+   Define the amount of total cyber resource available to the platform to use when launching a cyber_attack. 
+   Upon successfully launching a cyber_attack with a resource cost, the resource will be spent. If the cyber_attack
+   ends either through its duration finishing, the victim restoring itself, or the victim is destroyed,
+   the resources used will be returned to the attacker.
+
+.. command:: attack_degrade [ <attack_type> | default ] ... end_attack_degrade
+
+   Define the degradation to the attack *<attack_type>*. *<attack_type>* must be a defined :command:`cyber_attack` type
+   or the word 'default', which signifies the attack degradation to use if an attack is received for which there is
+   not a defined attack degradation.
+
+attack_degrade Subcommands
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. begin
+
+This section defines the commands that occur within the attack_degrade.
+
+.. command:: degrade_probability_of_scan_detection [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for scan detection.
+   The scan is detected if (uniform_draw + degrade < scan_detection_threshold).
+   
+   **Default**: 0.0
+   
+.. command:: degrade_probability_of_scan_attribution [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for scan attribution.
+   The scan is attributed if (uniform_draw + degrade < scan_attribution_threshold).
+   
+   **Default**: 0.0
+   
+.. command:: degrade_probability_of_attack_success [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for attack success.
+   The attack is successful if (uniform_draw + degrade < attack_success_threshold).
+   
+   **Default**: 0.0
+
+.. command:: degrade_probability_of_status_report [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for status report availability.
+   The status is available if (uniform_draw + degrade < status_report_threshold).
+
+   **Default**: 0.0
+
+.. command:: degrade_probability_of_attack_detection [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for attack detection.
+   The attack is detected if (uniform_draw + degrade < attack_detection_threshold).
+
+   **Default**: 0.0
+
+.. command:: degrade_probability_of_attack_attribution [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for attack attribution.
+   The attack is attributed if (uniform_draw + degrade < attack_attribution_threshold).
+   
+   **Default**: 0.0
+
+.. command:: degrade_probability_of_future_immunity [ -1 .. 1 ]
+
+   The value that will be ADDED to the uniform probability draw that is compared against the accepted threshold value for future immunity.
+   The attack is immune in the future if (uniform_draw + degrade < future_immunity_threshold).
+   
+   **Default**: 0.0
+
+.. end
+

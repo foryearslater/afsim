@@ -1,0 +1,253 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPON_FUSE
+---------------
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+**Script Class:** :class:`WsfWeaponFuse`
+
+.. model:: processor WSF_WEAPON_FUSE
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_WEAPON_FUSE`
+      :ref:`Platform_Part_Commands` ...
+      :command:`processor` Commands ...
+      :model:`WSF_SCRIPT_PROCESSOR` Commands ...
+
+      update_interval_ ...
+      fine_update_interval_ ...
+      time_of_flight_to_arm_ ...
+
+      // `Detonation Based On Time, Altitude or Speed`_
+
+      maximum_time_of_flight_ ...
+      detonate_below_height_agl_ ...
+      detonate_below_height_msl_ ...
+      detonate_above_height_agl_ ...
+      detonate_above_height_msl_ ...
+      detonate_below_speed_ ...
+      detonate_below_mach_ ...
+      detonate_on_mach_decreasing_to_ ...
+
+      // `Detonation Based on Target Proximity`_
+
+      gross_proximity_range_ ...
+      hit_proximity_range_ ...
+      use_current_target_
+      do_not_use_current_target_
+      exclusive_target_name_ ...
+      fuse_function_range_ ...
+
+      coast_time_on_loss_of_target_ ...
+      detonate_on_loss_of_target_
+      proximity_cancel_on_loss_of_target_
+      proximity_all_on_loss_of_target_
+
+      excluded_category_ ...
+      air_to_ground_mode_
+      on_intercept_ ...
+
+      // `Script Interface`_
+
+      :command:`on_initialize` ... end_on_initialize
+      :command:`on_initialize2` ... end_on_initialize2
+      :command:`on_update` ... end_on_update
+      :command:`_.script_commands.script_variables` ... end_script_variables
+      :command:`_.script_commands.script` ... end_script
+      
+      .. Other Script Commands ...
+
+      script void :command:`on_weapon_detonation() <WSF_WEAPON_FUSE.on_weapon_detonation>`
+         ... <script> ...
+      end_script
+
+   end_processor
+
+Overview
+========
+
+:model:`WSF_WEAPON_FUSE` is a processor embedded within a platform that controls the arming, detonation, and termination of a :model:`WSF_EXPLICIT_WEAPON` in flight.  Termination may be based upon constraints of time of flight, mean sea level (MSL)
+altitude, above ground level (AGL) height, proximity to other platforms, or an explicit external command to detonate.
+The calculations that trigger a detonation from close proximity to another platform may be computationally intensive,
+so an important consideration is whether to consider all platforms in the simulation or only a specified particular
+platform.  Generally, air-to-air engagements are carried out against a particular target and either that target is
+damaged or none are at all.  Air-to-ground engagements may desire to attack only a single target, but proximate
+collateral damage is often a real concern.  In this case, the user must specify via input whether collateral damage
+will be considered.
+
+:model:`WSF_AIR_TARGET_FUSE` and :model:`WSF_GROUND_TARGET_FUSE` are special implementations of this processor that are configured for specific classes of targets.  They should be used when appropriate.
+
+Commands
+========
+
+.. command:: update_interval <time-value>
+
+.. command:: gross_update_interval <time-value>
+
+   Update interval for the fuse processor, when not in proximity to any platforms of interest.  (The update interval may be temporarily reduced internally when close to target platforms of interest.)
+
+   **Default:** 1.0 second
+
+.. command:: fine_update_interval <time-value>
+
+   Update interval for the fuse processor, when considered to be in proximity to a platform of interest.  This value must be smaller than update_interval_, and is used to increase the resolution and accuracy of a proximity pass to a target of interest.  Appropriate values for this parameter will depend upon closing speed of the weapon.  As a rough guide, allow that one fine_update_interval should elapse during the time the weapon traverses the lethal radius of the weapon.
+
+   **Default:** 0.05 second
+
+.. command:: time_of_flight_to_arm <time-value>
+
+   Do not consider detonating before the specified time of flight elapses. This value is relative to when the weapon first leaves the "rail" or "pad".  This will allow a safe launch separation before arming the weapon for detonation.  If a detonation is commanded (by various means) before the weapon is armed, the weapon will be removed from the simulation with no damaging effect upon any platform.
+
+   **Default:** 0 secs (the weapon will arm immediately)
+
+Detonation Based on Time, Altitude or Speed
+===========================================
+
+.. command:: maximum_time_of_flight <time-value>
+
+.. command:: maximum_time_of_flight from_launch_computer [ delay <time-value> ]
+
+.. command:: max_time_of_flight_to_detonate <time-value>  (deprecated)
+
+   Automatically detonate when the specified time of flight elapses.  This value is relative to when the weapon first leaves the "rail" or "pad."  This will prevent a weapon that misses a proximity hit from flying forever.
+
+   The second form is typically used when the the launch computer has computed a predicted intercept time (as is done by :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` for intercepts of ballistic threats). This missile can be forced to detonate after some delay past the predicted intercept time if it hasn't hit the target.
+
+   **Default:** 1.0E+10 secs (essentially forever)
+
+.. command:: detonate_below_height_agl <length-value>
+
+.. command:: detonate_below_height_msl <length-value>
+
+   As the weapon is descending, detonate upon crossing below the specified AGL or MSL altitude.
+
+   **Default:** Descending altitude is not a criteria
+
+   .. note::
+      Each of these commands is mutually exclusive with the corresponding command, detonate_above_height_agl_ or detonate_above_height_msl_. Only the last command will be used.
+
+.. command:: detonate_above_height_agl <length-value>
+
+.. command:: detonate_above_height_msl <length-value>
+
+   As the weapon is ascending, detonate upon crossing above the specified AGL or MSL altitude.
+
+   **Default:** Ascending altitude is not a criteria.
+
+   .. note::
+      Each of these commands is mutually exclusive with the corresponding command, detonate_below_height_agl_ or detonate_below_height_msl_. Only the last command will be used.
+
+.. command:: detonate_below_speed <speed-value>
+
+.. command:: detonate_below_mach <Mach-number>
+
+   As the weapon is descending and the speed is decreasing, detonate if the speed or Mach number falls below the specified value.
+
+   **Default:** 0 m/s (Minimum speed/Mach is not a criteria)
+
+.. command:: detonate_on_mach_decreasing_to <Mach-number>
+
+   As the weapon accelerates, the peak Mach number is stored.  After burnout, when decelerating, detonate if the Mach number falls below the specified value.  Detonation is triggered _only_ after a peak Mach greater than the specified value is attained.
+
+   **Default:** 0 m/s (Minimum speed/Mach is not a criteria)
+
+Detonation Based on Target Proximity
+====================================
+
+.. command:: gross_proximity_range <length-value>
+
+   This value **must** be specified for weapon-target proximity checks to occur.  This input specifies the minimum separation distance in which the weapon is considered close to the target.  During the time when a weapon is with this range of a target of interest, finer resolution time steps (see fine_update_interval_) will be used to improve the accuracy of intercept determination for the weapon.
+
+   This value acts as the lower bound for the determination of closeness.  The actual value used will consider the maximum closing speed of the weapon and target.
+
+   .. note::
+
+         A reasonable value is 2 or 3 times the average speed of the weapon.
+
+.. command:: hit_proximity_range <length-value>
+
+   If proximity checks are enabled (gross_proximity_range_ non-zero) and do_not_use_current_target_ is specified, this indicates the maximum range between the weapon and target's point of closest approach in which a detonation will be triggered. If the weapon and target do not pass within this distance at their point of closest approach then the platforms will continue on without a detonation.
+
+   **Default:** 100 meters
+
+   .. note::
+
+      This is not used if use_current_target_ or exclusive_target_name_ is specified. In those cases, detonation is purely controlled by achieving the point of closest approach.
+
+.. command:: use_current_target
+
+.. command:: exclusive_target_name <target-name>
+
+.. command:: fuse_function_range <length-value>
+
+   If non-zero, point-of-closest-approach (PCA) calculations are prematurely terminated (the fuse actions) when just inside this specified standoff range.  Default is zero, which causes fusing to occur at PCA.  Some small standoff is recommended when a :command:`PkTable <WSF_SPHERICAL_LETHALITY.pk_table>` is used, because the un-modified PCA fusing will almost always result in Azimuth and Elevation values at PCA greater than 90 degrees.
+
+.. command:: do_not_use_current_target
+
+   If proximity checks are enabled (gross_proximity_range_ non-zero), this specifies against which platforms proximity checks will occur. The options are, respectively:
+
+   * Against the platform's current target.
+   * Against the named target.
+   * Against any platform that is not the launcher or not excluded by excluded_category_.
+
+   In the first two cases, detonation will occur when the weapon and target achieve their point of closest approach. In the last case, detonation will occur when a potential target and the weapon achieve a point of closest approach that is less than hit_proximity_range_.
+
+   **Default:** **use_current_target**
+
+   .. note:: **do_not_use_current_target** can be very computationally expensive. Use with caution.
+
+.. command:: coast_time_on_loss_of_target <time-value>
+
+.. command:: detonate_on_loss_of_target
+
+.. command:: proximity_cancel_on_loss_of_target
+
+.. command:: proximity_all_on_loss_of_target
+
+   The inputs each specify what to do if use_current_target_ or exclusive_target_name_ is enabled, and then an existing target is lost.  The options (respectively) are to:
+
+   * Coast for a specified period of time (to allow target reacquisition) before detonation.
+   * Detonate immediately.
+   * Quit considering any proximity checks (revert to time, altitude and speed checks).
+   * Begin considering all platforms for proximity. See do_not_use_current_target_.
+
+   **Default:** coast_time_on_loss_of_target_ 2 seconds
+
+.. command:: excluded_category <category-name>
+
+   For use only when proximity to all platforms is being considered. This input will exclude consideration of all platforms belonging to <category-name>.  This command can be specified multiple times to exclude multiple categories from consideration.
+
+.. command:: air_to_ground_mode
+
+   This flag will raise the intercept value for an AGL limit by the height of a specified target type (either the current target or the specified exclusive_target_name).  This is done to permit the weapon to detonate as close as possible to
+   the center of gravity of the intended target, without artificially increasing miss distance by the vertical height of a ground target.
+
+.. command:: on_intercept [ detonate   halt ]
+
+   This setting allows a weapon platform to freeze and remain in the simulation after the fuse has computed an intercept condition.  Normally the platform will be detonated and deleted upon intercept.  If set to "halt", then motion will
+   freeze at the intercept location, and the fuse-controlled engagement object will be interrupted.  It will be up to scripting, or some other mechanism, to Terminate() the engagement, which will then remove the weapon platform from the simulation.
+
+   **Default:** detonate
+
+Script Interface
+================
+
+WSF_WEAPON_FUSE utilizes the capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`, as well as the following:
+
+.. _WSF_WEAPON_FUSE.on_weapon_detonation:
+
+.. command:: script void on_weapon_detonation()  ... <script> ... end_script
+   :id: on_weapon_detonation
+
+   This script is executed when the fuse is just about to detonate but prior to the assessment of weapon lethality. The :class:`weapon engagement <WsfWeaponEngagement>` object (available through :method:`PLATFORM.WeaponEngagement() <WsfPlatform.WeaponEngagement>`) has been populated with the detonation reason and location.

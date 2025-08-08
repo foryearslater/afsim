@@ -1,0 +1,183 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+global_environment
+------------------
+
+.. command:: global_environment ... end_global_environment
+   :block:
+
+   .. parsed-literal::
+
+    global_environment
+       land_cover_ ...
+       land_formation_ ...
+       sea_state_ ...
+       wind_speed_ ...
+       wind_direction_ ...
+
+       wind_table_
+          <altitude-value> <wind-direction-value> <wind-speed_value>
+          ...   // wind_table data sets in order of increasing altitudes.
+          ...
+       end_wind_table
+
+       cloud_altitude_limits_ ...
+       cloud_water_density_ ...
+
+       rain_altitude_limit_ ...
+       rain_rate_ ...
+
+       central_body_
+         polar_offset_angles_
+       end_central_body
+
+    end_global_environment
+
+Overview
+========
+
+The global_environment block defines the attributes of the global environment.  Various objects make use of data
+defined in this block.
+
+Commands
+========
+
+.. command:: land_cover <land-cover-type>
+
+   Specify the land cover for the :command:`_.receiver` clutter model.  Valid values are:
+
+   * ::general
+   * ::urban
+   * ::agricultural
+   * ::rangeland_herbaceous
+   * ::rangeland_shrub
+   * ::forest_deciduous
+   * ::forest_coniferous
+   * ::forest_mixed
+   * ::forest_clear_cut
+   * ::forest_block_cut
+   * ::wetland_forested
+   * ::wetland_non_forested
+   * ::desert
+
+   Default general
+
+.. command:: land_formation <land-formation-type>
+
+   Specify the land formation for the :command:`_.receiver` clutter model.  Valid values are:
+
+   * ::level
+   * ::inclined
+   * ::undulating
+   * ::rolling
+   * ::hummocky
+   * ::ridged
+   * ::moderately_steep
+   * ::steep
+   * ::broken
+
+   **Default** level
+
+.. command:: sea_state <value>
+
+   Specify the sea state for the :command:`_.receiver` clutter model.  Valid values are 0 - 6.
+
+   ======  ===========  ==============
+   Degree  Height (m)   Description
+   ======  ===========  ==============
+   0       no wave      Calm (Glassy)
+   1       0 - 0.10     Calm (Rippled)
+   2       0.10 - 0.50  Smooth
+   3       0.50 - 1.25  Slight
+   4       1.25 - 2.50  Moderate
+   5       2.50 - 4.00  Rough
+   6       4.00 - 6.00  Very Rough
+   ======  ===========  ==============
+
+   **Default** 0
+
+.. command:: wind_speed <speed-value>
+
+   Specify the wind speed.
+
+   **Default** 0 m/s
+
+.. command:: wind_direction <angle-value>
+
+   Specify the wind direction.
+
+   **Default** 0 deg
+
+   .. note::
+      WSF wind direction is the direction to which the wind flows; not from where it comes.
+
+.. command:: wind_table   ...  end_wind_table
+
+   Specify wind-value-data sets using 3 parameters per entry (from lowest altitude to highest):
+   :altitude <length-value> wind direction <angle-value> wind speed <speed-value>.
+
+::
+
+           wind_table
+                  0 ft    90 deg   20 kts
+               5000 ft    95 deg   25 kts
+              10000 ft   100 deg   30 kts
+              15000 ft   100 deg   35 kts
+              20000 ft   120 deg   40 kts
+              25000 ft   125 deg   45 kts
+              30000 ft   125 deg   50 kts
+              35000 ft   130 deg   55 kts
+              40000 ft   130 deg   60 kts
+           end_wind_table
+
+   **Default** If no wind_table, then WSF defaults to values assigned to wind_speed_ and wind_direction_.
+
+   .. note::
+      WSF wind direction is the direction to which the wind flows; not from where it comes.
+
+   .. note::
+      Insert altitudes in order from lowest to highest.
+
+.. command:: cloud_altitude_limits <length-value> <length-value>
+
+   Specify the minimum and maximum altitude extent in which clouds are defined to occur. This is used by some
+   :command:`attenuation models <attenuation_model>`.
+
+   **Default** 0 m 0 m (no clouds)
+
+.. command:: cloud_water_density <mass-density-value>
+
+   Specify the density of water within the cloud. This is used by some :command:`attenuation models <attenuation_model>`.
+
+   **Default** 0 kg/m^3
+
+.. command:: rain_altitude_limit <length-value>
+
+   Specify the altitude below which rain is present. This is used by some :command:`attenuation models <attenuation_model>`.
+
+   **Default** 0 m
+
+.. command:: rain_rate <speed-value>
+
+   Specify the rainfall accumulation rate. This is used by some :command:`attenuation models <attenuation_model>`.
+
+   **Default** 0 m/s
+
+.. include:: central_body_commands.txt
+
+.. block:: global_environment
+
+.. command:: polar_offset_angles <angle-value> <angle-value>
+
+   Specify the central_body_'s polar offset angles (:math:`x_p` and :math:`y_p`, respectively) of the Celestial Intermediate Pole (CIP) with respect to the WCS (ITRS) coordinate system.  Providing these values (of the order of tenths of arc-seconds) enables very highly accurate conversions between ECI and WCS coordinates.
+
+   **Default** 0.0 rad 0.0 rad

@@ -1,0 +1,346 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF_STRAIGHT_LINE_MOVER &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF_SUBSURFACE_MOVER" href="wsf_subsurface_mover.html" />
+    <link rel="prev" title="WSF_STATE_MACHINE" href="wsf_state_machine.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_subsurface_mover.html" title="WSF_SUBSURFACE_MOVER"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_state_machine.html" title="WSF_STATE_MACHINE"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-straight-line-mover">
+<h1>WSF_STRAIGHT_LINE_MOVER<a class="headerlink" href="#wsf-straight-line-mover" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="WSF_STRAIGHT_LINE_MOVER">
+mover WSF_STRAIGHT_LINE_MOVER<a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER" title="Permalink to this definition">¶</a></dt>
+<dd><pre class="literal-block">mover <a class="reference internal" href="#WSF_STRAIGHT_LINE_MOVER" title="WSF_STRAIGHT_LINE_MOVER"><span class="xref wsf wsf-model">WSF_STRAIGHT_LINE_MOVER</span></a>
+
+   <a class="reference internal" href="platform_part_commands.html#platform-part-commands"><span class="std std-ref">Platform Part Commands</span></a> ...
+
+   // <a class="reference internal" href="#mover-commands">Mover Commands</a>
+
+   <a class="reference internal" href="#update_interval">update_interval</a> ...
+   <a class="reference internal" href="#update_time_tolerance">update_time_tolerance</a> ...
+
+   // <a class="reference internal" href="#straight-line-mover-commands">Straight Line Mover Commands</a>
+
+   <a class="reference internal" href="#average_speed">average_speed</a> ...
+   <a class="reference internal" href="#tof_and_speed">tof_and_speed</a> ...
+   <a class="reference internal" href="#maximum_lateral_acceleration">maximum_lateral_acceleration</a> ...
+   <a class="reference internal" href="#guidance_mode">guidance_mode</a> ...
+   <a class="reference internal" href="#guide_to_truth">guide_to_truth</a> ...
+
+end_mover</pre>
+</dd></dl>
+
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#WSF_STRAIGHT_LINE_MOVER" title="WSF_STRAIGHT_LINE_MOVER"><span class="xref wsf wsf-model">WSF_STRAIGHT_LINE_MOVER</span></a> implements a mover for a <a class="reference internal" href="wsf_explicit_weapon.html#WSF_EXPLICIT_WEAPON" title="WSF_EXPLICIT_WEAPON"><span class="xref wsf wsf-model">WSF_EXPLICIT_WEAPON</span></a> that flies in a (more or less) straight
+line from the launch point to intercept a target track.  The user is relieved of the need to specify weapon mass
+properties, propulsion, or aerodynamics tables, but with a resulting loss of fidelity.  The target track must be
+provided by some WsfSensor or WsfProcessor type that populates the Current Target on the WsfPlatform, as obtained from
+its WsfTrackManager.  This mover will implement either a constant average speed, or a speed table which is linearly
+interpolated versus time of flight for the weapon.    Optionally, the user may specify a maximum lateral g limit which
+will limit the magnitude of any initial or final maneuvering acceleration.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>No provision is made for flight termination in the event of either a target hit or miss, or for lethality
+determination.  The firing <a class="reference internal" href="wsf_explicit_weapon.html#WSF_EXPLICIT_WEAPON" title="WSF_EXPLICIT_WEAPON"><span class="xref wsf wsf-model">WSF_EXPLICIT_WEAPON</span></a> will normally supply the <a class="reference internal" href="platform.html#platform.weapon_effects" title="weapon_effects (platform)"><span class="xref wsf wsf-command">weapon_effects</span></a> to be used,
+and a processor of type <a class="reference internal" href="wsf_weapon_fuse.html#WSF_WEAPON_FUSE" title="WSF_WEAPON_FUSE"><span class="xref wsf wsf-model">WSF_WEAPON_FUSE</span></a> (or derived from it) will generally terminate the flight and invoke the
+weapon effect.</p>
+</div>
+</section>
+<section id="mover-commands">
+<h2>Mover Commands<a class="headerlink" href="#mover-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.update_interval">
+<span id="update_interval"></span>update_interval<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.update_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+will be called only when it is necessary to determine the position of the containing platform.</p>
+<p>Default: 0 seconds unless overridden by the specific mover implementation.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.update_time_tolerance">
+<span id="update_time_tolerance"></span>update_time_tolerance<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.update_time_tolerance" title="Permalink to this definition">¶</a></dt>
+<dd><p>When a position update is requested by the simulation, if the time since the previous update is less than or equal to
+this value then the mover will ignore the update.</p>
+<p>Default: Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is
+appropriate for the implementation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A mover implementation may choose to ignore this command.</p>
+</div>
+</dd></dl>
+
+</section>
+<section id="straight-line-mover-commands">
+<h2>Straight Line Mover Commands<a class="headerlink" href="#straight-line-mover-commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.average_speed">
+<span id="average_speed"></span>average_speed &lt;speed value&gt;<a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.average_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the weapon’s average speed that will be used for the duration of flight.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.tof_and_speed">
+<span id="tof_and_speed"></span>tof_and_speed … end_tof_and_speed<a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.tof_and_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the weapon’s speed versus time profile that will be used.  The time values must be in increasing numerical
+order.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tof_and_speed</span>
+   <span class="mf">0.0</span> <span class="n">sec</span>   <span class="mi">1500</span> <span class="n">kts</span>
+   <span class="mf">10.0</span> <span class="n">sec</span>  <span class="mi">1200</span> <span class="n">kts</span>
+   <span class="mf">20.0</span> <span class="n">sec</span>  <span class="mi">1000</span> <span class="n">kts</span>
+<span class="n">end_tof_and_speed</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.maximum_lateral_acceleration">
+<span id="maximum_lateral_acceleration"></span>maximum_lateral_acceleration &lt;acceleration value&gt;<a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.maximum_lateral_acceleration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the weapon’s maximum lateral acceleration that will be used for weapon maneuvers.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.guidance_mode">
+<span id="guidance_mode"></span>guidance_mode [ lead_pursuit | pure_pursuit ]<a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.guidance_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the weapon’s guidance mode.  Using <strong>lead_pursuit</strong>, the velocity vector will always be aimed toward the
+current target track if stationary, and if the track is moving, will be extrapolated as necessary for a predicted time
+to intercept, mimicking proportional navigation guidance.  Using <strong>pure_pursuit</strong>, the velocity vector will always be
+aimed toward the current target track.</p>
+<p>Default: pure_pursuit</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_STRAIGHT_LINE_MOVER.guide_to_truth">
+<span id="guide_to_truth"></span>guide_to_truth<a class="reference internal" href="argumenttypes.html#boolean-value" title="boolean-value"><em> &lt;boolean-value&gt;</em></a><a class="headerlink" href="#WSF_STRAIGHT_LINE_MOVER.guide_to_truth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies if the perceived target location (as defined by the current target track) or the truth target location should
+be used in the guidance computations.</p>
+<p>Default: false</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_straight_line_mover.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_subsurface_mover.html" title="WSF_SUBSURFACE_MOVER"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_state_machine.html" title="WSF_STATE_MACHINE"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

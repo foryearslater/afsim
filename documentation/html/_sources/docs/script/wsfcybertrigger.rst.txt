@@ -1,0 +1,180 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCyberTrigger
+---------------
+
+.. class:: WsfCyberTrigger inherits WsfObject
+   :constructible:
+   :cloneable:
+
+WsfCyberTrigger is a script based trigger object, used to execute user-defined script methods. This script
+version of the :command:`cyber_trigger` object allows users to manipulate and define triggers within
+the script context, such that future script executions may be defined at simulation run-time, and are not
+reliant on existing trigger definitions.
+
+.. note::
+   This document refers to 'active' triggers, which are triggers that still have the potential to
+   execute because they have not exceeded all of their defined time intervals, and have not yet executed
+   when such triggers are not indicated to extrapolate. These triggers are being managed within the
+   simulation. Triggers that no longer meet the definition of active are removed from the simulation.
+
+.. note::
+   This document refers to 'global' triggers, which are triggers defined via scenario input in
+   the global context (not on or associated with a platform).
+
+.. note::
+   This document refers to 'platform' triggers, which are triggers added to or associated with
+   platform instances. Within AFSIM, platform triggers are not directly managed by the simulation,
+   as they are components of platforms, and exist for the lifetime of the platform.
+
+Static Methods
+==============
+
+.. method:: WsfCyberTrigger GetTrigger(string aTriggerName)
+
+   Given the name of a trigger, returns a reference to an existing, active global trigger.
+
+   If the name provided does not match an active global trigger managed by the simulation, the
+   returned object will be invalid. As such, users should check the returned trigger for validity
+   before attempting use.
+
+.. method:: WsfCyberTrigger GetTrigger(string aPlatformName, string aTriggerName)
+
+   Given the name of a platform and a trigger, returns a reference to a platform trigger.
+
+   If the platform name provided does not match the name of an existing platform in the simulation,
+   or a trigger with the specified name could not be located on that platform, the returned object
+   will be invalid. As such, users should check the returned trigger for validity before attempting use.
+
+Methods
+=======
+
+.. method:: WsfCyberTrigger CreateDerivedTrigger(string aTriggerName)
+
+   Returns a copy of the trigger in the script context. This unique copy retains all of the parameters
+   of the parent trigger, except triggers created in this way will always be set to execute (see
+   :command:`cyber_trigger.execute_trigger`). In addition, if this trigger is later indicated to be
+   added to the simulation for actual use, the user provided trigger name will be used to identify
+   the trigger in the context it is added, and can be subsequently retrieved using this name.
+
+   .. note::
+      A trigger created in this way is non-functional until added to the simulation. This provides
+      users the ability to potentially further modify the trigger before usage by the simulation.
+
+.. method:: bool AddGlobalTrigger()
+
+   Creates a copy of the current trigger, and adds the copy to the simulation for active management and
+   execution as a global trigger. Returns true if successful, false otherwise (such as when a trigger with
+   the same name already exists in the global context).
+
+   .. note::
+      This method does not invalidate or otherwise modify the trigger in the script context, as a copy is
+      created to add the simulation. Furthermore, any additional modifications to the trigger in the script
+      context will have no effect on the copy added to the simulation for execution and management.
+
+.. method:: bool AddPlatformTrigger(string aPlatformName)
+
+   Creates a copy of the current trigger, and adds the copy to the platform indicated by the user provided
+   name for active use as a platform trigger. Returns true if successful, false otherwise (such as when the
+   indicated platform is not found, or a trigger with the same name already exists on that platform).
+
+   .. note::
+      This method does not invalidate or otherwise modify the trigger in the script context, as a copy is
+      created to add to the platform. Furthermore, any additional modifications to the trigger in the
+      script context will have no effect on the copy added to the platform for execution.
+
+.. method:: bool IsExtrapolated()
+
+   Returns true if the trigger is indicated to continue executing after meeting its evaluation criteria.
+   Returns false if the trigger is indicated to stop executing after meeting its evaluation criteria.
+
+.. method:: bool HasTriggered()
+
+   Returns true if this trigger has previously executed, false otherwise.
+
+.. method:: bool IsExecutingTrigger()
+
+   Returns true if the trigger is indicated to be functional. Returns false if the trigger is only
+   intended to exist as a type definition for derived triggers.
+
+   .. note::
+      All triggers in the script context are executing triggers. Users may not modify this parameter.
+
+.. method:: double NextIntervalTime()
+            double NextIntervalTime(double aSimTime)
+
+   Returns the simulation time (seconds) that the trigger will next evaluate and potentially execute.
+   The first version provides the next evaluating interval time from the current simulation time, while
+   the second version will provide the next evaluating interval time from the time provided by the user.
+
+   These methods are functionally equivalent to :method:`WsfCyberTriggerInterval.NextEvaluationTime` in both cases,
+   except that since a trigger can contain multiple interval definitions, these methods provide
+   the next closest evaluating interval time for all intervals associated with a trigger.
+
+.. method:: Array<WsfCyberTriggerInterval> GetIntervals()
+
+   Returns an array of all of the intervals associated with this trigger.
+
+   .. note::
+      The intervals provided in this way are not references to the actual intervals on the trigger.
+      As such, attempting to modify these intervals will have no effect on the actual trigger.
+
+.. method:: string GetIdentifier()
+
+   Returns the string identifier associated with this trigger. The identifier is used to properly provide a
+   name or type to a trigger when added to the global or platform contexts within the simulation. This value is only
+   used when a trigger is added in such a way.
+
+.. method:: void SetExtrapolated(bool aExtrapolate)
+
+   If provided a value of 'true', sets the trigger to be extrapolated such that it will continue executing for the duration
+   of its intervals as long as the evaluation criteria is met. Providing a value of 'false' indicates that the trigger will
+   only potentially execute once, the first time evaluation criteria is met.
+
+.. method:: void AddInterval(WsfCyberTriggerInterval aInterval)
+
+   Adds the provided interval to the trigger.
+
+   .. note::
+      If this method is called on an already active trigger, the added interval will only potentially modify trigger behavior
+      after the trigger's next evaluation interval time.
+
+.. method:: void ClearIntervals()
+
+   Removes all existing intervals on the trigger.
+
+   .. note::
+      If this method is called on an already active trigger, the removal will not take effect until after the next scheduled
+      trigger evaluation using the original intervals associated with the trigger (if applicable).
+
+   .. warning::
+      Removing all the intervals from a trigger, and not providing a future evaluating interval before the next regularly scheduled
+      trigger evaluation will result in a non-functional trigger. This method should always be followed by the addition of intervals
+      unless the intent is to prevent this trigger from functioning in the future.
+
+.. method:: void SetIdentifier(string aIdentifier)
+
+   Sets the string identifier associated with this trigger for subsequent usage when adding a trigger to simulation or platform management.
+   Users may call this method multiple times to add the same trigger definition with different names.
+
+.. method:: bool SetOnEvaluate(string aMethodName)
+
+   Sets the evaluation method for this trigger. The string provided is the name of a global script method that must return a bool value. The
+   function may have arguments, but values will not be provided for these arguments when used by the trigger.
+
+   This method will return false if the trigger already has an evaluation method associated with the trigger definition, true otherwise.
+
+.. method:: bool SetOnExecute(string aMethodName)
+
+   Sets the execution method for this trigger. The string provided is the name of a global script method with any return value, although the
+   return value will be ignored when used in conjunction with the trigger. The function may have arguments, but values
+   will not be provided for these arguments when used by the trigger.

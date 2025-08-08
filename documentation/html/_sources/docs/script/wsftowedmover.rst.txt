@@ -1,0 +1,264 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfTowedMover
+-------------
+
+.. class:: WsfTowedMover inherits WsfMover
+
+Methods
+=======
+
+.. method:: void SetTowLength(double aMeters)
+   
+   Sets the desired distance between the towed asset and it lead or parent platform.
+   
+   Units: Meters
+
+.. method:: void SetStartReelInTimeAbsolute(double aSeconds)
+   
+   Sets an absolute simulation time, to start reeling in a towed asset regardless of its current state.  For example, the
+   towed asset can be in state, "REELING_OUT", when the "REELING_IN" command is issued.  If the simulation time, set by
+   this command has been reached, the towed asset's state will change to "REELING_IN" and the asset's movement will be
+   reflected as such.
+   
+   Units: Seconds
+
+.. method:: void SetStartReelInTimeRelative(double aSeconds)
+   
+   Sets the time, relative from TIME_NOW, to start the process of reeling in a towed asset regardless of its current
+   state.  For example, the towed asset can be in state, "REELING_OUT", when the "REELING_IN" command is issued.  If the
+   relative simulation time, set by this command has elapsed, the towed asset's state will change to "REELING_IN" and the
+   asset's movement will be reflected as such.
+   
+   Units: Seconds
+
+.. method:: void SetReelInTimeAfterDeploymentRelative(double aSeconds)
+   
+   Sets the time to start reeling in the towed object, a relative number of seconds after the towed object has been fully
+   deployed.  To be deemed fully deployed, the the distance between the towed asset and its lead platform will be equal to
+   the desired tow length.
+   
+   Units: Seconds
+
+.. method:: double Distance()
+   
+   Returns the distance or span between the towed asset and its parent or lead platform.  Value returned is in meters.
+
+.. method:: string State()
+   
+   Returns the state of the towed asset as a string.  State options are "STOWED", "REELING_OUT", "DEPLOYED", "REELING_IN".
+
+.. method:: void State(WsfPlatform aTowedPlatform)
+   
+   Returns the state of the towed asset as a string.  State options are "STOWED", "REELING_OUT", "DEPLOYED", "REELING_IN".
+
+.. method:: double  ReelInRate()
+   
+   Returns the speed or rate at which the towed asset is to be reeled back onto the lead platform.  If set to -1.0, then
+   no value was set for reel in speed/rate and the towed object will remain deployed.
+   
+   Return Units: meters/second
+
+.. method:: double  ReelInRate(WsfPlatform aTowedPlatform)
+   
+   Returns the speed or rate at which the towed asset is to be reeled back onto the lead platform.  If set to -1.0, then
+   no value was set for reel in speed/rate and the towed object will remain deployed.
+   
+   Return Units: meters/second
+
+.. method:: double ReelOutRate()
+   
+   Returns the speed or rate at which the towed asset is to be reeled out from a lead platform.
+   
+   Return Units: meters/second
+
+.. method:: double ReelOutRate(WsfPlatform aTowedPlatform)
+   
+   Returns the speed or rate at which the towed asset is to be reeled out from a lead platform.
+   
+   Return Units: meters/second
+
+.. method:: double StartReelInTime()
+   
+   Returns the absolute simulation time at which the towed asset is to start being reeled back onto the lead platform.
+   
+   Return Units: Seconds
+
+.. method:: double StartReelInTime(WsfPlatform aTowedPlatform)
+   
+   Returns the absolute simulation time at which the towed asset is to start being reeled back onto the lead platform.
+   
+   Return Units: Seconds
+
+.. method:: double ReelInTimeAfterDeploymentRelative()
+   
+   Returns the relative time after deployment that the towed asset will start to be reeled back onto the lead platform.
+   
+   Return Units: Seconds
+
+.. method:: double ReelInTimeAfterDeploymentRelative(WsfPlatform aTowedPlatform)
+   
+   Returns the relative time after deployment that the towed asset will start to be reeled back onto the lead platform.
+   
+   Return Units: Seconds
+
+
+Global Script Examples
+======================
+
+.. method:: Example scripts
+   
+   
+   Example scripts to execute the various ways to set the reel in time of a towed asset.
+   
+   ::
+
+      script void SetReelInTimeAbsolute(double      aTime,
+                                        WsfPlatform aTowedAsset)
+      {
+         if (aTowedAsset.IsValid())
+         {
+            WsfMover mover = aTowedAsset.Mover();
+            WsfTowedMover towedMover = (WsfTowedMover)mover;
+            double reelInTime = 1200;
+            if (aTime > 0.0) reelInTime = aTime;
+            if (towedMover.IsValid())
+            {
+               towedMover.SetStartReelInTimeAbsolute(reelInTime);
+               # units: MPS
+               towedMover.SetReelInRate(5);
+            }
+         }
+      }
+      end_script
+
+   ::
+
+      script void SetReelInTimeRelative(double      aTime,
+                                        WsfPlatform aTowedAsset)
+      {
+         if (aTowedAsset.IsValid())
+         {
+            WsfMover mover = aTowedAsset.Mover();
+            WsfTowedMover towedMover = (WsfTowedMover)mover;
+            # 20 seconds from now start reeling in towed asset
+            double reelInInNumSeconds = 20;
+            if (aTime > 0.0) reelInInNumSeconds = aTime;
+            if (towedMover.IsValid())
+            {
+               towedMover.SetStartReelInTimeRelative(reelInInNumSeconds);
+               # units: MPS
+               towedMover.SetReelInRate(8);
+            }
+         }
+      }
+      end_script
+
+   ::
+
+      script void SetReelInAfterDeployment(double      aTime,
+                                           WsfPlatform aTowedAsset)
+      {
+         if (aTowedAsset.IsValid())
+         {
+            WsfMover mover = aTowedAsset.Mover();
+            WsfTowedMover towedMover = (WsfTowedMover)mover;
+            # 20 seconds from now start reeling in towed asset
+            double reelInInNumSeconds = 120;
+            if (aTime > 0.0) reelInInNumSeconds = aTime;
+            if (towedMover.IsValid())
+            {
+               towedMover.SetReelInTimeAfterDeploymentRelative(reelInInNumSeconds);
+               # units: MPS
+               towedMover.SetReelInRate(8);
+            }
+         }
+      }
+      end_script
+
+
+Script Examples
+===============
+
+.. method:: Example scripts
+   
+   File atg-missile.txt for Group Exercise for Module 7
+   
+   ::
+   
+      radar_signature TOWED-SIG
+         constant 1 m2
+      end_radar_signature
+   
+      script_variables
+         # state choices: STOWED, REELING_OUT, DEPLOYED, REELING_IN
+         string pastState = "STOWED";
+      end_script_variables
+   
+      platform_type TOWED_TYPE WSF_PLATFORM
+         icon sub
+         radar_signature TOWED-SIG
+   
+         mover WSF_TOWED_MOVER
+            update_interval    0.25 s
+            tow_length         500 m
+            reel_out_speed     5 m/s
+            reel_in_speed      8 m/s
+            reel_in_time_after_deployed 60 s
+         end_mover
+   
+         // Sample script to control a towed asset release from a platform
+         on_initialize
+            {
+               WsfMover mover = PLATFORM.Mover();
+               WsfTowedMover towedMover = (WsfTowedMover)mover;
+               if (towedMover.IsValid())
+               {
+                  string state = towedMover.State();
+                  writeln("state = ", state);
+   
+                  if ((state == "DEPLOYED") && (pastState != "DEPLOYED"))
+                  {
+                     writeln("state = DEPLOYED");
+                     towedMover.SetReelInTimeAfterDeploymentRelative(20);
+                     towedMover.SetReelInRate(8);
+                     writeln("set reel in time and rate");
+                  }
+                  else
+                  {
+                     writeln("state = ", state);
+                  }
+                  pastState = state;
+   
+               }
+            }
+         end_on_initialize
+      end_platform_type
+   
+   
+      # must have some weapon effects module
+      # will not be used per se other than
+      # to get the launcher and notify
+      # the mover with that information
+      # Done internally, so using a simple effect
+      weapon_effects TOWED-EFFECTS WSF_SPHERICAL_LETHALITY
+         minimum_radius 0.1 m
+         maximum_radius 0.2 m
+      end_weapon_effects
+   
+   
+      weapon TOWED_TYPE WSF_EXPLICIT_WEAPON
+         launched_platform_type TOWED_TYPE
+         weapon_effects TOWED-EFFECTS
+         quantity 4
+      end_weapon
+

@@ -1,0 +1,146 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.4:
+
+WSF 1.7.4 - 3 Sept 2012
+-----------------------
+
+Removal of Old Object Types
+===========================
+
+As mentioned in the :ref:`wsf_1.7.2` release notes, the old mover models and the transitional names have been removed
+(It was indicated this was going to be done in the WSF 1.7.3 release, but it was not done).
+
+The changes are as follows:
+
+* Removed **WSF_OLD_AIR_MOVER** and **WSF_NEW_AIR_MOVER** (use :model:`WSF_AIR_MOVER`)
+* Removed **WSF_OLD_GROUND_MOVER** and **WSF_NEW_GROUND_MOVER** (use :model:`WSF_GROUND_MOVER`)
+* Removed **WSF_OLD_ROAD_MOVER** and **WSF_NEW_ROAD_MOVER** (use :model:`WSF_ROAD_MOVER`)
+* Removed **WSF_OLD_SUBSURFACE_MOVER** and **WSF_NEW_SUBSURFACE_MOVER** (use :model:`WSF_SUBSURFACE_MOVER`)
+* Removed **WSF_OLD_SURFACE_MOVER** and **WSF_NEW_SURFACE_MOVER** (use :model:`WSF_SURFACE_MOVER`)
+* Removed **WSF_OLD_6DOF_MOVER** and **WSF_NEW_6DOF_MOVER** (use :model:`WSF_P6DOF_MOVER`)
+* Removed **WSF_OLD_GUIDED_MOVER** and **WSF_NEW_GUIDED_MOVER** (use :model:`WSF_GUIDED_MOVER`)
+* Removed **WSF_OLD_GUIDANCE_COMPUTER** and **WSF_NEW_GUIDANCE_COMPUTER** (use :model:`WSF_GUIDANCE_COMPUTER`)
+
+In addition, the following models were removed:
+
+* **WSF_IR10T_SENSO** and **WSF_IR10T_FLIR_SENSOR** - These were very error-prone implementations of a table-driven spectral
+  infrared model. By now it is believed that users have upgraded to :ref:`sosm_interface.WSF_SOSM_SENSOR`.
+* WSF_ATA_LAUNCH_COMPUTER_PROCESSOR, WSF_ATG_LAUNCH_COMPUTER_PROCESSOR and WSF_SAM_LAUNCH_COMPUTER_PROCESSOR - these
+  were written before the implementation of the script language and are too limited to be of any practical use.
+* WSF_DUMP_MESSAGE_PROCESSOR - This was a very simple processor written before the scripting language existed. that
+  simply echoed some information about any message it received. Those who desire debugging currently embed writeln
+  statements within their script logic.
+
+General
+=======
+
+* The Microsoft compiler version 2003 is no longer supported. (See below).
+
+Corrections
+===========
+
+* **(CR 9650)** Corrected a problem in :command:`sensor_plot` where negative values of contrast radiant intensity were
+  clamped to zero when written to the plot file.
+
+* **(CR 9651)** Corrected a problem in checking for containment in relative :command:`zones <zone>` attached to a platform. A
+  point not in the same hemisphere as the observer will now be considered to be outside the zone. Note that this applies
+  only to relative zones. Absolute zones are not affected because they are not dependent on the location of an observer.
+
+* **(CR 9674)** Removed an invalid length check from the DIS PDU class. Errors messages were unnecessarily being
+  written when the length of the PDU was valid according to the DIS specification.
+
+* **(CR 9694)** Corrected a problem which caused unrotated :method:`WsfDraw ellipses <WsfDraw.BeginEllipse>` to appear with
+  major axis perpendicular to the supplied heading as opposed to parallel.
+
+* Corrected a problem where :model:`WSF_IRST_SENSOR` was computing an incorrect value for transmittance if
+  :model:`atmospheric_attenuation <WSF_IRST_SENSOR>` was specified. Effectively, the path was always
+  considered to be horizontal starting at the lower altitude of the two objects. Since the attenuation decreases with
+  altitude the problem was smaller at higher altitudes and larger at lower altitudes
+
+* **(CR 9857)** Corrected a problem in the J11 interface where the Seeker Acquisition Status was not indicating
+  "tracking" even when an on-board sensor had the target in track.
+
+* Corrected a problem where canceling a task while looping over a task list could crash the simulation.
+
+* **(CR 9893)** Corrected a problem with both :model:`WSF_COMM_TRANSCEIVER` and :model:`WSF_RADIO_TRANSCEIVER` were
+  simultaneous transmissions occurring when they should not.
+
+Enhancements
+============
+
+* Explicitly added the concept of a track being "purgeable".  Added methods *SetPurgeable* and *IsPurgeable* to the
+  WsfTrack class.
+
+* Added :model:`WSF_EXCHANGE_PROCESSOR` for the platform-to-platform exchange of commodities or services, and related
+  observable events EXCHANGE_QUERY and EXCHANGE_EVENT.
+
+* Added the :command:`terrain.dted_checksum` option to the :command:`terrain` input block to allow use of (non-corrupt) DTED files
+  with invalid checksums.
+
+* Added option for Military Grid Reference System (MGRS) coordinate input to :command:`platforms <platform.mgrs_coordinate>`,
+  :command:`route.mgrs_coordinate`, and :command:`zone.mgrs`.
+
+* Added :model:`WSF_ROTORCRAFT_MOVER`.  This new mover derivative allows the platform to decouple the velocity vector
+  from the platform attitude (at least a lower speeds).  Permits the aircraft to hover in one direction, but maintain
+  desired heading in another.  The mover also can also come to rest, and translate vertically.  Script commands that set
+  a desired heading value are saved into the mover, and used at lower speeds (see documentation).  At high speed the
+  aircraft does assume the heading angle to match the course direction.
+
+* **(CR 9744)** Added the ability to use a [[Values#TimeReference|time reference]] for the time values in the
+  :command:`execute at_time <execute>` and :command:`execute at_interval_of <execute>` commands.
+
+* **(CR 9756)** Updated :model:`WSF_IMAGE_PROCESSOR` so the Johnson criteria will be evaluated in a way that is more
+  desirable. Additional inputs have been provided to allow customization of the evaluation process.
+
+* Added the :command:`masking_pattern` capability, which provides a mean to model structural blockage during :command:`comm`,
+  :command:`sensor` and :command:`weapon` interactions.
+
+* Added the :command:`truth <track_manager>` track correlator.
+
+* Officially documented and released the :command:`nearest_neighbor <track_manager>` track correlator.
+
+* Added the :command:`dis_interface.max_allowed_bad_entity_states` input to the
+  :command:`dis_interface`.
+
+* Added the waypoint commands: :command:`route.aux_data` and :command:`route.maximum_flight_path_angle`.
+
+* Added script :ref:`Auxiliary Data Methods <WsfWaypoint.Auxiliary_Data_Methods>` to :class:`WsfWaypoint`.
+
+* Added the :command:`_.route_mover.path_compute_timestep` command to waypoint movers.
+
+Developer Items
+===============
+
+* All of the Wsf<X>Types classes have been removed and their functionality has been moved to their respective Wsf<X>
+  class. This eliminates almost 10% of the core classes and will help to stem the proliferation of files as new classes
+  are defined. Some user code may have to implement the following changes:
+
+  * Change Wsf<X>Type::Add() to Wsf<X>::AddType();
+       e.g.: WsfPlatformType::Add() becomes WsfPlatform::AddType().
+
+  * Change Wsf<X>Type::Clone() to Wsf<X>::CloneType();
+       e.g.: WsfPlatformType::Clone() becomes    WsfPlatform::CloneType().
+
+  * Change Wsf<X>Type::Find() to Wsf<X>::FindType();
+       e.g.: WsfPlatformType::Find() becomes WsfPlatform::FindType().
+
+* The Windows Visual Studio 2010 projects and solutions have been updated to support the 'x64' platform (64-bit
+  build).
+
+* Support for Microsoft Visual Studio 2003 and versions of the GNU Compiler Collection prior to 3.3 are no longer
+  supported.
+
+* All of the source code was updated to remove references to indicated as deprecated headers by the C++ standard.
+
+* Added WsfNetworkInterface (class), a utility that enables easy setup of GenIO-based TCP, TCP Server, or UDP
+  network connections.

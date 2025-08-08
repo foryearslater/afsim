@@ -1,0 +1,201 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.0:
+
+WSF 1.7.0 - 13 Dec 2010
+-----------------------
+
+General
+=======
+
+* :ref:`As documented in previous release notes <wsf_1.7.5>`, :model:`WSF_GUIDED_MOVER`, :model:`WSF_GUIDANCE_COMPUTER` and
+  :model:`WSF_UNGUIDED_MOVER` will now refer to the new implementations. To continue utilizing the old implementations you
+  must change your weapon definitions to use :model:`WSF_OLD_GUIDED_MOVER`, :model:`WSF_OLD_GUIDANCE_COMPUTER` and
+  :model:`WSF_OLD_GUIDED_MOVER`. Note that the scenarios released with the WSF distribution have already been updated as
+  necessary. Scenarios that used the explicit **WSF_NEW_** and **WSF_OLD_** forms will work as in previous releases. Use
+  of the **WSF_OLD_** forms should not be used for new work.
+
+* Updated :ref:`MTT` (re-coded in C/C++) to Suppressor version 7.0071 (only for builds that
+  include MTT).
+
+* The :ref:`Reactive Integrated Planning Architecture <RIPR>` (RIPR) is now compiled into the baseline sage
+  executable.  The open source SOAR module must still be compiled separately.
+
+Corrections
+===========
+
+* **(CR 8280)** Corrected an issue where the CSIMS missile model would generate missile state
+  data with 'not-a-number' (or NaN) values if the target was already dead at the time the missile was launched.
+  (Classified releases only)
+
+* **(CR 8316)** Corrected an issue with multi-beam radars interacting with false target jamming. When more than one
+  beam is interacting with the same jammer transmitter and one of the beams does not pass a power sufficiency test it
+  fails to interact with all subsequent beams unless it then interacts with another beam. The last beam in wins the
+  interaction pass/fail criteria. With this fix when a single beam can interact it adds it to the interactions list.
+
+* **(CR 8317)** Fixed some issues with false target jamming causing segmentation faults when doing a multi-threaded
+  simulation run.
+
+* **(CR 8365)** The velocities are now reported as feet/second per the standard in the j11.1 message.
+
+* **(CR 8372)** The :class:`WsfMessage` script functions :method:`SetSizeInBits <WsfMessage.SetSizeInBits>` and
+  :method:`SetSizeInBytes <WsfMessage.SetSizeInBytes>` were not working causing a runtime error.
+
+* **(CR 8382)** Fixed a problem with road mover platforms instantaneously changing altitude when paused.
+
+* **(CR 8397)** Corrected a problem where crash would occur if a DIS Detonation PDU was received where the target
+  was not specified or not existent **and** the 'Location' field in the PDU was zero.
+
+* **(CR 8454)** The **WSF_6DOF_MOVER** now responds to the base set of platform mover script commands, such as
+  TurnToHeading(), GoToAltitude(), and GoToSpeed(). Corrected a problem in **WSF_6DOF_MOVER** that caused inconsistent
+  kinematic data to be reported. When flying straight a level at a constant speed, the position reported at time T2 did
+  not match the position computed by extrapolating from the previously reported state at time T1.
+
+* **(CR 8471)** Updated the :ref:`antenna_pattern.cosecant_squared_pattern` antenna pattern generator to reflect the
+  most recent updates from the source code from which this routine was derived. The original source erroneously used the
+  azimuth_beamwidth to compute the elevation-dependent gain above and below the cosecant-squared region. The code with
+  now use the elevation_beamwidth when computing the elevation-dependent gain in these regions. Note that this MAY cause
+  some differences in the resulting pattern outside of the cosecant-squared region.
+
+* **(CR 8475)** The jamming effects models :model:`WSF_FALSE_TARGET_EFFECT` and :model:`WSF_RPJ_EFFECT` were computing a
+  incorrect pulse density because they were using an integrated pulse count that had been internally adjusted by the
+  radar. The models have now been modified to use the unadjusted pulse count.
+
+* **(CR 8576)** The :command:`track_manager` was immediately purging a local track when the last correlated raw track was
+  dropped even though a :model:`track processor <WSF_TRACK_PROCESSOR>` with a :command:`WSF_TRACK_PROCESSOR.purge_interval` was
+  defined. The documentation states that if a purge_interval is defined then tracks will only be dropped during the
+  periodic purging.
+
+* **(CR 8582)** :model:`WSF_ESM_SENSOR` was modified so that detections of intermittent communications signals extended
+  through all samples in which the message was being transmitted. Formerly it only reported the detection during the
+  sample in which the message started being transmitted.
+
+* **(CR 8584)** Corrected the problem where the :command:`horizontal_map.detection_reference` command in the
+  :command:`horizontal_map` and :command:`sensor_plot_flight_path_analysis <flight_path_analysis>` functions
+  of :command:`sensor_plot` was being not recognized. It was inadvertently deleted in an update for the 1.6.4 release.
+
+* **(CR 8592)** Corrected a problem where enabling incidental damage in a :command:`weapon_effects` definition was not resulting in targets being destroyed when they should have.
+
+* **(CR 8615)** Corrected a problem where excessive memory would be allocated if multiple :command:`road_traffic` instances
+  used the same :command:`route_network`. If the networks were large there was a possibility the simulation would fail during
+  initialization with an out-of-memory condition.
+
+Enhancements
+============
+
+* **(CR 7988)** Added Property Data Accessor Methods to :class:`WsfMover`.
+
+* Added :class:`WsfVisualization` script class to allow changing platform visibility on VESPA, and manipulating animated
+  models.
+
+* **(CR 8116)** Modified :model:`WSF_SAM_LAUNCH_COMPUTER` launch computer type.  Adds track lateral offset as an
+  independent variable.  The implementation chooses the closest available offset set from which to compute a
+  range/time-of-flight firing solution.  Corresponding modifications were also made to weapon_tools for Launch Computer
+  generation.
+
+* **(CR 8369)** Added capability to enter spot SAR size (height,width) as inputs. The values are used to adjust FOV
+  during spot (:model:`WSF_SAR_SENSOR`).
+
+* **(CR 8350)** Added in a new repeater jamming effect, :model:`WSF_REPEATER_EFFECT`,  that can be applied to modify the
+  gain thresholds of the jamming power based on different methods.
+
+* **(CR 8377)** Added the capability to limit the number of tracks that are reported by a :command:`sensor` when a
+  :command:`false_target_screener` is present on it. The new capability will limit or stop sending tracks based on the
+  :command:`false_target_screener.allow_track_reporting_when_flooded` command.
+
+* **(CR 8422)** Added the :command:`event_output.print_failed_message_delivery_attempts` and
+  :command:`event_output.print_failed_sensor_detection_attempts` commands to :command:`event_output`.
+
+* Updated the *csims_interface* missile model (for classified releases only) to correspond to the SIMS
+  1.33.2 model as released with SUPPRESSOR.
+
+* Allow redefinition of :command:`platform.commander` and :command:`platform.geo_point` in a :command:`platform`. This facilitates
+  reuse of existing scenarios for testing or other studies which may require changes in the reporting structure.
+
+* **(CR 8380)** Added indication that DTED directory is located and that at least one DTED sub-directory exists.
+
+* **(CR 8442)** Added the :class:`WsfEM_Interaction` script class, the derived classes
+  :class:`WsfSensorInteraction` and :class:`WsfCommInteraction`. Updated the script
+  observers to use the new classes. This allows users to write script observers that extract results from sensor and
+  communication interactions.
+
+* **(CR 8445)** Added a default value of -999 to several :command:`sensor_plot` variables that did not have an initial
+  value set.
+
+* **(CR 8477)** Added the :command:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER.compute_end_point` command to
+  :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER`. This option will cause computation of the 'end point and time' of a
+  ballistic missile interceptor, which is the estimated location and time at which the interceptor would hit the Earth's
+  surface if it followed a ballistic trajectory and did not hit the intended target.
+
+* **(CR 8504)** Added documentation for the :command:`sensor_plot` command
+  :command:`sensor_plot_flight_path_analysis <flight_path_analysis>` function. Added the capability to use a
+  Time-Space-Position-Information (TSPI) file or a platform with a route and sample interval as additional methods for
+  providing the sample points.
+
+* **(CR 8507)** Added infrastructure changes, primarily to WsfPlatformPart via ( :ref:`Platform_Part_Commands` ), to
+  enable modeling damage to platforms at the individual part level.  Change will permit higher fidelity system
+  degradation in response to Directed Energy or other part-targeted engagements.  This is a work-in-process, as platform
+  part implementations must now query their damage state, and respond and/or "heal" appropriately.  A recovery time may
+  now be supplied to queue an automatic Resurrect function to be called.
+
+* Added in a method to degrade sensor updates in order to maintain realtime using the
+  :command:`sensor_update_break_time` command. This command will cause the
+  sensor updates for the current frame to stop after the currently updating sensors in each thread update. Since the
+  sensor updates are done on a priority queue, the sensors priority in updating will be reevaluated the next sensor
+  update frame.
+
+* **(CR 8553)** Added in :model:`WSF_SIMPLE_FT_EFFECT` to allow for a more simplistic way of modeling false targets that
+  are only blocking detections/tracks.
+
+* **(CR 8557)** Modified :model:`WSF_ESM_SENSOR` to allow the optional selection of the
+  :model:`probabilistic scan-on-scan (PSOS) <WSF_ESM_SENSOR>` model.
+
+* Added the :ref:`attenuation_model.itu` atmospheric attenuation model as an option for determining RF atmospheric
+  attenuation. The model includes the contribution for atmospheric gases (ITU-R P.676), and optional contributions from
+  rain (ITU-R P.838) and fog and clouds (ITU-R P.840).
+
+* Added the :ref:`attenuation_model.simple` atmospheric attenuation model as an option for determining RF
+  atmospheric attenuation. This allows the specification as either a simple loss rate per unit length or a constant
+  factor.
+
+* **(CR 8577)** Added the sensor :model:`WSF_COMPOSITE_SENSOR` which provides functionality similar to the 'compound'
+  sensor found in EADSIM.
+
+* Added the function :command:`spherical_map` to :command:`sensor_plot` to create plot files of target
+  detectability at a specific range over a matrix of viewing angles.
+
+Database Updates
+================
+
+* The classified scenarios were updated to reflect the data from ASC/ENDA as of July 2010. Extensive changes were
+  made to the 'base_types' and 'site_types' to accommodate new tactics. Several things should be noted:
+
+   * The way in which SAM launch computers were implemented is much different. In the long term it will be easier to add
+     new weapons and change tactics without having to change a lot of files.
+
+   * The tactics files have been moved from the 'platforms' to the 'processors' directory, and in some cases have been
+     renamed. User-created scenarios that refer to the tactics files may have to have their 'include' paths updated.
+
+   * The scenarios distributed with the classified release cannot be used with executables from previous releases. The
+     new executables, however, can be used with older scenarios.
+
+* **(CR 8591)** (Classified database) - Corrected problems in red_sag_assignment_tactics.txt where the
+  'no-intercept-possible' condition was not getting handled, and the 'bestTime' variable was not getting properly updated.
+
+* (Classified database) - Corrected a problem where the SA-15 battery commander was not turning on the local
+  acquisition radar.
+
+* (Classified database) - Corrected a problem where the relative yaw angle used for orienting the TTR system in a
+  SAM battalion was being computed using the wrong platform as a reference. This was only a problem where the platform
+  containing the TTR had a different heading than battalion commander platform (e.g.: as in the 'split' scenarios).
+
+* (Classified database) - Corrected a problem where several of the tactical SAM systems were not working.

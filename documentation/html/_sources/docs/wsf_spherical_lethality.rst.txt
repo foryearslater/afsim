@@ -1,0 +1,182 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SPHERICAL_LETHALITY
+-----------------------
+
+.. model:: weapon_effects WSF_SPHERICAL_LETHALITY
+
+.. parsed-literal::
+
+  :command:`weapon_effects` <name> :model:`WSF_SPHERICAL_LETHALITY`
+    :command:`weapon_effects` Commands ...
+    :model:`WSF_EXPLICIT_WEAPON_EFFECTS` Commands ...
+
+    ... WSF_SPHERICAL_LETHALITY Commands_ ...
+    
+    # `Pk Table`_
+    
+    use_pk_table_ <string-value>
+    pk_table_ ... end_pk_table
+         
+  end_weapon_effects
+
+Overview
+========
+
+:model:`WSF_SPHERICAL_LETHALITY` computes lethality (i.e. damage) according to the following algorithm:
+
+   :math:`D = D_{max} - [(D_{max} - D_{min})\times(\frac{R - R_{min} } {R_{max}-R_{min} } )^{1/X}]`
+
+      where:
+
+      R
+        Slant range distance from detonation location to target platform.
+      R :subscript:`min`
+        Minimum distance at which damage will be inflicted
+      R :subscript:`max`
+        Maximum distance at which damage will be inflicted
+      D :subscript:`min`
+        The damage to be imposed when R = R :subscript:`max`
+      D :subscript:`max`
+        The damage to be imposed when R = R :subscript:`min`
+      X
+        Exponent that specifies the decay rate of the damage.
+
+        X=1
+          in linear decay of the damage.
+        X>1
+          less rapid decay of the damage.
+        X<1
+          more rapid decay of the damage.
+
+      D :subscript:`thresh`
+        The minimum damage that will be imposed.
+
+      If R > R :subscript:`max`
+        No damage will be imposed
+      If R < R :subscript:`min`
+        Maximum damage, D :subscript:`max` will be imposed.
+      Between R :subscript:`min` and R :subscript:`max`
+        Damage will get computed according to the above equation.
+
+The resulting damage factor will be added to the current damage factor of the target platform.  If the updated value is greater than or equal to 1.0 then the target platform will be killed.
+
+.. block:: WSF_SPHERICAL_LETHALITY
+
+Commands
+========
+
+.. command:: minimum_radius <length-value>
+
+   Specifies the value of R :subscript:`min` in the damage equation.
+
+   .. note::
+      This must be less than the value of maximum_radius_.
+
+.. command:: maximum_radius <length-value>
+
+   Specifies the value of R :subscript:`max` in the damage equation.
+
+   .. note::
+      This must be greater than the value of minimum_radius_.
+
+.. command:: minimum_damage <value>
+
+   Specifies the value of D :subscript:`min` in the damage equation.
+
+   .. note::
+      This must be in the range [0..1] and must be less than the value of maximum_damage_.
+
+   Default: 0.0
+
+.. command:: maximum_damage <value>
+
+   Specifies the value of :subscript:`Dmax` in the damage equation.
+
+   .. note::
+      This must be in the range [0..1] and must be greater than the value of minimum_damage_.
+
+   Default: 1.0
+
+.. command:: exponent <value>
+
+   Specifies the value of X in the above equation.
+
+   .. note::
+      Value must be greater than zero.
+
+   .. note::
+      A value of 1.0 indicates a linear decay of damage.
+
+   Default: 1.0
+
+.. command:: threshold_damage <value>
+
+   If the target platform has never been damaged, then this is the damage factor threshold that must be achieved by the blast before any damage will occur.
+
+   .. note::
+      This must be in the range [0..1] and must be less than the value of maximum_damage_.
+
+   .. note::
+      A value of 0.0 will apply damage immediately.
+
+   Default: 0.0
+
+Pk Table
+--------
+
+.. command:: use_pk_table <string-value>
+
+   Sets the name of a Pk table to evaluate upon weapon fusing, in order to compute the threshold value for :command:`weapon_effects.intercept_pk`.  At platform initialization, this table name must be known by the PkTable Manager to supply to the weapon.  Table will override any value supplied for :command:`weapon_effects.intercept_pk`.
+
+.. command:: pk_table ... end_pk_table
+
+   Following is an example input to specify a PkTable while using the use_pk_table_ option.  The pk_table...end_pk_table block must occur either in global context (as all tables are read in by the PkTableManager, and supplied by reference to the weapon), or nested inside of a :command:`weapon_effects` block.  The weapon must request use of the table by employing the use_pk_table_ option. Each of the one or more tables listed within the pk_table block is tied to a target_type.  The independent variables for the table lookup, if not a constant Pk value, will include: target azimuth, target elevation, weapon speed, and target speed. The first target_type listed must be DEFAULT, which is used if there is no more specific match provided below the DEFAULT option.  PkTables may be specified as inline_tables, and the "inline_table" keyword is always followed by two integers, the (n) number of azimuths (beginning with zero, as the pk is assumed to be symmetric about the weapon's XZ plane), and the (m) number of elevations (not assumed symmetric) in increasing order.  Then the inline table will contain n X m values of Pk for the weapon to interpolate as the Pk threshold.  The kill determination will be 1.0 (total kill) if the uniform random draw is less than the threshold value.
+
+::
+
+ pk_table PkTableName
+   target_type DEFAULT
+      constant  0.1
+   end_target_type
+   target_type FLANKER
+      weapon_speed 21 m/s   # lower_bound
+         target_speed 22 m/s
+            inline_table 2 5
+                     -90   -45   0    45   90
+               0     0.81 0.81 0.81 0.85 0.81
+             180     0.81 0.81 0.81 0.84 0.81
+         end_target_speed
+         target_speed 33 m/s
+            inline_table 3 3
+                      -90   0    90
+                0     0.81 0.81 0.81
+               90     0.81 0.81 0.81
+              180     0.81 0.81 0.81
+         end_target_speed
+      end_weapon_speed
+      weapon_speed 34 m/s   # upper_bound
+         target_speed 25 m/s
+             inline_table 2 5
+                        -90   -45   0    45   90
+                  0     0.81 0.81 0.81 0.85 0.81
+                180     0.81 0.81 0.81 0.84 0.81
+         end_target_speed
+         target_speed 36 m/s
+                  inline_table 2 5
+                    -90   -45   0    45   90
+              0     0.81 0.81 0.81 0.85 0.81
+            180     0.81 0.81 0.81 0.84 0.81
+         end_target_speed
+      end_weapon_speed
+   end_target_type
+ end_pk_table

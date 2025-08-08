@@ -1,0 +1,165 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfConstellation
+----------------
+
+.. class:: WsfConstellation
+
+:class:`WsfConstellation` provides an object to represent and interact with
+constellations that have been created with a :class:`WsfConstellationMaker`.
+
+Static Methods
+==============
+
+These static methods are used to access the set of constellations currently
+defined in the simulation. Once a constellation is created using a
+:class:`WsfConstellationMaker`, the constellation will persist throughout the
+simulation, even if every member platform is ultimately removed.
+
+.. method:: WsfConstellation FindConstellation(string aConstellationName)
+
+   Return the constellation with the given name if it exists, or an invalid
+   object otherwise.
+
+.. method:: Array<WsfConstellation> AllConstellations()
+
+   Return an array with every constellation currently defined in the simulation.
+
+Methods
+=======
+
+.. method:: bool IsGeneral()
+
+   Return true if the constellation has a general design. Please see :class:`WsfConstellationMaker` for details on the available constellation designs
+
+.. method:: bool IsWalkerDelta()
+
+   Return true if the constellation has a Walker Delta design. Please see :class:`WsfConstellationMaker` for details on the available constellation designs
+
+.. method:: bool IsWalkerStar()
+
+   Return true if the constellation has a Walker Star design. Please see :class:`WsfConstellationMaker` for details on the available constellation designs
+
+.. method:: int TotalSats()
+
+   Return the total number of satellites that make up the full constellation.
+
+   .. note:: This refers to the design, and does not give the number of member platforms that still exist.
+
+.. method:: int NumPlanes()
+
+   Return the number of orbital planes in the constellation's design.
+
+.. method:: int SatsPerPlane()
+
+   Return the number of satellites per orbital plane in the constellation's design.
+
+.. method:: int WalkerF()
+
+   Return the Walker inter-plane phasing parameter. For constellations with a
+   general design, this will return 0 (see :method:`WsfConstellation.IsGeneral`).
+
+.. method:: double AnomalyAlias()
+
+   Return the inter-plane phasing angle in degrees.
+
+.. method:: double RAAN_Range()
+
+   Return the range of RAAN in degrees over which the orbital planes are
+   distributed.
+
+.. method:: string ConstellationName()
+
+   Return the name of this constellation.
+
+.. method:: string PlatformType()
+
+   Return the platform type of the members of this constellation.
+
+.. method:: double SemiMajorAxis()
+
+   Return the semi-major axis in meters of the orbits making up this
+   constellation.
+
+.. method:: double CircularAltitude()
+
+   Return the circular altitude in meters of the orbits making up this constellation.
+
+.. method:: double OrbitalPeriod()
+
+   Return the orbital period in seconds of the orbits making up this constellation.
+
+.. method:: double RevolutionsPerDay()
+
+   Return the number of revolutions per day of the orbits making up this constellation.
+
+.. method:: double Inclination()
+
+   Return the inclination in degrees of the orbits making up this constellation.
+
+.. method:: double InitialRAAN()
+
+   Return the RAAN in degrees of the zeroth orbital plane in this constellation.
+
+.. method:: double InitialAnomaly()
+
+   Return the true anomaly in degrees of the zeroth member of the zeroth plane
+   in this constellation.
+
+.. method:: int NextSatelliteInPlane(int aSatellite)
+
+   Returns the satellite position after the given, correctly wrapping
+   around onto the first satellite position if the input specifies the last.
+
+.. method:: int PreviousSatelliteInPlane(int aSatellite)
+
+   Returns the position before the given, correctly wrapping
+   around onto the last satellite position if the input specifies the first.
+
+.. method:: int NextPlane(int aPlane)
+
+   Returns the orbital plane after the given, correctly wrapping around
+   onto the first plane if the input specifies the last.
+
+.. method:: int PreviousPlane(int aPlane)
+
+   Returns the orbital plane before the given, correctly wrapping around
+   onto the last plane if the input specifies the first.
+
+.. method:: string MemberName(int aPlane, int aSatellite)
+
+   Return the name that the member platform in the given plane and at the given
+   position would have should that platform exist.
+
+.. method:: WsfPlatform Member(int aPlane, int aSatellite)
+
+   Return the platform in the given plane and at the given position, or an
+   invalid object if that platform does not exist.
+
+.. method:: bool Apply(string aScriptName)
+
+   Call the script with the given name on each member of the constellation. The
+   named script should be available in the global context, should return nothing,
+   and should accept four arguments: the first is the :class:`WsfConstellation`
+   for which the platform is a member; the second is the orbital plane
+   for the member; the third is the position in that plane for the member,
+   and the fourth is the :class:`WsfPlatform` itself. The script is only called
+   for member platforms that still exist.
+
+   For example, the following would print a message for each member of the
+   constellation:
+
+   ::
+
+      script ExampleApplyScript(WsfConstellation aConstellation, int aPlane, int aSatellite, WsfPlatform aMember)
+         writeln("Hello from ", aMember.Name());
+      end_script

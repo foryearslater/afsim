@@ -1,0 +1,205 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfFormation
+------------
+
+.. class:: WsfFormation
+
+.. contents::
+   :local:
+
+Creation
+========
+
+To create :class:`WsfFormation` objects, use one of the methods provided by
+:class:`WsfFormationManager`.
+
+Name Methods
+============
+
+.. method:: string GetQualifiedName()
+
+   Returns the qualified name of this formation. The qualified
+   name is unique among all the defined formations. The qualified
+   name is composed from the relative names of this formation and all of
+   its parent formations. For example, if the relative name of a formation
+   is 'beta' and it is a sub-formation of a formation with relative name
+   'red', then the qualified name of that formation would be 'red.beta'.
+
+.. method:: string GetRelativeName()
+
+   Return the relative name of this formation. The relative name is used to
+   distinguish between the sub-formations of a formation, and does not need
+   to be unique among all of the defined formations. Instead, it only needs to
+   be unique among the sub-formations of its parent.
+
+.. method:: bool Rename(string aNewName)
+
+   Change the relative name of this formation. If successful, this will change
+   the name of this formation as well as updating the qualified names of all 
+   of the sub-formations of this formation, and this method will return true.
+   If there proposed name change creates a conflict in the set of qualified 
+   names, this method will do nothing and return false.
+
+Structure Related Methods
+=========================
+
+.. method:: WsfFormation GetParentFormation()
+
+   Get the parent formation of this formation. This will return an invalid
+   object if this has no parent.
+
+.. method:: bool IsRoot()
+
+   Returns true if this formation is a top-level formation (if this formation
+   has no parent).
+
+.. method:: int GetNumSubFormations()
+
+   Returns the number of sub-formations of this formation.
+
+.. method:: WsfFormation GetSubFormation(string aRelativeName)
+
+   Returns the sub-formation of this formation with the given relative name.
+   If there is no such formation, this will return an invalid object.
+
+.. method:: Array<WsfFormation> GetAllSubFormations()
+
+   Returns an array of all of the sub-formations of this formation. If there
+   are no sub-formations, this will return an empty array.
+
+.. method:: bool IsLeaf()
+
+   Returns true if this formation is a leaf (has no sub-formations).
+
+.. method:: bool AddSubFormation(WsfFormation aFormation, WsfFormationOffset aOffset)
+
+   Add the given formation as a sub-formation of this formation with the given
+   offset. This method will return true if the addition was successful, and
+   false otherwise. Reasons that this method might fail include: the input
+   formation being invalid, the input formation already having a parent 
+   formation, and this formation already having a sub-formation with the same
+   relative name as the input formation.
+
+   After the addition, the given formation will be a sub-formation of this
+   formation and will have had its and all its descendants qualified names 
+   updated to indicate the new ancestor.
+
+.. method:: WsfFormation RemoveSubFormation(string aRelativeName)
+
+   Remove the sub-formation of this formation with the given relative name.
+   The removed sub-formation will have its parent reset, making it a top-level
+   formation, as well as having its and all its descendants' qualified names 
+   updated. Note that this does not disband the formation, it merely removes
+   it as a sub-formation of this formation. If this removal is successful, this
+   will return true.
+
+Leader Related Methods
+======================
+
+.. method:: WsfFormation GetLeadSubFormation()
+
+   Return the lead sub-formation of this formation. If there is no lead
+   formation specified, this will return an invalid object.
+
+.. method:: WsfFormation GetFormationLeader()
+
+   Return the overall formation leader of this formation. This is distinct from
+   :method:`WsfFormation.GetLeadSubFormation` in that this will continue down 
+   to a leaf formation, following the lead each time.
+
+.. method:: bool HasLeader()
+
+   Returns true if this formation has a leader assigned. If this is true,
+   then :method:`WsfFormation.GetLeadSubFormation` will return a valid object.
+
+.. method:: bool IsLeader()
+
+   Returns true if this formation is the lead formation of its parent formation.
+   If there is no parent formation, this will always return false.
+
+.. method:: bool SetLeader(string aRelativeName)
+
+   Set the lead sub-formation of this formation to be the sub-formation with
+   the given relative name, and return true. If there is no such formation,
+   then this will return false.
+
+Member Related Methods
+======================
+
+.. method:: int GetNumMemberPlatforms()
+
+   Get the number of member platforms in all formations descendant from this
+   formation.
+
+.. method:: WsfPlatform GetMemberPlatform()
+
+   Return the platform member of this formation. If this is not a unit
+   formation this will return an invalid object.
+
+.. method:: bool HasMemberPlatform()
+
+   Return if this formation has a member platform assigned to it. This method
+   could return false because the formation type does not support setting a 
+   member, or because the formation type does, but a member is not assigned.
+
+.. method:: bool SetMember(string aPlatformName)
+
+   Set the member of this formation to be the platform with the given name.
+   This will return false if the formation type does not support setting a
+   member platform.
+
+.. method:: bool SetMember(WsfPlatform aPlatform)
+
+   Set the member of this formation to be the given platform. If the formation
+   type does not support setting a member platform, this will return false.
+
+Offset Related Methods
+======================
+
+.. method:: WsfOffset GetOffset()
+
+   Return the offset of this formation relative to the parent formation.
+
+   .. note:: One cannot set the offset directly using this object. Instead,
+             one must use a command, :class:`WsfFormationChangeOffsetCommand`.
+
+Command Related Methods
+=======================
+
+.. method:: bool IsAttached()
+
+   Return if this formation is attached to its parent. A formation that is
+   attached is subject to commands forwarded from its parent. Further, attached
+   sub-formations will move to form up with the other members of its formation
+   and will keep station in that formation.
+
+.. method:: WsfFormationCommand GetCurrentCommand()
+
+   Get the current command assigned to this formation. If there is no such 
+   command, this will return an invalid object.
+
+.. method:: bool ExecuteCommand(WsfFormationCommand aCommand)
+
+   Execute the given command. This will assign the given command to this
+   formation, forward transformed versions of this command to the 
+   attached sub-formations or both. If the command is assigned to this formation, this
+   will return true. If not, including the case where the command is forwarded,
+   this will return false.
+
+.. method:: bool ExecuteCommand(WsfFormationCommand aCommand, WsfFormationCommandConstraint aConstraint)
+
+   Execute the given command with the given constraint. This will either assign
+   this command to this formation, in which case this method will return true,
+   or transformed versions of this command will be forwarded to the attached
+   sub-formations of this formation, in which case this method will return
+   false.

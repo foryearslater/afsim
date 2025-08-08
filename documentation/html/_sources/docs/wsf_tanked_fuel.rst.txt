@@ -1,0 +1,105 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TANKED_FUEL
+---------------
+
+.. model:: fuel WSF_TANKED_FUEL
+
+    .. parsed-literal::
+
+     fuel *<new_type>* *<base_type>*
+        :ref:`Platform_Part_Commands` ...
+        *... :command:`Common fuel Commands <fuel>` ...*
+        ... :model:`WSF_TABULAR_RATE_FUEL` Commands ...
+
+        // Commands associated with supplying fuel...
+
+        supply_method_preference_ ...
+        supply_location_preference_ ...
+        supply_point_ ...
+
+        // Commands associated with receiving fuel...
+
+        maximum_refuel_quantity_ ...
+        desired_top_off_quantity_ ...
+        maximum_receive_rate_ ...
+        receive_method_ ...
+     end_fuel
+
+
+Overview
+========
+
+    **%%%IMPLEMENTATION OF WSF_TANKED_FUEL IS INCOMPLETE, AND DEPRECATED UNTIL FURTHER NOTICE.%%%**
+
+    :model:`WSF_TANKED_FUEL` is a special :model:`WSF_TABULAR_RATE_FUEL` embedded within a platform that can be refueled or can refuel other platforms.  The fuel quantity is off-loaded from the instance of :model:`WSF_TANKED_FUEL` on the Supplier to the :model:`WSF_TANKED_FUEL` on the Receiver.
+
+Commands
+========
+
+.. command:: desired_top_off_quantity  <mass-value>
+
+   Specifies the lower value on a band of desired operating fuel quantity.  This value, along with
+   maximum_refuel_quantity_ specifies the hysteresis band to stay within while operating in proximity to a refueling
+   tanker, such as during a group ferry flight.  In other words, when fuel quantity transitions from above this quantity
+   to below, it is desired to begin a fuel receive operation from a nearby tanker if possible.  Script operations may key
+   upon this transition, in order to take a desired action.  Conversely, when the fuel quantity transitions from below
+   maximum_refuel_quantity_ to above, a separate scripted action may be taken, such as to terminate the
+   receive-in-process action.
+
+   Default: 0
+
+.. command:: maximum_receive_rate  <mass-flow-rate>
+
+   Specifies the maximum rate at which the platform can be refueled.
+
+   Default: 0
+
+.. command:: maximum_refuel_quantity  <mass-value>
+
+   Specifies the upper value on a band of desired operating fuel quantity.  See desired_top_off_quantity_ for more
+   detail.
+
+   Default: 0
+
+.. command:: receive_method  [ hose | boom ]
+
+   Sets the method that this tanked fuel may use to receive fuel.  At the time a fuel supply operation between two tanks
+   is initiated, the Tanker must have an available fuel supply point that matches the Receiver's configuration, or the
+   transfer cannot begin.  See supply_method_preference_.
+
+   Default:  NO_METHOD - Not enabled to receive fuel.
+
+.. command:: supply_location_preference  [ wing | center ]
+
+   Sets the *preferred* location that this tanked fuel may use to supply fuel.  Often a tanker may have multiple stations
+   to supply fuel, leading to some ambiguity about which transfer point should be used, so this setting is consulted to
+   resolve the ambiguity, if necessary.  Run-time software is permitted to change this setting to reconfigure to an
+   anticipated receiver arrival.
+
+   Default:  NO_PREFERENCE - No expressed preference for refueling location.
+
+.. command:: supply_method_preference  [ hose | boom ]
+
+   Sets the *preferred* method that this tanked fuel may use to supply fuel.  Often a tanker may have multiple methods to
+   supply fuel, leading to some ambiguity about which type of transfer should be attempted, so this setting is consulted
+   to resolve the ambiguity, if necessary.  At the time a fuel supply operation between two tanks is initiated, the Tanker
+   must have an available fuel supply point type that matches the Receiver's configuration, or the transfer cannot begin.
+   See receive_method_.  Run-time software is permitted to change this setting to reconfigure to an anticipated
+   receiver arrival.
+
+   Default:  NO_METHOD - No expressed preference refueling method.
+
+.. command:: supply_point  [ left | center | right ] [ boom | hose ] '<mass-flow-rate>'
+
+   Specify the maximum flow rate for a fuel supply point station.  This value may be reduced if the receiver's maximum
+   receive rate is less.  This command should be repeated for each available refueling station.

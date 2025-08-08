@@ -1,0 +1,181 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfProcessor
+------------
+
+.. class:: WsfProcessor inherits WsfPlatformPart
+   :arrow:
+
+Static Methods
+==============
+
+.. method:: static bool IsA_TypeOf(string aDerivedType, string aBaseType)
+   
+   Returns true if the processor type specified by **aDerivedType** inherits from the processor type specified by
+   **aBaseType** (compare to :method:`WsfObject.IsA_TypeOf(aBaseType) <WsfObject.IsA_TypeOf>`, which determines if a specific
+   object inherits from **aBaseType**).
+
+Methods
+=======
+
+.. method:: bool TurnOff()
+   
+   Turn the processor off and returns true if successful.
+
+   .. important::
+
+      The behavior of any processor in the off state is implementation dependent. AFSIM does not prevent any user defined
+      script methods from executing or being called when associated with a processor, regardless of state.
+
+.. method:: bool TurnOn()
+   
+   Turn the processor on and returns true if successful.
+
+.. method:: double UpdateInterval()
+   
+   Return the processor's update interval in seconds.
+
+.. method:: void SetUpdateInterval(double aUpdateInterval)
+   
+   Set the processor's update interval.
+
+.. method:: bool ScriptExists(string aScript)
+   
+   Returns 'true' if a script with the given name exists on the processor.
+
+.. method:: Object Execute(string aScript)
+            Object Execute(string aScript, Array<Object> aArgs)
+.. method:: bool ExecuteScript(string aScript)
+.. method:: bool ExecuteScriptWithArgs(string aScript, Array<Object> aArgs)
+   
+   Execute the script with the given name and optional argument list. Returns the return value of the executed script.
+
+   Example::
+
+    int count = (int)proc.Execute("SensorCount", {"airliner"} );
+   
+   .. note::
+
+      The ExecuteScript and ExecuteScriptWithArgs forms are provided for backward compatibility, and return
+      'true' if the script exists.
+
+.. method:: bool ExecuteAtTime(double aTime, string aScript)
+            bool ExecuteAtTime(double aTime, string aScript, Array<Object> aArgs)
+.. method:: bool ExecuteScriptAtTime(double aTime, string aScript)
+   
+   Execute the script with the given name and optional argument list at the given simulation time (seconds). Returns whether the scheduled execution was successful: true, if the processor is a :model:`WSF_SCRIPT_PROCESSOR` and the supplied script exists on the processor; false otherwise.
+   
+   .. note::
+
+      ExecuteScriptAtTime is an alias for ExecuteAtTime
+
+.. method:: void SuppressMessage()
+   
+   This method indicates that the current message being handled by an :command:`on_message <WSF_SCRIPT_PROCESSOR.on_message>` block
+   or script should not have the default routing to internal and external links performed. If this method is not called
+   during the handling of the current message, the message will be routed to the platform parts defined in the
+   :command:`_.platform_part.internal_link` and :command:`_.External_Link_Commands.external_link` commands for the
+   processor.
+
+Behavior Tree Access Methods
+============================
+
+.. method:: WsfBehaviorTreeNode Behavior(string aBehaviorName)
+            WsfBehaviorTreeNode FindBehavior(string aBehaviorName)
+   
+   Finds the first behavior of the given name on the processor's behavior tree and returns it.
+
+.. method:: int BehaviorCount()
+   
+   Returns the index number of named behavior leaf nodes on a tree.  If a behavior is attached to the tree more than once
+   each separate attachment is counted, and each index value is valid for use by the 'BehaviorEntry(int aIndex)' method
+   defined below.
+
+.. method:: WsfBehaviorTreeNode BehaviorEntry(int aIndex)
+   
+   Returns the behavior node from the tree of the given index number.
+
+.. method:: WsfBehaviorTreeNode BehaviorTreeRootNode()
+   
+   Returns the root node of behavior tree.  Note: at this time the root node is a connector node of the parallel type;
+   when traversing the tree this way you should expect some children nodes to be non-leaf connector nodes that have
+   useless or redundant names.  Because behavior nodes are WsfObjects, you can check their names & types.
+
+Advanced Behavior Tree Access Methods
+=====================================
+
+.. method:: WsfAdvancedBehaviorTreeNode AdvancedBehavior(string aBehaviorName)
+            WsfAdvancedBehaviorTreeNode FindAdvancedBehavior(string aBehaviorName)
+
+   Returns the first advanced behavior of the given name on the processor's advanced behavior tree. The advanced behavior should be tested for validity before use.
+
+.. method:: Array<WsfAdvancedBehaviorTreeNode> AdvancedBehaviorsExecuted()
+
+   Returns an array of all leaf nodes that executed last tick for the tree.
+
+.. method:: int AdvancedBehaviorCount()
+
+   Returns the number of named advanced behavior leaf nodes on a tree.  If an advanced behavior is attached to the tree more than once,
+   each separate attachment is included in the total count.
+
+.. method:: WsfAdvancedBehaviorTreeNode AdvancedBehaviorEntry(int aIndex)
+
+   Returns the advanced behavior node from the tree, using the specified index number. The advanced behavior should be tested for validity before use.
+
+.. method:: WsfAdvancedBehaviorTree AdvancedBehaviorTree()
+
+   Returns the advanced behavior tree. The advanced behavior tree should be tested for validity before use.
+
+.. comment Following is needed so external files can reference this section
+
+.. _WsfProcessor.State-Machine-Methods:
+
+State Machine Methods
+=====================
+
+.. method:: string State()
+
+   Returns the name of the current state.
+
+.. method:: string StateAll()
+
+   Returns the name of the current state and all subsequent child states (if exist).  The state names are 
+   delimited in the string by double colons "::", for example "INGRESS::ATTACK".
+
+.. method:: void SetState(string aStateName)
+
+   Sets the current state to the state with the given name.
+
+.. method:: void SetStateAll(string aStateNameAll)
+
+   Sets the current state and all subsequent child states to the states provided in the string.  
+   State names should be delimited by double colons "::";, for example "EGRESS::EVADE";
+
+.. method:: Array<string> GetStates()
+
+   Return an array of strings containing all states of the state machine.
+
+.. method:: WsfAdvancedBehaviorTree GetStateAdvancedBehaviorTree(string aState)
+
+   Return the advanced behavior tree for a given state of the state machine.
+
+Deprecated Methods
+==================
+
+.. method:: void TargetAllocated(double aSimTime, WsfPlatform aPlatform, WsfTrack aTarget)
+   
+   Notifies any observers that a target has been allocated.
+
+.. method:: void TargetEngaged(double aSimTime, WsfPlatform aPlatform, WsfTrack aTarget)
+   
+   Notifies any observers that a target has been engaged.
+

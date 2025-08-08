@@ -1,0 +1,181 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+attenuation_model
+-----------------
+
+.. command:: attenuation_model ... end_attenuation_model
+   :block:
+
+.. parsed-literal::
+
+ attenuation_model <derived-name> <base-name>
+    ... Input for the attenuation model ...
+ end_attenuation_model
+
+Overview
+========
+
+attenuation_model is used to create configured *attenuation models* that can be referenced in the
+:command:`_.transmitter.attenuation_model` block in a :command:`_.transmitter` definition.
+
+**<derived-name>** is the name you wish your configured attenuation model to be assigned. *<derived-name>* is the name by
+which the user wishes to refer to the configured attenuation model.
+
+**<base-name>** is one of the `Available Attenuation Models`_:
+
+* none_
+* simple_
+* itu_
+* blake_
+* :model:`WSF_TABULAR_ATTENUATION`
+
+Effective Use Of Attenuation Models
+===================================
+
+An attenuation model definition may be embedded directly in the definition of a radar. For example, assume you have a
+file called 'ex_radar.txt':
+
+::
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ... transmitter commands ...
+       attenuation_model itu
+          ... itu model commands ...
+       end_attenuation_model
+    end_transmitter
+    receiver
+       ... receiver commands ...
+    end_receiver
+ end_sensor
+
+The problem with this method is that one must modify the radar definition to change or eliminate the attenuation model.
+In many production uses this is undesirable or infeasible. What would be more desirable is to provide a 'default'
+attenuation model definition that can be overridden.
+
+The new 'ex_radar.txt' would now contain::
+
+ # Define the 'default' attenuation model
+ attenuation_model EX_RADAR_ATTENUATION itu
+    ... itu model commands ...
+ end_attenuation_model
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ... transmitter commands ...
+       attenuation_model EX_RADAR_ATTENUATION # References the attenuation model symbolically
+    end_transmitter
+    receiver
+       ... receiver commands ...
+    end_receiver
+ end_sensor
+
+Then to override the attenuation model::
+
+ #include ex_radar.txt
+
+ # Provide a new definition that overrides the existing definition.
+ # This example now uses the **blake** attenuation model.
+
+ attenuation_model EX_RADAR_ATTENUATION blake
+ end_attenuation_model
+
+The radar model will use the **last** definition of EX_RADAR_ATTENUATION when it finally creates instances of the radar
+in the simulation.
+
+Available Attenuation Models
+============================
+
+none
+****
+
+A 'dummy' attenuation model that results in no effect.::
+
+ attenuation_model *<derived-name>* none
+ end_attenuation_model
+
+.. _attenuation_model.simple:
+
+simple
+******
+
+.. block:: attenuation_model.simple
+
+This model provides a mechanism to specify either a constant specific attenuation (signal loss per unit length) or a
+constant factor (attenuation is always the same). This model is applicable when one has conditions which are relatively
+geometry independent and don't require the calculation of a more complex model. It is also applicable for some simple
+cases that may not be handled by other models.
+
+Either one of the following can be specified:
+
+.. command:: specific_attenuation <value> <db-ration-unit>/<length-unit>
+   
+   Specifies the signal loss per unit length. This would be applicable where the paths are nearly parallel to the Earth's
+   surface (such as in air-to-air where the participants are at approximately the same altitude).
+   
+   This is loss factor (appears in the denominator) and is generally specified as a positive db/km (which results in a
+   value greater than or equal to 1).
+
+   Example::
+
+     specific_attenuation 0.001 db/km
+
+.. command:: attenuation_factor <db-ratio-value>
+   
+   Specifies a constant multiplier (gain factor) of the signal value. The factor must be in the range [ 0 .. 1 ] in
+   absolute units (a dB value less than zero). This option would be applicable where the geometry is fixed (or nearly so),
+   such as communications between two ground stations or between a ground station and a geosynchronous satellite.
+   
+   Example::
+
+     attenuation_factor -3.0 db
+
+.. _attenuation_model.itu:
+
+itu
+***
+
+This model determines the attenuation factor for RF signals with a frequency of 1-1000 GHz using the methods defined in
+the following recommendations from the International Telecommunications Union (ITU):
+
+* "ITU Recommendation ITU-R P.676-8, Attenuation by atmospheric gases".
+* "ITU Recommendation ITU-R P.838-3, Specific attenuation model for rain for use in prediction methods".
+* "ITU Recommendation ITU-R P.840-4, Attenuation due to clouds and fog".
+
+The contribution of attenuation due to rain is computed only if the :command:`global_environment.rain_rate` is defined in
+the :command:`global_environment`. If :command:`global_environment.rain_altitude_limit` is not specified then it will use the
+lower value of :command:`global_environment.cloud_altitude_limits` . If that value is not defined then it will use the value
+of 10000 meters.
+
+The contribution of attenuation due to clouds or fog is computed if :command:`global_environment.cloud_altitude_limits` and
+:command:`global_environment.cloud_water_density` are defined in the :command:`global_environment`.
+
+The model integrates along the path through a series of 1 km thick layers of the Earth's atmosphere. The integration
+will not go above 30 km unless the rain or cloud altitude limits are higher, and the respective rain rate or cloud
+water density is provided. (The additional attenuation by atmospheric gases is negligible above 30 km).
+
+.. _attenuation_model.blake:
+
+blake
+*****
+
+This model determines the attenuation factor using the atmospheric absorption model written by L.V. Blake, Naval
+Research Laboratory. This is based on a family of 42 attenuation curves for frequencies between 100 MHz and 10 GHz and
+elevation angles between 0 and 10 degrees. The curves are flat beyond 300 nautical miles. These tables were published
+in 'Radar Systems Analysis, Section 15.1, David K. Barton, Artech Publishing.''
+
+.. note::
+   This selection is valid only where either the transmitter or the target are on (or are very near) the
+   surface.
+
+.. include:: _attenuation_model.wsf_nx.txt
+.. include:: _attenuation_model.wsf_mil.txt

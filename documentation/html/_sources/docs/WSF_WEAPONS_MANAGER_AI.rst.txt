@@ -1,0 +1,286 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPONS_MANAGER_AI
+-----------------------
+
+.. model:: processor WSF_WEAPONS_MANAGER_AI
+
+**Derives From:** :model:`WSF_WEAPONS_MANAGER`
+
+**Script Classes:** :class:`WsfWeaponsManagerAI`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_WEAPONS_MANAGER_AI`
+      :command:`WSF_WEAPONS_MANAGER` Commands ...
+
+      `take_action <#take-action-commands>`__
+         enable
+         disable
+         action_distance_  <length-value>
+         ai_action_1_      [Straight|Break-Left|Break-Right]
+         duration_1_       <time-value>
+         ai_action_2_      [Straight|Break-Left|Break-Right]
+         duration_2_       <time-value>
+         ai_action_3_      [Straight|Break-Left|Break-Right]
+         duration_3_       <time-value>
+         ai_action_4_      [Straight|Break-Left|Break-Right]
+         duration_4_       <time-value>
+      end_take_action
+
+      `rwr_response <#rwr-response-commands>`__
+         enable
+         disable
+         beam_duration_             <time-vaue>
+         sam_response_range_        <length-value>
+         ai_response_range_         <length-value>
+         restore_after_break_lock_  <time-value>
+         priority_                  [Choose-Closest-Threat | Default]
+      end_rwr_response
+
+      alert_time_             <time-value>
+      assess_engage_via_      [Collision-Intercept-PT-Inside-Zone|Munition-Intercept-PT-Inside-Zone|Munition-Intercept-PT-Ignore-Zone]
+      home_base_position_     <latitude-value, longitude-value>
+      intercept_speed_        <speed-value>
+      my_place_in_formation_  [1|2|3|4]
+      pursuit_range_          <length-value>
+   end_processor
+
+Overview
+========
+
+**WSF_WEAPONS_MANAGER_AI** is the script class for the HELIOS-based GTIQBWeaponsManagerAI port. It is a Weapons Manager for an AI weapons unit. It manages all aspects of an AI weapons unit engagement of an assigned target.  These aspects include, among others:
+ * Verification that the target is able to be engaged by the selected weapon
+ * Verification that the target is located within or approaching the unit's engagement zone, if one exists
+ * Verification that the track on the target is of acceptable quality (i.e TTR)
+
+The Weapons Manager AI is responsible for monitoring any assignments that are currently active and engaging the target.  This process includes:
+ * Engaging the target by either intercepting or pursuing
+ * Determing whether to a fire a missile at a target that is being intercepted or pursued
+ * Receiving engagement results of any launched missiles
+ * Launching an additional second missile at the target if the assignment deems it necessary
+ * Setting a final state on the assignment (i.e. HAVCO) once the assignment has completed processing
+ 
+The Weapons Manager AI is also responsible for sensing and evading threats. These processes include:
+ * Determining whether any threats are within the unit's evasion response range. (The user may specify different response ranges for SAMs and AIs).
+ * Selecting the highest priority in-range threat to evade, according to criteria specified by the user
+ * Choosing what evasion behavior, if any, is appropriate. For example, the AI will not being evading another unit if it is currently engaging that unit.
+
+**Important:** All IADS C2 air interceptors need this subsystem in order to function correctly, to engage targets of assignments, and to sense and evade threats.
+
+Method of Operation
+===================
+
+The Weapons Manager AI (WMAI) begins by checking if the user has enabled evasion behaviors. If evasion behaviors have been enabled and the platform has an RWR, the WMAI selects the highest priority threat sensed by the RWR that is within the response range and evaluates whether to evade, using either a beam response or drag response, relative to that threat. If the AI is currently performing a beam response (a maneuver that attempts to put the threat on the platform's "beam"), the WMAI checks whether the beam time has elapsed. If so, the WMAI begins a drag response (flying away from the threat at the highest possible speed) relative to the highest priority threat. If not, the current beam response is adjusted, if necessary, so that it is relative to the highest priority threat. If the AI is currently performing a drag response, the drag response is adjusted, if necessary, so that it is being performed relative to the high priority threat. If the AI is not currently evading, the WMAI begins evading the highest priority threat with a beam response unless the AI is in the process of engaging the unit or the unit is believed dead.
+
+If the WMAI does not continue or begin an evasion behavior, and if the user has enabled "take action" behaviors, the WMAI next considers whether to take action. "Taking action" involves breaking left, breaking right, or continuing to fly straight for a specific duration. The user can specify the direction and duration for each of four available actions. Which of the four actions will be taken depends on the AI's place in formation, which can also be set by the user. The WMAI will only take action if the AI is currently pursuing or intercepting an assignment. Additionally, during the time that the AI intercepts and then pursues an assignment, it can only take action once. (If the WMAI later receives another assignment against the same target and engages it with a new intercept or pursue behavior, it may take action again relative to that same target.) So, the WMAI will decide to take action relative to the current assignment if: (1) the AI is currently intercepting or pursuing an assignment, (2) the intercept-pursue chain of behaviors has not yet generated a "take action," and (3) the AI is not currently engaging the assignment.
+
+If the WMAI does not continue or begin either evading or taking action, it takes the following steps for targets that it has been assigned: If the current assignment is complete, the WMAI reports HAVCO and considers the next assignment. If the asset is not combat ready or if it does not have a valid master track for the assignment, the WMAI reports CANTCO and considers the next assignment. If the WMAI has fired fewer salvos than the number requested for the assignment, the algorithm ensures that the weapon assigned for the engagement can be located, sufficient munitions remain, and the assignment references a valid weapon record. (The WMAI reports CANTCO and considers the next assignment if any of those conditions fails). The WMAI then reports WILCO for the assignment if either the AI has not yet fired at the target or it is time for a second shot. Otherwise, the WMAI moves on to the next assignment.
+
+After reporting WILCO, the WMAI decides how to handle the assignment. How the WMAI responds depends on the behavior that it is currently executing: If the WMAI is not executing any behavior, it will engage the assigned target by pursuing it if the target is within the pursuit range, and intercepting (flying to the point where it expects the target to arrive at a future time) if it is not. If the WMAI is executing a "take action" behavior, it will continue on to evaluate the next assignment. If the WMAI is intercepting the assigned target and it has closed the distance so that the target is now within the pursuit range, it will stop intercepting and begin pursuing. If the WMAI is evading by performing a beam response or drag response, it will continue on to the next assignment without firing on the target.
+
+The WMAI will only fire on the assigned target if it is engaging the target, either by intercepting or pursuing. If it is currently intercepting or pursuing the target that corresponds to the assignment, the WMAI will then determine whether or not it should fire. First, the WMAI ensures that the track is of sufficiently high quality, i.e. the reporting sensor for the track is of a type that the user has said should be engaged. If the user has required that only "local" TTR targets should be engaged, the WMAI checks that the track contains at least one raw track originating from a TTR that is on the AI, on a peer platform, or on the AI's direct commander. Second, the WMAI verifies that the target falls within the weapon's range. If either of these checks fails, the WMAI moves on to the next assignment without firing on the target. Finally, the WMAI verifies that it can intercept the track. If it can, the WMAI attempts to fire a salvo at the target using the shot doctrine for the assignment. If it can't, it reports CANTCO and continues to the next assignment. The WMAI's attempt to fire a salvo at the target will fail if: (1) the weapon has no munitions left, (2) the maximum number of salvos for the weapon is already active, or (3) the weapon is reloading and is unable to shoot while reloading. Otherwise, the attempt to fire will succeed, meaning that the request to fire at the target will be added to the weapon's salvo request list.
+
+Requirements for Evasion Behaviors
+==================================
+
+The Weapons Manager AI depends on an RWR to detect and evade threats. To activate evasion behaviors, the user must both (1) enable the behaviors in the "rwr_response" block (see Commands section) and (2) place a :model:`WSF_ESM_SENSOR` on the platform with its category set to "RWR". The RWR must be wired to the track_manager with an internal_link. The RWR detects other sensors that are transmitting within the RWR's frequency band, which can be changed using the sensor's "frequency_band" command. As a result, the RWR will not detect - and the Weapons Manager AI will not evade - threats that do not have a sensor on the platform that is transmitting within the RWR's frequency band.
+
+Script Interface
+================
+
+:model:`WSF_WEAPONS_MANAGER_AI` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`.
+
+Weapons Manager AI Commands
+===========================
+
+.. command:: alert_time <time-value>
+
+   For a parked AI, alert time represents the amount of time it takes before the AI is ready to scramble.
+
+   **Default:** 60 seconds
+
+.. command:: assess_engage_via [Collision-Intercept-PT-Inside-Zone | Munition-Intercept-PT-Inside-Zone | Munition-Intercept-PT-Ignore-Zone]
+
+   Collision-Intercept-PT-Inside-Zone assesses engagements by evaluating if the AI can intercept the target within a FEZ, if any. Munition-Intercept-PT assesses engagements by evaluating if an AI's weapon can currently intercept the target; Inside-Zone requires the target be inside a FEZ, if any, whereas Ignore-Zone does not use zones.
+
+   **Default:** Munition-Intercept-PT-Ignore-Zone
+
+.. command:: debug
+
+   When set, logs debugging information.
+
+   **Default:** Off
+
+.. command:: home_base_position <latitude-value, longitude-value>
+
+   Establishes the latitude and longitude of the AI's home base, which may be used if the AI egresses.
+
+   **Default:** (0,0)
+
+.. command:: intercept_speed <speed-value>
+
+   Intercept speed is the speed at which the AI will move as it attempts to intercept a track.
+
+   **Default:** 500 knots (257.222 meters/second)
+
+.. command:: my_place_in_formation [1 | 2 | 3 | 4]
+
+   When taking action, an AI's place in formation determines which action to perform and for which duration. For details, see the documentation for take_action above.
+
+   **Default:** 1
+
+.. command:: pursuit_range <length-value>
+
+   If an AI is beginning to engage a track, and the track is within the AI's pursuit range, the AI will pursue the track rather than intercepting it. If the AI is currently intercepting a track and comes close enough that the track falls within the pursuit range, the AI will stop intercepting and begin pursuing.
+
+   **Default:** 60,000 meters
+
+Take Action Commands
+====================
+
+.. command:: enable
+
+.. command:: disable
+
+   When enabled, the Weapons Manager AI will assess whether to "take action" in the form of presentation versus the target while intercepting or pursuing a track.
+
+   **Default:** disable
+
+.. command:: action_distance <length-value>
+
+   When evaluating whether to take action, the Weapons Manager AI will only perform an action behavior if it is within action_distance of the threat.
+
+   **Default:** 45,000 meters
+
+When the Weapons Manager AI performs a "take action" behavior, the direction that the platform moves and the duration of the action depend on the unit's place in formation, which is set using the my_place_in_formation command. A unit with a place in formation of 1 will perform ai_action_1 for duration_1, etc.
+
+.. command:: ai_action_1 [Straight | Break-Left | Break-Right]
+
+   **Default:** Break-Left
+
+.. command:: duration_1 <time-value>
+
+   **Default:** 3 seconds
+
+.. command:: ai_action_2 [Straight | Break-Left | Break-Right]
+
+   **Default:** Break-Right
+
+.. command:: duration_2 <time-value>
+
+   **Default:** 3 seconds
+
+.. command:: ai_action_3 [Straight | Break-Left | Break-Right]
+
+   **Default:** Straight
+
+.. command:: duration_3 <time-value>
+
+   **Default:** 0 seconds
+
+.. command:: ai_action_4 [Straight | Break-Left | Break-Right]
+
+   **Default:** Straight
+
+.. command:: duration_4 <time-value>
+
+   **Default:** 10 seconds
+
+RWR Response Commands
+=====================
+
+This block is for defining HELIOS-based Weapons Manager AI evasion behavior parameters.
+
+**A WSF_ESM_SENSOR with category "RWR" must be present on the platform.**
+
+.. command:: enable
+
+.. command:: disable
+
+   When enabled, the Weapons Manager AI will attempt to detect and evade threats.
+
+   **Default:** disable
+
+.. command:: beam_duration <time-value>
+
+   The Weapons Manager AI begins to evade a threat with a "beam response" (moving along a vector that's 90 degrees left or right of the threat's velocity on a horizontal plane). If the Weapons Manager AI determines that the threat has not been evaded once the beam time has elapsed, it may decide to continue evading using a "drag response" (flying away from the threat at the highest possible speed). The beam_duration determines how long the Weapons Manager AI will execute a beam response before considering a drag response.
+
+   **Default:** 3 seconds
+
+.. command:: sam_response_range <length-value>
+
+   If a threat has a spatial domain of land or surface, the Weapons Manager AI will consider evasion responses relative to the threat only if the threat is within the SAM response range. If a threat has a spatial domain of subsurface, the Weapons Manager AI will also default to using the SAM response range, and an error message will be logged stating that evasion behaviors have not been properly implemented for the domain.
+
+   **Default:** 150,000 meters
+
+.. command:: ai_response_range <length-value>
+
+   If a threat has a spatial domain of air, the Weapons Manager AI will consider evasion responses relative to the threat only if the threat is within the AI response range. For threats with a spatial domain of space or with an unknown spatial domain, the Weapons Manager AI will also default to using the AI response range, and an error message will be logged stating that evasion behaviors have not been properly implemented for the domain.
+
+   **Default:** 40,000 meters
+
+.. command:: restore_after_break_lock <time-value>
+
+   The Weapons Manager AI will conclude that the platform has succesfully broken a lock by a threat that it is evading if the RWR has not received any updates corresponding to the threat for a certain amount of time. The value set by restore_after_break_lock establishes the time that must elapse after the most recent update before a lock will be considered broken.
+
+   **Default:** 3 seconds
+
+.. command:: priority [Choose-Closest-Threat | Default]
+
+   Even if the RWR senses that multiple threats are within range, the Weapons Manager AI will only evalulate whether to perform evasion behaviors relative to one threat per time step. The "priority" command allows the user to select the criteria for choosing which threat to prioritize when deciding whether to evade. "Default" simply chooses the threat that appears first in the RWR's active track list; this method is most similar to HELIOS, but it can lead to surprising results, such as attempting to evade a threat that is barely within the response range while ignoring a much closer threat. "Choose-Closest-Threat" evaluates evasion behaviors relative to the threat that is closest to the platform.
+
+   **Default:** Default
+
+Weapons Manager AI Example
+==========================
+
+::
+
+   take_action
+      enable
+      action_distance  50000 meters
+      ai_action_1      Break-Right
+      duration_1       10 seconds
+      ai_action_2      Break-Right
+      duration_2       10 seconds
+      ai_action_3      Break-Left
+      duration_3       10 seconds
+      ai_action_4      Break-Left
+      duration_4       10 seconds
+   end_take_action
+
+   rwr_response
+      enable
+      beam_duration             4 seconds
+      sam_response_range        120000 meters
+      ai_response_range         45000 meters
+      restore_after_break_lock  5 seconds
+      priority                  Choose-Closest-Threat
+   end_rwr_response
+
+   engagement_settings
+      ew_targets                     false
+      tar_targets                    false
+      ttr_targets                    true
+      engage_local_ttr_targets_only  true
+   end_engagement_settings
+
+   alert_time                 90 seconds
+   assess_engage_via          Collision-Intercept-PT-Inside-Zone
+   home_base_position         38:27:24.00n 117:32:40.00w
+   intercept_speed            600 kts
+   my_place_in_formation      2
+   pursuit_range              60000 meters
+   salvo_delay                1.5 seconds
+   haveco_reporting_strategy  on_detonate
+

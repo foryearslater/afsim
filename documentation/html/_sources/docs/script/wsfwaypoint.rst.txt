@@ -1,0 +1,215 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfWaypoint
+-----------
+
+.. class:: WsfWaypoint
+   :constructible:
+   :cloneable:
+
+Static Methods
+==============
+
+.. method:: WsfWaypoint Create(double aLat, double aLon, double aAlt, double aSpeed, string aPointType)
+            WsfWaypoint Create(double aLat, double aLon, double aAlt, double aSpeed, string aPointType, string aEndOfPathOption)
+            WsfWaypoint Create(WsfGeoPoint aGeoPoint, double aSpeed)
+
+   Creates a waypoint at the given location.
+
+   aSpeed
+       The speed of the waypoint.  May be negative to represent no change in speed.
+   aPointType
+       Specifies the type of waypoint.  Valid values are: **LATITUDE_AND_LONGITUDE**, **RELATIVE_OFFSET**,
+       **ABSOLUTE_HEADING_DISTANCE**, **ABSOLUTE_HEADING_TIME**, **RELATIVE_HEADING_DISTANCE**, **RELATIVE_HEADING_TIME**,
+       **ALTITUDE_DISTANCE**, **ALTITUDE_TIME**, **SPEED_DISTANCE**, **SPEED_TIME**.
+   aEndOfPathOption
+       Specifies the behavior for the last waypoint in the route.  Valid values are: **MOVER_DEFAULT**,
+       **EXTRAPOLATE**, **STOP**, **REMOVE**.
+
+   **Default** LATITUDE_AND_LONGITUDE and MOVER_DEFAULT
+
+
+   Example:
+    WsfWaypoint w1 = WsfWaypoint.Create(40, -90, 10000, 246, LATITUDE_AND_LONGITUDE);
+
+Methods
+=======
+
+.. method:: double Latitude()
+
+   Returns the waypoint's latitude [-90...90] (decimal degrees).
+
+.. method:: double Longitude()
+
+   Returns the waypoint's longitude [-180...180] (decimal degrees).
+
+.. method:: double Altitude()
+
+   Returns the waypoint's altitude (meters).
+
+.. method:: double AltitudeMSL()
+
+   Returns the waypoint's altitude above mean sea level (meters).
+
+   .. note::
+
+      MSL cannot be computed on non-positional waypoints with AGL altitude.
+
+
+.. method:: double AltitudeAGL()
+
+   Returns the waypoint's altitude above ground level (meters).
+
+   .. note::
+
+      AGL cannot be computed on non-positional waypoints with MSL altitude.
+
+
+.. method:: double Heading()
+
+   Returns the waypoint's heading [-180..180] (decimal degrees) relative to due north (clockwise is positive).
+
+.. method:: void SetHeading(double aHeading)
+
+   Sets the waypoint's heading [-180..180] (decimal degrees) relative to due north (clockwise is positive).
+
+.. method:: void SetCallback(string aScriptName)
+            void SetCallback(string aScriptName, string aProcessorName)
+
+   Defines the script method to be invoked when this waypoint is encountered in the route. The first form will invoke the
+   specified script that is defined at the platform level. The second form will invoke the specified script that is
+   defined the named processor. This indicated processor must be of a type derived from :model:`WSF_SCRIPT_PROCESSOR`
+
+.. method:: void SetCallback(Method aMethod)
+
+   Adds the specified callback :class:`Method` to the waypoint.  The given method should take 0 or 1 argument as follows:
+    void A_Method()
+    void A_Method(WsfPlatform aCaller)
+
+.. method:: string GoToLabel()
+
+   Returns the 'goto' label of the waypoint.
+
+.. method:: void SetGoToLabel(string aGoToLabel)
+
+   Sets the 'goto' label of the waypoint that the platform will maneuver to after reaching the current waypoint.
+
+   .. note::
+
+      If one of the WsfRoute AddCallBack methods is used to attach a callback to this waypoint, then the
+      goto might not necessarily work.
+
+
+.. method:: string Label()
+
+   Returns the label of the waypoint.
+
+.. method:: void SetLabel(string aLabel)
+
+   Sets the label of the waypoint. This waypoint now has a label and can be used in conjunction with a 'goto'.
+
+.. method:: double Speed()
+
+   Returns the speed of the waypoint.  A negative speed indicates no change.
+
+.. method:: void SetSpeed(double aSpeed)
+
+   Sets the speed of the waypoint.  A negative speed indicates no change.
+
+.. method:: double ClimbRate()
+
+   Returns the climb-rate of the waypoint.  A negative climb-rate indicates 'use previous'.
+
+.. method:: void SetClimbRate(double aClimbRate)
+
+   Sets the climb-rate of the waypoint.  A negative climb-rate indicates 'use previous'.
+
+.. method:: double LinearAcceleration()
+
+   Returns the linear-acceleration of the waypoint.  A negative linear-acceleration indicates 'use previous'.
+
+.. method:: void SetLinearAcceleration(double aAcceleration)
+
+   Sets the linear-acceleration of the waypoint.  A negative linear-acceleration indicates 'use previous'.
+
+.. method:: double RadialAcceleration()
+
+   Returns the radial-acceleration of the waypoint.  A negative radial-acceleration indicates 'use previous'.
+
+.. method:: void SetRadialAcceleration(double aAcceleration)
+
+   Sets the radial-acceleration of the waypoint.  A negative radial-acceleration indicates 'use previous'.
+
+.. method:: WsfGeoPoint Location()
+
+   Returns the location of the waypoint.
+
+.. method:: void SetLocation(WsfGeoPoint aLocation)
+
+   Sets the location of the waypoint.
+
+.. method:: void SetAltitude(double aAltitude, bool aIsAGL)
+
+   Sets the waypoint's altitude in meters.  If aIsAGL is true, the altitude is the distance above ground.
+
+.. method:: void SetAltitudePrevious()
+
+   Specifies that the waypoint does not change the altitude of the platform.  This is the same as a waypoint without a
+   specified altitude.
+
+.. method:: string Switch()
+
+   Returns the switch type of the waypoint.  Possible values are "default", "time", "distance", "approach", "passing",
+   "external".
+
+.. method:: void SetSwitch(string aSwitchType)
+
+   Sets the waypoint switch type.  Options are "passing", "approach", "default".
+
+.. method:: void SetSwitchTime(double aSwitchTime)
+
+   Sets the waypoint switch type to timed, and sets the time to aSwitchTime (seconds).
+
+.. method:: void SetSwitchDistance(double aSwitchDistance)
+
+   Sets the waypoint switch type to distance, and sets the distance to aSwitchDistance (meters).
+
+.. method:: void SetTimeToPoint(double aTimeToPoint)
+
+   Sets the amount of time (in seconds) it should take to travel from the previous point to this point. This function is
+   valid only if the current waypoint type is **LATITUDE_AND_LONGITUDE** or **RELATIVE_OFFSET**.
+
+.. method:: void SetEndOfPathOption(string aEndOfPathOption)
+
+   Sets the end of path option for the waypoint.  This should be set on the last waypoint in a route.  Valid options are:
+   "", "extrapolate", "stop", or "remove".  The empty string indicates mover-default behavior.
+
+.. method:: int Index()
+
+   Returns the (zero-based) position of this waypoint in the route.  This is only valid if the waypoint is a member of a
+   route.
+
+.. method:: string Mode()
+
+   Returns the mover mode setting for this waypoint.
+
+.. method:: void SetMode(string aMode)
+
+   Sets the mover mode setting for this waypoint.  Effect is Mover implementation-defined.  The first WSF Mover type to
+   implement a Waypoint- or script-triggered Mode transition is the :model:`WSF_ROTORCRAFT_MOVER`.
+
+.. _WsfWaypoint.Auxiliary_Data_Methods:
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt

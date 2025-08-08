@@ -1,0 +1,301 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _P6DOF_Sequencers_Label:
+
+P6DOF Sequencers
+================
+
+A :doc:`p6dof_object_type` may include one or more "sequencers" which provide a means for a P6Dof object to take action based on the occurrence of one or more events. Sequencers can be used to perform a range of tasks, such as deploying high-drag devices on a retarded-fall bomb several seconds after release from its parent aircraft, or triggering staging events on a multi-stage rocket. Sequencers are a powerful, yet easy to use, means of controlling a sequence of events
+for a P6Dof object that can be triggered by events based on time, altitude, speed, etc.
+
+.. command:: sequencer ... end_sequencer
+
+   A sequencer block has an identifier, which is the string argument after 'sequencer'. This identifier must be unique within the :doc:`p6dof_object_type`. 
+   The sequencer block has to include at least one `Sequencer Actions`_, which is the action the sequencer shall perform when it is activated.
+   The sequencer block may include one or more `Sequencer Events`_, if no Sequencer Events are provided the sequencer may only be activated through the :method:`WsfP6DOF_Mover.ActivateSequencer` script function.  
+   The sequencer block may include one or more `Nested Sequencers`_ which will be used once the containing sequencer has been activated -- this allows for sequential events, where the second event cannot occur until the first event has occurred.
+
+   .. parsed-literal::
+
+    sequencer <string>
+
+       // `Sequencer Events`_
+       event_timer_ ...
+       event_timer_int_msec_ ...
+       event_timer_int_nanosec_ ...
+       event_lifetime_ ...
+       event_lifetime_int_msec_ ...
+       event_lifetime_int_nanosec_ ...
+       event_above_alt_ ...
+       event_below_alt_ ...
+       event_dynamic_pressure_above_ ...
+       event_dynamic_pressure_below_ ...
+       event_static_pressure_above_ ...
+       event_static_pressure_below_ ...
+       event_fuel_percent_below_ ...
+       event_ground_distance_ ...
+       event_nx_above_ ...
+       event_nx_below_ ...
+       event_ny_above_ ...
+       event_ny_below_ ...
+       event_nz_above_ ...
+       event_nz_below_ ...
+       event_released_from_parent_ ...
+       event_manual_input_trigger_ ...
+       event_manual_input_button_ ...
+       event_manual_input_button_released_ ...
+       event_boolean_input_ ...       
+       event_null_ ...       
+       all_events_ ...
+
+       // `Sequencer Actions`_
+       action_null_ ...
+       action_jett_obj_ ...
+       action_jett_self_ ...
+       action_ignite_engine_ ...
+       action_ignite_subobject_ ...
+       action_ignite_self_ ...
+       action_terminate_thrust_ ...
+       action_shutdown_engine_ ...
+       action_shutdown_subobject_ ...
+       action_change_aero_mode_ ...
+       action_enable_size_factor_ ...       
+       action_set_graphical_model_ ...
+       action_activate_subobject_sequencer_ ...
+       action_enable_controls_ ...
+       action_disable_controls_ ...       
+
+       // `Nested Sequencers`_
+       sequencer_ ... end_sequencer
+
+    end_sequencer
+    
+    Each sequencer is named, using the first argument after sequencer.
+
+   An example of a simple, timer-event sequencer that jettisons two external fuel tank objects after 120 seconds has elapsed  is::
+
+    sequencer DropTipTanks
+       event_timer      120.0 sec
+       action_jett_obj  RightTipTank
+       action_jett_obj  LeftTipTank
+    end_sequencer
+
+Sequencer Events
+================
+
+Sequencer events are tested to determine if a sequencer should be activated. If more than one event is specified, the sequencer will activate if at least one of the events is true. If is it desired to activate only if all of the events are true, the all_events_ command should be included.
+
+.. command:: event_timer <time-value>
+
+   This event is based on reaching the specified time. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to event_lifetime_ but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.
+
+.. command:: event_timer_int_msec <integer-value>
+
+   This event is based on reaching the specified time, which is an integer number of milliseconds. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to event_lifetime_int_msec_ but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.
+
+.. command:: event_timer_int_nanosec <integer-value>
+
+   This event is based on reaching the specified time, which is an integer number of nanoseconds. The timer will begin counting once the sequencer is being tested. For top-level sequencers, this is equivalent to event_lifetime_int_nanosec_ but if the sequencer is nested, its counter will not begin running until its parent sequencer has been activated.
+
+.. command:: event_lifetime <time-value>
+
+   This event is based on reaching the specified lifetime. The lifetime timer begins counting once the platform is active (alive). This timer is different from the event_timer_ since it uses a platform-centric timer as opposed to a sequencer-centric timer.
+
+.. command:: event_lifetime_int_msec <integer-value>
+
+   This event is based on reaching the specified lifetime, which is an integer number of milliseconds.  The lifetime timer begins counting once the platform is active (alive). This timer is different from the event_timer_int_msec_ since it uses a platform-centric timer as opposed to a sequencer-centric timer.
+
+.. command:: event_lifetime_int_nanosec <integer-value>
+
+   This event is based on reaching the specified lifetime, which is an integer number of nanoseconds.  The lifetime timer begins counting once the platform is active (alive). This timer is different from the event_timer_int_nanosec_ since it uses a platform-centric timer as opposed to a sequencer-centric timer.
+
+.. command:: event_above_alt <length-value>
+
+   This event is based on the platform being above the specified altitude (MSL).
+
+.. command:: event_below_alt <length-value>
+
+   This event is based on the platform  being below the specified altitude (MSL).
+
+.. command:: event_dynamic_pressure_above <pressure-value>
+
+   This event is based on the platform having a dynamic pressure above the specified value.
+
+.. command:: event_dynamic_pressure_below <pressure-value>
+
+   This event is based on the platform having a dynamic pressure below the specified value.
+
+.. command:: event_static_pressure_above <pressure-value>
+
+   This event is based on the platform having a static pressure above the specified value.
+
+.. command:: event_static_pressure_below <pressure-value>
+
+   This event is based on the platform having a static pressure below the specified value.
+
+.. command:: event_fuel_percent_below <real-value>
+
+   Specify the fuel value as a normalized number (50% is 0.50). This event is based on the fuel level in the "main tank" being below the specified value. The main tank is considered to be the first tank specified in the :command:`propulsion_data` block.
+
+.. command:: event_ground_distance <length-value>
+
+   This event is based on the platform being beyond the specified distance (great circle) from the point at which it started.
+
+.. command:: event_nx_above <acceleration-value>
+
+   This event is based on the x-acceleration, known as Nx, (in body coordinates) being above the specified value.
+
+.. command:: event_nx_below <acceleration-value>
+
+   This event is based on the y-acceleration, known as Nx, (in body coordinates) being below the specified value.
+
+.. command:: event_ny_above <acceleration-value>
+
+   This event is based on the y-acceleration, known as Ny, (in body coordinates) being above the specified value.
+
+.. command:: event_ny_below <acceleration-value>
+
+   This event is based on the y-acceleration, known as Ny, (in body coordinates) being below the specified value.
+
+.. command:: event_nz_above <acceleration-value>
+
+   This event is based on the z-acceleration, known as Nz, (in body coordinates) being above the specified value.
+
+.. command:: event_nz_below <acceleration-value>
+
+   This event is based on the z-acceleration, known as Nz, (in body coordinates) being below the specified value.
+
+.. command:: event_released_from_parent
+
+   This event is based on the platform being newly released from its parent.
+   
+.. command:: event_manual_input_trigger
+
+   This event allows a trigger pulled input from the P6Net interface to activate.
+   
+.. command:: event_manual_input_button
+
+   This event allows an input button down from the P6Net interface to activate.
+   
+.. command:: event_manual_input_button_released
+
+   This event allows an input button release from the P6Net interface to activate.
+       
+.. command:: event_boolean_input <string>
+
+   This event is based on a :command:`flight_controls.control_boolean` within :command:`flight_controls` being true. This allows an event to be controlled by a ManualPilot or SyntheticPilot, for example.
+
+.. command:: event_null
+
+   This purpose of this event is for to prevent any action without an **external** command to active the sequencer (see action_activate_subobject_sequencer_).
+   
+.. command:: all_events
+
+   This flag indicates that the sequencer will be activated only if all events for the sequencer are true.
+
+Sequencer Actions
+=================
+
+.. command:: action_null
+
+   This action should be specified when no action is desired, such as for a parent sequencer that does not need any action to be performed at its level.
+
+.. command:: action_jett_obj <string>
+
+   This action will jettison the specified subobject.
+
+.. command:: action_jett_self
+
+   This action will jettison the object from its parent.
+
+.. command:: action_ignite_engine <string>
+
+   This action will "ignite" the specified engine and set thrust (if applicable) to 100%.
+
+.. command:: action_ignite_subobject <string>
+
+   This action will "ignite" all engines on the specified subobject.
+
+.. command:: action_ignite_self
+
+   This action will "ignite" all engines on the object.
+
+.. command:: action_terminate_thrust
+
+   This action will terminate the thrust for all engines on the object (shutdown the engines).
+
+.. command:: action_shutdown_engine <string>
+
+   This action will "shutdown" the specified engine and set thrust (if applicable) to 0%.
+
+.. command:: action_shutdown_subobject <string>
+
+   This action will "shutdown" all engines on the specified subobject.
+
+.. command:: action_change_aero_mode <string>
+
+   This action will change the object's :command:`aero_mode` to the specified mode.
+
+.. command:: action_enable_size_factor
+
+   This action will enable the size factor. See :ref:`P6DOF_Size_Factor_Parameters` for details.
+   
+.. command:: action_set_graphical_model <integer-value>
+   
+   This action will set the current graphical model for networked tools.
+   
+.. command:: action_activate_subobject_sequencer <string> <string>
+
+   The first string is the name of the subobject and the second string is the name of the sequencer. This action will activate the sequencer with the specified name on the specified subobject. If no subobject or sequencer exists, no action will be performed.
+   
+.. command:: action_enable_controls
+   
+   This action will enable control input for normal operation. See action_disable_controls_ to turn off the controls.
+   
+.. command:: action_disable_controls
+   
+   This action will disable control input, zeroing all control inputs. See action_enable_controls_ to turn on the controls.
+
+Nested Sequencers
+=================
+
+Nested sequencers are sequencers that are defined within another (parent) sequencer. The nested sequencer does not have its events tested until its parent sequencer has been activated. This allows for sequential events, since the second event cannot occur until the first event has occurred. In many cases, the various parent sequencers will use an action_null_ action, since no action is desired until the final sequencer is activated.
+
+Consider this case::
+
+ sequencer
+    name             Sequencer1
+    event_above_alt  80000.0 ft
+    action_null
+    sequencer
+       name             Sequencer2
+       event_below_alt   70000.0 ft
+       action_null
+       sequencer
+          name                  Sequencer3
+          event_timer           10.0 sec
+          action_ignite_engine  BoostRocket
+       end_sequencer
+    end_sequencer
+ end_sequencer
+
+In this case, the sequencer chain will ignite a BoostRocket 10 seconds after the platform comes back down below 70,000 feet after first reaching 80,000 feet.
+
+
+Removing Sequencers
+===================
+
+.. command:: remove_sequencer <string>
+
+   This removes the specified sequencer. It is typically used to remove a sequencer that was derived from a parent class object. If no sequencer with the specified name exists, the command is ignored.
+
+Return to :doc:`p6dof_object_types` or :doc:`p6dof_object_type`

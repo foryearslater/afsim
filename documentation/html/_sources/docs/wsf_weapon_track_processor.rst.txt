@@ -1,0 +1,83 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPON_TRACK_PROCESSOR
+--------------------------
+
+.. model:: processor WSF_WEAPON_TRACK_PROCESSOR
+
+.. parsed-literal::
+
+ processor <name> :model:`WSF_WEAPON_TRACK_PROCESSOR`
+    :command:`processor Commands <processor>` ...
+    :ref:`Platform_Part_Commands` ...
+    :model:`WSF_SCRIPT_PROCESSOR Commands <WSF_SCRIPT_PROCESSOR>` ...
+    turn_on_sensor_ ...
+    coast_time_ ...
+    switch_time_ ...
+    switch_range_ ...
+    ignore_uplink_target_change_
+    uplink_required_ ...
+ end_processor
+
+Overview
+========
+
+The WSF_WEAPON_TRACK_PROCESSOR inherits from the WsfProcessor. The WSF_WEAPON_TRACK_PROCESSOR is used to provide a simple means to fire a weapon and guide the weapon to a track. A few subcommands are available to handle coast time and to turn on a terminal sensor as well as an interface to the scripting language.  For the majority of cases, the processor is sufficient to be used by itself on a weapon in order to guide the weapon to a target. The WSF_WEAPON_TRACK_PROCESSOR only deals with raw tracks either from the ground or from an onboard sensor.
+
+If additional capabilities are required on the weapon platform (e.g., multiple terminal sensors, task management to control current target), it is highly advised to create a WSF_TRACK_PROCESSOR, which creates a track manager, and a WSF_TASK_PROCESSOR to respond to WsfLocalTrack(s) from the track manager, and remove the WSF_WEAPON_TRACK_PROCESSOR from the platform.  If both a WSF_TASK_PROCESSOR (along with a WSF_TRACK_PROCESSOR) and WSF_WEAPON_TRACK_PROCESSOR exist on a platform to control the behavior of the weapon platform, unexpected results may occur.
+
+.. warning::
+   This processor relies on a platform's current target track being a valid 3-D track when calculating intercept ranges and times.
+
+Commands
+========
+
+.. command:: turn_on_sensor  <sensor-name> at_range <length-value> [ before_intercept | to_target ]
+.. command:: turn_on_sensor  <sensor-name> at_time <time-value> [ before_intercept | after_launch ]
+
+   <sensor-name>
+      Name of a sensor on the platform.
+
+   Turns on a sensor in one of four conditions:
+
+   * **(at_range / before_intercept)** When the distance to intercept is below a specified value.
+   * **(at_range / to_target)** When the distance to current target position is below a specified value.
+   * **(at_time / before_intercept)** When the time to intercept is below a specified value.
+   * **(at_time / after_launch)** After the time of flight has reached a specified value.
+
+.. command:: coast_time <time-value>
+
+   The amount of time the weapon will remain active without receiving a track update.  When the coast time is reached, the weapon engagement is terminated. See also uplink_required_.
+
+   Default: No limit
+
+.. command:: switch_time <time-value>
+
+   Specifies a time to intercept when the processor switches to terminal guidance.
+
+   Default: Not used.
+
+.. command:: switch_range <length-value>
+
+   Specifies a range to intercept that, when reached, switches the processor to terminal guidance.
+
+   Default: Not used.
+
+.. command:: ignore_uplink_target_change
+
+   Forces the processor to ignore track messages that do not pertain to the current target.
+
+.. command:: uplink_required <boolean-value>
+
+   Specifies if uplinked (external) track updates are required. This is used in conjunction with coast_time_ to decide which track sources are to be used for deciding if the coast time has been exceeded. If 'true', then only the time of the last received uplink is used. If 'false' then the maximum time of the last uplink received and the last local sensor track received is used. A value of 'true' would be appropriate for a command-guided weapon, with or without a terminal seeker. A value of 'false' would be appropriate for a track-via-missile system.
+
+   Default: false

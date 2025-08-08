@@ -1,0 +1,217 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfAssetManager
+---------------
+
+.. class:: WsfAssetManager
+
+**Navigation:** :doc:`script_types`
+
+**Derives From:**
+:class:`WsfProcessor`,
+:class:`WsfPlatformPart`,
+:class:`WsfObject`
+
+Overview
+========
+
+**WsfAssetManager** is the script interface for invoking methods on the
+IADS C2 asset manager base class. This class provides common interfaces
+that all IADS C2 asset management processors derive.
+
+Methods
+=======
+
+.. method:: void InitOwnNode(int assetID)
+
+   Identifies the platform that this processor is attached to. This is used for internal self-referencing by the asset manager models. **Required Initialization** 
+
+.. method:: double GetAssetYellowTime()
+
+   Retrieves stale asset yellow time that the asset manager was scripted with.
+
+.. method:: double GetAssetRedTime()
+
+   Retrieves stale asset red time that the asset manager was scripted with.
+
+.. method:: double GetReportPositionEveryMeters()
+
+.. method:: double GetReportPositionEverySeconds()
+
+.. method:: double GetReportStatusEverySeconds()
+
+.. method:: bool GetAggregateUnitStatus()
+
+.. method:: bool GetStationaryOpnsOnly()
+
+.. method:: bool GetWeaponRequired()
+
+.. method:: bool GetRequireAllWeapons()
+
+.. method:: bool GetEWRequired()
+
+.. method:: bool GetTARRequired()
+
+.. method:: bool GetTTRRequired()
+
+.. method:: WsfBMAssetMap GetAssetMap()
+
+   Retrieves the internal asset map stored by the asset manager for initialization/inspection of the friendly IADS command chain.
+
+.. method:: WsfBMAssetRecord GetAsset()
+
+.. method:: void PrintStatus(bool printDirectSubordinatesOnly)
+
+   Prints the asset manager's own perception (status, sides, id, weapons, assignments, etc) as well as subordinate statuses.
+
+.. method:: void SetStartTime(double absoluteStartTimeSeconds)
+
+   Allows the user to specify a start time of the scenario in seconds. This will be used in current time calculations since scenario start.
+
+.. method:: void ProgressTime(double currentScenarioTimeSeconds)
+
+   Progresses the internal model time to the time specified.
+
+.. method:: void CheckSubordinateTimeout()
+
+   Runs stale time checks on friendly assets and updates their status accordingly.
+
+.. method:: void ProcessTrackMessage(WsfBMTrackMessage updatedMasterTrackMessage)
+
+   Processes a received track message. These tracks are expected to be the updated 'Master Tracks' that have already been correlated and part of the platform's weapons-ready tracks because track processing is expected to be done externally from the asset manager.
+
+.. method:: void ProcessStatusMessage(WsfBMStatusMessage friendlyStatusMessage)
+
+   Processes a received status message from an own-side platform. This provides the basis of friendly asset perception for the asset manager.
+
+.. method:: void ProcessAssignmentStatusMessage(WsfBMAssignmentStatusMessage assignmentStatusMessage)
+
+   Processes a received assignment status message from an own-side platform. This would be in response to a previously sent assignment message from a battle manager (regardless of whether it is a commit-authority or delegation assignment).
+
+.. method:: void ProcessAssignmentMessage(WsfBMAssignmentMessage assignmentMessage)
+
+   Processes a received assignment message from an own-side platform. This would be a delegate assignment from a battle manager.
+
+.. method:: void ClearProcessedMessages()
+
+   Clears all outgoing messages from the pending send queues from the battle manager for this update cycle.
+
+.. method:: void RunModel()
+
+   Runs the model for the current update cycle. This generally means that the managers will run their Run methods, possibly creating pending outgoing messages for a C\ :sup:`2` Dissemination processor to dispatch.
+
+.. method:: void CreateAssignments()
+
+   Promotes assignments that are pending after a call to **RunModel()** to both the assignment array and outgoing message queues for dispatch by a C\ :sup:`2` Dissemination processor.
+
+.. method:: void CANTCOAssignment(WsfBMAssignmentMessage assignment, string reason, bool isActiveAssignment, bool isSystemic, bool isGlobal)
+
+   CANTCO an assignment from script. This is primarily for C^2  Dissemination processors that may encounter an error in sending a message after pulling it off the outgoing message queue.
+
+   **Parameters**:
+
+      **WsfBMAssignmentMessage** Assignment to cancel
+
+      **string reason:** CANTCO reason
+
+      **bool is_active:** - not used -
+
+      **bool systemic:** If the CANTCO is systemic then if global flag is false, will be treated as a local systemic CANTCO meaning that the assigned weapon will no longer be considered for future assignment of this track again. If the global flag is true, then this weapon will be removed from consideration of all future assignments.
+
+      **bool global:** Specifies if the systemic CANTCO is global (true) or local (false)
+
+.. method:: void MonitorAssignments()
+
+   Runs the periodic monitor assignments call for determining if assignments need to be cancelled. All asset managers get a basic monitor assignment check for monitoring the following:
+
+   -  Assignment track has been lost.
+   -  Assignment has expired.
+   -  A non-green status has occurred between the weapon and the battle manager.
+
+   In addition, each asset manager can add additional checks to it's own monitor assignments process.
+
+.. method:: bool ConnectLocalTrackDropCallback(string dropHandlerFunctionName)
+
+   Allows the user to employ a drop track handling within AFSIM script. This is needed in some cases such as if using the :model:`WSF_PERCEPTION_PROCESSOR` since that processor doesn't notify when tracks have been dropped. Underneath the hood, this hooks into the :class:`WsfPlatform`::LocalTrackDropped() callback.
+
+    **Parameters**:
+
+       **string script_function_name:** AFSIM script function name that will handle the drop track notification. It is required to have the following signature: void HandleDropTrackCallback(double sim_time, :class:`WsfLocalTrack` drop_track) **and must be defined within the battle manager processor context**. Returns true if successful
+
+::
+
+   # Example drop track handler definition
+   processor unclassifiedbm WSF_UNCLASS_BM
+      script void HandleDropTrackCallback(double sim_time, WsfLocalTrack drop_track)
+         writeln (TIME_NOW, ": ", "HandleDropTrackCallback: Got called");
+         WsfBMTrackMessage bm_track = ConvertTrackDrop (drop_track);
+         bm_ref.ProcessTrackMessage (bm_track);
+      end_script
+   end_processor
+
+.. method:: bool ConnectLocalTrackInitiatedCallback(string handlerFunction)
+
+.. method:: bool ConnectLocalTrackUpdatedCallback(string handlerFunction)
+
+.. method:: bool UpdateOwnStatus(double dataTimeSeconds, WsfGeoPoint position, Vec3 ECEFVelocityMetersPerSecond, bool isGreen)
+
+   Allows for updating the battle managers perception of the attached ownship platform. This is required since the ownship will not send a status message to itself.
+
+   **Parameters**:
+
+      **double data_time:** Simulation time of that data is given for in seconds.
+
+      **WsfGeoPoint position:** Position of battle manager platform.
+
+      **Vec3 ecef_vel_m_per_sec:** Velocity of battle manager platform in the ECEF coordinate frame in meters/second.
+
+      **bool is_green:** If the platform status is still green (true), otherwise it will be taken as red (false). Returns true if successful
+
+.. method:: void AssessOngoingAssignments()
+
+   Assesses active assignments for validity(primarily for assigned unit status green). This is for compatibility with the HELIOS managers since in HELIOS, only battle managers with commit authority typically employ monitor assignments.
+
+.. method:: void ReadyCompleteAssignments()
+
+   Deletes completed assignments from the assignment array. Invocations like MonitorAssignments() and CANTCOAssignment() mark assignments for deletion but don't delete the assignment from the array until this function is called.
+
+.. method:: void CalculateTrackStrengths(double simTime, double maxGroupingDistance)
+
+   Performs an optional track strength calculation based on existing track projections and a simple grouping distance. The strength calculation is based on a single-pass calculation.
+
+.. method:: void PrepareTracksForEvaluation()
+
+   Performs staging of threats for the battle manager to consider for assignment. This means:
+
+   - Unassigned tracks if the battle manager has **commit authority** set.
+   - Delegated assignments if the battle manager does not have **commit authority**.
+
+   **Should be called before RunModel()**
+
+.. method:: void UpdateDefendedAssetsArray()
+
+   Performs staging of the defended assets array for threat assignment evaluation. How each manager uses this array is implementation-specific.
+   
+   **Should be called before RunModel()**
+
+.. method:: WsfBMAssignmentMessage GetAssignment(WsfTrackId trackID, int assignedUnitID, int assignedWeaponID)
+
+   Retrieves an assignment from the assignment array.
+
+   **Parameters**:
+
+      **WsfTrackId track_id:** Assigned Track ID
+
+      **int assigned_platform_id:** Platform index of assigned asset.
+
+      **int assigned_weapon_id:** Assigned Weapon ID. This is the zero-based weapon index on the platform. Returns valid assignment if successful (user must check validity via .IsValid())
+

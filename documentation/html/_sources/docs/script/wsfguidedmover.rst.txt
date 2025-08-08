@@ -1,0 +1,111 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfGuidedMover
+-----------------
+
+.. class:: WsfGuidedMover inherits WsfMover
+
+Overview
+========
+
+WsfGuidedMover provides methods that can be used to retrieve information that is specific to :model:`WSF_GUIDED_MOVER`.
+
+Methods
+=======
+
+.. note::
+
+   The methods that return aerodynamic forces (lateral and drag) and thrust forces return values that were computed using
+   the conditions from the previous timestep. This may result in values that are slightly different than those that would
+   be returned if using the actual current conditions.
+
+.. method:: double DynamicPressure()
+
+   Returns the dynamic pressure (in Newtons per square meter) currently being experienced by the platform.
+
+.. method:: double DragForce()
+
+   Returns the drag force (in Newtons) currently being experienced by the platform.
+
+.. method:: double LateralAerodynamicForce()
+
+   Returns the lateral aerodynamic force (in Newtons) currently being applied.
+
+.. method:: double MaximumLateralAerodynamicForce()
+
+   Returns the maximum lateral aerodynamic force (in Newtons) that can be applied under the current conditions.
+
+.. method:: double AxialThrustForce()
+
+   Returns the axial thrust force (in Newtons) currently being produced by the engines.
+
+.. method:: double LateralThrustForce()
+
+   Returns the lateral thrust force (in Newtons) currently being produced by the engines plus any divert thrust being
+   applied.
+
+.. method:: double TotalThrustForce()
+
+   Returns the thrust force (in Newtons) currently being produced by the engines and divert thrust. This is the magnitude
+   of the vector sum of :method:`WsfGuidedMover.AxialThrustForce` () and :method:`WsfGuidedMover.LateralThrustForce` ().
+
+.. method:: double GravitationalAcceleration()
+
+   Returns the acceleration due to gravity (meters per second^2) at the current location of the platform.
+
+.. method:: double GravitationalForce()
+
+   Returns the force due to gravity (in Newtons) experienced by the platform at its current location. This is simply
+   :method:`WsfGuidedMover.GravitationalAcceleration` () times :method:`WsfPlatform.TotalMass` ().
+
+   Any of the aerodynamic or thrust force values returned by the methods of this class can be converted to G's by
+   simply dividing by this value, e.g:
+
+   ::
+
+      WsfGuidedMover m = (WsfGuidedMover) PLATFORM.Mover();
+      double F_g = m.GravitationalForce();
+      double latAeroGs = m.LateralAerodynamicForce() / F_g;
+      double maxLatAeroGs = m.MaximumLateralAerodynamicForce() / F_g;
+      writeln("Current Lateral Force=", latAeroGs, "g, Maximum achievable=", maxLatAeroGs, "g");
+
+.. method:: double EmptyMass()
+            double EmptyMass(int aStage)
+
+   Returns the :command:`WSF_GUIDED_MOVER.empty_mass` (in kg) of the stage given by aStage, or the current stage if not specified.
+
+.. method:: double PayloadMass()
+            double PayloadMass(int aStage)
+
+   Returns the payload mass (in kg) of the stage given by aStage, or the current stage if not specified. This is equivalent to the sum of the :command:`WSF_GUIDED_MOVER.total_mass` of subsequent stages.
+
+.. method:: double InitialFuelMass()
+            double InitialFuelMass(int aStage)
+
+   Returns the :command:`WSF_GUIDED_MOVER.fuel_mass` (in kg) of the stage given by aStage, or the current stage if not specified.
+
+.. method:: double InitialTotalMass()
+            double InitialTotalMass(int aStage)
+
+   Returns the total mass (in kg) at the beginning of the stage given by aStage, or the current stage if not specified. This includes the mass of subsequent stages and is equivalent to :method:`InitialFuelMass()<WsfGuidedMover.InitialFuelMass>` + :method:`EmptyMass()<WsfGuidedMover.EmptyMass>` + :method:`PayloadMass()<WsfGuidedMover.PayloadMass>`
+
+.. method:: double CurrentFuelMass()
+
+   Returns the current amount of fuel remaining, in kg.
+
+.. method:: double CurrentTotalMass()
+
+   Returns the current total mass, in kg. This is equivalent to :method:`CurrentFuelMass()<WsfGuidedMover.CurrentFuelMass>` + :method:`EmptyMass()<WsfGuidedMover.EmptyMass>` + :method:`PayloadMass()<WsfGuidedMover.PayloadMass>`.
+
+.. method:: double CurrentFuelFlowRate()
+
+   Returns the current fuel flow rate, in kg/s.

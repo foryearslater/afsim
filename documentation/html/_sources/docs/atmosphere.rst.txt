@@ -1,0 +1,121 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+atmosphere
+----------
+
+An atmosphere is provided which models the air through which simulated platforms move.  The default definition of
+atmosphere is the 1976 standard atmosphere.  However, MIL-STD-210A defines several non-standard atmosphere types
+enumerated as Hot, Tropical, Cold, and Polar.  One other atmosphere type is also allowed which elevates or depresses
+the standard atmosphere temperature at all altitudes below 100000 ft, in order to match a desired density altitude* at
+a particular geopotential altitude.  The WSF simulation loader will permit the following keywords or input blocks to
+be specified, describing the atmosphere type(s) to be used for the scenario:
+
+.. note::
+  The MIL-STD-210A Non-Standard Atmospheres only extend up to 100000 ft, by definition.  The standard atmosphere
+  model continues upward to approximately 200000 ft (61 km), above which the returned air density is zero.  In this
+  model, the non-standard atmospheres are extended to the same 61 km altitude, but blended beyond 100000 ft to reach the
+  same atmosphere terminus condition.  At 47 km in standard atmosphere, there is a layer where temperature does not
+  change with increasing altitude.  By assumption, all non-standard atmospheres uniformly blend their temperature profile
+  from 100000 ft upward, to match the standard temperature at 47 km (270.65 deg K), and then ending with 249.1 deg K at
+  61 km.
+  
+.. command:: default_atmosphere_type  [standard_day | hot_day | tropical_day | cold_day | polar_day | custom | simple_dt <temperature value>]
+   
+   The "standard_day" atmosphere is supplied by default.  This command is global in scope, and should be specified before
+   any types are defined that use an atmosphere.  Each instance of "simple_dt" type atmosphere must use the same (static)
+   temperature deviation from "standard_day" atmosphere, and is supplied using the global syntax above for "simple_dt". 
+   The default for this value is +10 deg K.
+
+In addition, any individual instance of atmosphere may override the supplied global default. Individual instances of
+atmospheres may apply to specific sensors and movers.
+Because platforms and sensors can be declared with the different atmospheres, users should use caution
+to ensure that they declare atmospheres which are consistent with the purposes of specific studies. To invoke a
+specific atmosphere for a mover or sensor definition, the 'atmosphere_type' keyword should be inserted into the
+relevant sensor or mover block.  Individual instances of atmospheres are invoked by specifying:
+
+.. command:: atmosphere_type  [default | standard_day | hot_day | tropical_day | cold_day | polar_day | custom | simple_dt]
+   
+   The context of this command is local to an atmosphere instance.  It will override the global default atmosphere type. 
+   Supplying the parameter "default" is the do-nothing option, the atmosphere type will become the default atmosphere
+   type.  Supplying the parameter "simple_dt" will specify the use of that atmosphere type, however the value of
+   temperature deviation "dT" is global for all instances of this atmosphere type, and cannot be overridden here.
+
+   .. note::
+     Be aware that once an individual atmosphere is declared to be of a specific type, the default_atmosphere_type_ will not be used, and the simulation may have conflicting atmospheric attributes.
+
+.. command:: print_mks_atmosphere_tables | print_sae_atmosphere_tables
+   
+   This command creates an output file called "UtAtmosphereTables.lis" in the current directory that tabulates on even
+   increments of either 500 meters or 5000 feet.  The tabulation includes altitudes, temperatures, pressures, density,
+   sonic velocity, and water density.
+
+.. command:: atmosphere_table ... end_atmosphere_table
+
+.. parsed-literal::
+
+   atmosphere_table_
+      <height-m> <temperature-K> <pressure-Pa>
+      <height-m> <temperature-K> <pressure-Pa> <density-kg-per-m3>
+      <height-m> <temperature-K> <pressure-Pa> <density-kg-per-m3> <sonic-speed-mps>
+   end_atmosphere_table
+
+This block sets the default_atmosphere_type_ to 'custom', and will build up an atmosphere from scratch based on the
+table input. For ease of both input and processing, SI units are assumed. A maximum of 512 altitudes can be defined, and
+they must be defined in order of ascending altitude.
+
+The fourth and fifth columns are optional for any given datum. If explicit density and/or speed-of-sound values are not
+provided for an altitude, the data will be estimated based on the input temperature and pressure, in combination with the
+standard sea level information.
+
+.. command:: contrailing_altitude_floor <length-value>
+
+.. command:: contrailing_altitude_ceiling <length-value>
+
+The previous two commands adjust the band of the atmosphere where contrails may be formed. By default, this band resides
+between 26,000 feet and 35,000 feet above the ellipsoid. There are no guards against unusual inputs, but setting
+contrailing_altitude_floor_ above contrailing_altitude_ceiling_ will effectively eliminate the contrailing band.
+
+.. command:: atmosphere_calibration ... end_atmosphere_calibration
+   :block:
+
+.. parsed-literal::
+
+   atmosphere_calibration_
+      altitude_ <length-value>
+      density_ <mass-density-value>
+      temperature_ <temperature-value>
+   end_atmosphere_calibration
+
+.. command:: altitude <length-value>
+
+.. command:: density <mass-density-value>
+
+.. command:: temperature <temperature-value>
+
+The preceding block type will set the default_atmosphere_type_ to 'simple_dt', and will choose a temperature deviation
+from standard that provides the desired air density **OR** temperature at the specified geopotential altitude.  (This
+utility is provided to assist in matching actual flight test data.)  Following is a working example of the above block,
+and corresponding simulation output::
+
+ atmosphere_calibration
+   # This block will set the default_atmosphere_type_ to simple_dt, and choose  the delta temperature
+   # needed to match the given air density or temperature at a specified altitude.   A printed block
+   # in the output stream will indicate the delta temperature (from standard) value selected.
+   # "altitude" is required, and one only of either "density" or "temperature" is required.
+   altitude  11000 ft
+   density   0.85896 kg/m3
+   #temperature 20 F
+ end_atmosphere_calibration
+
+.. note::
+   Per the atmosphere_calibration block provided, selected default atmosphere is simple_dt 5.46253 deg K
+	

@@ -1,0 +1,310 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF Grammar Format
+------------------
+
+Overview
+========
+
+The WSF grammar format defines the syntax of WSF commands.  The grammar is used in the WSF IDE for parsing WSF
+files.  Grammar files already exist for many WSF modules and can be found in .ag files in 'grammar' subdirectories of
+SVN project directories.
+
+::
+
+   WSF/grammar/WSF_core.ag
+   WSF_nx/grammar/WSF_nx.ag
+   ...
+ 
+It is the developer's responsibility when adding new types and commands to maintain the grammar files so that tools
+like the IDE can correctly process WSF files.
+
+Grammar File Definition
+=======================
+
+The grammar file has two main features: **Rules** to parse the WSF input and **Actions** to create data representing
+the input file.
+
+Rules
+*****
+
+Sequences
+^^^^^^^^^
+
+The most basic rule is a sequence.  Sequences are indicated by the '{' '}' symbols.  Sequences define a list of
+sub-rules which each must be matched in succession.
+
+::
+
+   { *rule0 rule1* ... }
+
+Within a sequence, rules are counted starting at 0.  Later, rules may be referenced using the '$0' notation.
+
+Literals
+^^^^^^^^
+
+Literals match a single specific string of characters.  Literals can either be quoted strings or plain text.
+
+::
+
+   end_time
+   "end_time"
+  
+Rule References
+^^^^^^^^^^^^^^^
+
+Rules may be referenced after they are defined using the '<rule-name>' format.
+
+::
+
+   <my-rule>
+ 
+Recurrences
+^^^^^^^^^^^
+
+Recurrences are rule references that recur 0 to many or 0 to 1 times.  The '*' character is used to denote a zero to
+many recurrence.  '+' for 1 to many.  '?' for 0 to 1.
+
+::
+
+   {
+     string_list <string>* end_string_list
+   | A B C D {E F G}?
+   }
+ 
+Built-in Rules
+^^^^^^^^^^^^^^
+
+<string>
+   Matches a whitespace delimited character string
+
+::
+
+   MY_PLATFORM
+   
+<quotable-string>
+   Matches either a whitespace delimited string or a quoted string
+
+::
+
+   MY_PLATFORM
+   "C:\Program Files\MyPath"
+
+<string-except>
+   Matches any string with a list of exceptions
+
+::
+
+   # match any string except invalid_word1 and invalid_word2
+   (string-except invalid_word1 invalid_word2)
+ 
+<integer>
+   Matches an integer
+   
+::
+
+   -123
+ 
+<real>
+   Matches a real number
+   
+::
+
+   -2
+   -2.0
+   -2.0e-7
+ 
+(error {})
+   Defines a sequence which when matched triggers an error
+   
+::
+
+   #This matches any string.  If it is an integer, an error will be logged.
+   {  (error { <integer> })
+    | <string>
+   }
+ 
+(delimited ...)
+   Defines a non-space delimited word.  All rules are matched assuming whitespace delimited inputs. 
+   This provides a way to bypass this limitation.  Each argument is matched without spaces.  There are some limitations
+   using this rule, most notably, every other argument must be a literal.
+   
+::
+
+   # this will match latitude values like 10.5n and 60s
+   {
+    (delimited <real> n)
+   | (delimited <real> s)
+   }
+ 
+(new *storage-address* *load-address* [&#58;option...])
+   Defines a rule which attempts to create a new symbol.  The symbol at *load-address* is copied into *storage-address*.
+   The addresses must be either (subtype ...) or (type ...).
+
+(new_replace ...)
+   Same as (new ...), but will replace any existing symbol.
+
+(load *load-address*)
+   Loads an existing symbol from the symbol table.
+
+(delete *address*)
+   Deletes an existing symbol.
+
+::
+
+   # Make a new sub-symbol on the current symbol named 'mover', loaded from 'moverType.WSF_AIR_MOVER'
+   (new (subtype mover) (type moverType WSF_AIR_MOVER))
+   
+If there exists no symbol at load-address, the rule normally fails to match.  However, if the :backup option is
+present, another load-address may be attempted.  This allows an the WSF parser to partially process types that are
+unknown.
+
+::
+
+   # Try to load a user-defined mover.  If the user-defined type isn't found, make a WSF_AIR_MOVER.  (Logs an error)
+   (new (subtype mover) (type moverType $1) :backup (type moverType WSF_AIR_MOVER))
+   # Load 'mover' as the new current symbol
+   (load (subtype mover)
+ 
+Named Rules
+^^^^^^^^^^^
+
+A new named rule is created using this syntax::
+
+   (rule *rule-name* { *rules* })
+ 
+Examples::
+
+   # Define a new rule
+   (rule my-rule {
+      end_time <Time>
+   })
+   # Use the new rule
+   (rule my-rule-2 {
+      <my-rule>
+    | not <my-rule>
+   })
+   
+Struct
+^^^^^^
+
+A struct is special type of named rule which represents an object WSF understands.  Platform, Sensor, and Processor
+are examples of structs.  A struct may contain rule definitions just as the (rule ..) command, but also may contain
+variables.
+
+Example::
+
+   (struct MY_SENSOR :base_type Sensor
+                     :symbol (type sensorType MY_SENSOR)
+      (var String my_setting)
+   {
+      my_command <String>       [my_setting=$1]
+    | <Sensor>
+   })
+ 
+(symbol ...)
+   specifies that the struct should be inserted in the symbol table used when parsing.  Symbols are used by the *new* and
+   *load* rules.
+   
+(type ...)
+   Specifies a position in the symbol table.  Any number of arguments are allowed.
+   
+::
+
+   # This is the location of WSF_RADAR_SENSOR in the symbol table)
+   (type sensorType WSF_RADAR_SENSOR)
+   
+(subtype ...)
+   Specifies a position in the symbol table relative to the current symbol.
+   
+::
+
+   # This is the location of my-sensor in the sensor list of the platform currently being parsed.
+   (subtype sensors my-sensor)
+   
+(var *type* *name*)
+   Defines an attribute belonging to the struct.  These variables are used to represent the state of  WSF objects after
+   processing the input file.
+
+Variables may have default values.
+
+::
+
+   (var Real earthRadiusMultiplier :default 1.0)
+ 
+Actions
+^^^^^^^
+
+Actions may be placed before or after entries in a sequence rule.  Actions provide a mechanism to store data in
+structs.  Actions are placed between '[' ']' characters.  More than one action may be specified by using the ';'
+character.
+
+::
+
+   [my_setting1="ok";my_setting2=$1]
+   
+There are multiple types of actions:
+
+Assignment
+   Assigns a new value to an attribute.  **attribute=value**
+   
+::
+
+   side=blue
+   icon="F-18"
+   width="24 inches"
+   height=$1
+ 
+Value can either be a literal value, or a reference to a value input by the user.  The input '$0' takes the result of
+the user's input from the first rule in this sequence::
+
+   { side <string>   [side=$1]
+   | set width <Length>  [width=$2]
+   }
+   
+As a shortcut, the attribute name may be used in the rule reference to denote an automatic assignment. This is equivalent::
+
+   { side <$side>
+   | set width <$width>
+   }
+   
+push(*attribute-name*)
+   Updates the current value to the specified attribute.  Actions in the proxy operate on the current object, so this will
+   affect how subsequent actions or sub-rules are processed until after the next subrule is complete:
+
+This sets the 'auxData' attribute as the current object to later be modified by commands in the 'AuxData.block' rule.
+
+::
+
+   {
+    [push(auxData)] <AuxData.block>
+   }
+   
+new(*attribute-name*,*key-name*)
+   Adds a new entry to an 'ObjectMap' attribute and sets the current object to the new value.
+   
+This adds a new entry to the category.
+
+::
+
+   # Map the command chain name to the commander name
+   (var ObjectMap/String commandChains)
+   {
+      # When this rule is matched, add a new command chain entry with the first user input
+      # Then assign the value to the second user input.
+      command_chain <string> <string> [new(commandChains,$1);this=$2]
+   }
+ 
+apply($$)
+   Applies previous (new ...) or (load ...) rule to the proxy data structures. Normally (new ...) and (load ...) operate
+   only on the symbol table and have no effect on struct attributes.  This command effectively does the same action to the
+   proxy structure as the symbol table.

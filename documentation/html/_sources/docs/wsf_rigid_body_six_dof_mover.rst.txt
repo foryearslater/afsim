@@ -1,0 +1,97 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RIGID_BODY_SIX_DOF_MOVER
+----------------------------
+
+**Derives From:** :model:`WSF_SIX_DOF_MOVER`
+
+**Script Class:** :class:`WsfRigidBodySixDOF_Mover`
+
+.. model:: mover WSF_RIGID_BODY_SIX_DOF_MOVER
+
+.. parsed-literal::
+
+   mover <name> :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`
+
+      // `RB6 Vehicle Type Commands`_
+      vehicle_type_ ...
+      landing_gear_down_ ...
+      nws_enabled_ ...
+      parking_brake_on_ ...
+      taxi_mode_enabled_ ...
+
+      ... :model:`WSF_SIX_DOF_MOVER` Commands ...
+
+      // Script Methods -- see :class:`WsfRigidBodySixDOF_Mover`
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_RIGID_BODY_SIX_DOF_MOVER` is a specific type of :model:`WSF_SIX_DOF_MOVER`, using first- and second-order force and moment coefficients to effect rotation and translation. It is a direct descendant of WSF_P6DOF_MOVER, and adopts nearly all of its functionality.
+
+The level of detail and data required to build a successful :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` is nontrivial, but the result is a mover which is able to naturally capture phenomena and dynamics that other movers, including :model:`WSF_POINT_MASS_SIX_DOF_MOVER`, cannot.
+
+:model:`WSF_RIGID_BODY_SIX_DOF_MOVER` uses only the principal (diagonal) elements of the moment-of-inertia tensor. This simplification helps to speed execution and reduce some complexity, but can have the effect of underdamping cross-coupling effects. Net forces and torques are aggregated from aerodynamic, propulsive, and gravitational sources, and are used directly in the equations of motion.
+
+Aerodynamic coefficients are available for all degrees of freedom, including ``damping`` derivative coefficients. Not all are required, but each utilized table can add to the fidelity of a model.
+
+.. block:: WSF_RIGID_BODY_SIX_DOF_MOVER
+
+RB6 Vehicle Type Commands
+=========================
+
+The most important command for a WSF_RIGID_BODY_SIX_DOF_MOVER is vehicle_type_, which defines the performance characteristics of of the object. The rigid-body vehicle_type_ is defined as a command:`rigid_body_vehicle_type` in a :command:`six_dof_object_types` block. The six_dof_vehicle_type must be defined before it is referenced in the **mover WSF_RIGID_BODY_SIX_DOF_MOVER** block.
+
+See :command:`six_dof_object_types` for information on how to create a :command:`rigid_body_vehicle_type`.
+
+.. command:: vehicle_type <string>
+   
+   This defines the type of object used by the mover. The vehicle_type_ is defined in a :command:`six_dof_object_types` block and must be defined before being referenced.
+   
+   The simplest WSF_RIGID_BODY_SIX_DOF_MOVER definition is something like this::
+   
+      mover WSF_RIGID_BODY_SIX_DOF_MOVER
+         vehicle_type  F-15C
+      end_mover
+    
+   This indicates that the F-15C vehicle_type_ will be used. F-15C must be a :command:`rigid_body_vehicle_type` -- :command:`point_mass_vehicle_type` objects will not be accepted.
+
+.. command:: landing_gear_down <boolean-value>
+   
+   Indicates whether the landing gear should be down or not when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfRigidBodySixDOF_Mover.LowerLandingGear` or :method:`WsfRigidBodySixDOF_Mover.RetractLandingGear`
+  
+.. command:: nws_enabled <boolean-value>
+   
+   Indicates whether nose-wheel steering should be enabled or not.  Nose-wheel steering is commonly used when taxiing but should be removed prior to the takeoff roll.
+   
+   For the corresponding script method, see :method:`WsfRigidBodySixDOF_Mover.SetEnableNWS`
+  
+.. command:: parking_brake_on <boolean-value>
+   
+   This command sets whether the parking brake should be on or off when the scenario begins.
+   
+   For the corresponding script methods, see :method:`WsfRigidBodySixDOF_Mover.SetParkingBrake` or :method:`WsfRigidBodySixDOF_Mover.ReleaseWheelBrakes`
+   
+.. command:: taxi_mode_enabled <boolean-value>
+   
+   This command set whether the autopilot should be in taxi mode when the scenario begins.  This should be used only be used when the platform is on ground.
+   
+   For the corresponding script method, see :method:`WsfRigidBodySixDOF_Mover.SetTaxiMode`
+  
+Script Methods
+==============
+
+To learn about the various script methods supported by WSF_RIGID_BODY_SIX_DOF_MOVER, see :class:`WsfRigidBodySixDOF_Mover`

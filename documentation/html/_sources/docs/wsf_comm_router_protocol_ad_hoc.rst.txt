@@ -1,0 +1,175 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COMM_ROUTER_PROTOCOL_AD_HOC
+-------------------------------
+
+.. model:: router_protocol WSF_COMM_ROUTER_PROTOCOL_AD_HOC
+
+.. parsed-literal::
+
+   router_protocol <name> :model:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC`
+
+      comm_added_delay_time_ <random-time-reference>
+      comm_removed_delay_time_ <random-time-reference>
+      connection_added_delay_time_ <random-time-reference>
+      connection_removed_delay_time_ <random-time-reference>
+
+      script bool :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnCommAdded` ...
+      script bool :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnCommRemoved` ...
+      script bool :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnConnectionAdded` ...
+      script bool :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnConnectionRemoved` ...
+      script :class:`WsfAddress` :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnMessageRouting` ...
+
+   end_router_protocol
+
+Overview
+========
+
+:model:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC` is a generic router protocol, providing user-defined
+script methods to define the behavior of the routing protocol. This protocol allows
+users to define the behaviors reflected in the network knowledge maintained in the router when
+changes are made to network state. Although intended to enable ad-hoc capabilities, it can also
+be used in any circumstance in which users want to define their own routing call implementation
+via a scripted interface.
+
+This protocol is limited, for practical and performance reasons, to only consider changes in
+network state to the network membership of the comm interfaces assigned to the router. Changes
+external to these networks are not considered by this protocol.
+
+Changes that do occur during runtime to one of the networks of interest to this protocol
+will call the corresponding script method to allow user-defined logic to execute, along with
+a corresponding return value to indicate the action to be taken regarding that event.
+
+Time delays are also provided for most of the events this protocol monitors, to allow either constant
+or distribution-based delays in state updates. This is provided to emulate potential delays in
+acquiring notification of these events at the router due to typical network latency effects,
+delays in how a particular protocol being modeled distributes this data, etc.
+
+.. note:: This protocol can be performance intensive if the network(s) this protocol monitors for
+   state changes contains many members, or if many routers with this protocol exist in the simulation
+   simultaneously.
+
+Commands
+========
+
+.. command:: comm_added_delay_time <random-time-reference>
+
+   Defines the delay to be taken between when a network being monitored adds a comm interface and when
+   this protocol will execute the :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnCommAdded` script method, potentially adding an interface
+   to the network state graph.
+
+   **Default**: No delay (constant 0 s)
+
+.. command:: comm_removed_delay_time <random-time-reference>
+
+   Defines the delay to be taken between when a network being monitored removes a comm interface and when
+   this protocol will execute the :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnCommRemoved` script method, potentially removing an interface
+   on the network state graph.
+
+   Note that this method only handles the removal of the node itself, and not the connections that relied
+   on that node's existence.
+
+   **Default**: No delay (constant 0 s)
+
+.. command:: connection_added_delay_time <random-time-reference>
+
+   Defines the delay to be taken between when a network being monitored adds a link or connection and when
+   this protocol will execute the :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnConnectionAdded` script method, potentially adding a
+   connection to the network state graph.
+
+   **Default**: No delay (constant 0 s)
+
+.. command:: connection_removed_delay_time <random-time-reference>
+
+   Defines the delay to be taken between when a network being monitored removes a link or connection and when
+   this protocol will execute the :command:`WSF_COMM_ROUTER_PROTOCOL_AD_HOC.OnConnectionRemoved` script method, potentially removing a
+   connection from the network state graph.
+
+   **Default**: No delay (constant 0 s)
+
+.. command:: OnCommAdded (script)
+
+   .. parsed-literal::
+
+      script bool OnCommAdded(:class:`WsfAddress` aAddedComm, :class:`WsfCommGraph` aNetworkState, :class:`WsfCommRouter` aRouter)
+      ...
+      end_script
+
+   Defines an optional script that is invoked (after delays) when a comm interface is added. This is only invoked when
+   the interface being added shares a network with one of the interfaces on the router this protocol belongs to, or pertains
+   directly to one of the router interfaces.
+
+   A boolean value **MUST** be returned from this script indicating whether the protocol should add this interface to
+   its network state graph (true) or should not take any action (false).
+
+.. command:: OnCommRemoved (script)
+
+   .. parsed-literal::
+
+      script bool OnCommRemoved(:class:`WsfAddress` aAddedComm, :class:`WsfCommGraph` aNetworkState, :class:`WsfCommRouter` aRouter)
+      ...
+      end_script
+
+   Defines an optional script that is invoked (after delays) when a comm interface is removed. This is only invoked when
+   the interface being removed shares a network with one of the interfaces on the router this protocol belongs to, or pertains
+   directly to one of the router interfaces.
+
+   A boolean value **MUST** be returned from this script indicating whether the protocol should remove this interface from
+   its network state graph (true) or should not take any action (false).
+
+.. command:: OnConnectionAdded (script)
+
+   .. parsed-literal::
+
+      script bool OnConnectionAdded(:class:`WsfAddress` aSourceComm, :class:`WsfAddress` aDestinationComm, :class:`WsfCommGraph` aNetworkState, :class:`WsfCommRouter` aRouter)
+      ...
+      end_script
+
+   Defines an optional script that is invoked (after delays) when a connection is added. This is only invoked when **one** of the
+   involved interfaces (either the source or destination) shares a network with one of the interfaces on the router this
+   protocol belongs to.
+
+   A boolean value **MUST** be returned from this script indicating whether the protocol should add this connection to
+   its network state graph (true) or should not take any action (false).
+
+.. command:: OnConnectionRemoved (script)
+
+   .. parsed-literal::
+
+      script bool OnConnectionRemoved(:class:`WsfAddress` aSourceComm, :class:`WsfAddress` aDestinationComm, :class:`WsfCommGraph` aNetworkState, :class:`WsfCommRouter` aRouter)
+      ...
+      end_script
+
+   Defines an optional script that is invoked (after delays) when a connection is removed. This is only invoked when **one** of the
+   involved interfaces (either the source or destination) shares a network with one of the interfaces on the router this
+   protocol belongs to.
+
+   A boolean value **MUST** be returned from this script indicating whether the protocol should remove this connection from its network state graph (true) or should not take any action (false).
+
+.. command:: OnMessageRouting (script)
+
+   .. parsed-literal::
+
+      script :class:`WsfAddress` OnMessageRouting(:class:`WsfCommMessage` aMessage, :class:`WsfAddress` aInterface, :class:`WsfCommGraph` aNetworkState, :class:`WsfCommRouter` aRouter)
+      ...
+      end_script
+
+   Defines an optional script that is invoked immediately when a message requires routing on an interface belonging to this
+   protocol's router.
+
+   A :class:`WsfAddress` **MUST** be returned from this script indicating the next hop address to forward this message.
+   If a null address is provided (by not setting the address for the returned object) then this indicates that this protocol
+   should drop the message and not attempt forwarding the message. Any other address will be used as the indicated forwarding
+   address, and MUST be directly connected to the interface receiving the message (provided via the **aInterface** parameter).
+
+   Note that many of the details are provided to make most routing determinations, including the information provided directly
+   from the message itself (traceroute, destination address, etc.) the current graph state (pathing), and the router itself.

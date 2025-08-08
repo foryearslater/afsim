@@ -1,0 +1,486 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+P6DOF Theory
+============
+
+Introduction
+------------
+
+This document exists to explain the physics of the P6DOF Mover (see the :command:`WSF_P6DOF_MOVER` input type and the :class:`WsfP6DOF_Mover` script class).
+The kinematic and dynamic equations are defined, and where applicable, parallels are drawn between the mathematical symbols in this document and existing P6DOF commands.
+
+The :command:`WSF_P6DOF_MOVER` provides a 6 DOF (degrees-of-freedom) physics-based mover that supports a wide range of aircraft and weapons modeling.
+The 6DOFs include translational position (:math:`\vec{x}`) as well as attitude (:math:`\psi`, :math:`\theta`, :math:`\phi`).
+The attitude of the vehicle is determined by momentum-based calculations, providing realistic vehicle pointing as well as proper angle of attack (:math:`\alpha`) and angle of sideslip (:math:`\beta`) modeling.
+Rotational kinematics are influenced by aerodynamic and propulsion forces and moments along with rotational inertia.
+Although P6DOF movers include full 6DOF modeling, they utilize some angular/attitude simplifications to reduce the required data and to simplify control -- hence the "pseudo" of the Pseudo-6DOF name.
+In particular, they only use the diagonal of the inertia tensor to reduce inertial cross-coupling (:math:`I_{xx}`, :math:`I_{yy}`, :math:`I_{zz}`).
+However, P6DOF movers support a full 6 DOFs and include a detailed, stability derivative build-up approach to aerodynamics as described in this document.
+This allows detailed aerodynamics modeling, based on Mach, to provide accurate modeling of the transonic, supersonic, and hypersonic regimes.
+
+P6DOF movers include type-specific modeling of turbojets, turbofans, ramjets/scramjets, liquid-propellant rockets, and solid-propellant rockets, providing a wide range of propulsion types.
+This means each engine model includes the parameters that have the largest impact on thrust performance, such as Mach and altitude.
+
+List of Symbols
+---------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 35 30 25
+   :align: left
+
+   * - Symbol
+     - Definition
+     - P6DOF Command
+     - P6DOF Script Method
+   * - :math:`\alpha`
+     - angle of attack
+     -
+     - :method:`GetAlpha<WsfP6DOF_Mover.GetAlpha>`
+   * - :math:`\beta`
+     - angle of side slip
+     -
+     - :method:`GetBeta<WsfP6DOF_Mover.GetBeta>`
+   * - :math:`M`
+     - Mach number
+     -
+     - :method:`GetMach<WsfP6DOF_Mover.GetMach>`
+   * - :math:`\psi`
+     - yaw angle
+     -
+     - :method:`GetHeading<WsfP6DOF_Mover.GetHeading>`
+   * - :math:`\theta`
+     - pitch angle
+     -
+     - :method:`GetPitch<WsfP6DOF_Mover.GetPitch>`
+   * - :math:`\phi`
+     - roll angle
+     -
+     - :method:`GetRoll<WsfP6DOF_Mover.GetRoll>`
+   * - :math:`r`
+     - body yaw rate
+     -
+     - :method:`GetYawRate<WsfP6DOF_Mover.GetYawRate>`
+   * - :math:`q`
+     - body pitch rate
+     -
+     - :method:`GetPitchRate<WsfP6DOF_Mover.GetPitchRate>`
+   * - :math:`p`
+     - body roll rate
+     -
+     - :method:`GetRollRate<WsfP6DOF_Mover.GetRollRate>`
+   * - :math:`\overline{c}`
+     - wing chord
+     - :command:`wing_chord_ft`
+     -
+   * - :math:`\overline{s}`
+     - wing span
+     - :command:`wing_span_ft`
+     -
+   * - :math:`t`
+     - time
+     -
+     -
+   * - :math:`\vec{x}`
+     - inertial position
+     -
+     -
+   * - :math:`\vec{v}`
+     - inertial velocity
+     -
+     -
+   * - :math:`\vec{a}`
+     - inertial acceleration
+     -
+     -
+   * - :math:`\vec{\omega}`
+     - rotational velocity
+     -
+     -
+   * - :math:`\vec{\alpha}`
+     - rotational acceleration
+     -
+     -
+   * - :math:`\hat{v}`
+     - velocity unit vector in inertial coordinates
+     -
+     -
+   * - :math:`\bold{R}`
+     - direction cosine matrix transforming a vector in the inertial frame to the body frame
+     -
+     -
+   * - :math:`m`
+     - mass
+     - :command:`mass`
+     - :method:`GetEmptyWeight<WsfP6DOF_Mover.GetEmptyWeight>`
+   * - :math:`\bold{I}`
+     - moment of inertia matrix
+     - :command:`moment_of_inertia_ixx`, :command:`moment_of_inertia_iyy`, :command:`moment_of_inertia_izz`
+     -
+   * - :math:`\vec{F}_{T,i}`
+     - total force in the inertial frame
+     -
+     -
+   * - :math:`\vec{M}_T`
+     - total moment
+     -
+     -
+   * - :math:`\vec{F}_{T,b}`
+     - total force in the body frame
+     -
+     -
+   * - :math:`\vec{F}_a`
+     - aerodynamic force in the body frame
+     -
+     -
+   * - :math:`\vec{F}_g`
+     - gravitational force in the body frame
+     -
+     -
+   * - :math:`\vec{F}_p`
+     - force from propulsion in the body frame
+     -
+     -
+   * - :math:`\vec{F}_l`
+     - force from the landing gear in the body frame
+     -
+     -
+   * - :math:`\vec{M}_a`
+     - moment produced from aerodynamics
+     -
+     -
+   * - :math:`\vec{r}_{cm/a}`
+     - center of mass relative to the aerodynamic reference point
+     - :command:`center_of_mass_x1`, :command:`center_of_mass_y1`, :command:`center_of_mass_z1`
+     - :method:`GetCgX<WsfP6DOF_Mover.GetCgX>`, :method:`GetCgY<WsfP6DOF_Mover.GetCgY>`, :method:`GetCgZ<WsfP6DOF_Mover.GetCgZ>`
+   * - :math:`\vec{g}_i`
+     - gravitational vector in the inertial frame
+     -
+     -
+   * - :math:`\tilde{q}`
+     - dynamic pressure
+     -
+     -
+   * - :math:`A_r`
+     - reference area
+     - :command:`aero.reference_area`
+     -
+   * - :math:`\gamma`
+     - area multiplier
+     -
+     -
+   * - :math:`C_L`
+     - lift coefficient
+     - :command:`cL_alpha_beta_mach_table`
+     -
+   * - :math:`C_{Lq}`
+     - lift coefficient contribution due to pitch rate, :math:`\frac{dC_L}{dq}`
+     - :command:`cLq_alpha_mach_table`
+     -
+   * - :math:`C_{L\dot{\alpha}}`
+     - lift coefficient contribution due to the rate of change of angle of attack, :math:`\frac{dC_L}{d\dot{\alpha}}`
+     - :command:`cL_alphadot_alpha_mach_table`
+     -
+   * - :math:`C_d`
+     - drag coefficient
+     - :command:`cd_alpha_beta_mach_table`
+     -
+   * - :math:`C_Y`
+     - side force coefficient
+     - :command:`cy_alpha_beta_mach_table`
+     -
+   * - :math:`C_{Yr}`
+     - side force coefficient contribution due to yaw rate, :math:`\frac{dC_Y}{dr}`
+     - :command:`cyr_beta_mach_table`
+     -
+   * - :math:`C_{Y\dot{\beta}}`
+     - side force coefficient contribution due to the rate of change of side slip, :math:`\frac{dC_Y}{d\dot{\beta}}`
+     - :command:`cy_betadot_beta_mach_table`
+     -
+   * - :math:`C_n`
+     - yaw moment coefficient
+     - :command:`cn_alpha_beta_mach_table`
+     -
+   * - :math:`C_{nr}`
+     - yaw moment coefficient contribution due to yaw rate, :math:`\frac{dC_n}{dr}`
+     - :command:`cnr_mach_table`
+     -
+   * - :math:`C_{np}`
+     - yaw moment coefficient contribution due to roll rate, :math:`\frac{dC_n}{dp}`
+     - :command:`cnp_mach_table`
+     -
+   * - :math:`C_{n\dot{\beta}}`
+     - yaw moment coefficient contribution due to the rate of change of side slip, :math:`\frac{dC_n}{d\dot{\beta}}`
+     - :command:`cn_betadot_mach_table`
+     -
+   * - :math:`C_m`
+     - pitch moment coefficient
+     - :command:`cm_alpha_beta_mach_table`
+     -
+   * - :math:`C_{mq}`
+     - pitch moment coefficient contribution due to pitch rate, :math:`\frac{dC_m}{dq}`
+     - :command:`cmq_mach_table`
+     -
+   * - :math:`C_{mp}`
+     - pitch moment coefficient contribution due to roll rate, :math:`\frac{dC_m}{dp}`
+     - :command:`cmp_mach_table`
+     -
+   * - :math:`C_{m\dot{\alpha}}`
+     - pitch moment coefficient contribution due to the rate of change of angle of attack, :math:`\frac{dC_m}{d\dot{\alpha}}`
+     - :command:`cm_alphadot_mach_table`
+     -
+   * - :math:`C_l`
+     - roll moment coefficient
+     - :command:`cl_alpha_beta_mach_table`
+     -
+   * - :math:`C_{lp}`
+     - roll moment coefficient contribution due to roll rate, :math:`\frac{dC_l}{dp}`
+     - :command:`clp_mach_table`
+     -
+   * - :math:`C_{lr}`
+     - roll moment coefficient contribution due to yaw rate, :math:`\frac{dC_l}{dr}`
+     - :command:`clr_mach_table`
+     -
+   * - :math:`C_{lq}`
+     - roll moment coefficient contribution due to pitch rate, :math:`\frac{dC_l}{dq}`
+     - :command:`clq_mach_table`
+     -
+   * - :math:`C_{l\dot{\alpha}}`
+     - roll moment coefficient contribution due to the rate of change of angle of attack, :math:`\frac{dC_l}{d\dot{\alpha}}`
+     - :command:`cl_alphadot_mach_table`
+     -
+   * - :math:`C_{l\dot{\beta}}`
+     - roll moment coefficient contribution due to the rate of change of side slip, :math:`\frac{dC_l}{d\dot{\beta}}`
+     - :command:`cl_betadot_mach_table`
+     -
+   * - :math:`\hat{l}`
+     - lift unit vector in body coordinates
+     -
+     -
+   * - :math:`\hat{d}`
+     - drag unit vector in body coordinates
+     -
+     -
+   * - :math:`\hat{s}`
+     - side force unit vector in body coordinates
+     -
+     -
+   * - :math:`T`
+     - engine thrust, dependent on the engine type
+     -
+     -
+   * - :math:`\hat{t}`
+     - thrust unit vector in the body frame
+     -
+     -
+
+Equations of Motion
+-------------------
+
+The inertial acceleration is found by dividing the total inertial force by the total mass.
+In a similar manner, the rotational acceleration is found by dividing the total moment by the total moment of inertia.
+These accelerations, given by :eq:`f_equals_ma`, are computed using the average force and moment between two time steps, as shown in equation :eq:`avg_FM`.
+
+.. math::
+   :label: f_equals_ma
+
+   \vec{a} &= \frac{\overline{\vec{F}}_{T,i}}{m}
+
+   \vec{\alpha} &= \bold{I}^{-1}\overline{\vec{M}}_T
+
+.. math::
+   :label: avg_FM
+
+   \overline{\vec{F}}_{T,i} = \frac{1}{2} [\vec{F}_{T,i}]_{t} + \frac{1}{2} [\vec{F}_{T,i}]_{t+\Delta t}
+
+   \overline{\vec{M}}_{T} = \frac{1}{2} [\vec{M}_{T}]_{t} + \frac{1}{2} [\vec{M}_{T}]_{t+\Delta t}
+
+It should be noted that one of the simplifications of P6DOF is that the moment of inertia from :eq:`f_equals_ma` is a diagonal matrix given by :eq:`moment_of_inertia`.
+
+.. math::
+   :label: moment_of_inertia
+
+   \bold{I} =
+   \left[ {\begin{array}{rrr}
+   I_{xx} & 0      & 0 \\
+   0      & I_{yy} & 0 \\
+   0      & 0      & I_{zz}
+   \end{array}} \right]
+
+First, the force :math:`[\vec{F}_{T,i}]_{t}` and moment :math:`[\vec{M}_{T}]_{t}` are computed at the current time step, which are used to calculate the linear and angular acceleration. Then, the states are propagated forward in time using :eq:`eom`.
+The force and moment are then computed at this new state, producing :math:`[\vec{F}_{T,i}]_{t+\Delta t}` and :math:`[\vec{M}_{T}]_{t+\Delta t}`. The average force and the average moment are computed using :eq:`avg_FM`.
+These are then used to compute the linear and angular accelerations in :eq:`f_equals_ma`. The states are then updated using :eq:`eom`.
+
+.. math::
+   :label: eom
+
+   \vec{x}_{t+\Delta t} &= \vec{x}_t + \vec{v}_t \Delta t + \frac{1}{2} \vec{a}_t {\Delta t}^2
+
+   \vec{v}_{t+\Delta t} &= \vec{v}_t + \vec{a}_t \Delta t
+
+   \vec{Q}_{t+\Delta t} &= \vec{Q}_t + \vec{\dot{Q_t}} \Delta t
+
+   \vec{\omega}_{t+\Delta t} &= \vec{\omega}_t + \vec{\alpha}_t \Delta t
+
+The body angular rates :math:`\vec{\omega}`, quaternion :math:`\vec{Q}`, and rate quaternion :math:`\vec{\dot{Q}}`in :eq:`eom` are defined in :eq:`omega-quat`.
+
+.. math:: 
+   :label: omega-quat
+
+   \vec{\omega} &=
+   \left[ {\begin{array}{ccc}
+   r & q & p
+   \end{array}} \right]^\top
+
+   \vec{Q} &=
+   \left[ {\begin{array}{c}
+   \cos{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} + \sin{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \sin{\frac{\phi}{2}} \\
+   \cos{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \sin{\frac{\phi}{2}} - \sin{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \cos{\frac{\phi}{2}} \\
+   \cos{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \cos{\frac{\phi}{2}} + \sin{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} \\
+   \sin{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} - \cos{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \sin{\frac{\phi}{2}}
+   \end{array}} \right]
+
+   \vec{\dot{Q_t}} &= \frac{1}{2}
+   \left[ {\begin{array}{cccc}
+   0 & -r & -q & -p \\
+   r & 0 & p & -q \\
+   q & -p & 0 & r \\
+   p & q & -r & 0
+   \end{array}} \right]
+   \vec{Q}_t
+
+If the quaternion :math:`\vec{Q}` is defined by :math:`\left[ {\begin{array}{cccc}a & b & c & d\end{array}} \right]^\top`, then the corresponding direction cosine matrix is computed using :eq:`R_from_Q`.
+
+.. math::
+   :label: R_from_Q
+
+   \bold{R} =
+   \left[ {\begin{array}{ccc}
+   a^2 + b^2 - c^2 - d^2 & 2(bc + ad)            & 2(bd - ac)\\
+   2(bc - ad)            & a^2 - b^2 + c^2 - d^2 & 2(cd + ab) \\
+   2(bd + ac)            & 2(cd - ab)            & a^2 - b^2 - c^2 + d^2
+   \end{array}} \right]
+
+.. _P6DOF_FM:
+
+Forces and Moments
+------------------
+
+The forces are calculated in the body frame, and then converted to the inertial frame to use in equation :eq:`f_equals_ma`. This conversion is accomplished through equation :eq:`body_to_inertial`.
+
+.. math:: \vec{F}_{T,i} = \bold{R}^{-1}\vec{F}_{T,b}
+   :label: body_to_inertial
+
+where :math:`\bold{R}` is defined as a 3-2-1 rotation matrix (yaw-pitch-roll) shown in equation :eq:`dcm`.
+
+.. math:: 
+   :label: dcm
+
+   \bold{R} =
+   \left[ {\begin{array}{rrr}
+   \cos(\theta)\cos(\psi)                                  & \cos(\theta)\sin(\psi)                                    & -\sin(\theta) \\
+   \sin(\phi)\sin(\theta)\cos(\psi) - \cos(\phi)\sin(\psi) & \sin(\phi)\sin(\theta)\sin(\psi) + \cos(\phi)\cos(\psi)  & \sin(\phi)\cos(\theta) \\
+   \cos(\phi)\sin(\theta)\cos(\psi) + \sin(\phi)\sin(\psi) & \cos(\phi)\sin(\theta)\sin(\psi) - \sin(\phi)\cos(\psi)  & \cos(\phi)\cos(\theta) \\
+   \end{array}} \right]
+
+The total body force, :math:`\vec{F}_{t,b}` from equation :eq:`body_to_inertial` is calculated as the sum of the aerodynamic, gravitational, and propulsion forces in the body frame. It also includes, if applicable, the force from landing gear.
+
+.. math:: \vec{F}_{T,b} = \vec{F}_a + \vec{F}_g + \vec{F}_p + \vec{F}_l
+
+The total moment is given by equation :eq:`total_moment`.
+
+.. math:: \vec{M}_T = \vec{M}_a + \vec{r}_{cm/a} \times (\vec{F}_a + \vec{F}_p + \vec{F}_l)
+   :label: total_moment
+
+The body frame gravitational force is calculated in :eq:`F_g`.
+
+.. math:: \vec{F}_g = m\bold{R}\vec{g}_i
+   :label: F_g
+
+The body frame propulsion force is given by :eq:`F_p`.
+
+.. math:: \vec{F}_p = T\hat{t}_b
+   :label: F_p
+
+The force and moment produced from aerodynamics is given by :eq:`aero_forces` and :eq:`aero_moments`.
+
+.. math::
+   :label: aero_forces
+
+   \vec{F}_a = \tilde{q}A_r\gamma[(C_L(\alpha, \beta, M) + k_{Lq}C_{Lq}(\alpha, M) + k_{L\dot{\alpha}}C_{L\dot{\alpha}}(\alpha, M))&\hat{l} \\
+   + (C_Y(\alpha, \beta, M) + k_{Yr}C_{Yr}(\beta, M) + k_{Y\dot{\beta}}C_{Y\dot{\beta}}(\beta, M))&\hat{s} \\
+   + C_d(\alpha, \beta, M)&\hat{d}]
+
+.. math::
+   :label: aero_moments
+
+   \vec{M}_a = \tilde{q}A_r[ (C_l(\alpha, \beta, M) + k_{lp}C_{lp}(M) + k_{lr}C_{lr}(M) + k_{lq}C_{lq}(M) + k_{l\dot{\alpha}}C_{l\dot{\alpha}}(M) + k_{l\dot{\beta}}C_{l\dot{\beta}}(M))&\hat{i} \\
+   + (C_m(\alpha, \beta, M) + k_{mq}C_{mq}(M) + k_{mp}C_{mp}(M) + k_{m\dot{\alpha}}C_{m\dot{\alpha}}(M))&\hat{j} \\
+   + (C_n(\alpha, \beta, M) + k_{nr}C_{nr}(M) + k_{np}C_{np}(M) + k_{n\dot{\beta}}C_{n\dot{\beta}}(M))&\hat{k}]
+
+
+The vectors :math:`\hat{i}`, :math:`\hat{j}`, :math:`\hat{k}` in :eq:`aero_moments` are the unit vectors that form the standard orthonormal basis in the body frame.
+
+The vectors :math:`\hat{l}`, :math:`\hat{d}`, :math:`\hat{s}` in :eq:`aero_forces` are the lift, drag, and side force unit vectors in the body frame, and are computed using :eq:`lds_unit`.
+
+.. math::
+   :label: lds_unit
+
+   \hat{l} &= \hat{j} \times \bold{R}\hat{v}
+
+   \hat{d} &= - \bold{R}\hat{v}
+
+   \hat{s} &= \hat{l} \times \hat{d}
+
+.. _reduced_frequency:
+
+Reduced Frequency
+~~~~~~~~~~~~~~~~~
+
+The reduced frequencies [#Jenk15]_, denoted by :math:`k_{\{x\}}`, in :eq:`aero_forces` and :eq:`aero_moments` are calculated using :eq:`reduced_frequencies`.
+If :command:`use_reduced_frequency` is set to false, then the corresponding angular rates are used instead of the non-dimensional reduced frequencies,
+and the stability derivative tables should be adjusted accordingly.
+
+.. math::
+   :label: reduced_frequencies
+
+   k_{Lq} &= \frac{\overline{c} q}{2 \lVert \vec{v} \rVert}
+
+   k_{L\dot{\alpha}} &= \frac{\overline{c}\dot{\alpha}}{2 \lVert \vec{v} \rVert}
+
+   k_{Yr} &= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+   k_{Y\dot{\beta}} &= \frac{\overline{s} \dot{\beta}}{2 \lVert \vec{v} \rVert}
+
+   k_{lp} &= \frac{\overline{s} p}{2 \lVert \vec{v} \rVert}
+
+   k_{lr} &= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+   k_{lq} &= \frac{\overline{s} q}{2 \lVert \vec{v} \rVert}
+
+   k_{mq} &= \frac{\overline{c} q}{2 \lVert \vec{v} \rVert}
+
+   k_{mp} &= \frac{\overline{c} p}{2 \lVert \vec{v} \rVert}
+
+   k_{m\dot{\alpha}} &= \frac{\overline{c} \dot{\alpha}}{2 \lVert \vec{v} \rVert}
+
+   k_{nr} &= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+   k_{np} &= \frac{\overline{s} p}{2 \lVert \vec{v} \rVert}
+
+   k_{n\dot{\beta}} &= \frac{\overline{s} \dot{\beta}}{2 \lVert \vec{v} \rVert}
+
+The terms :math:`\overline{c}` and :math:`\overline{s}` refer to the wing chord and span, respectively.
+
+.. rubric:: References
+
+.. [#Jenk15] Jenkins, J. "Dynamic Stability Derivatives", Air Force Research Laboratory - Aerodynamic Technology Branch Aerospace Vehicles Division, June 2015. AFRL-RQ-WP-TR-2015-0141.

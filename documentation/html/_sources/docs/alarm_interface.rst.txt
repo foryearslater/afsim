@@ -1,0 +1,345 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _ALARM_Interface:
+
+ALARM Interface
+---------------
+
+Overview
+========
+
+The non-exportable version of WSF optionally includes many capabilities from the Advanced Low-Altitude Radar Model (ALARM) version 5.2 from the Air Force Research Laboratory. The following features are included:
+
+ * The atmospheric attenuation model.
+ * The clutter model.
+ * The propagation model.
+
+.. note::
+   This model is only applicable to radars operating on the surface of the Earth (either land or water). It is not applicable to radars on air or space craft.
+
+
+Items to Note
+=============
+
+WSF will propagate certain values into the ALARM environment:
+
+ * The ALARM value of REFRACTIVITY is set to the WSF earth_radius_multiplier value from the :command:`_.transmitter` (which defaults to 4/3 for :model:`WSF_RADAR_SENSOR`).
+ * If the sensing player is of the 'surface' or 'subsurface' spatial domain (by using :model:`WSF_SURFACE_MOVER` or :model:`WSF_SUBSURFACE_MOVER`, or by using :command:`platform.spatial_domain` in the definition of the platform type, then the following is done:
+
+   * The ALARM value of LAND_COVER is set to 'water'.
+   * The ALARM value of LAND_FORM is derived from the WSF :command:`global_environment` command :command:`global_environment.sea_state` .
+ * If the sensing player is NOT of the 'surface' or 'subsurface' spatial domain (as defined in the previous item), then the following is done:
+
+   * The ALARM value of LAND_COVER is derived from the WSF :command:`global_environment` command :command:`global_environment.land_cover` .
+   * The ALARM value of LAND_FORM is derived from the WSF :command:`global_environment` command :command:`global_environment.land_formation` .
+
+Note that the internal ALARM environment does not have as many land cover values as WSF. Some mapping will be
+performed.
+
+.. _ALARM_Interface.Attenuation_Model:
+
+Attenuation Model
+=================
+
+The ALARM attenuation model is selected by including an attenuation command in the :command:`_.transmitter` block that selects the 'earce' model::
+
+ sensor ...
+    transmitter
+       attenuation earce
+       ...
+    end_transmitter
+    ...
+ end_sensor
+
+.. _ALARM_Interface.Clutter_Model:
+
+Clutter Model
+=============
+
+The ALARM clutter model is selected through one of two mechanisms:
+
+ * Including a clutter_model block in :model:`WSF_RADAR_SENSOR` that selects the 'alarm' model.
+ * Defining a :command:`clutter_model` type that selects the 'alarm' model and then referencing that model using the clutter_model command in :model:`WSF_RADAR_SENSOR`.
+
+An example of the first case is::
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ...
+    end_transmitter
+    receiver
+       ...
+    end_receiver
+    clutter_model alarm
+       ... parameters ...
+    end_clutter_model
+ end_sensor
+
+An example of the second case is::
+
+ clutter_model EX_RADAR_CLUTTER alarm
+    ... parameters ...
+ end_clutter_model
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ...
+    end_transmitter
+    receiver
+       ...
+    end_receiver
+    clutter_model EX_RADAR_CLUTTER
+ end_sensor
+
+This very useful capability is used when it may be desirable to change clutter models without having to modify the radar definition. The mechanism for doing this is fully described in the :command:`clutter_model` command.
+
+Commands for the 'alarm' Clutter Model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default the WSF-ALARM interface will use the :command:`global_environment` to determine the clutter reflectivity, and that the only commands that might be needed are **azimuth_angle_limit** and **azimuth_angle_increment** (if you want to include side lobe clutter), and **maximum_range** (to increase run-time performance). If you specify **reflectivity**, **reflectivity_delta** or **statistic**, the reflectivity will be defined by the input values.
+
+.. command:: azimuth_angle_limit <angle-value>
+
+   The maximum off-boresight angle in azimuth for which clutter returns will be computed.
+
+   .. note::
+      This is the same as the ALARM input CLUT_AZ_WIDTH.
+
+   .. note::
+      If this input is not specified, or if it is set to 0, The model will use only one mainbeam sample for its calculation
+
+   **Default** 0.0 (One mainbeam sample is used).
+
+.. command:: azimuth_angle_increment <angle-value>
+
+   The azimuth angle increment used in computingclutter returns.
+
+   .. note::
+      This is the same as the ALARM input CLUT_ANGLE_INCR.
+
+   .. note::
+      If this input is not specified, or if it is set to 0, The model will use the azimuth beamwidth for its calculation
+
+   **Default** 0.0 (Full azimuth beamwidth is used).
+
+.. command:: maximum_range <length-value>
+
+   The maximum range at which clutter will be computed. Shorter ranges decrease execution time, especially for simulations utilizing terrain elevation data such as DTED.
+
+   **Default** (Twice the computed clutter horizon range).
+
+   .. note::
+      This is the same as the ALARM input CLUT_MAX_RANGE.
+
+.. command:: reflectivity <db-ratio-value>
+
+   The reflectivity value used when statistic_ is set to **numerical**.
+
+   .. note::
+      This is the same as the ALARM input CLUT_REFLECTIVITY.
+
+   **Default** 0.0
+
+.. command:: reflectivity_delta <db-ratio-value>
+
+   Delta clutter reflectivity value about reflectivity_ used only when statistic_ is set to **numerical**. The clutter reflectivity is uniformly randomly distributed over the range: reflectivity_ reflectivity_delta_.  This value is optional.
+
+   .. note::
+      This is the same as the ALARM input CLUT_DELTA_REFLECT.
+
+   **Default** 0.0
+
+.. command:: statistic [ mean | statistical | maximum | minimum | numerical ]
+
+   **Default** mean
+
+   .. note::
+      This is the same as the ALARM input CLUT_STATISTIC.
+
+
+.. command:: random_seed <integer>
+
+   The random number seed, only used when statistic_ is set to **statistical**, or **numerical**, with reflectivity_delta_ set.  :command:`Random Seed <random_seed>` : must be a large number (> 1000).
+
+   .. note::
+      This is the same as the ALARM input CLUT_SEED.
+
+   **Default** 1234567
+
+.. command:: sigmac <frequency-value>
+
+   Standard deviation of the Gaussian portion of the clutter PSD. Often referred to as the root mean squared clutter frequency spread. A suggested value is 10 Hz for land, and 50 Hz for sea (See ALARM documentation for details).
+
+   .. note::
+      This is the same as the ALARM input SIGMAC.
+
+   .. note::
+      This input is not currently used.
+
+
+.. command:: decay_constant <frequency-value>^2
+
+   The quadratic decay constant for the inverse quadratic portion of the clutter power spectral density (PSD). A suggested value is 10-6 Hz2 (See ALARM documentation for details).
+
+   .. note::
+      This is the same as the ALARM input CLUT_DECAY.
+
+   .. note::
+      This input is not currently used.
+
+
+.. command:: use_legacy_data <boolean-value>
+
+   Specified whether to use an older set of tables of clutter strength.  This older table set was used prior to the release of WSF 1.7.5.
+
+   **Default** disabled
+
+.. command:: use_native_terrain_masking <boolean-value>
+
+   Specifies whether to use the native AFSIM terrain masking calculation, instead of ALARM's.
+
+   .. note::
+      his command may also be specified in a ALARM propagation block; it is valid for both ALARM clutter and propagation masking calculations.
+
+   **Default** disabled
+
+.. _ALARM_Interface.Propagation_Model:
+
+Propagation Model
+=================
+
+The ALARM propagation model is selected through one of two mechanisms:
+
+ * Including a propagation_model block in a :command:`_.transmitter` block of a :model:`WSF_RADAR_SENSOR` that selects the 'alarm' model.
+ * Defining a :command:`propagation_model` type that selects the 'alarm' model and then referencing that model using the propagation_model command in the :command:`_.transmitter` block of a :model:`WSF_RADAR_SENSOR`.
+
+An example of the first case is::
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ...
+       propagation_model alarm
+          ... parameters ...
+       end_propagation_model
+    end_transmitter
+    receiver
+       ...
+    end_receiver
+ end_sensor
+
+An example of the second case is::
+
+ propagation_model EX_RADAR_PROPAGATION alarm
+    ... parameters ...
+ end_propagation_model
+
+ sensor EX_RADAR WSF_RADAR_SENSOR
+    transmitter
+       ...
+       propagation_model EX_RADAR_PROPAGATION
+    end_transmitter
+    receiver
+       ...
+    end_receiver
+ end_sensor
+
+This very useful capability is used when it may be desirable to change clutter models without having to modify the radar definition. The mechanism for doing this is fully described in the :command:`propagation_model` command.
+
+Commands for the 'alarm' Propagation Model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Note that by default the WSF-ALARM interface will use the :command:`global_environment` to determine the conditions at reflection points. If you specify any command except **propagation** or **diffraction**, the model will use the input values rather than conditions dictated by the global environment.
+
+.. command:: propagation <boolean-value>
+
+   Specify if the multipath propagation model should be used.
+
+   **Default** true
+
+   .. note::
+      This is the same as the ALARM input PROPAGATION_SW.
+
+
+.. command:: diffraction <boolean-value>
+
+   Indicate if the spherical Earth/knife-edge diffraction model should be used.
+
+   **Default** true
+
+   .. note::
+      This is the same as the ALARM input DIFFRACTION_SW.
+
+
+.. command:: soil_moisture <real-value>
+
+   The percent [0 .. 100] of moisture in the soil.
+
+   .. note::
+      This is the same as the ALARM input SOIL_MOISTURE.
+
+
+.. command:: soil_moisture_fraction <real-value>
+
+   The fraction [0 .. 1] of moisture in the soil.
+
+.. command:: stddev_surface_height <length-value>
+
+   .. note::
+      This is the same as the ALARM input STDDEV_SURFACE_HEIGHT.
+
+
+.. command:: terrain_dielectric_constant <real-value>
+.. command:: epsilon_one <real-value>
+
+   .. note::
+      This is the same as the ALARM input EPSILON_ONE.
+
+
+.. command:: terrain_conductivity <real-value>
+.. command:: sigma_zero <real-value>
+
+   .. note::
+      This is the same as the ALARM input SIGMA_ZERO.
+
+
+.. command:: terrain_scattering_coefficient <real-value>
+.. command:: roughness_factor <real-value>
+
+   .. note::
+      This is the same as the ALARM input ROUGHNESS_FACTOR.
+
+
+.. command:: sea_relaxation <real-value>
+
+   .. note::
+      This is the same as the ALARM input SEA_RELAXATION.
+
+
+.. command:: sea_wind_speed <speed-value>
+
+   .. note::
+      This is the same as the ALARM input SEA_WIND_SPEED.
+
+
+.. command:: water_temperature <temperature-value>
+
+   .. note::
+      This is the same as the ALARM input WATER_TEMP.
+
+
+.. command:: water_type [ sea | lake ]
+
+   **Default** sea
+
+   .. note::
+      This is the same as the ALARM input WATER_TYPE.
+

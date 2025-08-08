@@ -1,0 +1,216 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+road_traffic
+------------
+
+.. command:: road_traffic ... end_road_traffic
+   :block:
+
+.. parsed-literal::
+
+  road_traffic_
+    network_ <route-network-name>
+      vehicle_count_  <number>
+      vehicle_density_  <number> per <length-unit>
+      maximum_speed_  <speed-value>
+      mean_travel_time_  <time-value>
+      sigma_travel_time_  <time-value>
+      minimum_distance_off_road_  <length-unit>
+      maximum_distance_off_road_  <length-unit>
+      pause_time_off_road_  <time-value>
+      end_of_path_option_  [respawn | reverse_direction]
+
+      vehicle_ <platform-type>
+        fraction_ <fractional-quantity>
+        mean_speed_  <speed-value>
+        sigma_speed_  <speed-value>
+      end_vehicle
+
+      convoy_
+        start_position_  <latitude> <longitude>
+        end_position_   <latitude> <longitude>
+        spacing_  <length-unit>
+        speed_  <speed-value>
+        use_closest_waypoint_
+        vehicle_  <number> <platform-type>
+      end_convoy
+
+      weighted_region_
+        latitude_ <latitude>
+        longitude_ <longitude>
+        inner_radius_ <length-unit>
+        outer_radius_ <length-unit>
+        inner_weight_ <fractional-quantity>
+        outer_weight_ <fractional-quantity>
+      end_weighted_region
+    end_network
+  end_road_traffic
+
+Overview
+========
+
+The road_traffic_ command generates background road traffic via ground moving platforms during the simulation on a predefined :command:`route_network`.
+
+Commands
+========
+
+.. command:: network  <route-network-name> ... end_network
+   :block:
+
+   Defines the attributes and vehicles that are generated on the defined :command:`route_network` as specified by the <route-network-name>.
+
+   .. command:: vehicle_count  <number>
+
+      The number of vehicles generated and placed on the road network. If the <vehicle_count> is not specified, it will be set using <vehicle_density>.
+
+   .. command:: vehicle_density  <number> per <length-unit>
+
+      Instead of specifying a specific number of vehicles, a density number of vehicles per unit length can be specified (i.e., 5 per 1km)
+
+   .. command:: maximum_speed  <speed-value>
+
+      The maximum speed any vehicle on the network can travel even if a faster speed is specified in the vehicle block. This could simulate a speed limit.
+
+   .. command:: mean_travel_time  <time-value>
+
+      The average travel time of all the vehicles in the network.
+
+   .. command:: sigma_travel_time  <time-value>
+
+      The travel time magnitude of one standard deviation. When a vehicle reaches the end of its path or travel time, it travels off road by some amount and then pauses for a given amount of time before being removed from the simulation. The following three items (<minimum_distance_off_road>, maximum_distance_off_road, and pause_time_off_road) define the parameters, which define this process.
+
+   .. command:: minimum_distance_off_road  <length-unit>
+
+      The minimum distance that a vehicle travels off-road.
+
+   .. command:: maximum_distance_off_road  <length-unit>
+
+      The maximum distance that a vehicle travels off-road.
+
+   .. command:: pause_time_off_road  <time-value>
+
+      The time that a vehicle pauses at the end of its route after traveling off-road.
+
+   .. command:: end_of_path_option  [respawn | reverse_direction]
+
+      This determines what should be done to vehicles at the end of their route.  By default vehicles are re-spawned with a different route.
+
+   .. command:: vehicle <platform-type> end_vehicle
+      :block:
+
+      Defines the attributes of a specific vehicle type within the context of this net work.  To define multiple vehicle types, create multiple vehicle blocks. The <platform-type> must be a previously defined platform_type.
+
+      .. command:: fraction <fractional-quantity>
+
+         If multiple vehicle blocks are defined, the fraction is the percentage (as a decimal value) of this specific vehicle type that would populate the road network.   The sum of all the vehicle fractions must add up to 1.
+
+      .. command:: mean_speed  <speed-value>
+
+         The average speed of all the vehicles defined by this vehicle block.
+
+      .. command:: sigma_speed  <speed-value>
+
+         The speed magnitude of one standard deviation.
+
+   .. block:: road_traffic.network
+
+   .. command:: convoy ... end_convoy
+      :block:
+
+      This command defines a convoy (a series of vehicles that follow each other), that moves between two endpoints.
+
+      .. command:: start_position  <latitude> <longitude>
+
+         This defines the initial location of the convoy with a latitude and longitude value.
+
+      .. command:: end_position   <latitude> <longitude>
+
+         This defines the final location of the convoy as a latitude and longitude value.
+
+      .. command:: spacing  <length-unit>
+
+         This defines the spacing between each of the vehicles in the convoy.
+
+      .. command:: speed  <speed-value>
+
+         This defines the speed that the convoy will travel.
+
+      .. command:: use_closest_waypoint
+
+         If this option is present, the convoy will start at the closest waypoint to the specified start position and end at the  closest waypoint to the end position.
+
+      .. command:: vehicle  <number> <platform-type>
+
+         This defines a specific vehicle type and the number of that type in the convoy. This option can be specified multiple times to create multiple vehicle types.
+
+   .. block:: road_traffic.network
+
+   .. command:: weighted_region ... end_weighted_region
+      :block:
+
+      This command defines a region in the network where a higher density of vehicles will be created.  For instance, this command can be used to generate more vehicles in a city region than in the country.  Weighted regions have an inner and outer radius and weight.  The  weights are linearly interpolated between the inner and outer radii. This allows the simulation to vary the density of vehicles linearly between the inner and outer radii.
+
+      .. command:: latitude <latitude>
+
+         Specifies the center latitude of the weighted region.
+
+      .. command:: longitude <longitude>
+
+         Specifies the center longitude of the weighted region.
+
+      .. command:: inner_radius <length-unit>
+
+         Specifies the inner radius of the weighted region.
+
+      .. command:: outer_radius <length-unit>
+
+         Specifies the outer radius of the weighted region.
+
+      .. command:: inner_weight <fractional-quantity>
+
+         Specifies the weight that corresponds to the inner radius.  The larger the weight number, the higher the density of vehicles.
+
+      .. command:: outer_weight <fractional-quantity>
+
+         Specifies the weight that corresponds to the outer radius.  The larger the weight number, the higher the density of vehicles.
+
+Example
+=======
+
+.. parsed-literal::
+
+   road_traffic_
+     network_ stl_roadnetwork
+       vehicle_count_              500
+       maximum_speed_               75 mi/h
+       minimum_distance_off_road_    1 nm
+       maximum_distance_off_road_    2 nm
+       pause_time_off_road_        240 min
+       mean_travel_time_            40.0 min
+       sigma_travel_time_            5.0 min
+       vehicle_ Car
+         fraction_      0.80
+         mean_speed_   60 mi/h
+         sigma_speed_   5 mi/h
+       end_vehicle
+       vehicle_ Pickup_Truck
+         fraction_      0.15
+         mean_speed_   60 mi/h
+         sigma_speed_  10 mi/h
+       end_vehicle
+       vehicle_ School_Bus
+         fraction_      0.05
+         mean_speed_   50 mi/h
+         sigma_speed_  10 mi/h
+       end_vehicle
+     end_network
+   end_road_traffic

@@ -1,0 +1,112 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfManeuverConstraint
+---------------------
+
+.. class:: WsfManeuverConstraint
+
+Overview
+========
+
+Maneuver constraints specify the conditions under which a maneuver will begin
+executing, and when a maneuver will be considered to be completed. A constraint
+can be executed multiple times during the lifetime of a maneuver. Each 
+:class:`WsfManeuver` can support one entry and one exit constraint.
+
+Creation Methods
+================
+
+.. method:: WsfManeuverConstraint AT_TIME(double aTime)
+
+   Return a constraint that will become satisfied only once the given 
+   absolute time is reached.
+
+.. method:: WsfManeuverConstraint AT_RELATIVE_TIME(double aRelativeTime)
+
+   Return a constraint that will become satisfied the given time after the
+   assignment time of the constraint. The assignment time of the constraint is
+   the time at which the associated maneuver becomes pending (for an entry
+   constraint) or completing (for an exit constraint). 
+
+.. method:: WsfManeuverConstraint AT_ROLL_ANGLE(double aRollAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain roll
+   angle in degrees.
+
+.. method:: WsfManeuverConstraint AT_PITCH_ANGLE(double aPitchAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain pitch
+   angle in degrees.
+
+.. method:: WsfManeuverConstraint AT_HEADING(double aHeadingDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain
+   heading in degrees.
+
+.. method:: WsfManeuverConstraint AT_ALTITUDE(double aAltitudeMeters)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain 
+   altitude in meters.
+
+.. method:: WsfManeuverConstraint AT_FLIGHT_PATH_ANGLE(double aPathAngleDeg)
+
+   Return a constraint that will become satisfied when the platform to which the
+   maneuver associated with this constraint is assigned reaches a certain
+   flight path angle in degrees.
+
+.. method:: WsfManeuverConstraint SCRIPT(string aSatisfied, string aNextEvaluation)
+
+   Return a constraint that will use the named user-supplied scripts in the 
+   global context to perform the work of the constraint. The first script
+   will be executed to determine if the constraint is satisfied. If not, then
+   the second script will be executed to determine the next time to perform the
+   evaluation test. Both scripts need to take two arguments: the first, a
+   double, is the assignment time of the constraint; the second, a
+   :class:`WsfP6DOF_Mover` is the mover to which the associated maneuver is
+   assigned. The first script should return a boolean value indicating if
+   the constraint is satisfied. The second script should return a double
+   giving the time that the constraint should next be evaluated.
+
+   For example, to reproduce the behavior of the constraints returned by
+   :method:`WsfManeuverConstraint.AT_RELATIVE_TIME`, one could use the
+   following scripts:
+
+   ::
+
+      script_variables
+         double aRelativeTime = 3.0;
+      end_script_variables
+
+      script bool AtRelativeTimeEvaluator(double aAssignTime, WsfP6DOF_Mover aMover)
+         return TIME_NOW >= aAssignTime + aRelativeTime;
+      end_script
+
+      script double AtRelativeTimeNextEvaluation(double aAssignTime, WsfP6DOF_Mover aMover)
+         return aAssignTime + aRelativeTime;
+      end_script
+
+      ...
+
+      WsfManeuverConstraint constraint = WsfManeuverConstraint.SCRIPT("AtRelativeTimeEvaluator", "AtRelativeTimeNextEvaluation");
+
+      ...
+
+General Methods
+===============
+
+.. method:: string Type()
+
+   Return the type of the constraint.

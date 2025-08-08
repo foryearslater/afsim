@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>XIO Interface Development &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zone" href="zone.html" />
+    <link rel="prev" title="xio_interface" href="xio_interface.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="zone.html" title="zone"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="xio_interface.html" title="xio_interface"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="xio-interface-development">
+<h1>XIO Interface Development<a class="headerlink" href="#xio-interface-development" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id1">Introduction</a></p></li>
+<li><p><a class="reference internal" href="#initialization" id="id2">Initialization</a></p></li>
+<li><p><a class="reference internal" href="#network-messaging" id="id3">Network Messaging</a></p>
+<ul>
+<li><p><a class="reference internal" href="#serialization" id="id4">Serialization</a></p></li>
+<li><p><a class="reference internal" href="#packets" id="id5">Packets</a></p></li>
+<li><p><a class="reference internal" href="#requests-services" id="id6">Requests &amp; Services</a></p>
+<ul>
+<li><p><a class="reference internal" href="#using-requests" id="id7">Using Requests</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of this document is to provide an introduction to the workings of XIO for WSF application developers who need to use it.</p>
+</section>
+<section id="initialization">
+<h2><a class="toc-backref" href="#id2">Initialization</a><a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
+<p>XIO is initialized using the WsfXIO::Create() method.  This should be called prior to loading input files.  This method requires specifying options and application type.</p>
+<p>Currently there are two available application types: cAPP_SIMULATION and cAPP_USER.  The purpose of the application type is to determine connectivity.  By default, an application will not connect to another actively.  WsfXIO_Interface::AddConnectType() may be called to add applications types which are connected to automatically.  By default, the Sage application will connect to other simulations.</p>
+<p>There are two types of connections created by XIO: reliable and unreliable.  Reliable connections offer a connection between two applications.  Messages are guaranteed to be delivered, and delivered in the same order as they are sent.  Unreliable connections can use a broadcast or multicast address to send to multiple endpoints at one time.  These connections do not guarantee message delivery.  The setting in the <a class="reference internal" href="xio_interface.html#xio_interface" title="xio_interface"><span class="xref wsf wsf-command">xio_interface</span></a> for broadcast or multicast determines the unreliable connections.  Reliable connections are automatically created by XIO using the application/connect type settings.  Usually an application will want to ‘do’ something when a reliable connection is created.  The callbacks: WsfXIO_Interface::OnConnected and WsfXIO_Interface::OnDisconnected provide this functionality.</p>
+</section>
+<section id="network-messaging">
+<h2><a class="toc-backref" href="#id3">Network Messaging</a><a class="headerlink" href="#network-messaging" title="Permalink to this headline">¶</a></h2>
+<p>Messaging in XIO uses variable length messages, and takes advantage of the packetio and genio libraries to read and write messages.</p>
+<section id="serialization">
+<h3><a class="toc-backref" href="#id4">Serialization</a><a class="headerlink" href="#serialization" title="Permalink to this headline">¶</a></h3>
+<p>Serialization defines how c++ data structures are transmitted over the network.  The primary way this is done in XIO is by defining a Serialize() method.  For instance, WsfTrack.hpp defines a Serialize() method which transfers all information related to that track.</p>
+</section>
+<section id="packets">
+<h3><a class="toc-backref" href="#id5">Packets</a><a class="headerlink" href="#packets" title="Permalink to this headline">¶</a></h3>
+<p>Any message sent over XIO must have a defined ‘packet’.  This is essentially defined by a unique ID, and a serialization function.  WsfXIO_PacketRegistry.hpp defines packets WSF supports by default.  WSF applications may add new packets using the WsfXIO_Interface::RegisterPacket method.  Packets may be sent over a UDP or TCP connection.  When packets are received, related callbacks are invoked to process that packet.  To add a new packet handler, use WsfXIO_Interface::Connect().</p>
+</section>
+<section id="requests-services">
+<h3><a class="toc-backref" href="#id6">Requests &amp; Services</a><a class="headerlink" href="#requests-services" title="Permalink to this headline">¶</a></h3>
+<p>In XIO, Services can publish information or provide an interface into some set of functionality.  Requests are the standard way of accessing services.  Using these constructs allows the user to ignore the underlying messages being sent and received.</p>
+<section id="using-requests">
+<h4><a class="toc-backref" href="#id7">Using Requests</a><a class="headerlink" href="#using-requests" title="Permalink to this headline">¶</a></h4>
+<p>There are four main steps required to use a request.</p>
+<ol class="arabic">
+<li><p>Create a new class derived from the desired request.  For instance, WsfXIO_TrackRequest.  Requests offer virtual methods which can be overridden to process information received by a request.</p></li>
+<li><p>Add the request to a request manager.  Usually this is as simple as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WsfXIO</span><span class="p">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetRequestManager</span><span class="p">()</span><span class="o">.</span><span class="n">AddRequest</span><span class="p">(</span><span class="n">requestPtr</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>However, some requests require special request managers.  This is primarily for performance reasons.  In this case, you may have to create and maintain a new request manager object.</p>
+</li>
+<li><p>Use the request.  Generally, using a request is as simple as implementing virtual methods on the request.  For instance, WsfXIO_TrackRequest::Handle() may be overridden to process incoming tracks.</p></li>
+<li><p>Handle request cancellation.  In the event that the request is canceled, the request object is destroyed by the request manager.  If any code references a request, it must be notified of the request destruction – usually by the request destructor.</p></li>
+</ol>
+<p>The following is a list of requests meant to be used by developers.  The Request Manager column shows which request manager is expected to manage these type of requests.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 31%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Request type</p></th>
+<th class="head"><p>Purpose</p></th>
+<th class="head"><p>Request Manager</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>WsfXIO_PlatformListRequest</p></td>
+<td><p>Receive a list of the platforms in
+the simulation as well as updates</p></td>
+<td><p>WsfXIO_Interface::GetRequestManager()</p></td>
+</tr>
+<tr class="row-odd"><td><p>WsfXIO_TrackRequest</p></td>
+<td><p>Receive WsfTrack updates from a
+platform’s track manage</p></td>
+<td><p>WsfXIO_TrackRequestManager</p></td>
+</tr>
+<tr class="row-even"><td><p>WsfXIO_MessageRequest</p></td>
+<td><p>Receive WSF Messages transmitted
+or received from platforms</p></td>
+<td><p>WsfXIO_Interface::GetRequestManager()</p></td>
+</tr>
+<tr class="row-odd"><td><p>WsfXIO_TaskRequest</p></td>
+<td><p>Receive information about tasks in
+a WsfTaskManager</p></td>
+<td><p>WsfXIO_Interface::GetRequestManager()</p></td>
+</tr>
+<tr class="row-even"><td><p>WsfXIO_PlatformInfoRequest</p></td>
+<td><p>Receive specific information about
+platforms and their contents</p></td>
+<td><p>WsfXIO_Interface::GetRequestManager()</p></td>
+</tr>
+<tr class="row-odd"><td><p>WsfXIO_SimulateSensorRequest</p></td>
+<td><p>Request another application to
+model a sensor for your
+application, and optionally
+provide tracks as feedback.</p></td>
+<td><p>WsfXIO_DisExtension::GetSimulateSensorManager()</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/xio_interface_development.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="zone.html" title="zone"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="xio_interface.html" title="xio_interface"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

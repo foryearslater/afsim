@@ -1,0 +1,105 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPONS_MANAGER
+-------------------
+
+.. model:: processor WSF_WEAPONS_MANAGER
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+**Script Classes:** :class:`WsfBMWeaponsManager`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_WEAPONS_MANAGER`
+      :command:`WSF_SCRIPT_PROCESSOR` Commands ...
+
+      haveco_reporting_strategy_ [on_launch|on_detonate|on_kill]
+
+      `engagement_settings <#engagement-settings-commands>`__
+         ew_targets_                     <boolean-value>
+         tar_targets_                    <boolean-value>
+         ttr_targets_                    <boolean-value>
+         engage_local_ttr_targets_only_  <boolean-value>
+         track_quality                   <real-value>
+      end_engagement_settings
+
+      `delays <#delays-commands>`__
+         time_between_engagements_     <time-value>
+         expected_sensor_acquisition_  <time-value>
+      end_delays
+
+      `wez <#wez-commands>`__
+         library_         <string>
+         tactical_range_  [aero|max1|max2]
+      end_wez
+
+   end_processor
+
+Overview
+========
+
+:model:`WSF_WEAPONS_MANAGER` is a script base class for the HELIOS-based
+Weapons Manager models to inherit from. It is not meant to be used as a
+processor in its own right, instead, Weapons Manager models use it to
+provide common scripting functionality found in all weapons manager
+processors.
+
+Script Interface
+================
+
+:model:`WSF_WEAPONS_MANAGER` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`.
+
+Weapons Manager Commands
+========================
+
+.. command:: haveco_reporting_strategy [on_launch | on_detonate | on_kill] 
+
+   Specifies when to assess an engagement in order to report HAVCO success or failure. On_launch behavior will cause assignments to be considered complete while missiles are still in flight, and therefore may cause multiple unnecessary assignments and shots against a target.
+   
+   **Default:** on_kill
+
+
+.. include:: commands/engagement_settings_commands.txt
+.. include:: commands/delays_commands.txt
+.. include:: commands/wez_commands.txt
+.. include:: commands/self_defense_commands.txt
+
+
+Weapons Manager Example
+=======================
+
+::
+
+   engagement_settings
+      ew_targets                     false
+      tar_targets                    false
+      ttr_targets                    true
+      engage_local_ttr_targets_only  true
+   end_engagement_settings
+
+   delays
+      time_between_engagements     0 seconds
+      expected_sensor_acquisition  0 seconds
+   delays
+
+   wez
+      library         none
+      tactical_range  aero
+   end_wez
+   
+   haveco_reporting_strategy  on_detonate
+
+   self_defense
+      disable
+   end_self_defense
+

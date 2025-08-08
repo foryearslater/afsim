@@ -1,0 +1,94 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+XIO Interface Development
+-------------------------
+
+.. contents::
+   :local:
+   :depth: 4
+
+Introduction
+============
+
+The purpose of this document is to provide an introduction to the workings of XIO for WSF application developers who need to use it.
+
+Initialization
+==============
+
+XIO is initialized using the WsfXIO::Create() method.  This should be called prior to loading input files.  This method requires specifying options and application type.
+
+Currently there are two available application types: cAPP_SIMULATION and cAPP_USER.  The purpose of the application type is to determine connectivity.  By default, an application will not connect to another actively.  WsfXIO_Interface::AddConnectType() may be called to add applications types which are connected to automatically.  By default, the Sage application will connect to other simulations.
+
+There are two types of connections created by XIO: reliable and unreliable.  Reliable connections offer a connection between two applications.  Messages are guaranteed to be delivered, and delivered in the same order as they are sent.  Unreliable connections can use a broadcast or multicast address to send to multiple endpoints at one time.  These connections do not guarantee message delivery.  The setting in the :command:`xio_interface` for broadcast or multicast determines the unreliable connections.  Reliable connections are automatically created by XIO using the application/connect type settings.  Usually an application will want to 'do' something when a reliable connection is created.  The callbacks: WsfXIO_Interface::OnConnected and WsfXIO_Interface::OnDisconnected provide this functionality.
+
+Network Messaging
+=================
+
+Messaging in XIO uses variable length messages, and takes advantage of the packetio and genio libraries to read and write messages.
+
+Serialization
+*************
+
+Serialization defines how c++ data structures are transmitted over the network.  The primary way this is done in XIO is by defining a Serialize() method.  For instance, WsfTrack.hpp defines a Serialize() method which transfers all information related to that track.
+
+Packets
+*******
+
+Any message sent over XIO must have a defined 'packet'.  This is essentially defined by a unique ID, and a serialization function.  WsfXIO_PacketRegistry.hpp defines packets WSF supports by default.  WSF applications may add new packets using the WsfXIO_Interface::RegisterPacket method.  Packets may be sent over a UDP or TCP connection.  When packets are received, related callbacks are invoked to process that packet.  To add a new packet handler, use WsfXIO_Interface::Connect().
+
+Requests & Services
+*******************
+
+In XIO, Services can publish information or provide an interface into some set of functionality.  Requests are the standard way of accessing services.  Using these constructs allows the user to ignore the underlying messages being sent and received.
+
+Using Requests
+^^^^^^^^^^^^^^
+
+There are four main steps required to use a request.
+
+1. Create a new class derived from the desired request.  For instance, WsfXIO_TrackRequest.  Requests offer virtual methods which can be overridden to process information received by a request.
+
+2. Add the request to a request manager.  Usually this is as simple as::
+
+      WsfXIO::GetInstance()->GetRequestManager().AddRequest(requestPtr);
+
+   However, some requests require special request managers.  This is primarily for performance reasons.  In this case, you may have to create and maintain a new request manager object.
+
+3. Use the request.  Generally, using a request is as simple as implementing virtual methods on the request.  For instance, WsfXIO_TrackRequest::Handle() may be overridden to process incoming tracks.
+
+4. Handle request cancellation.  In the event that the request is canceled, the request object is destroyed by the request manager.  If any code references a request, it must be notified of the request destruction -- usually by the request destructor.
+
+The following is a list of requests meant to be used by developers.  The Request Manager column shows which request manager is expected to manage these type of requests.
+
++------------------------------+------------------------------------+-------------------------------------------------+
+| Request type                 | Purpose                            | Request Manager                                 |
++==============================+====================================+=================================================+
+| WsfXIO_PlatformListRequest   | Receive a list of the platforms in | WsfXIO_Interface::GetRequestManager()           |
+|                              | the simulation as well as updates  |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+
+| WsfXIO_TrackRequest          | Receive WsfTrack updates from a    | WsfXIO_TrackRequestManager                      |
+|                              | platform's track manage            |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+
+| WsfXIO_MessageRequest        | Receive WSF Messages transmitted   | WsfXIO_Interface::GetRequestManager()           |
+|                              | or received from platforms         |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+
+| WsfXIO_TaskRequest           | Receive information about tasks in | WsfXIO_Interface::GetRequestManager()           |
+|                              | a WsfTaskManager                   |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+
+| WsfXIO_PlatformInfoRequest   | Receive specific information about | WsfXIO_Interface::GetRequestManager()           |
+|                              | platforms and their contents       |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+
+| WsfXIO_SimulateSensorRequest | Request another application to     | WsfXIO_DisExtension::GetSimulateSensorManager() |
+|                              | model a sensor for your            |                                                 |
+|                              | application, and optionally        |                                                 |
+|                              | provide tracks as feedback.        |                                                 |
++------------------------------+------------------------------------+-------------------------------------------------+

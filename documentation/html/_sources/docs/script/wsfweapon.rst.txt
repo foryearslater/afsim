@@ -1,0 +1,318 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfWeapon
+---------
+
+.. class:: WsfWeapon inherits WsfArticulatedPart
+   :arrow:
+
+.. attention::
+
+   Some :class:`WsfWeapon` methods are not compatible with certain weapon models.
+   A warning specifying incompatible commands is provided in the documentation for affected models.
+   Avoid using :class:`WsfWeapon` script methods which access the parameters of incompatible commands.
+
+Static Methods
+==============
+
+.. method:: static bool IsA_TypeOf(string aDerivedType, string aBaseType)
+
+   Returns true if the weapon type specified by **aDerivedType** inherits from the weapon type specified by **aBaseType**
+   (compare to :method:`WsfObject.IsA_TypeOf(aBaseType) <WsfObject.IsA_TypeOf>`, which determines if a specific object inherits
+   from **aBaseType**).
+
+Methods
+=======
+
+.. method:: bool TurnOff()
+
+   Turns the weapon off and returns true if successful.
+
+.. method:: bool TurnOn()
+
+   Turns the weapon on and returns true if successful.
+
+.. method:: void CueToTarget(WsfTrack aTrack)
+
+   Cues the weapon to the track.
+
+.. method:: bool Fire()
+            bool Fire(WsfTrack aTrack)
+            
+   Fires the weapon with or without a current track. This method returns 'true' if a launch has been successfully scheduled. Some weapons may have a delay between the time when a fire command is issued and the actual time of launch. A successful weapon launch will trigger a :ref:`WEAPON_FIRED` event. This method returns 'false' if a launch cannot be scheduled due to several reasons, such as, the weapon quantity is 0, the launch interval has not elapsed, the weapon is reloading and it cannot shoot while reloading, or the weapon is damaged. Additional checks at the time of launch may still result in a launch failure triggering a :ref:`WEAPON_FIRE_ABORTED` event.
+
+.. method:: bool FireAtLocation(WsfGeoPoint aLocation)
+
+   Generates a track based on the location provided and then fires the weapon on the generated track. The track is stored in the master track list on the platform that owns the weapon. This method returns 'true' if a launch has been successfully scheduled. Some weapons may have a delay between the time when a fire command is issued and the actual time of launch. A successful weapon launch will trigger a :ref:`WEAPON_FIRED` event. This method returns 'false' if a launch cannot be scheduled due to several reasons, such as, the weapon quantity is 0, the launch interval has not elapsed, the weapon is reloading and it cannot shoot while reloading, or the weapon is damaged. Additional checks at the time of launch may still result in a launch failure triggering a :ref:`WEAPON_FIRE_ABORTED` event.
+
+.. method:: bool FireSalvo(WsfTrack aTrack, int aNumRounds)
+
+   Fires the weapon at the current track using the requested number of rounds. This method returns 'true' if salvo request was successfully initiated. A successful salvo request triggers a :ref:`WEAPON_FIRE_REQUESTED` event. This method returns 'false' if the number of requested rounds is 0, the maximum number of salvos requests are currently active, or the weapon is reloading and it cannot shoot while reloading.
+
+   .. note::
+
+      A :ref:`WEAPON_FIRED` event will not trigger for :method:`Fire<WsfWeapon.Fire>` and :method:`FireSalvo<WsfWeapon.FireSalvo>` unless a :command:`weapon_effects` is defined either on the :command:`weapon` or on the :command:`WSF_EXPLICIT_WEAPON.launched_platform_type`.
+   
+.. method:: void AbortSalvo(WsfTrackId aTrackId)
+
+   Abandons the launch of any rounds of a salvo request that have yet to be released. If aTrackId is a 'null' track (i.e.,
+   :method:`aTrackId.IsNull() <WsfTrackId.IsNull>`) then the request will apply to all pending rounds; otherwise, it will apply
+   only to salvo requests against the specified track.
+
+   .. note::
+
+      This does not affect rounds that have already been released.
+
+
+.. method:: void CeaseFire()
+
+   Stops all active fire requests including salvo requests. This is like 'AbortSalvo(WsfTrackId())'.
+
+.. method:: int ActiveRequestCount()
+
+   Returns the number of fire/jam requests that are currently in process.
+
+.. method:: int MaximumRequestCount()
+
+   Returns the maximum number of fire/jam requests than may be in process simultaneously.
+
+.. method:: double QuantityRemaining()
+
+   Returns the number of weapons/jam requests remaining as a double precision value, so percentages can be used if desired.
+
+.. method:: void SetQuantityRemaining(double aQuantity)
+
+   Sets the number of weapons remaining to the specified quantity.
+
+.. method:: double TotalQuantityUsed()
+
+   Returns the total amount of the weapon that has been used.
+
+.. method:: double ReloadInventory()
+
+   Returns the number of weapons/jam requests remaining in the reload inventory as a double precision value, so percentages can be used if desired.
+   
+.. method:: double TimeLastFired()
+
+   Returns the simulation time when the weapon completed its last firing request.
+
+.. method:: double TimeSinceLastFired()
+
+   Returns the elapsed time since the weapon completed its last firing request.
+
+.. method:: double FiringInterval()
+
+   Returns the time that must elapse between the completion of one firing request and the start of the next request.
+
+.. method:: bool IsReloading()
+
+   Returns true if the weapon is in the process of reloading.
+
+
+Status Methods
+==============
+
+Special Note: If you pass in an empty WsfTrackId as an argument to any of these methods, they will process the query
+for all possible target tracks.  For example, calling 'WeaponsActiveFor(WsfTrackId())' will return the count of all
+active weapons fired on ANY track.
+
+.. method:: double TimeSinceWeaponLastFiredFor(WsfTrackId aTrackId)
+
+   Return the amount of time that has elapsed since a weapon fire was last requested against the track with the indicated
+   track ID.  NOTE: a weapon may or may not have actually been fired, this time is in reference to the last fire request.
+   If no weapon fire has been requested, the return value will be less than zero.
+
+.. method:: double TimeSinceWeaponLastTerminatedFor(WsfTrackId aTrackId)
+
+   Return the amount of time that has elapsed since a weapon platform fired from this weapon last terminated against the
+   track with the indicated track ID.  If no weapon has terminated, the return value will be less than zero.
+
+.. method:: int WeaponsPendingFor(WsfTrackId aTrackId)
+
+   Return the number of weapon rounds that are in the process of being fired but not yet in-flight against track with the
+   indicated track ID.  The reason the weapon is pending is likely because of a firing delay, firing interval, or salvo
+   interval.
+
+.. method:: int WeaponsActiveFor(WsfTrackId aTrackId)
+
+   Return the number of weapon rounds that are currently active (in-flight, weapon platforms created) against track with
+   the indicated track ID.
+
+.. method:: int RoundsCompleteFor(WsfTrackId aTrackId)
+
+   Return the number of terminated weapon platforms that were fired against track with the indicated track ID.
+
+.. method:: int RoundsFiredAt(WsfTrackId aTrackId)
+
+   This is equivalent to "WeaponsActiveFor() + RoundsCompleteFor()".  This returns the number of weapon rounds that have
+   been fired against the track with the indicated ID. This includes rounds that are in-flight.
+
+.. method:: int SalvosFiredAt(WsfTrackId aTrackId)
+
+   Return the number of salvos fire requests that have been asked for against the track with the indicated ID.  This
+   includes salvos that are in-flight, and salvos that were requested even when no weapons were left.
+
+.. method:: WsfPlatformList ActiveWeaponPlatformsFor(WsfTrackId aTrackId)
+
+   Return the weapon platforms (currently active & in-flight) fired from this weapon against the track with the indicated
+   ID.
+
+Launch Computer Methods
+=======================
+
+The :method:`CanIntercept <WsfWeapon.CanIntercept>` and :method:`TimeToIntercept <WsfWeapon.TimeToIntercept>` methods provide a simple interface for determining if a round fired
+from this weapon could intercept a given target. If one wants to perform more complex management of weapons, use the
+:method:`LaunchComputer <WsfWeapon.LaunchComputer>` method to retrieve the launch computer object and call the methods on that object.
+
+.. method:: WsfLaunchComputer LaunchComputer()
+
+   Returns a reference to the launch computer object associated with this weapon.
+
+   .. note::
+
+      The use of launch computers on a weapon is optional. Therefore, the return value may not be a valid
+      reference to a launch computer. If there is a possibility you are working with a weapon that may or may not have a
+      launch computer, the return value should be tested by using :method:`<return-value>.IsValid() <WsfObject.IsValid>`
+
+
+.. method:: bool CanIntercept(WsfTrack aTrack)
+            bool CanIntercept(WsfTrack aTrack, double aLaunchDelayTime)
+
+   Returns true if the weapon can potentially intercept the specified track.
+
+.. method:: double TimeToIntercept(WsfTrack aTrack)
+            double TimeToIntercept(WsfTrack aTrack, double aLaunchDelayTime)
+
+   Returns the approximate time to intercept the specified track.  If unable to intercept, a large number (1.e8) is
+   returned.
+   
+   .. note::
+   
+      For a weapon using an WSF_AIR_TO_AIR_LAUNCH_COMPUTER, the time returned is the time of flight at RMax plus any launch delay.
+
+
+RF Weapon & Electronic Warfare Commands
+=======================================
+
+.. method:: int ModeCount()
+
+   Returns the number of modes.
+
+.. method:: string ModeName(int aModeIndex)
+
+   Returns the name of the mode located at the provided index.
+
+.. method:: string CurrentMode()
+
+   Returns the name of the current mode.
+
+.. method:: void SelectMode(string aModeName)
+
+   Selects the specified mode and makes it the current mode.
+
+.. method:: bool CanJam(double aFrequency)
+            bool CanJam(double aFrequency, string aTechniqueName)
+
+   Returns true if the number of active spots is less than the maximum number available or the jammer is a barrage jammer
+   (i.e.,  :method:`MaximumRequestCount <WsfWeapon.MaximumRequestCount>` returns 1) and the specified frequency is within the input-supplied bandwidth.  It
+   also checks to see if the supplied technique name is available if supplied.
+
+.. method:: int ActiveBeams()
+
+   Returns the number of active beams on the jammer. Assumes current mode.
+
+.. method:: int MaximumBeams()
+
+   Returns the maximum number of beams for this jammer. Assumes current mode.
+
+.. method:: int ActiveSpots(int aBeamNumber)
+
+   Returns the number of active spots on the specified beam with aBeamNumber in range of [1, :method:`MaximumBeams <WsfWeapon.MaximumBeams>`] for this
+   jammer. Assumes current mode.
+
+.. method:: int MaximumSpots(int aBeamNumber)
+
+   Returns the maximum number of spots on the specified beam with aBeamNumber in range of [1, :method:`MaximumBeams <WsfWeapon.MaximumBeams>`] for
+   this jammer. Assumes current mode.
+
+.. method:: double MinimumFrequency()
+
+   Returns the minimum frequency of the jammer. Assumes current mode.
+
+.. method:: double MaximumFrequency()
+
+   Returns the maximum frequency of the jammer. Assumes current mode.
+
+.. method:: bool WithinFrequencyBand(double aFrequency)
+
+   Returns true if the specified frequency is within the input-supplied bandwidth.
+
+.. method:: bool StartJamming(double aFrequency, double aBandwidth)
+            bool StartJamming(double aFrequency, double aBandwidth, WsfTrack aTrack)
+            bool StartJamming(double aFrequency, double aBandwidth, string aTechniqueName)
+            bool StartJamming(double aFrequency, double aBandwidth, string aTechniqueName, WsfTrack aTrack)
+            bool StartJamming(double aFrequency, double aBandwidth, int aBeamNumber)
+            bool StartJamming(double aFrequency, double aBandwidth, int aBeamNumber, WsfTrack aTrack)
+            bool StartJamming(double aFrequency, double aBandwidth, int aBeamNumber, string aTechniqueName)
+            bool StartJamming(double aFrequency, double aBandwidth, int aBeamNumber, string aTechniqueName, WsfTrack aTrack) bool StartJamming(WsfTrack aTrack)
+            bool StartJamming(string aTechniqueName, WsfTrack aTrack)
+
+   Begins jamming the specified frequency and bandwidth on the specified beam and/or with the specified technique name
+   and/or track if supplied.  Returns true if successful.
+
+.. method:: bool StopJamming(double aFrequency, double aBandwidth)
+            bool StopJamming(double aFrequency, double aBandwidth, WsfTrackId aTrackId)
+            bool StopJamming(double aFrequency, double aBandwidth, int aBeamNumber)
+            bool StopJamming(double aFrequency, double aBandwidth, int aBeamNumber, WsfTrackId aTrackId)
+            bool StopJamming(WsfTrackId aTrackId)
+
+   Stops all jamming activity against the specified frequency and bandwidth on the specified beam and/or Track ID if
+   supplied.  Returns true if successful.
+
+.. method:: bool SelectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth)
+            bool SelectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, WsfTrack aTrack)
+            bool SelectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, int aBeamNumber)
+            bool SelectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, int aBeamNumber, WsfTrack aTrack)
+
+   Selects the technique with name supplied to use on or add to an existing jamming assignment at the specified frequency
+   and bandwidth on the specified beam and/or with the specified technique name and/or track if supplied.  Returns true if
+   successful.
+
+   .. note::
+
+      If the aFrequency and aBandwidth are set to 0.0 then all spots meeting the other criteria (i.e.,
+      aTrack) or all spots for the case where only the aFrequency and aBandwidth are entered at these values
+
+
+.. method:: bool DeselectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth)
+            bool DeselectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, WsfTrack aTrack)
+            bool DeselectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, int aBeamNumber)
+            bool DeselectEA_Technique(string aTechniqueName, double aFrequency, double aBandwidth, int aBeamNumber, WsfTrack aTrack)
+
+   Deselect the technique with name supplied to remove from an existing jamming assignment at the specified frequency and
+   bandwidth on the specified beam and/or with the specified technique name and/or track if supplied.  Returns true if
+   successful.
+
+.. method:: bool SetEA_DeltaGainTechnique(string aTechniqueName, bool aDefaultOn, string aEffectName, double aJammingModulation_dB, string aSystemTypeName, string aSystemFunctionName)
+            bool SetEA_DeltaGainTechnique(string aTechniqueName, bool aDefaultOn, string aEffectName, double aJammingModulation_dB, string aSystemTypeName, string aSystemFunctionName, double aFrequency, double aBandwidth)
+            bool SetEA_DeltaGainTechnique(string aTechniqueName, bool aDefaultOn, string aEffectName, double aJammingModulation_dB, string aSystemTypeName, string aSystemFunctionName, double aFrequency, double aBandwidth,  WsfTrack aTrack)
+            bool SetEA_DeltaGainTechnique(string aTechniqueName, bool aDefaultOn, string aEffectName, double aJammingModulation_dB, string aSystemTypeName, string aSystemFunctionName, double aFrequency, double aBandwidth, int aBeamNumber)
+            bool SetEA_DeltaGainTechnique(string aTechniqueName, bool aDefaultOn, string aEffectName, double aJammingModulation_dB, string aSystemTypeName, string aSystemFunctionName, double aFrequency, double aBandwidth, int aBeamNumber, WsfTrack aTrack)
+
+   Creates a new or modifies an existing Electronic Attack delta gain technique with technique and effect name and jamming
+   delta gain value supplied. Can be set to 'on' or 'off' by default and be made to affect only the system types (radar of
+   jammer type name or all if "" is entered) and system functions, which are limited to "COMM", "SENSOR", or "JAMMER," and
+   is set to "DEFAULT" if left blank ("") or not found.  For existing jamming assignments the technique with the specified
+   frequency and bandwidth on the specified beam and/or with the specified technique name and/or track if supplied will be
+   created or modified. Returns true if successful.
+
+.. include:: _wsfweapon.wsf_weapon_server.txt

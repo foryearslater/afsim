@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WsfRendezvousManeuver &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="WsfRigidBodySixDOF_Mover" href="wsfrigidbodysixdofmover.html" />
+    <link rel="prev" title="WsfRelativeManeuver" href="wsfrelativemaneuver.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfrigidbodysixdofmover.html" title="WsfRigidBodySixDOF_Mover"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsfrelativemaneuver.html" title="WsfRelativeManeuver"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsfrendezvousmaneuver">
+<h1>WsfRendezvousManeuver<a class="headerlink" href="#wsfrendezvousmaneuver" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+WsfRendezvousManeuver  inherits <a class="reference internal" href="wsforbitalmaneuver.html#WsfOrbitalManeuver" title="WsfOrbitalManeuver">WsfOrbitalManeuver</a></dt>
+<dd></dd></dl>
+
+<p><strong>Input type:</strong> <a class="reference internal" href="../rendezvous.html"><span class="doc">rendezvous</span></a></p>
+<p><a class="reference internal" href="#wsfrendezvousmaneuver">WsfRendezvousManeuver</a> is used to attempt to rendezvous at a future location of a <a class="reference internal" href="wsflocaltrack.html#WsfLocalTrack" title="WsfLocalTrack"><span class="xref wsf wsf-class">local track</span></a> while also matching its velocity.  The maneuver uses a <a class="reference internal" href="wsftargetmaneuver.html#WsfTargetManeuver" title="WsfTargetManeuver"><span class="xref wsf wsf-class">WsfTargetManeuver</span></a> to match the location, followed by a <a class="reference internal" href="wsfmatchvelocity.html#WsfMatchVelocity" title="WsfMatchVelocity"><span class="xref wsf wsf-class">WsfMatchVelocity</span></a> maneuver once the intercept location is achieved.</p>
+<p>Several conditions must be met before the maneuver can succeed:</p>
+<ul id="conditions">
+<li><p>The track id must reference a valid <a class="reference internal" href="wsflocaltrack.html#WsfLocalTrack" title="WsfLocalTrack"><span class="xref wsf wsf-class">WsfLocalTrack</span></a> with both valid location and velocity.</p></li>
+<li><p>The transfer orbit can only be hyperbolic if the mover executing the maneuver supports hyperbolic propagation.</p></li>
+<li><p>The transfer orbit must not intersect earth.</p></li>
+<li><p>When optimizing, a valid solution must exist for the provided <a class="reference internal" href="#optimize-option">optimize option</a>.</p></li>
+<li><p>The expended energy for the transfer must be less than the available delta-v.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The targeting algorithm is direct (less than one orbit).  Phasing orbits are not considered.</p>
+</div>
+</li>
+</ul>
+<section id="optimize-option">
+<h2>Optimize Option<a class="headerlink" href="#optimize-option" title="Permalink to this headline">¶</a></h2>
+<p>An argument to the first <a class="reference internal" href="#WsfRendezvousManeuver.Construct" title="WsfRendezvousManeuver.Construct"><span class="xref wsf wsf-method">Construct</span></a> method must contain one of the following options:</p>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.EARLIEST_TIME">
+int EARLIEST_TIME<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.EARLIEST_TIME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Attempt to optimize the maneuver such that it will execute at the earliest possible time, up to the maximum time specified in the <a class="reference internal" href="#WsfRendezvousManeuver.Construct" title="WsfRendezvousManeuver.Construct"><span class="xref wsf wsf-method">Construct</span></a> method.</p>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.LEAST_DELTA_V">
+int LEAST_DELTA_V<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.LEAST_DELTA_V" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Attempt to optimize the maneuver such that it will execute with the least possible delta-v, up to the maximum specified in the <a class="reference internal" href="#WsfRendezvousManeuver.Construct" title="WsfRendezvousManeuver.Construct"><span class="xref wsf wsf-method">Construct</span></a> method, or the <a class="reference internal" href="wsfspacemover.html#WsfSpaceMover.AvailableDeltaV" title="WsfSpaceMover.AvailableDeltaV"><span class="xref wsf wsf-method">current available amount</span></a>, whichever is less.  Optimization will proceed up to the the maximum time specified in the <a class="reference internal" href="#WsfRendezvousManeuver.Construct" title="WsfRendezvousManeuver.Construct"><span class="xref wsf wsf-method">Construct</span></a> method.</p>
+</section>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.Construct">
+static <a class="reference internal" href="#WsfRendezvousManeuver" title="WsfRendezvousManeuver">WsfRendezvousManeuver</a> Construct<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition">WsfOrbitalEventCondition</a> aCondition</em>, <em class="sig-param"><a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint">WsfTargetPoint</a> aTargetPoint</em>, <em class="sig-param">int aOptimizeOption</em>, <em class="sig-param">double aMaximumDeltaTime</em>, <em class="sig-param">double aMaximumDeltaV</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.Construct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#wsfrendezvousmaneuver">WsfRendezvousManeuver</a> with the intent of finding an optimal solution in delta-v or time, using the following:</p>
+</dd></dl>
+
+<ul class="simple">
+<li><p><strong>aCondition</strong>:  A specific <a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition"><span class="xref wsf wsf-class">condition</span></a>.</p></li>
+<li><p><strong>aTargetPoint</strong>: A <a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint"><span class="xref wsf wsf-class">WsfTargetPoint</span></a> instance specifying the target of this maneuver.</p></li>
+<li><p><strong>aOptimizeOption</strong>: The return value from an <a class="reference internal" href="#optimize-option">optimize option</a> listed above.</p></li>
+<li><p><strong>aMaximumDeltaTime</strong>: The maximum time after the maneuver begins to consider in computing a solution.</p></li>
+<li><p><strong>aMaximumDeltaV</strong>: The maximum delta-V to consider when computing a solution.</p></li>
+</ul>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.Construct">
+static <a class="reference internal" href="#WsfRendezvousManeuver" title="WsfRendezvousManeuver">WsfRendezvousManeuver</a> Construct<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition">WsfOrbitalEventCondition</a> aCondition</em>, <em class="sig-param"><a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint">WsfTargetPoint</a> aTargetPoint</em>, <em class="sig-param"><a class="reference internal" href="wsforbitaloptimizationcost.html#WsfOrbitalOptimizationCost" title="WsfOrbitalOptimizationCost">WsfOrbitalOptimizationCost</a> aCost</em>, <em class="sig-param">double aMaximumDeltaTime</em>, <em class="sig-param">double aMaximumDeltaV</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.Construct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#wsfrendezvousmaneuver">WsfRendezvousManeuver</a> that will find a solution that minimizes the provided cost, using the following:</p>
+</dd></dl>
+
+<ul class="simple">
+<li><p><strong>aCondition</strong>:  A specific <a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition"><span class="xref wsf wsf-class">condition</span></a>.</p></li>
+<li><p><strong>aTargetPoint</strong>: A <a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint"><span class="xref wsf wsf-class">WsfTargetPoint</span></a> instance specifying the target of this maneuver.</p></li>
+<li><p><strong>aCost</strong>: A <a class="reference internal" href="wsforbitaloptimizationcost.html#WsfOrbitalOptimizationCost" title="WsfOrbitalOptimizationCost"><span class="xref wsf wsf-class">WsfOrbitalOptimizationCost</span></a> instance specifying the cost function to minimize.</p></li>
+<li><p><strong>aMaximumDeltaTime</strong>: The maximum time after the maneuver begins to consider in computing a solution.</p></li>
+<li><p><strong>aMaximumDeltaV</strong>: The maximum delta-V to consider when computing a solution.</p></li>
+</ul>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.Construct">
+static <a class="reference internal" href="#WsfRendezvousManeuver" title="WsfRendezvousManeuver">WsfRendezvousManeuver</a> Construct<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition">WsfOrbitalEventCondition</a> aCondition</em>, <em class="sig-param"><a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint">WsfTargetPoint</a> aTargetPoint</em>, <em class="sig-param">double aDeltaTime</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.Construct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#wsfrendezvousmaneuver">WsfRendezvousManeuver</a> without optimizing.  If all prerequisite <a class="reference internal" href="#conditions">conditions</a> are met, the intercept will occur at the specified time after the current time when executed.</p>
+</dd></dl>
+
+<ul class="simple">
+<li><p><strong>aCondition</strong>:  A specific <a class="reference internal" href="wsforbitaleventcondition.html#WsfOrbitalEventCondition" title="WsfOrbitalEventCondition"><span class="xref wsf wsf-class">condition</span></a></p></li>
+<li><p><strong>aTargetPoint</strong>: A <a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint"><span class="xref wsf wsf-class">WsfTargetPoint</span></a> instance specifying the target of this maneuver.</p></li>
+<li><p><strong>aDeltaTime</strong>: The time after the maneuver begins when the rendezvous is planned to occur.</p></li>
+</ul>
+<dl class="method">
+<dt id="WsfRendezvousManeuver.TargetPoint">
+<a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint">WsfTargetPoint</a> TargetPoint<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.TargetPoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the <a class="reference internal" href="wsftargetpoint.html#WsfTargetPoint" title="WsfTargetPoint"><span class="xref wsf wsf-class">WsfTargetPoint</span></a> used to configure this maneuver.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfRendezvousManeuver.Tolerance">
+double Tolerance<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.Tolerance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the solution tolerance to use with this maneuver. The default value is 1.0e-9.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfRendezvousManeuver.SetTolerance">
+void SetTolerance<span class="sig-paren">(</span><em class="sig-param">double aTolerance</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfRendezvousManeuver.SetTolerance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the solution tolerance for this maneuver to the given value.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/script/wsfrendezvousmaneuver.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfrigidbodysixdofmover.html" title="WsfRigidBodySixDOF_Mover"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsfrelativemaneuver.html" title="WsfRelativeManeuver"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

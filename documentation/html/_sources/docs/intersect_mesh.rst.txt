@@ -1,0 +1,67 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+intersect_mesh
+--------------
+
+.. command:: intersect_mesh ... end_intersect_mesh
+   :block:
+   
+.. parsed-literal::
+
+   intersect_mesh <name>
+      define_offset_ ...
+      file_ ...
+   end_intersect_mesh
+
+Overview
+========
+
+The intersect_mesh_ allows one to query a three-dimensional representation, or intersection mesh, to
+determine geometric information during a simulation.  These queries occur completely within the simulation so there is
+no need to use a separate visual system.
+
+Currently, the intersect mesh is used to determine intersection geometry, occlusion, and material code for
+high-energy-laser interactions with targets (see :model:`WSF_LASER_WEAPON` ).  This capability could be expanded in the
+future, however, to incorporate other features such as LADAR image formation.  In order to enable these calculations,
+the processor must be placed within the target's platform_type (or platform instance) definition; e.g.::
+
+   // Define the intersection mesh outside the platform type definition.
+   intersect_mesh su37
+     define_offset CANOPY
+         3.461642 m
+         0.000184 m
+        -0.943480 m
+     define_offset IRST
+         5.138014 m
+         0.000005 m
+        -0.629733 m        
+     file ./mesh/su37.imesh
+   end_intersect_mesh
+
+   // Then referenced the above mesh definition inside it.
+   platform_type su-37 WSF_PLATFORM
+      ...
+      intersect_mesh su37
+      ...
+   end_platform_type
+
+Commands
+========
+
+.. command:: define_offset <string-value> <length-value> <length-value> <length-value> 
+   
+   Define the offset name and location on the intersection mesh associated with the target area of interest (see example
+   above).
+
+.. command:: file <string-value>
+   
+   Define the file for the intersection mesh associated with this definition.

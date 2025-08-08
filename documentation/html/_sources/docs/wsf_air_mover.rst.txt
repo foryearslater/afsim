@@ -1,0 +1,128 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_AIR_MOVER
+-------------
+
+.. model:: mover WSF_AIR_MOVER
+
+.. parsed-literal::
+
+   mover :model:`WSF_AIR_MOVER`
+
+      :ref:`Platform_Part_Commands`
+
+      // `Mover Commands`_
+
+      update_interval_
+      update_time_tolerance_
+
+      // `Route Mover Commands`_
+
+      altitude_offset_
+      at_end_of_path_
+      draw_route_
+      on_turn_failure_
+      pathfinder_
+      print_route_
+      start_at_
+      start_time_
+      switch_on_approach_
+      switch_on_passing_
+      turn_failure_threshold_
+      use_route_
+
+      // `Waypoint Mover Commands`_
+
+      angle_of_attack_table_
+      altitude_
+      speed_
+      angle_
+      bank_angle_limit_
+      body_g_limit_
+      heading_pursuit_gain_
+      maximum_climb_rate_
+      maximum_flight_path_angle_
+      maximum_linear_acceleration_
+      maximum_radial_acceleration_
+      maximum_altitude_
+      minimum_altitude_
+      maximum_speed_
+      minimum_speed_
+      path_variance_radius_
+      roll_rate_limit_
+      speed_variance_percent_
+      turn_rate_limit_
+      pitch_disable_
+      no_pitch_
+      on_road_
+      off_road_
+      path_compute_timestep_
+
+      // `Air Mover Commands`_
+
+      maximum_impact_speed_
+
+   end_mover
+
+Overview
+========
+
+:model:`WSF_AIR_MOVER` is a :ref:`Route_Mover` designed for simplified air vehicle motion.  The advantage of using the
+WSF_AIR_MOVER is that a platform's mass properties, aero, or
+propulsion is not required to be known to model an air body.  Movement is based on maximum limits set for items (e.g.,
+linear acceleration, velocity, Gs, radial acceleration), but it applies only to the continuous motion in the horizontal
+plane. The limitation of the WSF_AIR_MOVER is within the vertical transitions (altitude changes) of the platform. These
+transitions are discontinuous in that the effects are instantaneous because transitional vertical pitch rates and
+vertical accelerations are not modeled.  If continuous and smooth vertical and horizontal transitions are desired on a
+platform, use the :model:`WSF_KINEMATIC_MOVER` (if no aerodynamics, mass properties, propulsion, or altitude effects are
+desired) or the :model:`WSF_P6DOF_MOVER` (if realistic, physics-based modeling is desired).
+
+.. block:: WSF_AIR_MOVER
+
+Mover Commands
+==============
+
+.. command:: update_interval <time-value>
+
+   If non-zero, specifies a periodic time interval at which the simulation will call the mover.  If zero then the mover
+   will be called only when it is necessary to determine the position of the containing platform.
+
+   Default: 0 seconds unless overridden by the specific mover implementation.
+
+.. command:: update_time_tolerance <time-value>
+
+   When a position update is requested by the simulation, if the time since the previous update is less than or equal to
+   this value then the mover will ignore the update.
+
+   Default: Most mover implementations define this as the time it takes to travel 1 meter at some nominal velocity that is
+   appropriate for the implementation.
+
+   .. note::
+
+      A mover implementation may choose to ignore this command.
+
+.. _WSF_AIR_MOVER.Route_Mover_Commands:
+
+Route Mover Commands
+====================
+
+.. include:: route_mover_commands.txt
+
+Air Mover Commands
+==================
+
+.. command:: maximum_impact_speed <speed-value>
+
+   Specify the maximum speed above which the associated platform intersects :command:`terrain` and is considered 'crashed into
+   the ground'.  A crashed platform will notify observers via the WsfSimulationObserver::CrashedIntoGround() method and
+   remove itself from the simulation.  If impact speed is below this maximum, the platform is considered to be 'landing'.
+   The default behavior is to always land, rather than crash.

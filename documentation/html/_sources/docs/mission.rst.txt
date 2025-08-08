@@ -1,0 +1,111 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+mission
+=======
+
+Overview
+--------
+
+The mission application is the baseline executable for the WSF application.  It reads text files containing :ref:`WSF_REFERENCE_GUIDE` and executes the simulation, advancing through time, moving platforms, making decisions and performing interactions between objects.
+
+Execution modes are as follows:
+
+* Event-stepped or frame-stepped.
+* Realtime or non-realtime (see :command:`realtime` or :command:`non-realtime`.)
+* Purely constructive including multiple :ref:`Monte_Carlo_Iteration` s.
+* As part of a Distributed Interactive Simulation (DIS) exercise (see :command:`dis_interface`).
+
+mission has three major forms of output:
+
+* An event log controlled by the input command :command:`event_output`. This is a human-readable text file that can be
+  visualized with the program **Timeview** or post-processed through any variety of scripting programs (e.g., Perl,
+  Python). Another event log file capability is to use :command:`csv_event_output` to create a set of default comma-delimited (or
+  user-specified delimiter) files.  It is also possible to create completely unique event output log information with the
+  :command:`observer` command to trigger a user-defined script that writes information to either the screen or to a file.
+* A binary event report file, that can be viewed with **Mystic Application**, controlled by the input command :command:`event_pipe`.
+* **(May be deprecated in future)** A binary 'replay file' that can be visualized with **VESPA**. The replay file is produced by specifying
+  the :command:`dis_interface.record` command within the :command:`dis_interface` block.
+
+Command Line
+------------
+
+::
+
+ mission [ -es | -rt | -fs | -fio | -sm | -mi <interval> | -log-server-host <hostname> | -log-server-port <portNumber> | -profiling-output <output-location> | -profiling-library <library-path>] <file-1> [ <file-2> ... <file-n> ]
+
+Where:
+
+**-es (Default)**
+ Run the the event-stepped simulation executive
+
+ **Note:** By default the event-stepped simulation executive will run in non-real-time mode (i.e., it will dispatch
+ events as fast as possible). To run event-stepped and participate in a real-time DIS exercise, be sure to include the
+ command :command:`realtime` in the input.
+
+**-rt**
+ Run the frame-stepped simulation executive in real-time mode (frame advance will occur in step with the wall clock).
+
+ **Note:** At the current time, the use of this option is **NOT** recommended for anything other than the simplest of
+ scenarios. The current frame-stepped executive does not deal with 'broken frames' very gracefully. Instead, please use
+ the event-stepped simulation executive and specify the :command:`realtime` command in your
+ input file (as described in the -es parameter above).
+
+**-fs**
+ Run the frame-stepped simulation executive in non-real-time mode {frame advance will occur when all work for a frame
+ is completed).
+
+ **Note:** This is equivalent to specifying **-rt** and including the command
+ :command:`non-realtime` in the input.
+
+**-fio**
+ Each time the simulation is advanced, ensure that all characters are written from the standard output stream to their
+ destination and that the buffer is cleared (flushed).
+
+**-sm**
+ Suppress the periodic messages indicating advance of the simulation time.
+
+**-mi <interval>**
+ Output periodic messages indicating advance of the simulation time at the given time interval (in seconds).
+
+**-list-variables**
+ Output the list of preprocessor variables used in the scenario files and quit.
+ 
+**-log-server-host <host>**
+ Tells mission which host to connect the log server client to.
+ 
+**-log-server-port <port>**
+ Tells mission which port to connect the log server client to.
+
+**-profiling-output <output-location>**
+ Place to which to write performance profiling output.
+ Currently, the output location is a file path;
+ we may offer other means of output in the future.
+ File will be created if it does not yet exist.
+ Profiling will only be enabled if this option is provided.
+
+ **Note:** Performance profiling for C++ code is an early access feature preview.
+ Both the "hooks" (C interfaces provided by the shared library)
+ and the higher-level C++ interfaces for performance profiling are subject to change.
+ The default library's output format will also change.
+
+**-profiling-library <library-path>**
+ Path of a nondefault shared library of performance profiling hooks.
+ If not provided and if profiling is enabled,
+ then the default profiling library will be used when profiling.
+
+ **Note:** Performance profiling for C++ code is an early access feature preview.
+ Both the "hooks" (C interfaces provided by the shared library)
+ and the higher-level C++ interfaces for performance profiling are subject to change.
+ The default library's output format will also change.
+
+**<file-1> [ <file-2> ... <file-n> ]**
+ One or more files that contain commands documented in the :ref:`WSF_REFERENCE_GUIDE`.

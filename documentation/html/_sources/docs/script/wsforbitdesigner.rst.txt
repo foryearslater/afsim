@@ -1,0 +1,81 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfOrbitDesigner
+----------------
+
+.. class:: WsfOrbitDesigner
+
+This script class exists to aid users in designing orbits where the orbital elements (or TLEs) are not directly known.
+
+Orbit Types
+===========
+
+.. method:: static WsfPlatform SunSynchronous(string aPlatformType, Calendar aEpoch, double aLTDN, double aAltitude)
+
+   Creates a platform template of the specified type containing a space mover with a sun-synchronous orbit. The orbital elements of the space mover are set such that the mean circular altitude is aAltitude (in meters) and the local time of the descending node (LTDN) is aLTDN (in hours). The aEpoch refers to the time at which the platform will be added to the simulation (see example below).
+   The mover will be initialized with a true anomaly of zero. In other words, the platform will be injected at the ascending node.
+   The return value is a reference to the created platform template. The :class:`WsfPlatform` object that is returned can subsequently be populated with the desired attributes and added to the simulation using :method:`WsfSimulation.AddPlatform`.
+
+   .. note::
+
+      The specified platform type must have a mover of type :model:`WSF_SPACE_MOVER` with :command:`WSF_SPACE_MOVER.oblate_earth` enabled, or :model:`WSF_INTEGRATING_SPACE_MOVER`.
+
+   .. note::
+
+      The return value will be a null reference if the platform could not be created.
+      :method:`IsValid() <WsfObject.IsValid>` can be used on the return value to determine if the operation was successful.
+
+   Example::
+
+      // Sun-Synchronous orbit example: 
+      //    1. T = 30s: Create a platform "mySatellite1" that has a LTDN of 11 am and a circular altitude of 400 km
+      //    2. T = 30s: Add "mySatellite1" to the simulation.
+      //    3. T = 30s: Create a platform "mySatellite2" that has a LTDN of 2:30 pm and a circular altitude of 300 km
+      //    4. T = 60s: Add "mySatellite2" to the simulation.  
+
+      start_date nov 8 2020
+      start_time 15:30:00.0
+      end_time 1 hour
+
+      platform_type SAT_TYPE WSF_PLATFORM
+         icon satellite
+         mover WSF_SPACE_MOVER
+            oblate_earth enable
+         end_mover
+      end_platform_type
+
+      script void AddPlatform(WsfPlatform aPlatform, string aPlatformName)
+         if (aPlatform.IsValid())
+         {
+            WsfSimulation.AddPlatform(aPlatform, aPlatformName);
+         }
+      end_script
+
+      execute at_time 30 seconds absolute
+         // Step 1
+         WsfPlatform mySat1 = WsfOrbitDesigner.SunSynchronous("SAT_TYPE", 
+                                                              WsfDateTime.CurrentTime(), 
+                                                              11.0, // 11 am
+                                                              400000); // 400 km
+         // Step 2
+         AddPlatform(mySat1, "mySatellite1");
+
+         // Step 3
+         double futureTime = 60.0; 
+         WsfPlatform mySat2 = WsfOrbitDesigner.SunSynchronous("SAT_TYPE", 
+                                                              WsfDateTime.SimulationTime(futureTime), 
+                                                              14.5, // 2:30 pm 
+                                                              300000); // 300 km
+
+         // Step 4                                           
+         WsfSimulation.ExecuteAtTime(futureTime, "AddPlatform", {mySat2, "mySatellite2"});
+      end_execute

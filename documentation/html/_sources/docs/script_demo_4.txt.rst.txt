@@ -1,0 +1,128 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Script demo 4.txt
+-----------------
+
+.. parsed-literal::
+
+ //-----------------------------------------------------------------------------
+ // Demonstrates the various mover script commands available to users.
+ //-----------------------------------------------------------------------------
+
+ #include dis_record.txt
+ dis_interface
+   record output/script_demo_4.rep
+   mover_update_timer            5.0 seconds
+   entity_position_threshold    10 m  # default is 1 m
+   heartbeat_timer              5.0 seconds
+ end_dis_interface
+
+ script_interface
+ #   debug
+ end_script_interface
+
+ platform_type 737 WSF_PLATFORM
+    mover WSF_AIR_MOVER
+       default_linear_acceleration 1.0 g
+       default_radial_acceleration 1.0 g
+       default_climb_rate 200 fps
+    end_mover
+
+    # Create a callback that will kick-off the maneuvering.
+    callback start_maneuvering_cb WSF_SCRIPT_CALLBACK
+       execute start_maneuvering in script-proc
+    end_callback
+
+    processor script-proc WSF_SCRIPT_PROCESSOR
+       off
+       update_interval 4 min
+
+       script_variables
+          bool mGoToAlt               = false;
+          bool mGoToSpeed             = false;
+          bool mGoToLocation          = false;
+          bool mTurnToHeading         = false;
+          bool mTurnToRelativeHeading = false;
+       end_script_variables
+
+       script void start_maneuvering()
+          writeln("Start Maneuvering");
+          PROCESSOR.TurnOn();
+       end_script
+
+       on_update
+          if (! mGoToAlt)
+          {
+             writeln("GoToAlt");
+             PLATFORM.GoToAltitude(10000.0 * MATH.M_PER_FT());
+             mGoToAlt = true;
+          }
+          else if (! mGoToSpeed)
+          {
+             writeln("GoToSpeed");
+             PLATFORM.GoToSpeed(600.0 * MATH.MPS_PER_NMPH());
+             mGoToSpeed = true;
+          }
+          else if (! mGoToLocation)
+          {
+             writeln("GoToLocation");
+             double lat = PLATFORM.Latitude() + 1.0;
+             double lon = PLATFORM.Longitude() + 1.0;
+             double alt = PLATFORM.Altitude();
+             PLATFORM.GoToLocation(lat, lon, alt);
+             mGoToLocation = true;
+          }
+          else if (! mTurnToHeading)
+          {
+             writeln("TurnToHeading");
+             PLATFORM.TurnToHeading(180.0);
+             mTurnToHeading = true;
+          }
+          else if (! mTurnToRelativeHeading)
+          {
+             double relHeading = MATH.RandomUniform() * 90.0;
+             relHeading = -1.0 * relHeading;
+             if (MATH.RandomUniform() > 0.5)
+             {
+                relHeading = -1.0 * relHeading;
+             }
+             writeln("TurnToRelativeHeading ", relHeading);
+             PLATFORM.TurnToHeading(relHeading);
+          }
+          else
+          {
+             PROCESSOR.TurnOff();
+          }
+       end_on_update
+    end_processor
+ end_platform_type
+
+ # Instantiate the platforms
+ platform 737-1 737
+    side blue
+    icon 737
+    route
+       // Take off
+       position 38:44:52.3n 90:21:36.4w altitude 6 ft agl speed 10 kts
+       position 38:45:07.6n 90:22:09.4w altitude 6 ft agl speed 120 kts # climb_rate 1000 fpm
+       position 39:00:00.0n 91:00:00.0w altitude 20000 ft speed 400 kts
+       execute start_maneuvering_cb
+    end_route
+ end_platform
+
+ platform STL-Lambert WSF_PLATFORM
+    side blue
+    icon Runway
+    position 38:44:51.994n 90:21:36.002w heading 300 deg
+ end_platform
+
+ end_time 2 hr

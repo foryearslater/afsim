@@ -1,0 +1,123 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _SOSM_target_model_simple:
+
+SOSM target model simple
+------------------------
+
+The SOSM 'simple' target model provides a method to easily create target models that are suitable for uses where great
+detail is not required.
+
+.. parsed-literal::
+
+   target_model_ **simple**
+      state_ *<state-name-1>*
+
+         # ----- State selection control
+
+         altitude_range_      *<lower-length-value> <upper-length-value>*
+         mach_range_          *<lower-mach> <upper-mach>*
+         speed_range_         *<lower-speed-value> <upper-speed-value>*
+         throttle_range_      *<lower-value> <upper-value>*
+
+         # ----- Used to specify nominal conditions for 'fast_detection_mode'.
+
+         sample_altitude             *<length-value>*
+         sample_speed                *<speed-value>*
+         sample_mach                 *<mach-value>*
+         sample_throttle             [0..1]
+
+         # ----- Cold part definition
+
+         cold_part_area              [ *<file-name>* | constant *<area-value>* ]
+
+         # Parameters to determine temperature for the blackbody model using
+         # adiabatic wall assumption
+         recovery_factor             (0..1]              # default 0.85
+         gamma                       *<real-value>*        # default 1.4
+
+         # Use a specific temperature for the blackbody model.
+         cold_part_temperature       *<temperature-value>*
+
+         # Use a specific radiant intensity (no blackbody model).
+         cold_part_radiant_intensity  *<power/solid-angle-value>*
+
+         # ----- Hot part definition (optional)
+
+         hot_part_area               [ *<file-name>* | *constant <area-value>* ]
+         hot_part_area_fraction      *<file-name>*
+
+         # Use a specific temperature for the blackbody model.
+         hot_part_temperature        *<temperature-value>*
+
+         # Use a specific radiant intensity (no blackbody model).
+         hot_part_radiant_intensity  *<power/solid-angle-value>*
+
+         # ----- Plume definition (optional)
+
+         plume_area                  [ *<file-name>* | constant *<area-value>* ]
+
+         # Use a specific temperature for the blackbody model.
+         plume_temperature           *<temperature-value>*
+
+         # Use a specific radiant intensity (no blackbody model).
+         plume_radiant_intensity     *<power/solid-angle-value>*
+
+      **end_state**
+
+      state_ *<state-name-n>*
+         ... state-definition ...
+      **end_state**
+   **end_target_model**
+
+Target Definition Commands
+==========================
+
+.. command:: target_model simple ... end_target_model
+   
+   Introduces a target model definition that uses the simple target model. **simple** is required.
+
+.. command:: state <state-name> ... end_state
+   
+   A *state* identifies a set of target conditions to which the associated signature applies. The altitude_range_,
+   mach_range_, speed_range_ and throttle_range_ define the target conditions to which the state
+   applies. The contained band blocks define the associated signature files.
+   
+   *<state-name>* is simply a user-definable name for the state. It has no other purpose other than to uniquely identify
+   the state within the target definition.
+   
+   .. note::
+      Every target definition must have at least one state.
+
+   .. note::
+      The order of state_ definitions is important. For each detection chance, the target conditions
+      are used to select the appropriate state_. The list of states is searched in the order they are defined, and the
+      first one that matches the target conditions is used. If no state matches the current target conditions, the last state
+      defined is used.
+
+
+.. command:: altitude_range <lower-length-value> <upper-length-value>
+   
+   Defines the range of altitudes for which the enclosing state_ applies.
+    
+   **Default** No limits - altitude is not a criteria
+
+.. command:: mach_range <lower-mach> <upper-mach>
+.. command:: speed_range <lower-speed-value> <upper-speed-value>
+   
+   Defines the range of speeds for which the enclosing state_ applies. The range can be defined in either terms of
+   Mach number or absolute speed.
+
+.. command:: throttle_range <lower-value> <upper-value>
+   
+   Defines the throttle range for which the enclosing state_ applies.
+

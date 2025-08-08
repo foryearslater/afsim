@@ -1,0 +1,371 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_TASK_PROCESSOR
+------------------
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+**Script Classes:** :class:`WsfTaskProcessor`
+
+.. model:: processor WSF_TASK_PROCESSOR
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_TASK_PROCESSOR`
+
+      :command:`WSF_SCRIPT_PROCESSOR` Commands ...
+
+      # `Track State Controller Commands`_
+
+      evaluate_candidate_tracks_ ...
+      evaluation_interval_ ...
+      number_of_servers_ ...
+      show_state_evaluations_
+      show_state_transitions_
+      state_ *<state-name>*
+         ... state definition ...
+          on_entry_  ...end_on_entry
+          on_exit_   ...end_on_exit
+          next_state_...end_next_state
+      end_state
+      time_to_evaluate_ ...
+
+      # `Task Processor Commands`_
+
+      track_processor_ ...
+      comm_retry_attempts_ ...
+      comm_retry_interval_ ...
+      operating_level_ ...
+      time_to_recognize_messages_ ...
+      track_update_interval_ ...
+      track_update_strategy_ ...
+      weapon_uplink_path_ ...
+      uplink_source_ ...
+      uplink_comm_ ...
+      uplink_delay_ ...
+      auto_weapon_uplink_ ...
+      auto_weapon_uplink_platform_ ...
+      uplink_send_interval_ ...
+      show_task_messages_
+      show_uncompleted_tasks_
+
+      # `Script Interface`_
+
+      :command:`on_initialize` ... end_on_initialize
+      :command:`on_initialize2` ... end_on_initialize2
+      :command:`on_update` ... end_on_update
+      :command:`_.script_commands.script_variables` ... end_script_variables
+      :command:`_.script_commands.script` ... end_script
+      .. Other Script Commands ...
+
+      script void on_task_assign_\ (:class:`WsfTask` aTask, :class:`WsfTrack` aTrack)
+        ... script commands ...
+      end_script
+
+      script void on_task_cancel_\ (:class:`WsfTask` aTask)
+        ... script commands ...
+      end_script
+
+      script void on_task_complete_\ (:class:`WsfTask` aTask)
+        ... script commands ...
+      end_script
+
+      script void on_task_assign_sent_\ (:class:`WsfTask` aTask, :class:`WsfTrack` aTrack)
+        ... script commands ...
+      end_script
+
+      script void on_task_cancel_sent_\ (:class:`WsfTask` aTask)
+        ... script commands ...
+      end_script
+
+      script void on_task_complete_sent_\ (:class:`WsfTask` aTask)
+        ... script commands ...
+      end_script
+
+      script void on_operating_level_change_\ (:class:`string` aLevel)
+        ... script commands ...
+      end_script
+
+      script void on_track_drop_\ ()
+        ... script commands ...
+      end_script
+
+   end_processor
+
+Overview
+========
+
+**WSF_TASK_PROCESSOR (WSF_TRACK_STATE_CONTROLLER)** is an extension of :model:`WSF_TRACK_STATE_CONTROLLER` that provides a common mechanism for sending and receiving 'task assignments' that are associated with tracks.  This utilizes the facilities of :model:`WSF_TRACK_STATE_CONTROLLER` to categorize tracks.  **WSF_TASK_PROCESSOR** provides additional script commands (e.g., :method:`AssignTask <WsfTaskManager.AssignTask>`, :method:`CancelTask <WsfTaskManager.CancelTask>` as defined in :class:`WsfTaskManager`) that allow tasks to be sent and received.
+
+Track State Controller Commands
+===============================
+
+.. command:: evaluate_candidate_tracks <boolean>
+
+   Indicates if 'candidate tracks' are to be evaluated. A candidate track is one that has been received but has not yet
+   been determined to be 'stable' as defined by the filter.
+
+   Default: false
+
+.. command:: evaluation_interval <state-name> <random-time-reference>
+
+   Specifies how often a track in the indicated state should be (re)evaluated.
+
+.. command:: number_of_servers <integer>
+
+   Indicates the maximum number of track evaluations that can occur simultaneously. The time to perform the evaluation is
+   set using the time_to_evaluate_ command.
+
+   Default: 1
+
+.. command:: show_state_evaluations
+
+   Indicates that information about state evaluations should be written to standard output. This essentially shows the
+   true or false status of the evaluation of each next_state_ block.
+
+.. command:: show_state_transitions
+
+   Indicates that information about state transitions should be written to standard output.
+
+.. command:: state <state-name>
+   :block:
+
+   Defines a state in a state machine with the name <state-name>.
+
+    .. command:: on_entry ... end_on_entry
+
+       When entering this state, performs these script commands.  This is an optional subcommand.
+
+    .. command:: on_exit ... end_on_exit
+
+       When leaving this state, performs these script commands.  This is an optional subcommand.
+
+    .. command:: next_state *<next-state-name>* ...end_next_state
+
+       This optional subcommand is a script block that must return a true/false value. When evaluated, the return value determines whether to transition to the named state defined by the <next-state-name>. If next_state is not defined, it will "dead end" in this state.
+
+       Multiple next_state subcommands are allowed but will be evaluated only if all preceding transition evaluations are false (the first "true" short-circuits further evaluations). Because of this, it is recommended to perform the simplest next_state evaluations before more computationally intensive evaluations are done to save CPU cycles.
+
+       The state command definition structure::
+
+        state <state-name>
+          on_entry
+             ... <script-commands> ...
+          end_on_entry
+          on_exit
+             ... <script-commands> ...
+          end_on_exit
+          next_state <next-state-name-1>
+             ... <script-commands> ...
+          end_next_state
+          next_state <next-state-name-2>
+             ... <script-commands> ...
+          end_next_state
+        end_state
+
+.. end::
+
+.. command:: time_to_evaluate <state-name> <random-time-reference>
+
+   Specifies how long it takes to perform an evaluation of track in the indicated state. This simulates how long it takes
+   to "think' or perform an evaluation in a logical sense.
+
+   Default: 0.01 sec
+
+Task Processor Commands
+=======================
+
+.. command:: track_processor <track-proc-name>
+
+   Specifies the name of a :model:`WSF_TRACK_PROCESSOR` (typically operating as a
+   :command:`WSF_TRACK_PROCESSOR.non_master_track_processor`) whose track list will provide the tracks used in the evaluation
+   process.
+
+   Default: Uses the platforms master track list.
+
+.. command:: comm_retry_attempts <integer>
+
+   Indicates the number of attempts to retry failed communications.
+
+.. command:: comm_retry_interval <time-value>
+
+   Indicates the amount of time between attempts to retry failed communications.
+
+.. command:: operating_level <name> <level>
+
+   Indicates the operating condition or state and the associated level.
+
+   Example::
+
+      operating_level Engage 0
+
+.. command:: time_to_recognize_messages <time-value>
+
+   Indicates the amount of time it takes to recognize a message.
+
+.. command:: track_update_interval <time-value>
+
+   Indicates the time interval for sending track updates to assignees.
+
+.. command:: track_update_strategy [ default | suppressor ]
+
+   Indicates how track updates are sent. With default behavior, if a task has been accepted then periodic track updates
+   are sent to the assignee. With the Suppressor behavior, track updates are sent to assignees only when the track manager
+   indicates a track has been updated.
+
+.. command:: weapon_uplink_path <sensor-name> <comm-name>
+
+   Indicates the sensor and communication device to use when supporting a weapon uplink. If a tracking task is assigned to
+   the sensor and a weapon is fired, the weapon is supported with an uplinked track.
+
+   .. note::
+
+       weapon_uplink_path provides a method of uplinking which is unrelated to any other uplink commands.
+       Mixing uplinking methods can result in creation of multiple uplinks.
+
+.. command:: uplink_source <sensor-name>
+
+   Indicates the source of the track when uplinking.  If this command is not used, the uplink will be sent any time the
+   track is updated in the track manager.  If this command is used, only sensor tracks originating from the uplink source
+   will be used.  The sensor must report tracks to the track manager.
+
+   Default: track-manager
+
+.. command:: uplink_comm <comm-name>
+
+   Indicates the comm system used to transmit an uplink.  If this command is not used, the first compatible comm system
+   will be chosen.
+
+.. command:: uplink_delay <time-value>
+
+   Indicates the delay before an uplink is initiated after an uplink task is received.
+
+   Default: 0.0 seconds
+
+.. command:: auto_weapon_uplink <boolean-value>
+
+   Indicates that the task manager will automatically assign an uplink task for each weapon fired when the FireAt() script
+   is called.  Other commands that determine the uplink parameters are uplink_source_  uplink_comm_
+   uplink_delay_  auto_weapon_uplink_platform_.
+
+   Default: off
+
+.. command:: auto_weapon_uplink_platform <platform-name>
+
+   Indicates the assignee of the uplink task initiated with auto_weapon_uplink_.  This allows specifying a specific
+   uplink platform.
+
+   Default: This platform
+
+.. command:: uplink_send_interval <time-value>
+
+   Minimum interval between sending uplink tracks (for task-based uplinking only)
+
+   Default: 0.0 seconds
+
+.. command:: show_task_messages
+
+   Indicates that information related task assignment, cancellation and completion are to be written to standard output.
+
+.. command:: show_uncompleted_tasks
+
+   This is a debugging tool that indicates information about uncompleted tasks is to be written to standard output during
+   the destruction of the task processor.
+
+Script Interface
+================
+
+:model:`WSF_TASK_PROCESSOR` utilizes capabilities of the :ref:`Common_Script_Interface` and :model:`WSF_SCRIPT_PROCESSOR`, and
+provides the following additional scripts:
+
+.. command:: on_task_assign
+
+   .. parsed-literal::
+   
+      script void on_task_assign(:class:`WsfTask` aTask, :class:`WsfTrack` aTrack) ... end_script
+
+   This is invoked when a task assignment is received.
+
+.. command:: on_task_cancel
+
+   .. parsed-literal::
+   
+      script void on_task_cancel(:class:`WsfTask` aTask) ... end_script
+
+   This is invoked when a task cancel is received.
+
+.. command:: on_task_complete
+
+   .. parsed-literal::
+   
+      script void on_task_complete(:class:`WsfTask` aTask) ... end_script
+
+   This is invoked when the assigner of task receives notification that an assignee has completed the specified task.
+
+.. command:: on_task_assign_sent
+
+   .. parsed-literal::
+   
+      script void on_task_assign_sent(:class:`WsfTask` aTask, :class:`WsfTrack` aTrack) ... end_script
+
+   This is invoked when a task assignment is sent.
+
+.. command:: on_task_cancel_sent
+
+   .. parsed-literal::
+   
+      script void on_task_cancel_sent(:class:`WsfTask` aTask) ... end_script
+
+   This is invoked when a task cancel is sent.
+
+.. command:: on_task_complete_sent
+
+   .. parsed-literal::
+   
+      script void on_task_complete_sent(:class:`WsfTask` aTask) ... end_script
+
+   This is invoked when the assignee of task sends a task compete message.
+
+.. command:: on_operating_level_change
+
+   .. parsed-literal::
+   
+      script void on_operating_level_change(:class:`string` aLevel) ... end_script
+
+   This is invoked whenever a change in 'operating level' in detected. This is mostly used when a commander changes the
+   operating level of a subordinate to reflect a change in 'alert status'.
+
+.. command:: on_track_drop
+
+   ::
+   
+      script void on_track_drop() ... end_script
+
+   This is invoked whenever a processor is informed of a track drop by the track manager. The implicitly defined script
+   variable TRACK (of type :class:`WsfLocalTrack`) represents the last known state of the track that is being dropped.
+
+Method of Operation
+===================
+
+Each track, when it is first discovered is initially put into the first state as defined in the input file after the
+time_to_evaluate_ interval has elapsed. From that point on it will continue to evaluate the transition rules for
+whatever state it is currently in and will transition to new states as the rules allow. When a transition occurs, the
+on_exit script for the current state will be executed (if it is defined) and the on_entry script for the new state will
+be executed (if it is defined). The first time the state is entered the time_to_evaluate_ interval is applied.
+This serves as a thinking delay on state entry.
+
+Each track is (re)-evaluated at the interval defined by the state in which the track currently exists. The logical time
+that it takes to perform the evaluation is defined by the time_to_evaluate for that state. The controller can perform
+up to number_of_servers evaluations at a time. When it comes time to evaluate a state for a given track, it is
+determined if a server is available to perform the evaluation. If a server is available, it is marked busy for the
+time_to_evaluate and will perform the actual rule evaluation at the completion of the interval (thus simulating the
+thinking process) and schedule the next evaluation. If a server is not available then it is put on a pending queue for
+evaluation by the next server that becomes available.

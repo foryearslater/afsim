@@ -1,0 +1,514 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Behaviors and Behavior Trees &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Communications" href="p2-7_primer_communications.html" />
+    <link rel="prev" title="Processors" href="p2-5_primer_processors.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p2-7_primer_communications.html" title="Communications"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="p2-5_primer_processors.html" title="Processors"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="behaviors-and-behavior-trees">
+<h1>Behaviors and Behavior Trees<a class="headerlink" href="#behaviors-and-behavior-trees" title="Permalink to this headline">¶</a></h1>
+<p>The <strong>Behavior Tree</strong> is an artificial intelligence technology that allows the user to quickly create flexible agents with various tactical modules,
+called “behaviors” or “behavior nodes”. The nodes can be arranged together in diverse and interrelated ways with connector nodes to define behavior.</p>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p>A <cite>behavior</cite> may be defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behavior</span> <span class="n">report</span>
+   <span class="n">precondition</span>
+      <span class="k">return</span> <span class="n">true</span><span class="p">;</span>
+   <span class="n">end_precondition</span>
+
+   <span class="n">execute</span>
+      <span class="n">WsfPlatform</span> <span class="n">plat</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="p">;</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; Report: Status - OK&quot;</span><span class="p">);</span>
+   <span class="n">end_execute</span>
+<span class="n">end_behavior</span>
+</pre></div>
+</div>
+<p>The <cite>report</cite> behavior may be implemented in a task processor behavior tree as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">processor</span> <span class="n">TASK_MANAGER</span> <span class="n">WSF_TASK_PROCESSOR</span>
+   <span class="n">update_interval</span> <span class="mi">10</span> <span class="n">sec</span>
+   <span class="n">behavior_tree</span>
+      <span class="n">selector</span>
+         <span class="n">behavior_node</span> <span class="n">report</span>
+      <span class="n">end_selector</span>
+   <span class="n">end_behavior_tree</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+<p>Any platform or platform type that implements this processor will report the OK status message to the console and simulation log. The behavior will be selected only if the
+precondition returns true - a selector will check the preconditions of each behavior_node in order and execute only the first behavior with a precondition returning true.
+Alternative behavior control mechanisms include sequence, parallel, priority_selector, and weighted_random. These can be used in combination and in series to create
+arbitrarily complex behavior trees.</p>
+</section>
+<section id="closer-look">
+<h2>Closer Look<a class="headerlink" href="#closer-look" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following steps assume that the “simple_flight” scenario is present as discussed in <a class="reference internal" href="p2-5_primer_processors.html"><span class="doc">Processors</span></a>.</p>
+</div>
+<section id="adding-behaviors">
+<h3>Adding Behaviors<a class="headerlink" href="#adding-behaviors" title="Permalink to this headline">¶</a></h3>
+<p>To add behaviors to the <em>simple_flight</em> scenario, perform the following steps:</p>
+<ol class="arabic">
+<li><p>Create a new text file, named <em>behaviors.txt</em> in the <em>simple_flight</em> directory.</p></li>
+<li><p>Add the following code line to <em>track_processor.txt</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">include_once</span> <span class="n">behaviors</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</li>
+<li><p>The behaviors implemented in the following steps make use of <em>aux_data</em>, an AFSIM command that may be used to define custom variables with a specific platform or platform type for use in any number of applications.
+For the behaviors to work correctly, the following <em>aux_data</em> command block must be added to the platform type definition of <cite>CARGO_AIRCRAFT</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">aux_data</span>
+   <span class="n">struct</span> <span class="n">CARGO_AUX_DATA</span>
+      <span class="nb">bool</span> <span class="n">collisionExpected</span> <span class="o">=</span> <span class="n">false</span>
+      <span class="nb">bool</span> <span class="n">offRoute</span> <span class="o">=</span> <span class="n">false</span>
+      <span class="n">double</span> <span class="n">lastKnownDistance</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+   <span class="n">end_struct</span>
+<span class="n">end_aux_data</span>
+</pre></div>
+</div>
+</li>
+<li><p>Additionally, a climb rate limit should be added to the mover definition on same platform type. This will ensure the aircraft change pitch within reason of what is possible.
+Update the <cite>CARGO_AIRCRAFT</cite> mover definition to reflect the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mover</span> <span class="n">WSF_AIR_MOVER</span>
+   <span class="n">update_interval</span> <span class="mi">3</span> <span class="n">sec</span>
+   <span class="n">maximum_flight_path_angle</span>     <span class="mi">10</span> <span class="n">deg</span>
+<span class="n">end_mover</span>
+</pre></div>
+</div>
+</li>
+<li><p>Open <em>behaviors.txt</em>.</p></li>
+<li><p>Add the following behavior blocks to <em>behaviors.txt</em>:</p>
+<ul class="simple">
+<li><p>The behavior defined below will be the default behavior of the cargo aircraft - executed when no tracks are detected by the platform’s <cite>AIR_RADAR</cite>.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behavior</span> <span class="n">report_all_clear</span>
+   <span class="n">precondition</span>
+      <span class="n">WsfLocalTrackList</span> <span class="n">trackList</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">TrackList</span><span class="p">(</span><span class="s2">&quot;track_proc&quot;</span><span class="p">);</span>
+      <span class="k">return</span> <span class="n">trackList</span><span class="o">.</span><span class="n">Empty</span><span class="p">();</span>
+   <span class="n">end_precondition</span>
+
+   <span class="n">execute</span>
+      <span class="n">WsfPlatform</span> <span class="n">plat</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="p">;</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; Report: All Clear&quot;</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">AuxDataBool</span><span class="p">(</span><span class="s2">&quot;offRoute&quot;</span><span class="p">))</span>
+      <span class="p">{</span>
+         <span class="n">plat</span><span class="o">.</span><span class="n">ReturnToRoute</span><span class="p">();</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - Returning to route</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+         <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;offRoute&quot;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="n">end_execute</span>
+<span class="n">end_behavior</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The next behavior will only execute when a track is detected by the <cite>AIR_RADAR</cite> on either platform. During execution, it checks if the track indicates the presence of a platform on a collision course.  It determines whether or not a collision is likely to occur by comparing the tracks latitude and altitude with its own, then determines over time, using aux data, whether or not the track is getting closer.  If they are at the same latitude, and altitude, and they are getting closer, the task processor generates a warning - a collision is expected, and provides that information to the platform aux data.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>behavior report_entity_detected
+   precondition
+      WsfLocalTrackList trackList = PLATFORM.TrackList(&quot;track_proc&quot;);
+      return !trackList.Empty();
+   end_precondition
+
+   execute
+      WsfPlatform plat = PLATFORM;
+      writeln(plat.Name(), &quot; Report: Entity Detected&quot;);
+
+      WsfLocalTrackList trackList = plat.TrackList(&quot;track_proc&quot;);
+      foreach (WsfTrack t in trackList)
+      {
+         if (plat.Altitude() == t.Altitude())
+         {
+            double lastDist = plat.AuxDataDouble(&quot;lastKnownDistance&quot;);
+            double currDist = plat.GroundRangeTo(t.CurrentLocation());
+            if (lastDist == -1 || lastDist &gt; currDist)
+            {
+               plat.SetAuxData(&quot;lastKnownDistance&quot;, currDist);
+               writeln(&quot;\t - WARNING: Collision Expected!\n&quot;);
+               plat.SetAuxData(&quot;collisionExpected&quot;, true);
+            }
+         }
+      }
+   end_execute
+end_behavior
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The third and final behavior executes only after the platform is known to be on a collision course. When this behavior executes, the platform instructs itself to randomly alter its altitude within a limited range.  After changing altitude, the system returns to normal and maintains this altitude until the track is no longer detected, at which point, it returns to the assigned route.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behavior</span> <span class="n">reroute</span>
+   <span class="n">precondition</span>
+      <span class="n">WsfPlatform</span> <span class="n">plat</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="p">;</span>
+      <span class="nb">bool</span> <span class="n">collisionExpected</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">AuxDataBool</span><span class="p">(</span><span class="s2">&quot;collisionExpected&quot;</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">collisionExpected</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">writeln</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; Report: Rerouting...&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="n">collisionExpected</span><span class="p">;</span>
+   <span class="n">end_precondition</span>
+
+   <span class="n">execute</span>
+      <span class="n">WsfPlatform</span> <span class="n">plat</span> <span class="o">=</span> <span class="n">PLATFORM</span><span class="p">;</span>
+      <span class="n">double</span> <span class="n">altDelta</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">Math</span><span class="o">.</span><span class="n">Ceil</span><span class="p">(</span><span class="n">RANDOM</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">-</span> <span class="mi">20</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">GoToAltitude</span><span class="p">(</span><span class="n">plat</span><span class="o">.</span><span class="n">Altitude</span><span class="p">()</span> <span class="o">+</span> <span class="n">altDelta</span><span class="p">);</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - New Target Altitude = &quot;</span><span class="p">,</span> <span class="n">plat</span><span class="o">.</span><span class="n">Altitude</span><span class="p">()</span> <span class="o">+</span> <span class="n">altDelta</span><span class="p">,</span> <span class="s2">&quot;m</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;collisionExpected&quot;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span>
+      <span class="n">plat</span><span class="o">.</span><span class="n">SetAuxData</span><span class="p">(</span><span class="s2">&quot;offRoute&quot;</span><span class="p">,</span> <span class="n">true</span><span class="p">);</span>
+  <span class="n">end_execute</span>
+<span class="n">end_behavior</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="adding-a-behavior-tree">
+<h3>Adding a Behavior Tree<a class="headerlink" href="#adding-a-behavior-tree" title="Permalink to this headline">¶</a></h3>
+<p>The order of these behaviors is critical to their correct execution.</p>
+<ol class="arabic">
+<li><p>A behavior tree may be implemented in the <cite>CARGO_TASK_MANAGER</cite> processor definition block as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behavior_tree</span>
+   <span class="n">selector</span>
+      <span class="n">behavior_node</span> <span class="n">report_all_clear</span>
+      <span class="n">behavior_node</span> <span class="n">reroute</span>
+      <span class="n">behavior_node</span> <span class="n">report_entity_detected</span>
+   <span class="n">end_selector</span>
+<span class="n">end_behavior_tree</span>
+</pre></div>
+</div>
+</li>
+<li><p>With these additions, the cargo aircraft are now capable of autonomously routing around one another. Simulate <em>simple_flight</em> in Warlock.</p></li>
+<li><p>Advance to time <cite>1000 sec</cite> (just before the aircraft are close enough to detect one another).</p></li>
+<li><p>Observe the messages reported to the console output as the platforms determine a course of action independently. Compare this to their altered flight paths.</p></li>
+</ol>
+<p>The flight paths should reflect something similar to the following:</p>
+<img alt="../../_images/simple_flight_with_behaviors.png" class="align-center" src="../../_images/simple_flight_with_behaviors.png" />
+</section>
+</section>
+<section id="review">
+<h2>Review<a class="headerlink" href="#review" title="Permalink to this headline">¶</a></h2>
+<p>With the increasing size of the scenario, it is no longer practical to provide the full version of every file that was changed in this module.
+The full versions will be available within demos/simple_flight if needed for reference.</p>
+<p>In this module, a new file <em>behaviors.txt</em> was added to the <em>simple_flight</em> scenario, and additions were made to <em>cargo_aircraft.txt</em> and <em>track_processor.txt</em>.</p>
+<a class="reference internal image-reference" href="../../_images/simple_flight_project_with_behaviors.png"><img alt="../../_images/simple_flight_project_with_behaviors.png" class="align-center" src="../../_images/simple_flight_project_with_behaviors.png" style="width: 197.60000000000002px; height: 138.8px;" /></a>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>track_processor.txt</strong></p></td>
+</tr>
+<tr class="row-even"><td><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># track_processor.txt</span>
+<span class="c1"># A component of the simple_flight demo</span>
+
+<span class="n">include_once</span> <span class="n">behaviors</span><span class="o">.</span><span class="n">txt</span>
+
+<span class="n">processor</span> <span class="n">TRACK_MANAGER</span> <span class="n">WSF_TRACK_PROCESSOR</span>
+   <span class="n">master_track_processor</span>
+   <span class="n">purge_interval</span> <span class="mi">10</span> <span class="n">sec</span>
+   <span class="n">report_interval</span> <span class="mi">3</span> <span class="n">sec</span>
+<span class="n">end_processor</span>
+
+<span class="n">processor</span> <span class="n">CARGO_TASK_MANAGER</span> <span class="n">WSF_TASK_PROCESSOR</span>
+   <span class="n">update_interval</span> <span class="mi">10</span> <span class="n">sec</span>
+   <span class="n">behavior_tree</span>
+      <span class="n">selector</span>
+         <span class="n">behavior_node</span> <span class="n">report_all_clear</span>
+         <span class="n">behavior_node</span> <span class="n">reroute</span>
+         <span class="n">behavior_node</span> <span class="n">report_entity_detected</span>
+      <span class="n">end_selector</span>
+   <span class="n">end_behavior_tree</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>cargo_aircraft.txt</strong> (platform type)</p></td>
+</tr>
+<tr class="row-even"><td><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cargo_aircraft.txt</span>
+<span class="c1"># A component of the simple_flight demo</span>
+<span class="n">include_once</span> <span class="n">track_processor</span><span class="o">.</span><span class="n">txt</span>
+
+<span class="o">...</span>
+
+<span class="n">platform_type</span> <span class="n">CARGO_AIRCRAFT</span> <span class="n">WSF_PLATFORM</span>
+   <span class="n">icon</span> <span class="n">c130</span>
+   <span class="n">spatial_domain</span> <span class="n">air</span>
+   <span class="n">category</span> <span class="n">cargo</span>
+
+   <span class="n">mover</span> <span class="n">WSF_AIR_MOVER</span>
+      <span class="n">update_interval</span> <span class="mi">3</span> <span class="n">sec</span>
+      <span class="n">maximum_flight_path_angle</span>     <span class="mi">10</span> <span class="n">deg</span>
+   <span class="n">end_mover</span>
+
+   <span class="n">radar_signature</span> <span class="n">CARGO_AIRCRAFT_RADAR_SIG</span>
+
+   <span class="n">add</span> <span class="n">sensor</span> <span class="n">cargo_radar</span> <span class="n">AIR_RADAR</span>
+      <span class="n">internal_link</span> <span class="n">track_proc</span>
+   <span class="n">end_sensor</span>
+
+   <span class="n">add</span> <span class="n">processor</span> <span class="n">track_proc</span> <span class="n">TRACK_MANAGER</span>
+      <span class="n">internal_link</span> <span class="n">task_mgr</span>
+   <span class="n">end_processor</span>
+
+   <span class="n">add</span> <span class="n">processor</span> <span class="n">task_mgr</span> <span class="n">CARGO_TASK_MANAGER</span>
+   <span class="n">end_processor</span>
+
+   <span class="n">aux_data</span>
+      <span class="n">struct</span> <span class="n">CARGO_AUX_DATA</span>
+         <span class="nb">bool</span> <span class="n">collisionExpected</span> <span class="o">=</span> <span class="n">false</span>
+         <span class="nb">bool</span> <span class="n">offRoute</span> <span class="o">=</span> <span class="n">false</span>
+         <span class="n">double</span> <span class="n">lastKnownDistance</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+      <span class="n">end_struct</span>
+   <span class="n">end_aux_data</span>
+<span class="n">end_platform_type</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>Behaviors offer a small fractional view of the advanced capability offered through AFSIM. With these additions, any number of platforms may be automated to behave independently based on what they perceive directly.
+AFSIM’s capability is expanded further when behaviors and processors are connected with communications devices.</p>
+</section>
+<section id="related-topics">
+<h2>Related Topics<a class="headerlink" href="#related-topics" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="p2-3_primer_sensors_signatures.html"><span class="doc">Sensors and Signatures</span></a></p>
+<p><a class="reference internal" href="p2-5_primer_processors.html"><span class="doc">Processors</span></a></p>
+<p><a class="reference internal" href="p2-7_primer_communications.html"><span class="doc">Communications</span></a></p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/user_manual/p2-6_primer_behavior_btree.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p2-7_primer_communications.html" title="Communications"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="p2-5_primer_processors.html" title="Processors"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

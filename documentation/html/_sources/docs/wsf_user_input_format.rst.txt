@@ -1,0 +1,123 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WSF_User_Input_Format:
+
+WSF User Input Format
+-----------------------
+
+Command Format
+==============
+
+Commands are of the form::
+
+ command [argument1 argument2 ]
+
+Commands and arguments are separated by one or more "white-space' characters (below):
+
+* Blank
+* Tab
+* Carriage return
+* New line
+
+There is no explicit command terminator.  Each command has its own termination condition (i.e., either processing a
+fixed number of arguments or recognition of a certain word).
+
+There is no limit on the length of a line other than any limit imposed by the operating system, which is typically
+greater than 1,000 characters.
+
+A command may be split across multiple lines (by virtue of the fact that a carriage return and a new line are
+separators) or multiple commands may be stacked on one line (by virtue of the fact that there is no explicit command
+terminator).
+
+.. _WSF_User_Input_Format.Pre-Processor:
+
+Pre-Processor
+=============
+
+The pre-processor allows for arbitrary text substitution by defining variables and referencing the variables later.  A
+variable is defined as follows::
+
+ $define X 123
+ $define MULTILINE_VARIABLE \
+    A backslash at the end of line \
+    will allow multiline variable \
+    definitions
+
+.. note:: the '$define' command must begin at the start of the line.
+
+Then use the variable like this::
+
+ end_time $<X>$ seconds
+
+When using a variable, a default value is allowed.
+
+.. note:: 
+
+   Providing a default value is good practice, as not providing a default value will prevent tools like Wizard from parsing the input file.
+
+Therefore, a **preferred** variable usage looks like this::
+
+ end_time $<X:1000>$ seconds
+
+If the variable X is not defined, the default of 1000 is used instead.
+
+Using pre-processor variables should be unnecessary for most tasks in WSF, and <u>should be avoided where
+possible</u>.  Pre-processor variables are particularly well-suited to assist in design of experiments.
+
+Details:
+
+* Empty variables will expand to a single space
+* Variables present in another variable's definition will be expanded.  ex:
+
+::
+
+ $define SIDE      blue
+ $define SET_SIDE  side $<SIDE>$
+ 
+* Any given file is only preprocessed once, and on the first pass.  using 'include' to read the same file twice will
+  not preprocess the file in different contexts
+* Variables need to be defined before being used.
+
+Comments
+========
+
+#, // - Single line comments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The "#' and "//' character(s) cause the character and all following characters on a line to be ignored.  If a comment
+follows a command or argument then there must be at least one white-space character before the "#'.  A stand-alone
+comment does not require a space before the "#'.
+
+/\* \*\/ - Comment block
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The sequence "\/\*" causes ALL characters from the "\/\*" up to and including the character sequence "\*\/" to be ignored.
+The sequence can extend over multiple lines.
+
+Block comments cannot be nested, which means the FIRST occurrence of the sequence "\/\*" will terminate the block comment.
+
+Documentation Conventions
+=========================
++-----------------+--------------------------------------------------------------------------------+
+| What is entered | What it means                                                                  |
++=================+================================================================================+
+| **Command**     | Words in bold are keywords or commands                                         |
++-----------------+--------------------------------------------------------------------------------+
+| <value>         | An italicized value surrounded in "<' and ">' represents user-supplied values. |
++-----------------+--------------------------------------------------------------------------------+
+| [ x | y | z ]   | It is required to pick one of the enclosed values                              |
++-----------------+--------------------------------------------------------------------------------+
+| { x | y | z }   | It is optional to pick one of the enclosed values                              |
++-----------------+--------------------------------------------------------------------------------+
+
+.. comment    .. include:: argumenttypes.rst
+

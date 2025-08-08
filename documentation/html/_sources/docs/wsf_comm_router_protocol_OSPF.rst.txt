@@ -1,0 +1,160 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COMM_ROUTER_PROTOCOL_OSPF
+-----------------------------
+
+.. model:: router_protocol WSF_COMM_ROUTER_PROTOCOL_OSPF
+
+.. parsed-literal::
+
+   router_protocol <name> :model:`WSF_COMM_ROUTER_PROTOCOL_OSPF`   
+
+      ospf_area_ <address>
+      
+      remove_ospf_area_ <address>
+      
+      backbone_ <address>
+      
+      remove_backbone_
+      
+      ospf_dr_priority_ <integer-value>
+      
+      hello_interval_ <random-time-reference>
+      
+      hold_timer_ <random-time-reference>
+
+   end_router_protocol
+
+Overview
+========
+
+:model:`WSF_COMM_ROUTER_PROTOCOL_OSPF` provides an generic mission level routing
+capability similar to that provided by the OSPF protocol. This protocol supports
+the assignment of routers to "areas" in which detailed routing information is kept,
+while only carrying a summarized level of detail of potential recipient data in
+other areas. 
+
+This protocol works by generally sending periodic multicast messages that are received
+by other members of this protocol. This is used to dynamically detect new members, 
+and detect the loss of other members. Data is distributed within areas, and also
+carried to others externally in this format. This messaging procedure is abstracted
+in its implementation.
+
+When routing messages, if the recipient is in the local area, the message is
+directly routed to that member using a graph of area network state. If the
+recipient is known, but external to the area, this protocol always attempts to
+send the message to a defined "backbone" area. The backbone carries messages to
+any area, and all areas MUST be connected to the backbone.
+
+Area connections are handled by defining certain comms as "border
+routers". The user must specify these routers by providing multiple area
+definitions as part of the protocol input.
+
+Only one backbone can exist per connected OSPF autonomous system (AS). All areas
+must connect to this area.
+
+For destinations of messages external to OSPF enabled routers, one or more
+routers sharing a connection with the desired external interfaces must have
+an alternative routing protocol available to correctly handle external routing
+of those messages. As such, any OSPF enabled router with any non-OSPF routing
+protocol is specified as an ASBR (autonomous system border router) 
+that can send messages external to the OSPF AS. Messages destined external
+to OSPF use the optimal external path from an ASBR to select the
+best ASBR for usage, and then route internally to that ASBR using standard OSPF
+routing strategies.
+
+Not all network topologies are compatible with OSPF. All members in an area must
+be connected. Loss of border routers will cause a loss of transmission
+capabilities, as is expected with this protocol. In addition, although connections
+may exist externally to the OSPF provided definition, this protocol will NOT use
+those connections to "route around" any missing border routers, as is intended.
+
+Finally, OSPF typically uses a metric based on transmission capability of multiple
+interfaces available for sending messages when making routing decisions. This metric
+is defined by the transmission rate of any given route divided by 100 Mbps, with
+a minimum value of 1.0. The only metric value less than a 1.0 is instantaneous transmission
+rates, which use a metric value of 0.0 in determining the cost.
+
+.. note:: This protocol is provided in a beta state. Bugs or other issues may exist in this version.
+
+.. note:: This protocol is extremely taxing on simulation performance. It is highly suggested to increase the hello_interval time to the highest acceptable value to avoid the numerous multicast messages being sent at each interval, and avoiding assigning large number of comms to any specific area.
+
+Commands
+========
+
+.. command:: ospf_area <address>
+
+   Defines the area this comm/router belongs to in the OSPF AS. Multiple areas
+   may be assigned if this member has a direct connection to another member
+   in that area, defining this member as a "border router".
+
+.. command:: remove_ospf_area <address>
+
+   Removes an area defined for this protocol. Specifically provided for editing
+   derived objects in input.
+
+.. command:: backbone <address>
+
+   Defines the specified area as a backbone. This only has to be done on a protocol instance
+   for this setting to be applied across an entire OSPF connected AS.
+   
+   Only one backbone may be defined per connected OSPF AS. All other areas must
+   connect to this area via border routers.
+   
+.. command:: remove_backbone
+
+   This command removes the backbone specification for this protocol type or instance.
+   Used in cases where a protocol type is inherited from, but the specified backbone
+   setting is not wanted.
+   
+.. command:: ospf_dr_priority <integer-value>
+
+   Sets the priority for this router becoming the "designated router" or 
+   "backup designated router" (DR, BDR) for its network within an area. These
+   routers hold all of the detailed routing data for a specific area as
+   common points of communication for all other routers in the same network.
+   This value must be positive, where a lower value indicates a higher priority.
+   This value also affects subsequent re-selection of these routers dynamically
+   at runtime. Any router entering a network and area does not preempt any
+   already established DR or BDR, even if it has a higher priority.
+   
+   **Default** Maximum integer value
+   
+.. command:: hello_interval <random-time-reference>
+
+   Defines the amount of time between sending the OSPF heartbeat, the "hello"
+   packet. If these are not received before the defined hold time, the
+   router will be considered non-connected or non-functional and removed from
+   network state data for routing purposes. In addition, this defines how soon
+   a new member is detected, as this is also the method in which new members are
+   detected.
+   
+   A small value is added to this value to ensure these times are not exactly the
+   same across the simulation, and ensure repeatability when this value is constant.
+   
+   **Default** constant 10 s
+   
+.. command:: hold_timer <random-time-reference>
+
+   Defines the amount of time that before a member is dropped if a hello packet
+   is not received. Note that the default value allows multiple hello packet 
+   transmission windows before actually being dropped due to hold time. Ensure
+   that this value is greater than the hello_interval to avoid dropping all
+   members from network state knowledge.
+   
+   A small value is added to this value to ensure these times are not exactly the
+   same across the simulation, and ensure repeatability when this value is constant.
+   
+   **Default** constant 40 s
+   
+
+

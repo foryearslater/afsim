@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PyMystic &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Radar Signal Processors" href="radar_signal_processors.html" />
+    <link rel="prev" title="protocol" href="protocol.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="radar_signal_processors.html" title="Radar Signal Processors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="protocol.html" title="protocol"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pymystic"></span><section id="pymystic">
+<h1>PyMystic<a class="headerlink" href="#pymystic" title="Permalink to this headline">¶</a></h1>
+<p>PyMystic is a Python module that may be used to read AER files.  It is written entirely in Python 3
+and has no additional requirements. PyMystic primarily facilitates Design of Experiments analysis and batch 
+processing of AFSIM Monte-Carlo runs. It may also aid in Mystic capability prototyping and custom data extraction.</p>
+<p>PyMystic uses the schema embedded in the read AER file.  This should make it cross-compatible with any
+version of AFSIM, so long as the rules underlying the schema itself have not changed.  The contents of
+a schema will change between versions, so a script written using PyMystic is not necessarily
+cross-version-compatible.  The contents of the event-pipe messages are documented by the
+<a class="reference internal" href="event_pipe.html#event_pipe" title="event_pipe"><span class="xref wsf wsf-command">event_pipe</span></a> page from the version of AFSIM from which the file was created.</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>PyMystic defines a Reader class that can read Messages from an event-pipe file.  In general a pymystic
+script is structured as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pymystic</span>
+
+<span class="k">with</span> <span class="n">pymystic</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="s1">&#39;somefilename.aer&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span> <span class="c1"># create a reader</span>
+   <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span> <span class="c1"># Loop over every message in the AER file</span>
+      <span class="c1"># process messages here</span>
+      <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Messages are represented as Python dictionaries, where each key is tied to a value. For some keys, the associated value may itself be a dictionary.</p>
+</section>
+<section id="api-documentation">
+<h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pymystic.Reader">
+<em class="property">class </em><code class="sig-prename descclassname">pymystic.</code><code class="sig-name descname">Reader</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Reader class will open an AER file, generate the schema from the header, and then allow the reading of messages.</p>
+<p>This class may be used as an iterator, in which case it will yeild the messages in the loaded file in order.</p>
+<dl class="method">
+<dt id="pymystic.Reader.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will load a file of the given <em>filename</em>, which may be processed with other Reader methods.
+Files must have the <em>.aer</em> extension.
+The <em>filename</em> may include a relative or absolute path to the file.</p>
+<p>You may use this class as a context manager as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Reader</span><span class="p">(</span><span class="s2">&quot;filename.aer&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+   <span class="c1"># Use the reader here</span>
+   <span class="k">pass</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – The name and extension of the input file.</p></li>
+<li><p><strong>debug</strong> (<em>bool</em><em>, </em><em>optional</em>) – Print debug strings while parsing the AER file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymystic.Reader.close">
+<code class="sig-name descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will close the loaded replay file. This allows users to explicitly release the file 
+handle in the event of an error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymystic.Reader.process">
+<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param">msgdata</em><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method converts MessageData into a Message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msgdata</strong> – A MessageData tuple output by either <a class="reference internal" href="#pymystic.Reader.scan" title="pymystic.Reader.scan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pymystic.Reader.scan()</span></code></a> or <a class="reference internal" href="#pymystic.Reader.scan_iter" title="pymystic.Reader.scan_iter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pymystic.Reader.scan_iter()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary, representing the message.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymystic.Reader.read">
+<code class="sig-name descname">read</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will read and return the next message in the loaded file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary, representing next message in the currently loaded file, or None if EOF has been reached.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymystic.Reader.scan">
+<code class="sig-name descname">scan</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method reads only the header data of the next message in the file, allowing the user to filter messages by type.
+In order to parse the data into a dictionary, pass the output to <a class="reference internal" href="#pymystic.Reader.process" title="pymystic.Reader.process"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pymystic.Reader.process()</span></code></a>.</p>
+<dl class="simple">
+<dt>Returns: </dt><dd><p>A tuple containing:</p>
+<ul class="simple">
+<li><p>The message id (int)</p></li>
+<li><p>The message type (string)</p></li>
+<li><p>The message (bytes)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymystic.Reader.scan_iter">
+<code class="sig-name descname">scan_iter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Reader.scan_iter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yields an iterator over the messages in the AER file. In order to parse the data into a dictionary, 
+pass the output to <a class="reference internal" href="#pymystic.Reader.process" title="pymystic.Reader.process"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pymystic.Reader.process()</span></code></a>.</p>
+<dl class="simple">
+<dt>Yields: </dt><dd><p>a tuple containing:</p>
+<ul class="simple">
+<li><p>The message id (int)</p></li>
+<li><p>The message type (string)</p></li>
+<li><p>The message (bytes)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pymystic.Schema">
+<em class="property">class </em><code class="sig-prename descclassname">pymystic.</code><code class="sig-name descname">Schema</code><span class="sig-paren">(</span><em class="sig-param">aSchemaStr</em><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Schema class consumes a schema string and generates local definitions of the schema.</p>
+<dl class="method">
+<dt id="pymystic.Schema.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">aSchemaStr</em><span class="sig-paren">)</span><a class="headerlink" href="#pymystic.Schema.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The schema constructor takes a schema string and builds up a definition representation of the schema, and
+a map from message id to structure name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>aSchemaStr</strong> (<em>str</em>) – The schema definition string</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="example-message-list-py">
+<h1>example_message_list.py<a class="headerlink" href="#example-message-list-py" title="Permalink to this headline">¶</a></h1>
+<p>This example script will output a list of times and message types, and when an entity state message is
+encountered it will also write the name of the relevant platform.</p>
+<p>Output will look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">28797.0</span> <span class="n">MsgEntityState</span> <span class="n">platformA</span>
+<span class="mf">28798.0</span> <span class="n">MsgEntityState</span> <span class="n">platformB</span>
+<span class="mf">28798.0</span> <span class="n">MsgEntityState</span> <span class="n">platformA</span>
+<span class="mf">28799.0</span> <span class="n">MsgEntityState</span> <span class="n">platformB</span>
+<span class="mf">28800.001953125</span> <span class="p">:</span>  <span class="n">MsgPlatformStatus</span>
+<span class="mf">28800.001953125</span> <span class="p">:</span>  <span class="n">MsgPlatformStatus</span>
+</pre></div>
+</div>
+</section>
+<section id="example-graph-py">
+<h1>example_graph.py<a class="headerlink" href="#example-graph-py" title="Permalink to this headline">¶</a></h1>
+<p>This example requires graphviz and the graphviz python modules.  It will query command-chain relationships
+from the MsgPlatformInfo messages and use them to build the entire scenario’s command-chain graph.  It will
+then render this graph into a PDF.</p>
+<p>Output will look like this:</p>
+<img alt="../_images/pymystic_graph.png" src="../_images/pymystic_graph.png" />
+</section>
+<section id="example-bigreport-py">
+<h1>example_bigreport.py<a class="headerlink" href="#example-bigreport-py" title="Permalink to this headline">¶</a></h1>
+<p>This example will read from a local <code class="docutils literal notranslate"><span class="pre">aerlist.txt</span></code> file containing a list of AER filenames (users will
+need to generate this).  It will read the execution data message from each file and report the version
+of AFSIM that is was executed in, and the time-stamp of the execution.</p>
+<p>Output will look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TESTING</span>  <span class="o">/</span><span class="n">AFSIM</span><span class="o">/</span><span class="n">test_scenarios</span><span class="o">/</span><span class="n">scen1</span><span class="o">/</span><span class="n">scen1</span><span class="o">.</span><span class="n">aer</span>
+   <span class="o">***</span><span class="n">unversioned</span><span class="o">***</span>
+<span class="n">TESTING</span>  <span class="o">/</span><span class="n">AFSIM</span><span class="o">/</span><span class="n">training</span><span class="o">/</span><span class="n">developer</span><span class="o">/</span><span class="n">labs</span><span class="o">/</span><span class="n">solution</span><span class="o">/</span><span class="n">comm</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">comm_exercise</span><span class="o">.</span><span class="n">aer</span>
+   <span class="n">version</span><span class="p">:</span>   <span class="n">mission</span> <span class="mf">2.4</span><span class="o">.</span><span class="mf">0.190626</span>
+   <span class="n">executed</span><span class="p">:</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">28</span> <span class="mi">09</span><span class="p">:</span><span class="mi">09</span><span class="p">:</span><span class="mi">48</span>
+<span class="n">TESTING</span>  <span class="o">/</span><span class="n">AFSIM</span><span class="o">/</span><span class="n">training</span><span class="o">/</span><span class="n">developer</span><span class="o">/</span><span class="n">labs</span><span class="o">/</span><span class="n">solution</span><span class="o">/</span><span class="n">comm</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">comm_exercise2</span><span class="o">.</span><span class="n">aer</span>
+   <span class="n">version</span><span class="p">:</span>   <span class="n">mission</span> <span class="mf">2.4</span><span class="o">.</span><span class="mf">0.190626</span>
+   <span class="n">executed</span><span class="p">:</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">28</span> <span class="mi">09</span><span class="p">:</span><span class="mi">09</span><span class="p">:</span><span class="mi">52</span>
+<span class="n">TESTING</span>  <span class="o">/</span><span class="n">AFSIM</span><span class="o">/</span><span class="n">training</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">basic</span><span class="o">/</span><span class="n">scenarios</span><span class="o">/</span><span class="n">solutions</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="n">Floridistan</span><span class="o">/</span><span class="n">output</span><span class="o">/</span><span class="n">jacksonabad</span><span class="o">.</span><span class="n">aer</span>
+   <span class="n">version</span><span class="p">:</span>   <span class="n">Warlock</span> <span class="mf">2.5</span><span class="o">.</span><span class="mf">0.191029</span>
+   <span class="n">executed</span><span class="p">:</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">31</span> <span class="mi">11</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mi">59</span>
+</pre></div>
+</div>
+</section>
+<section id="example-print-message-data-py">
+<h1>example_print_message_data.py<a class="headerlink" href="#example-print-message-data-py" title="Permalink to this headline">¶</a></h1>
+<p>The purpose of this example is to demonstrate recursive processing of messages represented by nested dictionaries.</p>
+<p>The script takes an AER file as a parameter, and reads each message from the input file, printing the data from each message to the console. The <code class="docutils literal notranslate"><span class="pre">FormatMessage</span></code> function recursively formats messages containing nested dictionaries.</p>
+<p>Output will look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">id</span><span class="p">:</span>                                                <span class="mi">1</span>
+<span class="n">msgtype</span><span class="p">:</span>                                           <span class="n">MsgEntityState</span>
+<span class="n">simTime</span><span class="p">:</span>                                           <span class="mf">0.0</span>
+<span class="n">simIndex</span><span class="p">:</span>                                          <span class="mi">0</span>
+<span class="n">state</span><span class="p">:</span>
+      <span class="n">platformIndex</span><span class="p">:</span>                             <span class="mi">38</span>
+      <span class="n">damageFactor</span><span class="p">:</span>                              <span class="mf">0.0</span>
+      <span class="n">locationWCS</span><span class="p">:</span>
+               <span class="n">x</span><span class="p">:</span>                                 <span class="o">-</span><span class="mf">2356075.8866955335</span>
+               <span class="n">y</span><span class="p">:</span>                                 <span class="o">-</span><span class="mf">3743698.25337908</span>
+               <span class="n">z</span><span class="p">:</span>                                 <span class="mf">4579620.857159804</span>
+      <span class="n">velocityWCSValid</span><span class="p">:</span>                          <span class="kc">False</span>
+      <span class="n">accelerationWCSValid</span><span class="p">:</span>                      <span class="kc">False</span>
+      <span class="n">orientationWCSValid</span><span class="p">:</span>                       <span class="kc">True</span>
+      <span class="n">orientationWCS</span><span class="p">:</span>
+               <span class="n">x</span><span class="p">:</span>                                 <span class="mf">1.0090789794921875</span>
+               <span class="n">y</span><span class="p">:</span>                                 <span class="o">-</span><span class="mf">0.7646905779838562</span>
+               <span class="n">z</span><span class="p">:</span>                                 <span class="mf">3.1415927410125732</span>
+      <span class="n">fuelCurrentValid</span><span class="p">:</span>                          <span class="kc">True</span>
+      <span class="n">fuelCurrent</span><span class="p">:</span>                               <span class="mf">0.0</span>
+</pre></div>
+</div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="#">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/pymystic.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="radar_signal_processors.html" title="Radar Signal Processors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="protocol.html" title="protocol"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,94 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Access Report
+-------------
+
+.. note:: This feature has been re-factored to the Post Processor. See Detection Report in the Post Processor documentation.
+
+.. command:: access_report ... end_access_report 
+   :block:
+
+   .. parsed-literal::
+
+    access_report      
+       default_sensor_ ...      
+       file_prefix_    ...
+       file_format_    ...
+       report_         ...
+    end_access_report
+   
+`Access Report`_\s provide start time, end time, and the duration of platforms' visibility to each other.  Input options for detecting platform(s), detected platform(s), and detecting sensor(s) are available.
+
+.. note:: Access reports are computed with :ref:`sensor`\s; therefore, access is defined to be a function of sensor detection, not simply geometry.  For example, a :model:`WSF_RADAR_SENSOR` will usually not detect all platforms within line-of-sight due to signal-to-noise limitations provided in the sensor definition.  The accuracy of the report is also limited by the sensor's :command:`frame_time`.
+
+Commands
+========
+
+.. command:: default_sensor <sensor-type>
+
+   Specify the name of a default :ref:`sensor` type definition that will be used to generate the access reports (only in the case where no **<sensor-name>** is provided in report_ command specifications).  If this command is provided, the sensor type will be cloned and added to the specified **<detector-platform>**.
+
+.. command:: file_prefix
+
+   Specify the output file prefix. The file extension is specified by the file_format_ command.
+
+.. command:: file_format { csv | tsv }
+
+   Specify the output file format, which must be either of *csv* (comma-separated variables) or *tsv* (tab-separated variables).
+
+   **Default** csv
+
+.. note:: 
+
+   The **csv** file_format_ can be viewed in Microsoft Excel, but the formats for start and end times must be changed by selecting cells in the spreadsheet and using the *Format Cells...* option to select a compatible format (i.e., *m/d/yyyy h:mm.000* ).
+
+.. command:: report { <detector-platform> | all } to { <detectee-platform> | all } [ using { <sensor-name> | all } ]
+
+   Specify which access events are to be reported in the output file.  Selections for each detector-detectee pair should be provided.  optionally, a sensor name on the detector can also be specified, in which case access is only computed for that particular sensor.  If no sensor is specified, all sensors on the detecting platform will be used to compute access separately.  For each selection, the keyword *all* can be inserted, meaning that access will be computed for all detectors, detectees, and / or sensors.
+
+Examples
+""""""""
+
+Access of one platform by one sensor on one platform
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   .. parsed-literal::
+   
+    access_report
+       file_prefix access_report_test
+       report haystack to RADIO_ROSTO_(RS-15)(23439) using radar // A sensor named 'radar' 
+                                                                 // must be defined on platform 'haystack'.
+    end_access_report
+
+Access of all platforms by one sensor on one platform
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   .. parsed-literal::
+   
+    access_report
+       file_prefix access_report_test
+       file_format tsv   // specify tab-separated values format
+       report haystack to all using radar 
+    end_access_report
+
+Access of one platform by sensors on all platforms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   .. parsed-literal::
+   
+    access_report
+       file_prefix access_report_test
+       report all to RADIO_ROSTO_(RS-15)(23439)
+       default_sensor TELESCOPE // Instance of sensor type TELESCOPE will be placed on platforms without 
+                                // other sensor definitions, and it will be used on those platforms to compute access
+                                // (sensor type TELESCOPE must be defined elsewhere in the input).
+    end_access_report

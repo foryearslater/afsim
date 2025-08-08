@@ -1,0 +1,130 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Classification Commands
+-----------------------
+
+.. parsed-literal::
+   
+   classification_levels_
+      level_ <string>
+         color_ ...
+      end_level
+   end_classification_levels
+   
+   classification_
+      level_ <string>
+      caveats_ ... end_caveats
+      trigraphs_ ... end_trigraphs
+   end_classification
+      
+Overview
+========
+
+The classification_ command is used to specify the classification level_, caveats_ and trigraphs_ associated with a particular input
+file or scenario. If multiple classification_ blocks are encountered within the scenario, the trigraphs and caveats are aggregated
+(duplicates removed) and the level of the scenario is set to the highest level found. The highest level is determined by the
+classification_levels_ block, in which levels are defined in order of increasing degree of sensitivity, and optionally with a color_
+to use when displaying the level in the GUI applications. In the example below, *HIGHEST* is more sensitive than *HIGHER*, which is
+more sensitive than *HIGH*. The aggregated scenario classification string, including level, caveats and trigraphs, is echoed to
+the console and displayed in a banner within the GUI applications. The classification string and color are also accessible via script
+with the :method:`ClassificationString<WsfSimulation.ClassificationString>` and :method:`ClassificationColor<WsfSimulation.ClassificationColor>`
+methods of :class:`WsfSimulation`.
+
+.. note::
+
+   The format of the scenario classification string is as follows:
+   **Level//Trigraph-1//Trigraph-2//...//Trigraph-N - Caveat-1//Caveat-2//...//Caveat-N**
+
+.. note::
+
+   A classification_ command can be placed within any file in the scenario, but it must come after the classification_levels_ block that
+   defines the levels. Therefore, there is an input file order dependency.
+
+Example:
+
+.. parsed-literal::
+
+    classification_levels_
+      level_ HIGH    color_ yellow end_level
+      level_ HIGHER  color_ red    end_level 
+      level_ HIGHEST color_ orange end_level
+    end_classification_levels
+
+    classification_
+      level_ HIGHER
+      caveats_ ABC DEF end_caveats
+      trigraphs_ RST XYZ end_trigraphs
+    end_classification
+
+    ...
+    ...
+
+    classification_
+      level_ HIGHEST
+      caveats_ DEF GHI end_caveats
+      trigraphs_ RST UVW end_trigraphs
+    end_classification
+    
+The resulting aggregated classification string would be as follows:
+**HIGHEST//RST//UVW//XYZ - ABC//DEF//GHI**
+   
+Commands
+========
+
+.. command:: classification_levels ... end_classification_levels
+   :block:
+
+   Used to define the list of potential classification levels in a scenario, in order of increasing degree of sensitivity.
+
+   .. note::
+
+      It is an error to define multiple classification_levels_ blocks.
+
+   .. command:: level <string> ... end_level
+      :block:
+
+      Defines a level that can be used in classification_ blocks.
+   
+      .. command:: color <color-value>
+   
+         Optionally define the color to be used when displaying the level in the classification banner within the GUI applications.
+   
+         **Default**: black
+
+         .. note:: The alpha component of the color will not be used in the classification banner even if specified.
+
+   .. end::
+
+.. end::
+
+.. command:: classification ... end_classification
+   :block:
+   
+   .. command:: level <string>
+   
+      Specifies the classification level of the input file or scenario. An error will occur if the level string does not appear in the classification_levels_ block.
+      
+      **Default**: None
+
+   .. command:: caveats <caveat-1> <caveat-2> ... <caveat-n> end_caveats
+
+      Specifies the caveats associated with the classification. Each caveat is a string literal specified by the user. The user can provide as many caveats as needed.
+   
+      **Default**: None
+
+   .. command:: trigraphs <trigraph-1> <trigraph-2> ... <trigraph-n> end_trigraphs
+
+      Specifies the trigraphs associated with the classification. Each trigraph is a string literal specified by the user. The user can provide as many trigraphs as needed.
+   
+      **Default**: None
+
+.. end::

@@ -1,0 +1,357 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.2:
+
+WSF 1.7.2 - 27 Oct 2011
+-----------------------
+
+Removal of Transition Object Types In The Next Release
+======================================================
+
+Over the last couple of years several movers were reimplemented in such a way that compatibility between the old and new
+implementations could not be maintained transparently. As such, both old and new forms coexisted under different names
+(i.e. **OLD** and **NEW**). The default implementation (i.e.: name without the **OLD** or **NEW**) eventually changed
+from referring to the old implementation to referring to the new implementation.
+
+The new implementations have been the default implementation for over year. Effective with the **NEXT** release, the
+old implementations will be removed from the code and the transition names (**OLD** and **NEW**) will be removed as
+follows:
+
+* **WSF_OLD_AIR_MOVER** and **WSF_NEW_AIR_MOVER** (use :model:`WSF_AIR_MOVER`)
+* **WSF_OLD_GROUND_MOVER** and **WSF_NEW_GROUND_MOVER** (use :model:`WSF_GROUND_MOVER`)
+* **WSF_OLD_ROAD_MOVER** and **WSF_NEW_ROAD_MOVER** (use :model:`WSF_ROAD_MOVER`)
+* **WSF_OLD_SUBSURFACE_MOVER** and **WSF_NEW_SUBSURFACE_MOVER** (use :model:`WSF_SUBSURFACE_MOVER`)
+* **WSF_OLD_SURFACE_MOVER** and **WSF_NEW_SURFACE_MOVER** (use :model:`WSF_SURFACE_MOVER`)
+* **WSF_OLD_6DOF_MOVER** and **WSF_NEW_6DOF_MOVER** (use :model:`WSF_P6DOF_MOVER`)
+* **WSF_OLD_GUIDED_MOVER** and **WSF_NEW_GUIDED_MOVER** (use :model:`WSF_GUIDED_MOVER`)
+* **WSF_OLD_GUIDANCE_COMPUTER** and **WSF_NEW_GUIDANCE_COMPUTER** (use :model:`WSF_GUIDANCE_COMPUTER`)
+
+If you haven't already done so, please convert your definitions to use the standard (non-transition) names.
+
+Corrections
+===========
+
+* **(CR 8828)** Removed the 'beam_color_rgba' capability from :ref:`Antenna_commands` that was implemented in version
+  :ref:`wsf_1.7.1`. The non-standard DIS PDU caused problems for some simulations and resulted in larger replay files. A
+  different implementation may be provided at some point in the future.
+
+* **(CR 8861)** Corrected a problem where :model:`WSF_TBM_MOVER` could hang in an infinite loop if the target was at a
+  higher MSL altitude than the launcher (as could occur when using terrain).
+
+* **(CR 8865)** Corrected a problem where the :command:`event_output` events SENSOR_KILLED, SENSOR_NON_OPERATIONAL and
+  SENSOR_OPERATIONAL were not properly terminated.
+
+* **(CR 8875)** Corrected a problem in :model:`WSF_RADIO_TRANSCEIVER` (as well as **WSF_RADIO_XMTR** and
+  **WSF_RADIO_RCVR**) where a message that required two or more relay hops (e.g. a STATCOM cross-link) could get stuck in
+  an infinite cycle of being transmitted between two nodes.
+
+* **(CR 8908)** Corrected a problem where the script method
+  :method:`WsfPlatformPart.SetOperational <WsfPlatformPart.SetOperational>` would not parse using the syntax in the documentation.
+
+* **(CR 8916)** Corrected a problem where raw tracks filtered by the track manager on one node and then reported to
+  another node, could get marked in such a way on the receiving node that they would never get evaluated by
+  :model:`WSF_TASK_PROCESSOR` unless :command:`WSF_TASK_PROCESSOR.evaluate_candidate_tracks` was set to 'true'.
+
+* **(CR 8932)** Corrected a problem where the simulation would crash if a :model:`WSF_COMPOSITE_SENSOR` was used when a
+  :command:`dis_interface.record` was enabled.
+
+* **(CR 8933)** Corrected a situation where enabled simulation :command:`observer` would get called multiple
+  times per event if a multi-run :ref:`Monte_Carlo_Iteration` execution was used.
+
+* **(CR 8966)** Corrected a problem in [[sensor_plot flight_path_analysis]] with the treatment of velocity from TSPI
+  files. The velocity direction derived by sensor_plot was inconsistent with the derivation in :model:`WSF_TSPI_MOVER`. The
+  magnitude was correct, but the direction could be different.
+
+* **(CR 8984)** Corrected a problem in the calculation of the message transfer rate in :model:`WSF_COMM_TRANSCEIVER` and
+  :model:`WSF_RADIO_TRANSCEIVER` when 'transfer_rate' was being defined on the communication network and
+  not in the communication device.
+
+* **(CR 9002)** Corrected a minor problem in the :ref:`GENAP <antenna_pattern.genap_pattern>` cosecant antenna generator
+  which cause a slight (0.1 degree) elevation shift in the resulting pattern. Also applied the most recent patches from
+  SUPPRESSOR.
+
+* **(CR 9025)** Corrected a problem where radio based communications were not being affected by :ref:`zone-based_attenuation`.
+
+* **(CR 9038)** Corrected a problem in :model:`WSF_GEOMETRIC_SENSOR` where the earth_radius_multiplier was being
+  accepted, but didn't affect the detection results. This prevented using the sensor as a simple low-fidelity surrogate
+  for a radar sensor.
+
+* **(CR 9047)** Corrected a problem where the sensing chance list entry for a target platform was sometimes not
+  getting deleted when the target platform was deleted. This occurred only for target tracking sensors. The main impact
+  was a performance problem caused by the constant reallocation of the list as new platforms were added to the simulation.
+
+* **(CR 9051)** Corrected several problems in :model:`WSF_STRAIGHT_LINE_MOVER` that was causing erratic behavior.
+
+* **(CR 9054)** The common orientation for satellites using :model:`WSF_SPACE_MOVER` or :model:`WSF_NORAD_SPACE_MOVER` will be
+  "right side up, " so that platforms appear to fly "straight and level."  More specifically, satellites will be oriented
+  so that the local z axis points to nadir (Earth center), the x axis is in the direction of motion (perpendicular to z
+  and in the same plane as z and the ECI velocity vector), and y is perpendicular to both x and z.  In STK it is
+  identical with the attitude option "Nadir alignment with ECI velocity constraint."
+
+* **(CR 9061)** Corrected a problem in :class:`WsfSensorInteraction` and
+  :class:`WsfCommInteraction` where range values were mistakenly being return in units of kilometers
+  rather than meters.
+
+* **(CR 9088)** Corrected an issue with the :model:`WSF_ESM_SENSOR` track type reporting being overridden by the
+  'reports_type' flag when using the 'reported_emitter_type' block input commands.
+
+* **(CR 9098)** Corrected an issue where the last timestamp in the DIS output stream was always the value of the
+  'end_time' command, even if the simulation was terminated early (e.g.: by using
+  :method:`WsfSimulation.Terminate() <WsfSimulation.Terminate>`). The last timestamp will now be set to the maximum simulation
+  time that was achieved.
+
+* **(CR 9133)** Corrected a problem with the :model:`WSF_ESM_SENSOR`, **WSF_IR10T_SENSOR**, and
+  :ref:`sosm_interface.WSF_SOSM_SENSOR` when using ranging_time and ranging_time_track_quality where the
+  track quality was being applied before the range was valid.
+
+* **(CR 9135)** When attempting to estimate a pseudo-3D location from a 2D (range-bearing) track, the location would
+  be corrupted if the slant range was less than the assumed altitude used to compute the location.
+
+* **(CR 9137)** Corrected a problem where the origin of a sensor report incorrectly used the platform location
+  instead of the sensor antenna location. This was causing a error in the track report if the sensor antenna was offset
+  from the origin of the platform, as range and angles are measured relative to the origin of the sensor antenna.
+
+* **(CR 9142)** Fixed an issue where stopping a jamming assignment when a repeater was operating in manual mode with
+  signal following set to 'true' would fail.
+
+* **(CR 9149)** Corrected an issue where a *csims_interface* missile launched from moving platform (e.g.: a
+  ship) would occasionally abort immediately after launch with an erroneous 'hit ground' message.
+
+* **(CR 9163)** Prevented the sending of jamming systems in the DIS emission PDUs that are off and have been off for
+  the previous sending to lessen the DIS loading.
+
+* **(CR 9165)** Correct a problem where the incorrect beam position would be computed if the device was cued, the
+  azimuth to the target had the opposite sign of the cued azimuth, and the scan volume about the cue spanned the +/- 180
+  degree azimuth line (relative to the uncued orientation).
+
+* **(CR 9190)** Corrected a problem in the altitude triggers of :model:`WSF_WEAPON_FUSE` (and the derived variants
+  :model:`WSF_AIR_TARGET_FUSE` and :model:`WSF_GROUND_TARGET_FUSE`) where detonation was incorrectly occurring when any altitude
+  sample was above/below the criteria value. Detonation will now occur when crossing the criteria value in the proper
+  direction, as specified in the documentation.
+
+* **(CR 9267)** Corrected a problem where :command:`sensor_plot_flight_path_analysis <flight_path_analysis>` was
+  improperly manipulating the heading from a TSPI file.
+
+* **(CR 9268)** Corrected a problem where the TIME_NOW variable would not reflect the current simulation time if the
+  script was invoked as a result of calling :method:`WsfSimulation.ExecuteAtTime <WsfSimulation.ExecuteAtTime>`,
+  :method:`WsfPlatform.ExecuteAtTime <WsfPlatform.ExecuteAtTime>` or :method:`WsfProcessor.ExecuteAtTime <WsfProcessor.ExecuteAtTime>`
+  specifying a time in the past.
+
+* **(CR 9303)** Corrected a problem in :model:`WSF_ESM_SENSOR` where the reported location data for tracking radars would
+  be incorrect if the sensing platform had a significant orientation change (i.e. started to bank) between the time the
+  detection attempt occurred and the data was reported.
+
+Enhancements
+============
+
+* **(CR 8683)** Added support for loading PLT signature files in 3-column format.
+
+* Various modifications were made to the image processing architecture:
+
+  * Merged the capabilities of :model:`WSF_IMAGE_PROCESSOR` and :ref:`WSF_VIDEO_PROCESSOR` into :model:`WSF_IMAGE_PROCESSOR`,
+    which will now process static images or a stream of images (video). :ref:`WSF_VIDEO_PROCESSOR` still exists, but is simply
+    a synonym for :model:`WSF_IMAGE_PROCESSOR`.
+
+  * Added the ability to define a :command:`WSF_IMAGE_PROCESSOR.filter` in :model:`WSF_IMAGE_PROCESSOR` to be used when
+    processing image streams. If a filter is defined, it will be used to generate a filtered position and velocity in the
+    output tracks.
+
+  * Modified the pixel count attribute in the :method:`image <WsfImage.PixelCount>` and :method:`track <WsfTrack.PixelCount>` objects
+    so it is now a floating point value.
+
+  * Added a normalize pixel intensity attribute in the :method:`image <WsfImage.PixelIntensity>`.
+
+  * Added the :method:`minimum <WsfImage.MinimumLevel>` and :method:`maximum <WsfImage.MaximumLevel>` signal level attributes to the
+    image. :model:`WSF_SAR_SENSOR` will now compute an intensity based on the radar signature.
+
+  * :method:`WsfImage.BackgroundLevel() <WsfImage.BackgroundLevel>` and :method:`WsfImage.SignalLevel() <WsfImage.SignalLevel>` now
+    return raw signal levels instead of being divided by the noise level.
+
+  * The tracks created from static images (e.g.: spot SAR images) will now always report a zero velocity. Otherwise
+    the velocity in the local track into which the track is fused will never go to zero.
+
+* Added support for MIL-STD-210 Non-Standard Atmospheres :doc:`../atmosphere`.
+
+* Added support for unit type of angular inertia (mass*length*length) [[Values|units]].
+
+* Added the :command:`track_manager.aux_data_fusion_rules` to :command:`track_manager` to control the fusion of :command:`_.aux_data`
+  variables from a raw tracks into local tracks.
+
+* Added :class:`WsfSensor` script methods: :method:`WsfSensor.SetFOV_Azimuth`, :method:`WsfSensor.SetFOV_Elevation`,
+  :method:`WsfSensor.SetFOV_Range`.
+
+* Added the command :command:`WSF_EOIR_SENSOR.pixel_count` to :model:`WSF_EOIR_SENSOR`.  Used in conjunction with new
+  :class:`WsfSensor` methods to change field of view allows *zooming* the WSF_EOIR_SENSOR in script.
+
+* **(CR 8866)** Added the on_death attribute for :command:`platform` which lets a user define the
+  disposition of a platform when it is killed. The default is to remove the platform from the simulation, but now an
+  option exists to allow the platform to be retained, but with all its systems disabled.
+
+* Added the :command:`dis_interface.playback` command to the :command:`dis_interface`, which allow the entities contained in a
+  DIS 'replay' file to be injected back into a simulation as regular WSF platforms.
+
+* **(CR 8872)** Added the ability to use a communications filter with a JTIDS terminal for use by the VWC and the
+  Comm Effects Engine. This is a code enhancement with no impact to users.
+
+* **(CR 8883)** Added the ability to delete an aux_data variable in :method:`WsfGroup <WsfGroup.DeleteAuxData>`,
+  :method:`WsfMessage <WsfMessage.DeleteAuxData>`, :method:`Platform <WsfPlatform.DeleteAuxData>`,
+  :method:`WsfPlatformPart <WsfPlatformPart.DeleteAuxData>` and :method:`WsfTrack <WsfTrack.DeleteAuxData>`
+
+* Added the :command:`event_output.print_track_residual_covariance` command to :command:`event_output`.
+
+* Added numerous script methods to :class:`WsfArticulatedPart` and :class:`WsfSensor` to query the slewing, cueing, and
+  scanning parameters.
+
+* If a :command:`platform` does not have an :command:`platform.optical_signature` defined but does have the
+  :command:`platform.length`, :command:`platform.width` and :command:`platform.height` attributes defined, the values of those
+  attributes and the current viewing angle to compute an optical cross section.
+
+* Added script methods to :class:`WsfLocalTrack`: :method:`WsfLocalTrack.RawTracksFrom`,
+  :method:`WsfLocalTrack.RawTrackFromSensorName`, and :method:`WsfLocalTrack.RawTrackFromSensorType`
+
+* Added script methods to :class:`WsfSensor`: :method:`SelectEP_Technique <WsfSensor.SelectEP_Technique>` and
+  :method:`DeselectEP_Technique <WsfSensor.DeselectEP_Technique>`
+
+* Added the ability to turn off verbose information about fire and detonate PDUs to the console through the
+  :command:`dis_interface.debug_warfare_pdu` input to the DIS interface.
+
+* Added user-defined scripts to :model:`WSF_TASK_PROCESSOR`: :command:`WSF_TASK_PROCESSOR.on_task_assign_sent`,
+  :command:`WSF_TASK_PROCESSOR.on_task_complete_sent`, :command:`WSF_TASK_PROCESSOR.on_task_cancel_sent`.
+
+* **(CR 8922)** Added a :method:`WsfMessage.DataTag` field to messages which can be used to track the progress of
+  certain types of data (tracks and images in particular) as they are sent over communications networks. There was no
+  easy provision to do this if the object was forwarded from platform-to-platform via using processes other than the
+  normal communications relay and routing (e.g.: using the track reporting provided by :model:`WSF_TRACK_PROCESSOR`).
+
+* **(CR 8939)** Enhanced track error effects in :model:`WSF_TRACK_EFFECT`. Errors in range, azimuth, elevation, and
+  velocity can be applied to a track. Errors can be walked off at a linear rate, if the required J-to-S is met, until a
+  holdout point, and then optionally recycled.
+
+* **(CR 8940)** Add provisions to :model:`WSF_SLC_EFFECT` to operate and handle the effects of the :model:`WSF_POL_MOD_EFFECT`
+  and its :model:`polarization_switching_rate <WSF_POL_MOD_EFFECT>`.
+
+* **(CR 8941)** Add provisions to dynamically set the priority of a message. Added script methods
+  :method:`WsfMessage.Priority` and :method:`WsfMessage.SetPriority` to get and set the message priority. Added the ability to
+  define the script :command:`WSF_SCRIPT_PROCESSOR.on_message_create` which will get called by certain processors after a
+  message is created internally but before it is sent.
+
+* **(CR 8947)** Implemented the :command:`channel_partition_protocol <comm>` frequency division multiple access (FDMA)
+  capability. Users can now set the number of channels per comm device using 'number_of_channels' (defaults is
+  1 channel).
+
+* **(CR 8948)** Implemented the :command:`channel_partition_protocol <comm>` time division multiple access (TDMA)
+  capability. Users can now set the number of channels per comm device using 'number_of_channels' (defaults is
+  1 channel).
+
+* Added the ability to define a :command:`WSF_COMPOSITE_SENSOR.filter` for a :model:`WSF_COMPOSITE_SENSOR` operating in
+  independent mode.
+
+* **(CR 8953)** Added the :method:`WsfImage.CollectionFactor` to :class:`WsfImage`, which for a SAR sensor will return the
+  ratio of the desired azimuth resolution divided by the achieved azimuth resolution.
+
+* **(CR 8954)** Modified :model:`WSF_COMPOSITE_SENSOR` to use the track quality of the constituent sensors as as guide
+  when determining if a track report should be used updating the composite track. This prevents a lower quality report
+  from updating the composite track if the track is being updated by a higher quality reported.
+
+* **(CR 8957)** Added in a jamming to signal (J/S) table into the :model:`WSF_POWER_EFFECT`.
+
+* Added the ability for :command:`horizontal_map` to produce contour plots of detection probability in
+  :command:`KML (Keyhold Markup Language) <horizontal_map.kml_file>`
+  and :command:`ESRI shapefile <horizontal_map.shapefile>` format.
+
+* **(CR 8962)** Added in random calculation for false targets for the :model:`WSF_SIMPLE_FT_EFFECT` and allowed
+  connection to the :command:`false_target_screener` to get the track capacity for the maximum false target capacity in this
+  effect.
+
+* **(CR 8985)** Added in a new :model:`WSF_COVER_PULSE_EFFECT`.
+
+* **(CR 9008)** Added in the capability to allow for
+  :command:`electronic_warfare_effect.target_protection_type` (e.g. self-protect or non-self-protect).
+  Also added in the capability to :command:`allow <electronic_warfare_effect.allowed_target_set>` and/or
+  :command:`reject <electronic_warfare_effect.rejected_target_set>` targets for the application of jamming EA effects and jamming
+  power.
+
+* Added the ability to specify slew rates for :command`_.articulated_part.azimuth_slew_rate` and
+  :command:`sensor_mode.azimuth_cue_rate`.
+
+* Added the ability to define :model:`number_of_false_targets <WSF_FALSE_TARGET_EFFECT>` to the
+  :model:`WSF_FALSE_TARGET_EFFECT`.
+
+* **(CR 9041)** Added the :command:`WSF_SAR_SENSOR.rescale_substandard_image` command to :model:`WSF_SAR_SENSOR` to control
+  if a substandard image (i.e.: one whose collection time was not sufficient to achieve the desired azimuth resolution)
+  will be rescaled to maintain the aspect ratio that would have existed if the collection time was completed.
+
+* Added the :method:`WsfSimulation.CreatePlatform` and :method:`WsfSimulation.AddPlatform` script methods to
+  :class:`WsfSimulation`. These methods provide a simpler interface for spawning off or dynamically creating platforms during
+  a simulation.
+
+* Added :command:`WSF_GEOMETRIC_SENSOR.mode.maximum_range_rate` and :command:`WSF_GEOMETRIC_SENSOR.mode.minimum_range_rate` commands
+  to :model:`WSF_GEOMETRIC_SENSOR`.
+
+* Added group-based reporting via the :command:`_.External_Link_Commands.report_to_group` command -- an alternative to
+  command chains.
+
+* Added :command:`_.receiver.check_terrain_masking` command to :command:`_.receiver`.
+
+* Added :command:`group.aux_data` input for groups.
+
+* **(CR 9089)** Refactored some of the :ref:`antenna_pattern.esa_pattern` previously steered_array_pattern
+  to allow for software inheritance of this class and to extend this into other types of ESA patterns.
+
+* Added WsfTime script class, as a script representation of date and time.  It exposes many of the methods of
+  the UtCalendar class.
+
+* **(CR 9102)** The surface-to-surface mode of :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` will first attempt to use
+  the location from the target track, and if that is not present will use the location of the truth platform contained in
+  the track (if it is present). This eliminates the need to construct a pseudo-platform at the desired impact location.
+
+* Added filtering options to the :command:`dis_interface` to filter out entity states.  These options are
+  :command:`dis_interface.ignore_kind_and_domain`, :command:`dis_interface.ignore_type`, and
+  :command:`dis_interface.filter_out_by_range`.  When all entity states are filtered for a given DIS entity,
+  the corresponding external platform will not appear in the simulation.
+
+* Added in a new :class:`WsfEW_Effects` scripting object type, use by accessing from :class:`WsfEM_Interaction` script.
+
+* **(CR 9153)** Added :class:`WsfDraw` script method :method:`BeginEllipsoid <WsfDraw.BeginEllipsoid>` with parameters for
+  heading, pitch, roll, and the 3 radii defining the semi-principal axes. Also added an alias
+  :method:`BeginSphere <WsfDraw.BeginSphere>` and :method:`BeginCircle <WsfDraw.BeginCircle>` (an alias for
+  :method:`BeginEllipse <WsfDraw.BeginEllipse>`), which take a single radius.
+
+* **(CR 9182)** Added script methods to :class:`WsfFuel` (:method:`ConsumptionRate <WsfFuel.ConsumptionRate>`,
+  :method:`SetConsumptionRate <WsfFuel.SetConsumptionRate>`, :method:`BingoQuantity <WsfFuel.BingoQuantity>`,
+  :method:`SetBingoQuantity <WsfFuel.SetBingoQuantity>`, :method:`ReserveQuantity <WsfFuel.ReserveQuantity>`, and
+  :method:`SetReserveQuantity <WsfFuel.SetReserveQuantity>`).
+
+* **(CR 9183)** Enhanced :model:`WSF_GUIDED_MOVER` to allow :model:`thrust <WSF_GUIDED_MOVER>` and
+  :model:`fuel burn rate <WSF_GUIDED_MOVER>` to be defined using tables that are a function of time.
+
+* Added the capability for the :model:`WSF_IMAGE_PROCESSOR` to report
+  :model:`bearing-elevation <WSF_IMAGE_PROCESSOR>` data in its output tracks, instead of location
+  data.  This feature is currently incompatible with filtering options.
+
+* Added a :model:`jam_strobe_detector <WSF_RADAR_SENSOR>` capability to the :model:`WSF_RADAR_SENSOR`.
+
+* Added in the capability to define a :command:`_.platform_part.debug_level` for platform parts. Allows
+  for limiting and controlling the debug information displayed to standard output. Currently only implemented for
+  :model:`WSF_RADAR_SENSOR`, :model:`WSF_OTH_RADAR_SENSOR` and :model:`WSF_RF_JAMMER`. More capability to be added to inheriting
+  platform parts in future releases.
+
+* **(CR 9250)** Added in :command:`radar_signature.bistatic_signature` to :command:`radar_signature` to define
+  bistatic signature tables for platform_types.
+
+* Modified :command:`sensor_plot_flight_path_analysis <flight_path_analysis>` so the analysis will be performed
+  considering the target platform against all the other platforms, rather than considering the all the other sensors
+  versus the target. (See :command:`flight_path_analysis.reverse_evaluations`).
+
+* Added MOVER_UPDATED callback to the script :command:`observer` interface.
+
+* Added the :command:`zone.reference_platform` to :command:`zone` definitions.

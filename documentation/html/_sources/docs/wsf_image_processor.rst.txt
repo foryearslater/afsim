@@ -1,0 +1,235 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_IMAGE_PROCESSOR
+-------------------
+
+.. model:: processor WSF_IMAGE_PROCESSOR
+
+**Derives From:** :model:`WSF_MESSAGE_PROCESSOR`
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_IMAGE_PROCESSOR`
+      :command:`processor` Commands ...
+      :ref:`Platform_Part_Commands` ...
+      ... :ref:`External_Link_Commands` ...
+      ... :model:`WSF_MESSAGE_PROCESSOR Commands <WSF_MESSAGE_PROCESSOR>` ...
+      ... :model:`WSF_SCRIPT_PROCESSOR Commands <WSF_SCRIPT_PROCESSOR>` ...
+
+      coast_time_ ...
+      filter_ ... end_filter
+
+      reports_velocity_
+      reports_side_
+      reports_type_
+      reports_bearing_elevation_
+      message_length_ ...
+      message_priority_ ...
+
+      include_unstable_covariance_ ...
+      include_unstable_residual_covariance_ ...
+
+      target_recognition_ ...
+      ... :ref:`target_recognition_commands` ...
+
+      # :ref:`WSF_IMAGE_PROCESSOR.Script_Interface`
+
+     :command:`on_initialize` ... end_on_initialize
+     :command:`on_initialize2` .. end_on_initialize2
+     :command:`on_update` ... end_on_update
+     :command:`_.script_commands.script_variables` ... end_script_variables
+     :ref:`scripts <Script_Commands>` ... end_script
+     ... Other :ref:`Script Commands <Common_Script_Interface>` ...
+   end_processor
+
+Overview
+========
+
+:model:`WSF_IMAGE_PROCESSOR` receives image data from an imaging sensor such as :model:`WSF_EOIR_SENSOR` or :model:`WSF_SAR_SENSOR`
+and produces tracks. This provides a simple capability to simulate an analyst looking at the image and generating
+actionable information. The capabilities of the :model:`WSF_MESSAGE_PROCESSOR` can be used to simulate processing delays by
+delaying the reception of the incoming image messages.
+
+The processor is typically used in the following construct:
+
+.. parsed-literal::
+
+   platform_type ...
+      sensor eoir :model:`WSF_EOIR_SENSOR`
+         ...
+         # Forward the images to 'image_proc'
+         internal_link image_proc
+      end_sensor
+
+      processor image_proc :model:`WSF_IMAGE_PROCESSOR`
+         ...
+         # Forward the extracted 'tracks' to 'track_proc'
+         internal_link track_mgr
+      end_processor
+
+      processor track_proc :model:`WSF_TRACK_PROCESSOR`
+         ...
+         # Implicitly takes the tracks from 'image_proc' and updates the track_manager
+      end_processor
+   end_platform_type
+
+The processor accepts the following of messages:
+
+* :class:`WSF_IMAGE_MESSAGE <WsfImageMessage>`
+
+  A static image from :model:`WSF_SAR_SENSOR` operating in 'spot' mode.
+
+* :class:`WSF_VIDEO_MESSAGE <WsfVideoMessage>`
+
+  A single frame of a video stream from :model:`WSF_EOIR_SENSOR` or from :model:`WSF_SAR_SENSOR` operating in 'strip' mode.
+
+Each of the above messages contains a :class:`WsfImage` object, which reflects the objects that were visible in the image.
+The processor then creates or updates tracks for each object in the image as defined in the following sections.
+
+If the target_recognition_ flag is enabled, the :model:`WSF_IMAGE_PROCESSOR` will attempt to perform
+target detection, identification, and classification, based on the number of pixels in the evaluated image and
+associated Johnson's criteria equations (see :ref:`target_recognition_commands`).
+
+.. note::
+
+   Only WSF_IMAGE_MESSAGE and WSF_VIDEO_MESSAGE message types are processed by WSF_IMAGE_PROCESSOR.
+   Incoming messages of all other types are discarded.
+
+Static Image Processing
+=======================
+
+For static images the process is simple. For each object in the image:
+
+* Create a new temporary track with a new track ID.
+* Set the reported location in the track to the 'measured' location from the image.
+* Set the reported velocity in the track to zero.
+* Set the reported type and side if requested.
+* Send a :class:`WSF_TRACK_MESSAGE <WsfTrackMessage>` containing a new track.
+
+Note that every object in every static image gets a unique track ID. No memory is retained about formerly processed
+static images.
+
+Video Stream Processing
+=======================
+
+For video streams, the following process is repeated for each object in the image:
+
+* If there is not an existing track for the object, create the track, and if requested, initiate a filter.
+* If a filter is defined:
+
+   * Update the filter with the 'measured' location from the object in the image.
+   * Update the track with the location and velocity estimate from the filter.
+   * Update the track with the state and residual covariance (this may be suppressed while the filter is not 'mature'.)
+
+* If a filter is not defined:
+
+   * Update the track with the 'measured' location from the object in the image.
+   * If 'reports_velocity' was specified, update the track with the true velocity that corresponds to the platform
+     associated with the object.
+
+* Set the reported type and side if requested.
+* Send a :class:`WSF_TRACK_MESSAGE <WsfTrackMessage>` with the new or updated track.
+
+After processing all the objects in the image, old tracks are purged. Any track in which the time since last updated
+exceeds the coast_time_ is purged, and a :class:`WSF_DROP_TRACK_MESSAGE <WsfTrackDropMessage>` is sent.
+
+.. block:: WSF_IMAGE_PROCESSOR
+
+Commands
+========
+
+.. command:: coast_time <time-value>
+
+   Specifies the maximum amount of time that may elapse between updates before a track is dropped.
+
+   Tracks are evaluated for dropping only when a message containing an object is received.
+
+   Default: 0 secs (no coast time)
+
+.. command:: filter <filter_type> <filter_parameters> end_filter
+
+   A filter can be used to take an incoming video stream to produce smoothed position and velocity estimates.
+   *<filter-type>* can be one of the :ref:`Predefined_Filter_Types` or a :command:`filter` derived from one of those types.
+
+   Default: No filter.
+
+   .. note::
+
+      Filters are not applied to static images.
+
+.. command:: reports_velocity
+
+   Indicates if velocity is reported in the produced tracks.
+
+   This command is applicable ONLY the input is a video stream and a filter_ has not been defined. Velocity will
+   ALWAYS be reported in the following cases:
+
+   * If a filter_ is defined, and enough updates have been received to generate a reliable velocity. This means that
+     initialize, and perhaps for one or two updates, the track will not have :method:`WsfTrack.VelocityValid`.
+   * For static images, a velocity of zero will be reported.
+
+.. command:: reports_type
+
+   Indicates if 'type' is to be reported in the produced tracks.
+
+   Default: 'type' will not reported.
+
+.. command:: reports_side
+
+   Indicates if 'side' is to be reported in the produced tracks.
+
+   Default: 'side' will not reported.
+
+.. command:: reports_bearing_elevation
+
+   Indicates that tracks are to be populated with bearing and elevation instead of location data.
+
+   .. note::
+
+      This feature should not be used with filtering.
+
+   Default: Location is reported instead of bearing and elevation
+
+.. command:: message_length <data-size-value>
+
+   Specify the logical length assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+.. command:: message_priority <integer-priority>
+
+   Specify the priority assigned to the track messages that are created from the image.
+
+   Default: 0 (use the value derived from the :command:`message_table` )
+
+.. command:: include_unstable_covariance <boolean-value>
+
+.. command:: include_unstable_residual_covariance <boolean-value>
+
+   When a filter is employed, the state covariance and residual covariance are not reliable during initial creation and
+   perhaps for one or two updates (the number depends on the filter employed). When these values are false (the default),
+   these unreliable values are not passed to the output track.
+
+   Default: false for both commands.
+
+.. command:: target_recognition <boolean-value>
+
+   Enable this processor's :ref:`target recognition <target_recognition_commands>` capabilities for target detection,
+   classification, and identification.
+
+.. _WSF_IMAGE_PROCESSOR.Script_Interface:
+
+Script Interface
+================
+
+:model:`WSF_IMAGE_PROCESSOR` utilizes the capabilities of the :ref:`Common_Script_Interface`, :model:`WSF_MESSAGE_PROCESSOR` and
+:model:`WSF_SCRIPT_PROCESSOR`.

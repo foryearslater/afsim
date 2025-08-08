@@ -1,0 +1,260 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+SixDOF Theory
+=============
+
+Introduction
+------------
+
+.. note:: Theory behind the rigid-body 6DOF model (:model:`WSF_RIGID_BODY_SIX_DOF_MOVER`, :class:`WsfRigidBodySixDOF_Mover`) is identical to that of the antecedent P6DOF, and can be studied via the :doc:`p6dof_theory` article. When :model:`WSF_P6DOF_MOVER` is removed, that document will be folded into this one.
+
+The :model:`WSF_POINT_MASS_SIX_DOF_MOVER` is intended to bridge the gap between 3DOF models such as :model:`WSF_GUIDED_MOVER` and :model:`WSF_AIR_MOVER` and full 6DOF models such as :model:`WSF_P6DOF_MOVER` and :model:`WSF_RIGID_BODY_SIX_DOF_MOVER`.
+
+Where 3DOF models are required to assume elements of their orientation, a full 6DOF model will propagate orientation according to conservation of angular momentum (:math:`\Sigma M = I \dot{\omega}`).
+This approach is kinematically correct, but imposes data requirements which may not be practical.
+Specifically, the net moment requires accurate and timely knowledge of the distribution of force about the body, while the moment of inertia tensor requires knowledge of the of the distribution of mass throughout the body.
+
+The PointMass SixDOF mover uses a effects-based system to estimate :math:`\dot{\omega}`, composed as much as possible by rotation data that can be directly measured or assumed.
+Like similar models, the aerodynamic force coefficients for a PM6DOF model should represent a trim (zero net moment) state for a given airspeed and angle of attack.
+Rotation rates are either commanded by the active pilot (human-in-the-loop or otherwise) or are generated to mimic the effects of aerodynamic stability or instability.
+
+Thrust magnitude calculations are identical to that used for the RigidBody model, but the nature of the kinematic model requires that thrust vectoring must also be effects-based.
+Additionally, thrust reversal is not currently considered for PointMass vehicles.
+
+List of Symbols
+---------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 35 30 25
+   :align: left
+
+   * - Symbol
+     - Definition
+     - SixDOF Command
+     - SixDOF Script Method
+   * - :math:`\alpha`
+     - angle of attack
+     -
+     - :method:`GetAlpha<WsfSixDOF_Mover.GetAlpha>`
+   * - :math:`\beta`
+     - angle of side slip
+     -
+     - :method:`GetBeta<WsfSixDOF_Mover.GetBeta>`
+   * - :math:`\alpha_{T}`
+     - total angle of attack
+     -
+     - :method:`GetAlpha<WsfSixDOF_Mover.GetAlpha>`
+   * - :math:`M`
+     - Mach number
+     -
+     - :method:`GetMach<WsfSixDOF_Mover.GetMach>`
+   * - :math:`t`
+     - time
+     -
+     -
+   * - :math:`p`
+     - body roll rate
+     -
+     - :method:`GetRollRate<WsfSixDOF_Mover.GetRollRate>`
+   * - :math:`q`
+     - body pitch rate
+     -
+     - :method:`GetPitchRate<WsfSixDOF_Mover.GetPitchRate>`
+   * - :math:`r`
+     - body yaw rate
+     -
+     - :method:`GetYawRate<WsfSixDOF_Mover.GetYawRate>`
+   * - :math:`\dot{p}`
+     - body roll acceleration
+     -
+     -
+   * - :math:`\dot{q}`
+     - body pitch acceleration
+     -
+     -
+   * - :math:`\dot{r}`
+     - body yaw acceleration
+     -
+     -
+   * - :math:`\vec{\omega}`
+     - rotational velocity vector
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}`
+     - rotational acceleration vector
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}_{max}`
+     - total limit of angular acceleration from controls
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}_{max, aero}`
+     - limit of angular acceleration from aerodynamic controls
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}_{max, aero_{0}}`
+     - value of :math:`\vec{\omega}_{max, aero}` at dry weight under standard sea-level conditions
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}_{max, prop}`
+     - limit of angular acceleration from propulsive controls
+     -
+     -
+   * - :math:`\vec{\dot{\omega}}_{max, prop_{0}}`
+     - value of :math:`\vec{\omega}_{max, prop}` at dry weight
+     -
+     -
+   * - :math:`\vec{\omega}_{n}`
+     - natural frequency of the stabilizing aerodynamic response
+     -
+     -
+   * - :math:`\vec{\omega}_{n_{0}}`
+     - value of :math:`\vec{\omega}_{n}` at dry weight under standard sea-level conditions
+     -
+     -
+   * - :math:`m`
+     - current mass
+     - 
+     - :method:`GetCurrentWeight<WsfSixDOF_Mover.GetCurrentWeight>`
+   * - :math:`m_{0}`
+     - empty mass
+     - :command:`mass`
+     - :method:`GetEmptyWeight<WsfSixDOF_Mover.GetEmptyWeight>`
+   * - :math:`\bold{I}`
+     - moment of inertia matrix
+     - :command:`moment_of_inertia_ixx`, :command:`moment_of_inertia_iyy`, :command:`moment_of_inertia_izz`
+     -
+   * - :math:`\vec{M}_T`
+     - total moment
+     -
+     -
+   * - :math:`T`
+     - engine thrust, dependent on the engine type
+     -
+     -
+   * - :math:`rho`
+     - density of the atmosphere at the vehicle's current altitude
+     -
+     -
+   * - :math:`rho_{0}`
+     - standard density of the atmosphere at the ellipsoid surface
+     -
+     -
+
+Equations of Motion
+-------------------
+
+As with the rigid-body models, linear motion is a second-order integral of acceleration, calculated according to conservation of momentum (:eq:`f_equals_ma`).
+
+Orientation is similarly a second-order integral of angular acceleration, but unlike the rigid-body models, there is no real consideration for angular momentum in the PointMass mover - angular acceleration :math:`\vec{\dot{\omega}}` is simply built up by control capabilities and (de-)stabilizing effects.
+
+The :doc:`p6dof_theory` document contains an in-depth discussion of how these differential equations are integrated (see :ref:`docs/p6dof_theory:Equations of Motion`), and we will not duplicate that here.
+
+Control Forces and Rotation
+---------------------------
+
+While the forces on a PM6DOF are summed in the same way as for an RB6DOF, the angular acceleration is built up in a way that abstracts away the actual torques on the vehicle.
+
+Control response data does not need to be supplied for unguided munitions (bombs, rockets, decoys), but is required for a vehicle to be guided or piloted.
+Baseline angular acceleration limits are provided in user-defined tables with respect to Mach number, then modified to account for air density and angle-of-attack effects.
+The angular acceleration tables should be informed by reference data for the vehicle or class of vehicle, but can also be estimated kinematically.
+
+As an example, consider a description of a reasonable fighter which specifies an ability at Mach 0.8 to accelerate from wings-level to a roll rate of 180 deg/s within one second.
+In this case, the peak acceleration should be specified at least 180 deg/s/s at Mach 0.8 - possibly higher to account for altitude and any stabilizing effects (see :ref:`SixDOF_Stabilizing_Effects` below).
+
+.. note:: How this changes with respect to Mach will vary per vehicle type, but a reasonable first-pass strategy is to scale the acceleration limit with the square of Mach, remembering that aerodynamic torques scale with the square of speed. Shifts in center of pressure or controllers which back down control authority into the transonic and supersonic regimes can be approximated by reducing maximum acceleration down from this initial estimate at those Mach numbers.
+
+.. math::
+   :label: omega_dot_aero_limits
+	
+	\vec{\dot{\omega}}_{max, aero} = \left( \frac{\rho}{\rho_{0}} \right) \left( \frac{m_{0}}{m} \right) \vec{\dot{\omega}}_{max, aero_{0}} \cos{\alpha_{T}}
+	
+These corrections account for reduced control efficacy at higher altitudes and at higher slip angles, and for changes in inertia as mass is added or removed.
+
+A separate, second term is added to account for the effects of thrust vectoring given some amount of thrust.
+
+.. math::
+   :label: omega_dot_prop_limits
+	
+	\vec{\dot{\omega}}_{max, prop} &= \left( \frac{m_{0}}{m} \right) \left( \frac{\Delta \vec{\dot{\omega}}_{prop}}{\Delta T} \right) T
+	
+Thrust itself is modeled as a function of altitude, so additional altitude effects are not considered.
+To account for increased agility as fuel is burned away, a mass factor is introduced.
+	
+.. math::
+   :label: omega_dot_final_limits
+	
+	\vec{\dot{\omega}}_{max} &= \vec{\dot{\omega}}_{max, aero} + \vec{\dot{\omega}}_{max, prop}
+	
+The stick-and-rudder flight controls on a PM6DOF are mapped directly to rotational rate commands.
+This map is a 1D table defined by the user in script, which allows for linear or nonlinear mappings.
+The rotational rate commands are achieved via a linear ramp, with a slope limited by the angular acceleration limit.
+
+.. math::
+   :label: omega_dot_controls
+	
+	\vec{\dot{\omega}}_{desired} &= \frac{\vec{\omega}_{cmd} - \vec{\omega}}{\Delta t} 
+	
+.. _SixDOF_Stabilizing_Effects:
+
+Stabilizing Rotation Effects
+----------------------------
+
+The impact of the stabilizing effect is most obvious on unguided projectiles.
+By default, a PM6DOF vehicle has no tendency to change its rotation rate absent some action by a pilot.
+This includes pointing into the wind, or "weathervaning."
+
+This effect can be introduced by adding tables that specify a baseline stabilizing frequency as a function of Mach number.
+These frequencies specify the critically damped system response of an uncontrolled vehicle as it returns to equilibrium.
+Currently, equilibrium states are 0 degrees angle-of-attack for the pitch axis, 0 degrees sideslip for the yaw axis, and 0 deg/s roll rate for the roll axis.
+Settings may be introduced in future releases to allow for modifications to the equilibrium state such as a nonzero angle of attack for aircraft, or a specified spin rate for projectiles.
+
+As with the control acceleration data, the input parameters are modified to account for changes in loadout and operating air density.
+
+.. math::
+   :label: stabilizing_freq
+	
+	{\omega}_{n} = \frac{m_{0}}{m} \frac{\rho}{\rho_{0}} {\omega}_{n_{0}}
+	
+The response frequency is then translated into a rotational acceleration for the pitch and yaw axes:
+	
+.. math::
+   :label: stabilizing_accel_pitch_yaw
+	
+	\dot{q} = (0 - \alpha) {\omega}^{2}_{n_{pitch}} - 2 {\omega}_{n_{pitch}} \dot{\alpha}
+	
+	\dot{r} = (0 - \beta) {\omega}^{2}_{n_{yaw}} - 2 {\omega}_{n_{yaw}} \dot{\beta}
+	
+For the roll axis, we are affecting rotation *rate* rather than rotation, so a first-order lag system is employed:
+
+.. math::
+   :label: stabilizing_accel_roll
+	
+	f &= \frac{\omega_{roll} \Delta t}{1 + \omega_{n_{roll}} \Delta t}
+	
+	p_{t+\Delta t} &= (1 - f) p_{t}
+	
+	\dot{p} &= \frac{p_{t+\Delta t} - p_{t}}{\Delta t}
+	
+To avoid overshoot and numerical instability, these accelerations are limited based on kinematic extrapolations:
+
+.. math::
+   :label: stabilizing_accel_limits
+	
+	\dot{p}_{max} &= \left| \frac{-p}{\Delta t} \right|
+	
+	\dot{q}_{max} &= \left| \frac{2}{\Delta t^{2}} (-\alpha - \dot{\alpha} \Delta t) \right|
+	
+	\dot{r}_{max} &= \left| \frac{2}{\Delta t^{2}} (-\beta - \dot{\beta} \Delta t) \right|
+	
+The final rotational acceleration for a PM6DOF is the sum of the control acceleration and stabilizing accelerations.

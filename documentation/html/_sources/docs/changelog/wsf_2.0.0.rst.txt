@@ -1,0 +1,110 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_2.0.0:
+
+WSF 2.0.0 - 25 Mar 2016
+-----------------------
+
+General
+=======
+
+* The AFSIM executable named **sage*.exe** is renamed to **wsf_exec*.exe** in this version.
+* New underlining architecture is present in this version of the framework. New architecture allows for platform parts within the framework to be components of a platform creating a components list. This component based architecture is extended into other areas of the simulation framework to allow for refactoring of individual framework capabilities into projects to allow for proprietary, security  related and exportability requirements to shape the architecture. See below for more information.
+* New documentation base utilizing the Sphinx documentation builder. Documentation of software and demos/scenarios has moved from the wiki base to Sphinx based to support more robust project oriented documentation. Each project contains its own documentation files in either ReStructured Text (rst) or plain text (txt) format. A Sphinx Python script collects the files among the projects and demos and compiles the html for all included files. See below for more information.
+* **WsfQuantumTask** script method is now contained in the :class:`WsfTask` scripting class. End-user will be required to change the scripts to reflect this.
+
+Corrections
+===========
+
+* Fixed some brawler_demo issues with the scenario runs.
+* Fixed miscellaneous grammar issues to Multi-Target Tracker, Electronic Warfare and other findings during testing of version 2.0.0.
+* Updated the **sensor_plugin_example** in the wsf/plugins folder to properly compile/link using the CMakelists.txt file.
+* Fixes to **timeline_demo** and **timeline_lead_demo** to support removal of WsfCluster scripts.
+* Fixed problem where guided mover with no initial velocity was not being initialized properly (available in AFSIM 1.10.4 and later).
+* Fixed a problem where the global :command:`enumerate` command was not working properly.
+* Fixed crash in uplink processor caused by uplinks imitated by ripr processors.
+* Fixed an issue where script input in quotes was sometimes causing invalid parsing errors.
+* Fixed a problem where the weapon fuse was not causing the weapon to detonate in the presence of multiple closely spaced moving targets.
+* Fixed some scripting issues with early AFSIM 2.0 pre-releases where the **WsfQuantumTask** was not able to access all :class:`WsfTask` methods properly. The WsfQuantumTask was removed and replaced with the :class:`WsfTask` in all scripts along with any additional Quantum Task methods. User must replace **WsfQuantumTask** with **WsfTask** when upgrading scenarios from previous revisions.
+* **(CR-2)** (available in AFSIM 1.10.3 and later) When utilizing weighted average fusion, a local track attempts to weight track location based on precision of the new measurement vs. the existing measurement.  This was failing on the initial pass and causing an initial location that was near 0,0,0.
+* **(CR-3)** (available in AFSIM 1.10.3 and later) Fixed issue where the ESM was reporting incorrect locations.  This was only a problem in 1.9-1.10.2.
+* **(CR-4)** (available in AFSIM 1.10.4 and later) Fixed underlying issues in the :model:`WSF_QUANTUM_TASKER_PROCESSOR` that wrote out unnecessary "task not found" messages when using the allocator_extra_tasks or the allocator_extra_assets features.
+* **(CR-6)** Fixed the ActiveWeaponPlatformsFor(WsfTrackId) and WeaponsActiveFor(WsfTrackId) scripts when asking about an empty track id.  They previously did not include weapons fired upon an empty track id in their returned results.
+* **(CR-12)** and **(CR-15)** Fixed the :class:`WsfUplinkProcessor` script method IsUplinkingTo() to include uplinks that were initiated by task processors.
+* **(CR-14)** Fixed a comm lockup issue when csma protocol is used and a network participant dies at an unfortunate time.
+* **(CR-16)** Horizontal map function in Sensor Plot was not using :command:`sensor.initial_mode` of sensor if no :command:`horizontal_map.mode_name` was specified.
+* **(CR-22)** Fixed a problem where :command:`event_output` was not reporting invalid event names on the :command:`event_output.enable` and :command:`event_output.disable` commands.
+* **(CR-27)** Provided better error messages when using ALARM antenna patterns with specific polarizations in them.
+* **(CR 29)** (available in AFSIM 1.10.3 and later) Fixed issue in the :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` that caused an abort of SAGE.
+* **(CR-36)** (available in AFSIM 1.10.4 and later) Can iterate over the WsfTrack objects in a :class:`WsfCluster` with a foreach() loop now.
+* **(CR-44)** (available in AFSIM 1.10 and later) Fixed an issue on the :command:`include` and the :command:`include_once` statements where they fail if spaces were embedded in the file name.
+* **(CR-53)** Fixed the transformation used to view covariance ellipsoids with WsfDraw such that they are oriented properly.
+* **(CR-59)** (available in AFSIM 1.10.4 and later) Fixed a problem with how the :model:`WSF_BRAWLER_MOVER` read in the FXW files. Brawler style comments are supported now.
+* **(CR-62)** (available in AFSIM 1.10.3 and later) New aux data provided on raw track updates were not being saved in either the raw track or local track copies in the track manager.
+* **(CR-62)** Fixed a problem where aux data were not being displayed properly in event and csv output.
+* **(CR-63)** (available in AFSIM 1.10.3 and later) Fixed problems with the :class:`WsfRoute.Intersect` routine (not always providing intersections when they existed and returning incorrect intersection locations).
+* Fixed problem where the :command:`line_of_sight_manager` could not be configured.
+* **(CR-64)** Fixed an issue where aircraft in :command:`air_traffic` were not reaching the final waypoint because it had zero velocity.
+* **(CR-65)** Fixed a problem with deferred launches that fail or abort not decrementing the "quantity used" correctly.
+* **(CR-70)** Fixed a problem with the SetPitch script method on a platform. For platforms with a mover, the heading was being set instead of the pitch.
+* **(CR-83)** Fixed an uplink processor bug when weapon loses target track and terminates.
+* **(CR-91)** Resolved an issue in UtMatrix where the Invert method erroneously reported a singular matrix exception.
+* **(CR 99)** Brawler API now uses Metric units.
+* **(CR-108)** Fixed an issue where Sensor Plot horizontal maps were not adequately geo-referenced where large areas (~100 km on a side) were specified in the crossrange / downrange format.
+* **(CR-102, CR-104)** Addressed several problems in the script compiler where it was accepting erroneous statements without warning, with unexpected run-time results. Also updated the :command:`script_struct` capability that is provides compile-time checking of references to script_struct variables and methods. Existing definitions will continue to work, but input files will have to be changed to make use of the new capabilities.
+* **(CR-117)** Fixed a bug where the "execute at_interval" script block was affecting the simulation because it pulls random numbers from the same pool as the core simulation models.
+* **(CR-124)** Fixed a problem in the utility function used to compute the bearing, major, and minor axes in :class:`WsfCovariance`.
+* **(CR 129)** Brawler documentation updated with new features.
+* **(CR 130)** Fix initialization problem for the BallisticTarget that was preventing intercepts.
+* **(MANTIS #49)** Fixed an issue where the WsfApplication class destructor was not properly destructing objects in the correct order. This issue caused segmentation faults in some cases when plug-ins were used.
+* **(MANTIS #64)** Fixed CSIMS flyout issue. There was a problem with Center of Gravity values in the CG table.
+* **(MANTIS #66)** Fixed an issue where the script language would implicitly cast or round a "double" to an "int" in some operations.
+* **(MANTIS #71)** Fixed an issue where IDE break-points in Quantum Tasker scripts were not working.
+* **(MANTIS #82)** Fixed an issue where the :command:`dis_interface.send_periodic_pdus_while_paused` command was not properly sending out all entity state pdus for all platforms in the sim. Only the first one was being set in the list of platform in the simulation.
+* **(MANTIS #95)** Fixed crash caused by a particular CSIMS mover model attempting to read outside the bounds of an aero table.
+
+Enhancements
+============
+
+* Provided documentation for the :class:`Quaternion` script class.
+* Added methods to the :class:`WsfSpaceMover` script class for general impulsive maneuvering and orientation management and selection.
+* Added ability to define :command:`zone.polygonal` using :command:`zone.polar` relative input format for points.
+* Added :command:`dis_interface.ignore_pdu_type` command to :command:`dis_interface` block to support filtering by DIS PDU type.
+* Added WsfPlatform script method to obtain Direction Cosine Matrices for WCS to ECS and WCS to NED coordinate frames. This is a utility in computing Inertial Line Of Sight rate vectors, and then converting them to local ECS frame.
+* Per Analyst request, added :class:`WsfTrack` script methods to obtain Azimuth and Elevation Line-Of-Sight rates from a particular Track, in the ECS frame of a particular observing platform.  Function returns zero if the track does not contain location and velocity information.
+* Updated :command:`dis_interface.entity_type` command in the :command:`dis_interface` block to support directionality (i.e. sent versus received DIS entity state PDUs)
+* Added :class:`WsfSimulation` static script method to add custom events to the :command:`event_output` logger.
+* Added the **Get(int)** method to :class:`WsfPlatformList`, :class:`WsfTrackList` and :class:`WsfLocalTrackList` so they can be accessed by array indexing (e.g: **list[index]**). Also added the methods  **Size()** and **Empty()** to them so that they appear like read-only (non-modifiable) :class:`Array<Array\<T\>>`.
+* Added the option to use AFSIM's native terrain masking check instead of ALARM's in the :ref:`ALARM<ALARM_Interface>` propagation and clutter models.
+* Modified :command:`AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR` to accept a minimum and maximum ranges as starting search values for Rmin, Rmax, and Rne. The following attributes are deprecated: "start_range_for_increasing", "start_range_for_decreasing", and "rmax_limit".
+* **(CR-8, CR-11)** (available in AFSIM 1.10.4 and later)
+
+  * Added hierarchical states to the :ref:`WSF_SCRIPT_PROCESSOR.Finite-State-Machine-Commands` in :model:`WSF_SCRIPT_PROCESSOR`.
+  * Added :ref:`WsfProcessor.State-Machine-Methods` in :class:`WsfProcessor` for querying and setting states.
+
+* **(CR-13)** Behavior Tree connector nodes (selector, parallel, etc.) now have access to the PROCESSOR & PLATFORM script variables. Some users add precondition script to their connector nodes.
+* **(CR-34)** AFSIM throws a warning now when global types that can be redefined are redefined: signatures, weapon_effects, attenuation, propagation and clutter models, noise clouds, aerodynamics types, and global zones.
+* **(CR-71)** (available in AFSIM 1.10.4 and later) Added :class:`WsfZoneRouteFinder` to provide capability to route around polygonal lat/lon zones.
+* **(CR-85)** Added the IsThreatening(WsfTrack) query to the :class:`WsfThreatProcessor`.
+* **(MANTIS #43, CR-69)** (available in AFSIM 1.10.4 and later) User can specify speed in mach units for :model:`WSF_TABULAR_RATE_FUEL` tables now.
+* **(MANTIS #70)** Added :method:`WsfObject.BaseType` to return the base object type of an object.
+* **(MANTIS #72, MANTIS #54, MANTIS #75)** Changed **event_csvoutput** to :command:`csv_event_output` and re-worked many of the issues related to the old csv output. Fixes include: 'enable all' feature is now working, 'lat_long_format and 'time_format' operate as expected and output format and data is similar to event_output with commas instead of spaces between data and no units. More work still needs to be accomplished on csv_event_output as it used to meet multiple analysts needs. Multiple files do come out for specific events or common event types in many cases.
+* **(MANTIS #79)** Updated :model:`WSF_GUIDANCE_COMPUTER` and :class:`WsfGuidanceComputer` to provide the ability to dynamically modify the guidance phase command values from script methods. Also added :command:`WSF_GUIDANCE_COMPUTER.guidance_target` to allow using the predicted intercept point from the launch computer as the guidance target.
+
+Developer Items
+===============
+
+* **(MANTIS #5)** Major updates to the software architecture to support a Component-Based Architecture (CBA) within the framework. AFNES name removal from code with replacement of WSF (World Simulation Framework) to support framework use across multiple applications and business uses and cases.
+* **(MANTIS #6)** Major updates to the documentation to support version control and refactoring of previous wiki pages to project code directories. New documentation created via software build using he Sphinx documentation Python extensions. Use the DOCUMENTATION project in your CMake build process to build the documentation and deploy it. Requires Sphinx 1.3.1 or newer to be installed by the user/developer.
+* **(MANTIS #20)** Call the "Complete" methods of simulation extensions when the run is complete (available in 1.10.2 and later).
+* **(MANTIS #24)** Provided alternative signatures for the Compute\<XXX\>Transform methods in UtEllipsoidalEarth and UtSphericalEarth that return only the transformation matrix. Some users want only the matrix and this eliminates the need to allocate an extra argument that is subsequently computed and not used.
+

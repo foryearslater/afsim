@@ -1,0 +1,66 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_NX_SLB_EFFECT
+-----------------
+
+.. model:: effect WSF_NX_SLB_EFFECT
+
+Exportable EW Effects: :ref:`Predefined_Electronic_Warfare_Effect_Types`
+
+.. parsed-literal::
+
+   ...
+     effect <effect-name> WSF_SLB_EFFECT
+        :command:`electronic_warfare_effect` Commands
+        :model:`WSF_POWER_EFFECT` Commands
+        ... :ref:`WSF_SLB_EFFECT Commands <WSF_SLB_EFFECT.Commands>` ...
+        target_blanking_effect_ ...  end_target_blanking_effect
+     end_effect
+   ...
+
+Overview
+========
+
+This base effect type can be included in the :command:`electronic_protect` or
+:command:`electronic_attack` technique block as one of the many available effects for a given
+technique. The commands listed below are the base-type commands that can be specified in the effect block for this
+effect type.
+
+The Non-Exportable version extends the target blanking effects of the baseline :model:`WSF_SLB_EFFECT` to include an
+algorithmic calculation effect based on the number of range cells blanked for each jamming pulse detected.
+
+.. block:: WSF_NX_SLB_EFFECT
+
+Commands
+========
+
+.. command:: target_blanking_effect  <target-blanking-type> ... end_target_blanking_effect 
+   
+   Input block to provide the saturation effect and its associated input commands. See also the base
+   :command:`target blanking effect <WSF_SLB_EFFECT.target_blanking_effect>` for more types.
+   
+   **<target-blanking-type>**
+      Specifies the target blanking type to be used. Available target blanking effects are as follows:
+
+      * All of the base :command:`target blanking effects <WSF_SLB_EFFECT.target_blanking_effect>` plus:
+      * **cell_blanking_probability_effect** - Probability is calculated using the cumulative probability of blanking N
+        cells as specified in 'number_of_cells_blanked' for the system. The equation is as follows:
+
+        :math:`P_{BlankingTarget} = \sum_{n=1}^{number\_cells\_blanked} jamming\_duty\_cycle * (1 - P_{BlankingTarget}(n-1))`
+   
+        **number_cells_blanked <integer-value>**
+           Specifies the number of consecutive range/velocity cells from [1, N], that are blanked for each jamming pulse
+           that triggers blanking.
+   
+           Default: 1
+
+.. NonExportable

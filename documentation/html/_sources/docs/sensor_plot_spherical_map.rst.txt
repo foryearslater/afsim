@@ -1,0 +1,230 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+sensor_plot_spherical_map
+-------------------------
+
+**Navigation:** :command:`sensor_plot` **spherical_map**
+
+.. command:: spherical_map ... end_spherical_map
+   :block:
+
+   .. parsed-literal::
+
+      spherical_map_
+
+         :ref:`sensor_plot.Stub_Definition_Commands`
+
+         # `Sensor Control`_
+
+         mode_name_ ...
+         automatic_target_cueing_ ...
+         fixed_sensor_position_ | fixed_target_position_
+         sensor_platform_altitude_ ...
+         sensor_platform_yaw_ ...
+         sensor_platform_pitch_ ...
+         sensor_platform_roll_ ...
+
+         # `Jammer Control`_
+
+         jammer_to_signal_reference_ ...
+         jamming_platform_name_ ...
+
+         target_platform_type_
+         target_speed_
+         target_mach_
+         target_heading_
+         target_yaw_
+         target_pitch_
+         target_roll_
+
+         # `Target Region`_
+
+         azimuth_limits_ ...
+         azimuth_step_ ...
+         elevation_limits_ ...
+         elevation_step_ ...
+         range_ ...
+         altitude_ ...
+
+         # `Output selection`_
+
+         variable_ ...
+         script_variable_ ...
+         detection_reference_ ...
+
+         pd_map_file_ ...
+         header_line_1_ ...
+         header_line_2_ ...
+         header_line_3_ ...
+         output_column_limit_ ...
+
+         gnuplot_file_ ...
+
+      end_spherical_map
+
+Overview
+========
+
+The **spherical_map** command is used to generate a plot file of target detectability at a specified range or altitude over a range of azimuth and elevation viewing angles. Two types of plot files can be produced:
+
+* A 'pd map' file for the program 'sigview' to show  a typical spherical plot.
+* A file suitable for plotting with the program 'gnuplot'.
+
+To create a file, the following process should be followed:
+
+* Define a platform type of the type specified by the command target_platform_type_ (Default: **TARGET_PLATFORM_TYPE**) with the desired :command:`radar <radar_signature>`, :command:`infrared <infrared_signature>`, :command:`optical <optical_signature>` or :command:`acoustic <acoustic_signature>` signature depending on the type(s) of sensors being tested.
+
+* Define a platform type of **SENSOR_PLATFORM_TYPE** which contains the sensor to be used to detect the target.
+* Define the **spherical_map** input block with:
+
+  * range_, altitude_, azimuth_limits_ and elevation_limits_ (and optionally azimuth_step_ and elevation_step_ commands to define the spherical mesh of sample points.
+  * An optional target_speed_ command to specify the target speed.
+  * Output selection commands.
+
+Sensor Control
+==============
+
+.. command:: mode_name <mode_name>
+
+   Specifies the name of the mode to be used if the sensor is a multi-mode sensor.
+
+   **Default** The default mode of the sensor. This will be the value of the :command:`sensor.initial_mode` command of the sensor (if defined) or the first mode (if :command:`sensor.initial_mode` was not defined).
+
+.. command:: automatic_target_cueing <boolean-value>
+
+   If 'true', the sensor will be cued to point at the target when performing a detection chance. If 'false', the sensor will be remain in its initial condition.
+
+   **Default** true (The sensor will always be cued to point at the target)
+
+.. command:: fixed_sensor_position
+.. command:: fixed_target_position
+
+   Defines which object is held at a constant location at the center of the sample sphere, while the other object is moved over the sample sphere.
+
+   * fixed_sensor_position means the sensor is fixed at the center of the sample sphere while the target is moved over the sample sphere.
+   * fixed_target_position means the target is fixed at the center of the sample sphere while the sensor is moved over the sample sphere.
+
+   **Default** fixed_sensor_position
+
+.. command:: sensor_platform_altitude <length-value>
+
+   Specify the altitude of the sensing platform.
+
+   **Default** 0 meters
+
+.. command:: sensor_platform_yaw <angle-value>
+.. command:: sensor_platform_pitch <angle-value>
+.. command:: sensor_platform_roll <angle-value>
+
+   Specify the orientation of the sensing platform with respect to the direction of flight. The yaw angle is added to the heading and the pitch and roll angles are used directly as specified. This is useful for examining sensor coverage when the platform is flying in some other condition other than straight-and-level.
+
+   **Default** 0 degrees for all angles
+
+Jammer Control
+==============
+
+.. command:: jammer_to_signal_reference <db-ratio-value>
+
+   Specifies the jammer-to-signal (J/S) reference to be used when plotting the '**required_jamming_power**' variable.
+
+   **Default** 0.0 db
+
+.. command:: jamming_platform_name <platform-name>
+
+   Specifies the platform that will be used to calculate the required jamming power. This input is to be used when plotting the '**required_jamming_power**' variable for the location of the jammer system.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+
+.. include:: sensor_plot_target_characteristics.txt
+
+Target Region
+=============
+
+.. command:: azimuth_limits <min-az-value angle-value> <max-az-value angle-value>
+
+   Specifies the azimuth extent of the viewing angle samples.
+
+   **Default** -180 deg 180 deg
+
+.. command:: azimuth_step <angle-value>
+
+   Specifies the angle increment between azimuth samples.
+
+   **Default** 1 deg
+
+.. command:: elevation_limits <min-el-value angle-value> <max-el-value angle-value>
+
+   Specifies the elevation extent of the viewing angle samples.
+
+   **Default** -90 deg 90 deg
+
+.. command:: elevation_step <angle-value>
+
+   Specifies the angle increment between elevation samples.
+
+   **Default** 1 deg
+
+.. command:: range <length-value>
+
+   Specifies the range to the sample point.
+
+   .. note::
+      If specified the range will be fixed to this value and the altitude_ input will not be used.
+
+.. command:: altitude <length-value>
+
+   Specifies the altitude to the sample point.
+
+   .. note::
+      If specified the target altitude will be fixed to this value and the range_ input will not be used.
+
+Output Selection
+================
+
+.. include:: sensor_plot_map_variables.txt
+.. include:: sensor_plot_map_script_variables.txt
+
+.. command:: detection_reference <db-ratio-value>
+
+   The reference signal-to-noise ratio used to determine the **required_rcs** or **rcs_required** variable_.
+
+   **Default** 12.8 dB
+
+.. command:: pd_map_file <file-name>
+
+   Specifies the name of the file to which 'pd map' output will be written. The name does not imply that only **pd** can be written, but rather denotes a common file format.
+
+   **Default** 'pd map' output will not be produced.
+
+.. command:: header_line_1 <text>
+.. command:: header_line_2 <text>
+.. command:: header_line_3 <text>
+
+   Specifies the text to be contained in the first three lines of the output file when pd_map_file_ is specified.
+
+   **Default** all header lines are blank.
+
+.. command:: output_column_limit <integer>
+
+   Specifies the maximum number of columns per physical line in the output file when pd_map_file_ is specified.
+
+   **Default** 100
+
+   .. note::
+      If the file is to be imported into a spreadsheet such as Microsoft Excel, this value should be set so that the rows do not have to be split into multiple physical lines.
+
+.. command:: gnuplot_file <file-name>
+
+   Specifies the name of the file to which 'gnuplot' output will be written.
+
+   **Default** 'gnuplot' output will not be produced.

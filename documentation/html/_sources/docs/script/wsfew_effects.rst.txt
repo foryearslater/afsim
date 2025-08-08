@@ -1,0 +1,119 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfEW_Effects
+-------------
+
+.. class:: WsfEW_Effects
+
+EW Effect Aggregation: :ref:`Electronic_Warfare_Effect_Aggregation`
+
+WsfEW_Effects is the Electronic Warfare (EW) Effects associated with an :class:`WsfEM_Interaction`. The methods of this
+scripting class allow for getting the EW Effects for a given interaction.
+
+.. note::
+
+   Use the :method:`WsfEM_Interaction.EW_Effects` script command in the :class:`WsfEM_Interaction`
+   scripting class to access the :class:`WsfEW_Effects`.
+
+Methods
+=======
+
+.. method:: int Mask()
+   
+   Returns the current applied EW technique type mask. **TBD in a table at a later date**.
+
+.. method:: bool EA_CoherencyCheck(string aEA_CoherencyType)
+   
+   Returns 'true' if the Electronic Attack coherency matches the **aEA_CoherencyType** input string.
+
+.. method:: double EffectValue(string aEW_Category, string aEW_ValueType)
+.. method:: double EffectValue(string aEW_Category, string aEW_ValueType, string EA_CoherencyType)
+   
+   Returns the value in *absolute* units for the specified **aValueType** within the specified **aEW_Category**  and
+   **aEA_CoherencyType**. If **aEA_CoherencyType** is not specified then the current EA coherency mask calculated during
+   the interaction is used to get the values. Please see note below for not specifying an **EA_CoherencyType**.
+   
+   .. note::
+
+      If the **aEA_CoherencyType** is not specified then the following order is used to return the value for
+      the specified **aValueType** with the **aEW_Category** using the calculated EA coherency mask calculated during the
+      interaction: 
+
+    1. noise and pulse jamming values multiplied together if both are present
+    2. noise jamming value if noise is present and pulse jamming is not (i.e., the first check above fails).
+    3. pulse jamming value if the above 2 checks fail.
+    4. coherent (CW and Pulse) jamming value is returned if the above 3 checks fail.
+    5. If all checks fail 1.0 is returned.
+   
+Input Values Table
+==================
+   
+   aEA_CoherencyType - A string input that defines the EA coherency type of interest, valid values are listed in the table below.
+
+   * noise: Coherency is of a **noise** type EA technique.
+   * noise_and_pulse: Coherency is of a **noise** AND **pulse** type EA technique.
+   * pulse: Coherency is of a **pulse** (i.e., pulsed noise) type EA technique.
+   * coherent: Coherency is of a **coherent** and/or **coherent_pulse** type EA technique.
+
+
+   aEW_Category - A string input that defines the EW category type of interest, valid values are listed in the table below.
+   
+   .. note::
+
+      Invalid input values (strings) will result in a value return of -1.0.
+
+   * error: Error category within the EW Effects, valid types are defined in error table below.
+   * jamming: Power/Jamming gain modification category within the EW Effects, valid types are defined in jamming table below.
+   * signal: Signal gain modification category within the EW Effects, valid types are defined in signal table below.
+   * repeater_data: Repeater data category used for gain modification within the EW Effects, valid types are defined in repeater_data table below.
+
+   aEW_ValueType - A string input that defines the EW value type of interest, valid values are listed in the tables below by aEW_Category.
+   
+   .. note::
+
+      invalid input values (strings) will result in a value return of -1.0.
+
+   error
+
+   * azimuth: Azimuth error applied to the track measured data.
+   * elevation: Elevation error applied to the track measured data.
+   * range: Range error applied to the track measured data.
+   * velocity: Velocity error applied to the track measured data.
+   * bit_error_rate or BER: Bit Error Rate (BER) applied to the communication link data message.
+
+
+   jamming
+   power
+      
+      * blanking: The blanking factor that was applied.
+      * cancellation: The cancellation factor that was applied.
+      * modulation_gain: The modulation gain factor that was applied.
+      * jamming_power_gain: The jamming power gain factor that was applied.
+      * JtoX_gain: The J/X gain factor that was applied.
+      * protect_target: The protect target flag to specify if the jamming power was supplied for the given target detection with the given jammer. Value definitions are as follows: -1.0=undefined (jamming is supplied), 0.0=false (target not protected, jamming not applied) 1.0=true (target protected, jamming applied).
+      * pulse_suppression: The pulse suppression gain factor that was applied.
+      * radius_factor: The radius gain factor that was applied.
+      * repeater_factor: The repeater gain factor that was applied.
+      * RPJ_gain: The Random Pulse jamming (RPJ) gain factor that was applied.
+
+   signal
+      
+      * signal_gain: The signal power gain (multiplier) applied to the receiver's received signal power level.
+      * noise_power_gain: The noise power gain (multiplier) applied to the receiver's noise power level.
+
+
+   repeater_data
+      
+      * minimum_gain: The minimum gain that the repeater was allowed to use for this EW effect's interaction.
+      * gain: The gain that the repeater used for this EW effects interaction.
+      * maximum_gain: The maximum gain that the repeater was allowed to use for this EW effect's interaction.
+

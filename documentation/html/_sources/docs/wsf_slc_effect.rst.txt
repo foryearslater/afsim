@@ -1,0 +1,258 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SLC_EFFECT
+--------------
+
+.. model:: effect WSF_SLC_EFFECT
+
+    .. parsed-literal::
+
+       effect <effect-name> **WSF_SLC_EFFECT**
+          :command:`electronic_warfare_effect` Commands
+          :model:`WSF_POWER_EFFECT` Commands
+
+          auxiliary_antenna_pattern_ *<pattern-name>*
+          auxiliary_beam_tilt_ <angle-value>
+          number_of_canceler_channels_ *<integer-value>*
+          cancellation_lock_ratio_ <dbratio-value>
+          main_jnr_thresholds_ *<min-db-ratio-value> <max-db-ratio-value>*
+          auxiliary_jnr_thresholds_ *<min-db-ratio-value> <max-db-ratio-value>*
+          cancellation_ratio_ <dbratio-value>
+          saturation_ratio_ <dbratio-value>
+          cancellation_ratios_ ... end_cancellation_ratios
+
+          # Optional Inputs - uses main channel antenna and/or receiver parameters if not specified.
+          :ref:`Antenna_Commands` ...
+          :command:`_.receiver`
+               ... receiver commands ...
+          end_receiver
+       end_effect
+
+    This base effect type can be included in the :command:`electronic_protect` or
+    :command:`electronic_attack` technique block as one of the many available effects for a given
+    technique. The commands listed below are the base-type commands that can be specified in the effect block for this
+    effect type.
+
+    .. note::
+
+        If :command:`_.receiver` and/or :ref:`Antenna_commands` are entered this will override the default use of a
+        matched main and auxiliary channel receiver and/or antenna, respectively. In cases where these commands are used
+        parameters are not copied from the main channel receiver and/or antenna and all parameters of interest should be set by
+        the user.
+
+Commands
+========
+
+.. command:: auxiliary_antenna_pattern  <pattern-name> 
+   
+   Specifies the antenna pattern name to be used.
+
+   .. note:: This antenna pattern will become the only and default antenna pattern.
+   
+   .. note::
+   
+       This input will override (i.e., takes precedence over) the :command:`_.receiver`
+       :command:`_.receiver.antenna_pattern`.
+
+.. command:: auxiliary_beam_tilt  <angle-value> 
+   
+   Specifies the beam tilt of the auxiliary receiver. The default tilt angle is derived from the receiver this effect is
+   attached to if this is not defined.
+   
+   Default: :command:`_.receiver.beam_tilt` of the receiver for which the effect is attached
+
+.. command:: number_of_canceler_channels  <integer> 
+   
+   Specifies the number of canceler channels (i.e., canceling loops or cancelers).
+
+.. command:: cancellation_lock_ratio  <dbratio-value> 
+   
+   Specifies the canceling threshold level at which the signal will be canceled.
+   Signal canceling will occur if the (auxiliary receiver channel)/(main channel power) >= cancellation_lock_ratio.
+   
+   Default: 0.0 dB
+
+.. command:: minimum_pulsewidth  <time-value> 
+
+.. command:: minimum_cancelled_pulsewidth  <time-value> 
+   
+   Specifies the minimum pulsewidth from pulse type jamming the canceler is able to operate on.
+   
+   Default: 0.0 seconds
+
+.. command:: canceller_settling_time  <time-value> 
+
+.. command:: loop_settling_time  <time-value> 
+   
+   Specifies the canceler loop settling time. This time is currently only used to interact with the
+   :model:`WSF_POL_MOD_EFFECT` :command:`polarization_switching_rate <WSF_POL_MOD_EFFECT.polarization_switching_rate>` to negate any
+   degradation and or multiple channels canceled by this EA effect.
+
+   .. note::
+   
+       If (1 / pol_mod_switch) < canceller_settling_time) then the
+       :command:`number_slc_channels_saturated <WSF_SLC_DEGRADE_EFFECT.number_slc_channels_saturated>` is set to 1 and the
+       :command:`slc_degradation_factor <WSF_SLC_DEGRADE_EFFECT.slc_degradation_factor>` is set to 1.0, since the canceler loop can lock
+       on the polarization modulations effect.
+   
+   Default: 0.0 seconds
+
+.. command:: main_jnr_thresholds  <min-db-ratio-value> <max-db-ratio-value> 
+   
+   Specifies the main channel JNR threshold levels to use as the lower and upper levels, respectively, at which the SLC
+   will operate with the input jamming signal.
+   
+   Default: 0.0 dB
+
+.. command:: auxiliary_jnr_thresholds  <min-db-ratio-value> <max-db-ratio-value> 
+   
+   Specifies the auxiliary channel JNR threshold levels to use as the lower and upper levels, respectively, at which the
+   SLC will operate with the input jamming signal.
+   
+   Default: 0.0 dB
+
+.. command:: cancellation_ratio  <dbratio-value> 
+   
+   Specifies the steady state cancellation ratio applied to jamming signals when the number of jammers is less than or
+   equal to the number_of_canceler_channels_.
+
+.. command:: saturation_ratio  <dbratio-value> 
+   
+   Specifies the steady state cancellation ratio applied to jamming signals when the number of jammers is greater than the
+   number_of_canceler_channels_.
+   
+   Default:  cancellation_ratio_ if entered by itself or 0.0 dB if a table is entered
+
+.. command:: cancellation_ratios ... end_cancellation_ratios
+
+    This command allows the definition of cancellation ratios that are:
+
+    * nondependent
+    * jammer-to-noise-dependent
+    * number-canceled-jammers-dependent
+    * number-canceled-jammers- and jammer-to-noise-dependent
+    * jammer-canceled-dependent
+    * jammer-canceled- and jammer-to-noise-dependent
+      as described below.
+
+    To define a table that is nondependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        cancellation_ratio_
+        saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+    To define a table that is only jammer-to-noise-dependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+        jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+        ...
+        jammer_to_noise *<db-ratio-n> <db-cancellation-ratio-3>*
+        saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+    To define a table that is only number-jammers-canceled-dependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        number_canceled_jammers *<integer-1>*
+          cancellation_ratio *<db-ratio-value>*
+        number_canceled_jammers *<integer-2>*
+           cancellation_ratio *<db-ratio-value>*
+       ...
+       number_canceled_jammers *<integer-n>*
+          cancellation_ratio *<db-ratio-value>*
+       saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+    To define a table that is number-canceled-jammers- and jammer-to-noise-dependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        number_canceled_jammers *<integer-1>*
+           jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+           jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+           ...
+           jammer_to_noise *<db-ratio-n> <db-cancellation-ratio-3>*
+        number_canceled_jammers *<integer-2>*
+           jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+           jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+           ...
+           jammer_to_noise *<db-ratio-value-n> <db-cancellation-ratio-3>*
+       ...
+       number_canceled_jammers *<integer-n>*
+          ...
+       saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+    To define a table that is jammer-canceled-dependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        jammer_canceled *<integer-1>*
+           cancellation_ratio *<db-ratio-value>*
+        jammer_canceled *<integer-1>*
+           cancellation_ratio *<db-ratio-value>*
+        jammer_canceled *<integer-value-n>*
+           ...
+       saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+    To define a table that is jammer-canceled- and jammer-to-noise-dependent
+
+    .. parsed-literal::
+
+     cancellation_ratios
+        jammer_canceled *<integer-1>*
+           jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+           jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+           ...
+           jammer_to_noise *<db-ratio-value-n> <db-cancellation-ratio-3>*
+        jammer_canceled *<integer-1>*
+           jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+           jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+           ...
+           jammer_to_noise *<db-ratio-value-n> <db-cancellation-ratio-3>*
+        jammer_canceled *<integer-n>*
+           ...
+       saturation_ratio_ *|* saturation_
+     end_cancellation_ratios
+
+.. command:: saturation  <db-ratio>
+
+    This command allows the definition of saturation cancellation ratios that are nondependent or jammer-to-noise-dependent
+
+    To define a table that is only nondependent:
+
+    .. parsed-literal::
+
+     saturation
+        saturation_ratio_ | cancellation_ratio_ *<db-ratio>*
+
+    To define a table that is only jammer-to-noise-dependent:
+
+    .. parsed-literal::
+
+     saturation
+        jammer_to_noise *<db-ratio-value-1> <db-cancellation-ratio-1>*
+        jammer_to_noise *<db-ratio-value-2> <db-cancellation-ratio-2>*
+        ...
+        jammer_to_noise *<db-ratio-value-n> <db-cancellation-ratio-3>*
+

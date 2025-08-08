@@ -1,0 +1,173 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+aircraft_signature_parameters
+-----------------------------
+
+Overview
+========
+
+
+.. command:: aircraft_signature_parameters ... aircraft_signature_parameters
+    :block:
+
+    .. parsed-literal::
+
+     aircraft_signature_parameters
+        // `Required Commands`_
+        side_ ...
+        // `Optional Commands`_
+        fuselage_frontal_area_ ...
+        wing_area_ ...
+        tail_area_ ...
+        engine_inlet_area_ ...
+        engine_exit_area_ ...
+        sweep_angle_ ...
+        signature_reduction_factor_overall_ ...
+        signature_reduction_factor_nose_ ...
+        nose_signature_reduction_angle_ ...
+     end_aircraft_signature_parameters
+
+Required Commands
+=================
+
+.. command:: side [red ; blue]
+
+   Specifies the side for which the aircraft signature parameters apply. The available options are 'red' and 'blue'.
+
+   The `side`_ command determines the default signature parameters.
+   These can be overwritten with the `Optional Commands`_. 
+
+   For example:
+
+   ::
+
+      # An aircraft of side blue will have the default signature parameters, except for the sweep angle.
+      aircraft_signature_parameters
+         side          blue
+         sweep_angle   40 degrees
+      aircraft_signature_parameters
+
+Optional Commands
+=================
+
+The commands in this section are used to determine the expected detection range of the target aircraft (:math:`R_d`). An effective cross sectional area is computed (:math:`A_{eff}`), which is used in an empirically-determined equation to obtain the detection range.
+The equation used is fairly simplistic and is used in the absence of more accurate aircraft signatures. Future releases will include more sophisticated mechanisms to accurately define radar signatures.
+Each command corresponds to a variable in the equations below. The following table defines the mapping between equation variable names and command names (or a description if no command exists):
+
+.. list-table::
+   :align: left
+   :header-rows: 1
+
+   * - command/description
+     - variable
+   * - `fuselage_frontal_area`_
+     - :math:`A_f`
+   * - `wing_area`_
+     - :math:`A_w`
+   * - `tail_area`_
+     - :math:`A_t`
+   * - `engine_inlet_area`_
+     - :math:`A_i`
+   * - `engine_exit_area`_
+     - :math:`A_e`
+   * - `sweep_angle`_
+     - :math:`\omega`
+   * - `signature_reduction_factor_overall`_
+     - :math:`f_o`
+   * - `signature_reduction_factor_nose`_
+     - :math:`f_n`
+   * - azimuth angle
+     - :math:`\phi`
+   * - elevation angle
+     - :math:`\theta`
+   * - range constant 
+     - :math:`k`
+   * - effective cross sectional area
+     - :math:`A_{eff}`
+   * - expected detection range
+     - :math:`R_d`
+
+
+The expected detection range is computed using Equation :eq:`detection_range`. The range constant :math:`k` is determined such that a :math:`10` :math:`m^2` target produces a detection range of :math:`200` :math:`km`. This results in a :math:`k` value of :math:`1.6e20` :math:`m^2`.
+
+.. math::
+   :label: detection_range
+
+   R_d = (k \cdot A_{eff})^{1/4}
+
+
+The effective radar cross section :math:`A_{eff}` is defined by the following equation:
+
+.. math::
+   :label: a_eff
+
+   A_{eff} = f_o \cdot f_n \cdot [A_f + A_w \sin{\theta} + A_t \sin{\theta} \sin{\phi} + A_i \cos({\max({\theta,\phi})}) + A_e \cos({\max({\theta,\pi - \phi})}) + A_w \cos{\theta} \cos^4({\phi - \omega}) ]
+
+Physical Attributes
+~~~~~~~~~~~~~~~~~~~
+
+.. command:: fuselage_frontal_area <area-value>
+
+   The frontal area of the aircraft fuselage (projection on the y-z plane) to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 3.0 m^2
+
+.. command:: wing_area <area-value>
+
+   The wing area of the aircraft to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 30.0 m^2
+
+.. command:: tail_area <area-value>
+
+   The area of the aircraft's vertical tail to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 4.0 m^2
+
+.. command:: engine_inlet_area <area-value>
+
+   The inlet area of the aircraft's engine to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 2.0 m^2
+
+.. command:: engine_exit_area <area-value>
+
+   The exit area of the aircraft's engine to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 2.0 m^2
+
+.. command:: sweep_angle  <angle-value>
+
+   The sweep angle of the aircraft's wing to be used when determining the radar cross section. See Equation :eq:`a_eff`.
+
+   **Default:** 45 degrees
+
+Signature Reduction Factors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. command:: signature_reduction_factor_overall <real>
+
+   The overall reduction factor of the signature. See Equation :eq:`a_eff`.
+
+   **Default:** 1.0
+
+.. command:: signature_reduction_factor_nose <real>
+
+   The reduction factor of the signature due to the aircraft's nose shape. This factor is only used if `nose_signature_reduction_angle`_ is more than the azimuth and more than the elevation.  See Equation :eq:`a_eff`.
+
+   **Default:** 1.0
+
+.. command:: nose_signature_reduction_angle <angle-value>
+
+   The nose angle used to determine `signature_reduction_factor_nose`_. If `nose_signature_reduction_angle`_ is more than the azimuth and more than the elevation, then the effective radar cross section will be multiplied by `signature_reduction_factor_nose`_.
+
+   **Default:** 45 degrees

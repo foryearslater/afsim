@@ -1,0 +1,277 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _script_grammar:
+
+Script Language Grammar
+=======================
+
+The following describes in detail the syntax allowed by the scripting language.  Users generally should not need to review this detail.
+
+Character Types
+---------------
+
+::
+
+  alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_".
+  digit = "0123456789".
+  cr  = '\r'.
+  lf  = '\n'.
+  tab = '\t'.
+  quote = '"'.
+  single_quote = "'".
+  strchar = ANY - '"' - '\\' - '\n' - '\r'.
+  chrchar = ANY - "'" - '\\' - '\n' - '\r'.
+
+Tokens
+------
+
+::
+
+  ident  = alpha {alpha | digit}.
+  // numbers do not allow '+' or '-' as a prefix.
+  // instead, they are handled as a unary operator
+  number = digit {digit}.
+  real_number = 
+      (
+       ( digit {digit} '.' {digit} )
+              | ( '.' digit {digit} )
+      ) [ ('e' | 'E') [ '-' | '+' ] digit {digit} ].
+
+  // strchar does not include '\', so explicitly add '\' and '\"'
+  string_literal = quote { strchar | ("\\" [ '"' ]) } quote.
+  char_literal = "'" (chrchar | "\\'") "'".
+  dot = ".".
+  semicolon = ";".
+  lparen = "(".
+  rparen = ")".
+  assign = "=".
+  eq = "==".
+  ne = "!=".
+  ge = ">=".
+  le = "<=".
+  plus = "+".
+  minus = "-".
+  and = "&&".
+  or = "||".
+  rbrace = '}'.
+  comma = ','.
+  plus_assign = "+=".
+  minus_assign = "-=".
+  times_assign = "*=".
+  div_assign = "/=".
+  r_arrow = "->".
+  do = "do".
+  if = "if".
+  for = "for".
+  foreach = "foreach".
+  in = "in".
+  else = "else".
+  while = "while".
+  break = "break".
+  continue = "continue".
+  return = "return".
+  null = "null".
+  null2 = "NULL".
+  true = "true".
+  false = "false".
+
+  string = "string".
+  int = "int".
+  double = "double".
+  char = "char".
+  bool = "bool".
+  global = "global".
+  static = "static".
+  extern = "extern".
+
+Comments
+--------
+
+::
+
+   FROM "/*" TO "*/" NESTED
+   FROM "//" TO end of line
+   FROM "#" TO end of line
+
+Productions
+-----------
+
+::
+
+   // Syntax:
+   // '[ ... ]'  - Optional Rules (match 0 or 1 time)
+   // '{ ... }'  - Recurrence (match 0 to many times)
+   // '( ... )'  - Rule grouping
+   // |           - OR (match left rule or right rule)
+
+   basic_type =
+      string
+    | int
+    | double
+    | char
+    | bool
+    .
+
+   type
+   =  basic_type
+    | ident
+    // Note: only allowing 1 or 2 template parameters
+    [  '<' type [ ',' type ] '>' ]
+    .
+
+   trailer
+   =  '('
+         [ exp
+            {
+               ',' exp
+            }
+         ]
+      ')'
+    | ( '[' exp1 ']' [ '=' exp ] )
+    | '.' ident
+    | "->" ident
+    .
+
+   static_exp =
+      (null | null2)
+    | true
+    | false
+    | string_literal
+    | char_literal
+    | real_number
+    | number
+    .
+
+   block = '{' {stat} '}'
+    .
+   block_func = {stat} EOF.
+
+   extern_stat
+   =  ( extern type ident )
+        ( '('
+           [ type [ident] { ',' type [ident] } ]
+          ')' ';'
+        )
+        | ';'
+    .
+
+   var_decl_expr = type ident .
+
+   var_decl
+   =  [ static | extern | global ] type ident
+         ['=' ( exp ) ]
+         { ',' ident ['=' ( exp ) ] }
+    .
+
+   do_stat
+   =  do stat while '(' bool_exp ')' ';'
+    .
+   while_stat
+   = "while" '(' bool_exp ')' stat
+    .
+   bool_exp = exp 
+    .
+   stat
+   =( 
+      do_stat
+    | while_stat
+    | if '(' bool_exp ')'
+         stat
+       [ else stat ]
+    | return [ exp ] ';'
+    | break ';'
+    | continue ';'
+    | for '(' [ var_decl | assign_expr ] ';' exp ';' [assign_expr] ')'
+         stat
+    | foreach '(' var_decl_expr [ ':' var_decl_expr ] in exp ')'
+         stat
+    | block
+    | extern_stat
+    | stat2
+    )
+    .
+
+   //stub:
+   initializer_list
+   ='{'
+       [
+         exp [ ':' exp ] { ',' exp [ ':' exp ] }
+       ]
+       [',']   // allow final ','
+    '}'
+    .
+
+   AssignOp = "=" | "+=" | "-=" | "*=" | "/="
+    .
+   assign_expr =  identifier AssignOp exp
+    .
+
+   stat2
+   =  var_decl ';'
+    | assign_expr ';'
+    | exp ';'
+    .
+
+   exp = exp1.
+   exp1 = exp2 { or exp2 }
+    .
+   exp2 = exp3 { and exp3 }
+    .
+   exp3 = exp_eq { '^' exp_eq }
+    .
+   EqOp = ( "==" | "!=")
+    .
+   exp_eq = exp_test { EqOp exp_test }
+    .
+   TestOp = '<' | '>' | "<=" | ">=" 
+    .
+   exp_test =  exp_add { TestOp exp_add }
+    .
+   AddOp = '+' | '-' 
+    .
+   exp_add = exp_mult { AddOp exp_mult }
+    .
+   MulOp = '*' | '/'
+    .
+   exp_mult = exp5 { MulOp exp5 }
+    .
+   exp5 = 
+      '(' type ')' exp5
+    | '!' exp5
+    | exp6
+    .
+   exp6 =  [( "+" | "-" ) ] exp7
+    .
+   exp7 = atom { trailer }
+    .
+   identifier = ident
+    .
+   atom
+   =  '(' exp1 ')'
+    | static_exp
+    | type 
+            '.' ident
+          | '(' [ exp { ',' exp } ] ')'
+    | identifier
+    | initializer_list
+    .
+
+   formal_param_list
+      = '(' [ type ident { ',' type ident } ] ')'
+    .
+
+   func_def =
+      type ident
+         formal_param_list
+         block_func
+    .
+

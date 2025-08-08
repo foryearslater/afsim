@@ -1,0 +1,214 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.3:
+
+WSF 1.7.3 - 10 Apr 2012
+-----------------------
+
+General
+=======
+
+* Changed names for input and script types in the optional wsf_hel project, in order to adhere to the "WSF\_" naming
+  convention, as follows:
+
+       * INTERSECT_PROCESSOR -> WSF_INTERSECT_PROCESSOR
+
+       * LASER_WEAPON -> WSF_LASER_WEAPON
+
+       * HEL_LETHALITY -> WSF_HEL_LETHALITY
+
+       * HEL_ASPECT_LETHALITY -> WSF_HEL_ASPECT_LETHALITY
+
+       * BEAM_DIRECTOR -> WSF_BEAM_DIRECTOR
+
+       * LaserWeapon -> WsfLaserWeapon
+
+       * BeamDirector -> WsfBeamDirector
+
+Corrections
+===========
+
+* **(CR 8265)** Modified :command:`WSF_SCRIPT_PROCESSOR.on_message` so it would accept either WSF_DROP_TRACK_MESSAGE or
+  WSF_TRACK_DROP_MESSAGE as a handler for :class:`WsfTrackDropMessage`. When WSF was created, the type of
+  :class:`WsfTrackDropMessage` was confusingly named WSF_DROP_TRACK_MESSAGE instead of WSF_TRACK_DROP_MESSSAGE. This provides
+  a transition path by allowing either form.
+
+* **(CR 9290)** Corrected a problem where a platform using a **WSF_6DOF_MOVER** would continue to fly straight &
+  level after being told to change course.  This error could previously be achieved by commanding it to
+  :method:`WsfPlatform.GoToLocation <WsfPlatform.GoToLocation>` (or :method:`WsfPlatform.FollowRoute <WsfPlatform.FollowRoute>`), then
+  command it to :method:`WsfPlatform.TurnToHeading <WsfPlatform.TurnToHeading>`, and then command it to fly to the original
+  location (or route).
+
+* **(CR 9339)** Corrected several problems with the evaluation of incidentally engaged targets when the
+  :command:`weapon_effects` attribute allow_incidental_damage is provided.
+
+     * When an incidental target was MISSED (i.e.: :command:`event_output` WEAPON_MISSED) the status said KILLED instead of
+       MISSED if any previously evaluated incidental target in the same engagement was hit and killed.
+
+     * The PkDrawn on the WEAPON_MISSED :command:`event_output` was reported even if a Pk  draw was not required (i.e.:
+       outside the maximum possible lethal radius). It was showing the result from the last incidentally hit target in the
+       same engagement.
+
+     * Incidentally engaged targets that were moving at the time when the engagement was terminated used an
+       out-of-date location for evaluating miss distance. This could cause a target to be incorrectly categorized as hit or
+       missed.
+
+* **(CR 9341)** The script method :method:`WsfPlatform.Route <WsfPlatform.Route>` would crash if called on a platform that
+  did not have a mover.
+
+* **(CR 9365 and 9393)** Corrected a problem where the **WSF_6DOF_MOVER** would report a higher speed externally, but
+  would propagate at a slower rate than reported.
+
+* **(CR 9370)** Fixed a bug where imperfect correlation with the :command:`cluster method <track_manager.correlation_method>`
+  was not working when a :command:`filter` was also being used on a :command:`track_manager`.
+
+* **(CR 9374)** Fixed a bug where a :model:`WSF_ESM_SENSOR` was not reporting a type whenever a multi-transmitter system's
+  last transmitter was not detected.
+
+* **(CR 9390)** Fixed an issue with the :model:`WSF_SIMPLE_FT_EFFECT` not working correctly with embedded
+  :model:`WSF_RADIUS_EFFECT` commands.
+
+* **(CR 9391)** Corrected a problem where the :model:`WSF_GUIDED_MOVER` command
+  :command:`WSF_GUIDED_MOVER.thrust_vectoring_time_limits` was not accepting valid values.
+
+* **(CR 9400)** **WSF_6DOF_MOVER** would sometimes fail to detect that it had reached the target waypoint if
+  :command:`platform.navigation_errors` were being used.
+
+* **(CR 9402)** Corrected a problem where the speed flown by **WSF_6DOF_MOVER** was different from the requested
+  speed by 2-3% due to a different atmosphere model being used by the underlying model.
+
+* **(CR 9416)** Corrected a missing capability in the :model:`WSF_SIMPLE_FT_EFFECT` implementation where the
+  :command:`false_target_screener` target forcing commands and the :model:`WSF_RADIUS_EFFECT` effects were not being accounted for in
+  the :model:`WSF_SIMPLE_FT_EFFECT` implementation.
+
+* Fixed an issue with propagating the track errors associated with :command:`EW Effects <electronic_warfare_effect>` in a
+  :model:`WSF_RADAR_SENSOR` types when **compute_measurment_errors** was set to true.
+
+* Fixed an issue where :class:`WsfArticulatedPart` methods X,Y,Z,Yaw,Pitch,Roll could return old information.
+
+* **(CR 9441)** Corrected a problem where the SENSOR_MODE_DEACTIVATED event was not being issued when a mode was
+  implicitly deselected as a result of the selection of a new mode of a single-select sensor.
+
+* **(CR 9485)** Corrected a problem where programs would crash if the script method
+  :class:`WsfPlatformPart.ProcessInput <WsfPlatformPart>` was erroneously used to edit a non-existing sensor mode. The program will now issue
+  a warning message and ignore the attempt.
+
+* **(CR 9493)** Corrected a problem where multi-hop :model:`WSF_RADIO_TRANSCEIVER` relays were causing a crash. This only
+  occurred if the final relay attempt in a multi-hop scenario failed.
+
+* **(CR 9511)** Corrected three problems with script compile errors in the :command:`behavior_tree`.  The behavior tree
+  now reports script compile errors found in its script blocks, said errors now do not cause a crash, and "unknown
+  script" errors are now reported.
+
+* **(CR 9512)** Fixed an interpolation problem with the :model:`WSF_TSPI_MOVER`. When mover updates occurred in-between
+  points defined in the input file, the calculated intermediate position was wrong.
+
+* **(CR 9541)** Corrected an infinite loop problem in the :model:`WSF_RADIO_TRANSCEIVER` when multiple comm devices on
+  the same network could all act as relays but none could deliver the message.
+
+* **(CR 9564)** Corrected a problem where :model:`WSF_GUIDED_MOVER` could miss detecting the end of the burn phase of a
+  stage if the thrust_duration time was exceeded before all the fuel was consumed.
+
+Enhancements
+============
+
+* Added a new concept called [[Reference Values]], which allow the value of a many commands to be derived from a
+  script variable.
+
+* Added :model:`WSF_MESSAGE_PROCESSOR`, which provides the mechanisms to implement message processing delays and message
+  routing. This replaces **WSF_DELAY_PROCESSOR** and offers new capabilities while still being compatible.
+  **WSF_DELAY_PROCESSOR** can still be referenced from input files, but it actually use the new capability.
+
+* Added the **synchronous** :model:`operating mode <WSF_COMPOSITE_SENSOR>` to :model:`WSF_COMPOSITE_SENSOR`. This
+  allows multiple-aperture systems (such as multi-faced ESA systems) to be more easily modeled.
+
+* Added the ability to specify how sensor detection attempts are scheduled when using the default sensor scheduler.
+  (See :command:`scheduler_type.default.scan_scheduling`)
+
+* Added the script method :method:`WsfWaypoint.SetTimeToPoint` to :class:`WsfWaypoint`.
+
+* Added script methods :method:`WsfWeaponEngagement.CompletionTime`, :method:`WsfWeaponEngagement.PkDrawn` and additional
+  forms of :method:`WsfWeaponEngagement.MissDistance` and :method:`WsfWeaponEngagement.TargetLocation` (additional form) to
+  :class:`WsfWeaponEngagement`.
+
+* Provided a default implementation for WsfImplicitWeapon, and added :model:`WSF_IMPLICIT_WEAPON` as a new weapon type.
+  This implementation allows engagement both against specific platforms, as well as using a track to provide a target
+  location.  If a launch computer is provided in the weapon definition, the estimated time to intercept will be used as
+  the duration of the implicit engagement.  Otherwise one must call :method:`CeaseFire <WsfWeapon.CeaseFire>` to end an
+  engagement.
+
+* Added in support for creating **triangular** lattice arrays for the :ref:`antenna_pattern.esa_pattern`.
+
+* Added in support for defining element patterns (normalize wrt isotropic (dBi)) in
+  :ref:`antenna_pattern.esa_pattern`.
+
+* Modified the :command:`_.navigation_errors` model to use parameters that make more closely correspond to
+  the performance specifications for real IMU systems. Also updated **WSF_6DOF_MOVER** and :model:`WSF_GUIDANCE_COMPUTER` to
+  consider navigation errors when making its computations.
+
+* **(CR 8675)** Added the capability to specify receiver and antenna commands in the :model:`WSF_SLB_EFFECT` and
+  :model:`WSF_SLC_EFFECT`.
+
+* **(CR 9344)** Added the command :command:`WSF_TASK_PROCESSOR.track_processor` to :model:`WSF_TASK_PROCESSOR`, which allows
+  the selection of an alternate track processor to be used as the source of tracks for evaluation.
+
+* **(CR 9401)** Modified the sensor script methods WsfSensor.EM_RcvrCount and WsfSensor.EM_XmtrCount
+  (and the underlying framework calls) to return 0 if called prior to initialization and modified many script methods to
+  check for a null antenna pointer. This is to prevent crashes if the user attempts to call :class:`sensor <WsfSensor>` script
+  methods prior to the sensor completing initialization. Most methods that directly or indirectly access modes,
+  transmitters, receivers or antennas will be not perform any useful function if called prior to the completion of
+  initialization.
+
+* Added the script method :method:`WsfPlatform.FutureLocation` to :class:`WsfPlatform` to retrieve the anticipated location
+  of a platform at some specified time in the future. This only works for platforms that employ specific types of movers.
+
+* Documented the formerly undocumented :method:`WsfPlatform.RoutePointIndex` in :class:`WsfPlatform`.
+
+* **(CR 9442)** Added the capability to report the range rate :command:`sensor_mode.reports_range_rate` of a track by a
+  sensor.
+
+* Added more script methods to :class:`WsfFuel` to allow for improved fuel management in scripting and behaviors.
+
+* Added the callback SIMULATION_INITIALIZING to :command:`observer`.
+
+* Added the script method :method:`MATH.Log(value,base) <Math.Log>` to return the logarithm of a number with respect to a
+  specified base.
+
+* Added script methods :method:`WsfGeoPoint.OffsetNED` and :method:`WsfGeoPoint.OffsetRBE` to :class:`WsfGeoPoint`.
+
+* **(CR 9487, 9488, 9489)** Added script methods :method:`WsfPlatform.InfraredRadiantIntensity`,
+  :method:`WsfPlatform.OpticalCrossSection` and :method:`WsfPlatform.RadarCrossSection` to :class:`WsfPlatform`. These methods
+  provide to return the signature of a platform when viewed from a specified location.
+
+* Added the capability for :class:`zones <WsfZone>` to draw themselves using :class:`WsfDraw`.  This is similar to the existing
+  "DebugDraw..." capability but uses a :class:`WsfDraw` object that is passed as an argument to the script methods.
+
+* **(CR 9490)** Updated :model:`WSF_IMAGE_PROCESSOR` and :ref:`WSF_VIDEO_PROCESSOR` to allow specification of a time
+  duration that must elapse before declaring detection, classification or identification.
+
+* Added static script methods :method:`WsfComm.IsA_TypeOf() <WsfComm.IsA_TypeOf>`,
+  :method:`WsfMover.IsA_TypeOf() <WsfMover.IsA_TypeOf>`, :method:`WsfProcessor.IsA_TypeOf() <WsfProcessor.IsA_TypeOf>`,
+  :method:`WsfSensor.IsA_TypeOf() <WsfSensor.IsA_TypeOf>` and :method:`WsfWeapon.IsA_TypeOf() <WsfWeapon.IsA_TypeOf>`, which allows one
+  to determine if an object of specified type inherits (or derives from) an object of a specified base type.
+
+* **(CR 9496)** Added the ability to set the "Type of Network Enabled Weapon" field in the J11.0 Initial word. It
+  was currently a spare.
+
+* Added MGRS (Military Grid Reference System) conversions to/from lat, lon.  In code these are available in
+  UtEllipsoidalEarth.  In script one may use the methods :method:`WsfPlatform::LocationMGRS() <WsfPlatform.LocationMGRS>` and
+  :method:`WsfPlatform::SetLocationMGRS() <WsfPlatform.SetLocationMGRS>`.
+
+* **(CR 9577)** Added the :command:`dis_interface.simple_miss_reporting` command to the 'dis_interface', which causes
+  all detonation reports that are not 1 to be reported as 6.
+
+* Added :command:`timing_method` command to change how WSF maintains the
+  realtime clock.

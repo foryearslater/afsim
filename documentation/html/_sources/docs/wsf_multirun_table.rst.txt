@@ -1,0 +1,70 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. Copyright (C) 2021 Stellar Science; U.S. Government has Unlimited Rights.
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+multiresolution_multirun_table
+------------------------------
+
+.. command:: multiresolution_multirun_table ... end_multiresolution_multirun_table
+
+.. parsed-literal::
+   multiresolution_multirun_table
+      model_list
+         <platform> <component> [<component-name>]
+         <platform> <component> [<component-name>]
+         ...
+      end_model_list
+      
+      default_fidelity
+         <real-value>
+         <real-value>
+         ...
+      end_default_fidelity
+      
+      fidelity_table
+         <real-value> <real-value> ...
+         <real-value> <real-value> ...
+         ...
+      end_fidelity_table
+      
+      loop_after_table_end
+   
+   end_multiresolution_multirun_table
+   
+Overview
+========
+
+:command:`multiresolution_multirun_table` is a structure that allows a user to specify a number of fidelity values for a list of multiresolution models (e.g., :command:`multiresolution_mover`). The table works in conjunction with the :ref:`monte carlo iteration <monte_carlo_iteration>` implementation, using the same internal ``RunNumber`` variable in order to select the row of fidelity_table_.
+
+The Python3 module ``pyrunplotter`` (located in the ``tools`` directory) can be used to visualize and compare the outputs from multiple runs.
+
+Commands
+========
+
+.. command:: model_list
+   
+   Contains a list of models to be used. The models are structured ``<platform-name> <component-type>`` for unnamed components and ``<platform-name> <component-type> <component-name>`` for named components.
+   
+.. command:: default_fidelity
+   
+   Contains a list of fidelity values to use as defaults on the list of models. If the number of runs exceeds the number of rows on ``fidelity_table`` and looping is disabled, the simulation will fall back on these default values.
+   
+   .. note:: If loop_after_table_end_ is enabled, this command can be omitted.
+   
+.. command:: fidelity_table
+	
+   Contains a MxN table of ``<real-value>`` entries, where M is the number of models in ``model_list`` and N is the desired number of runs. Each row in this table corresponds to a run, and each column corresponds to the model which will be assigned the column's entries.
+   
+.. command:: loop_after_table_end
+
+   Tells the simulation whether to loop through the entries in ``fidelity_table``, or to fall back on the entries in ``default_fidelity`` when the number of runs exceeds the number of rows in ``fidelity_table``. If enabled, this allows users to do multiple runs of each row, which may be desired if the users want to also use randomized variables for other aspects of the simulation.
+   

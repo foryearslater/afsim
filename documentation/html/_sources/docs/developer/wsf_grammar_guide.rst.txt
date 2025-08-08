@@ -1,0 +1,461 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF Grammar Guide
+-----------------
+
+The WSF grammar format, as outlined in :doc:`wsf_grammar_format` defines the syntax of WSF commands. The grammar is used in many tools and applications for parsing WSF files. Grammar files already exist for many WSF modules and can be found in .ag files in the 'grammar' subdirectories of the WSF installation 'bin' directory.
+
+It is the developer's responsibility when adding new types and commands to maintain the grammar files so that tools and applications can correctly process WSF files.
+
+Grammar File Definition
+=======================
+
+The grammar file has two main features: **Rules** to parse the WSF input and **Actions** to create data representing the input file.
+
+.. contents::
+   :local:
+   :depth: 3
+
+Rules
+~~~~~
+
+Rules form the basis for the grammar.  Together the rules define how to parse the input file.  A single rule can either *match* or *not match* a given input.  The first rule found to match is used and consumes the text.
+
+Sequences
+^^^^^^^^^
+
+The most basic rule is a sequence. Sequences are indicated by the '{' '}' symbols. Sequences define a list of sub-rules
+which each must be matched in succession.::
+
+   { rule0 rule1  ... }
+
+Each rule in the sequence must be matched for the sequence to *match*.  Within a sequence, rules are counted starting at
+0. Later, rules may be referenced using the '$0' notation.
+
+Literals
+^^^^^^^^
+
+Literals match a single specific string of characters. Literals can either be quoted strings or plain text. The parser
+assumes space delimited tokens.  ::
+
+   end_time
+   "the end time"
+
+Rule References
+^^^^^^^^^^^^^^^
+
+Rules may be referenced after they are defined using the '<rule-name>' format.::
+
+   <my-rule>
+
+Recurrences
+^^^^^^^^^^^
+
+Recurrences are rule references that recur 0 to many or 0 to 1 times.  The '\*' character is used to denote a zero to many recurrence. '+' for 1 to many. '?' for 0 to 1. ::
+
+   {
+     string_list <string>* end_string_list
+     | A B C D { E F G }?
+   }
+
+When using * or +, the existence of a terminating literal plays a role.  In ``stuff <string>* end_stuff``, any number of strings will be read until ``end_stuff`` is found.  But using ``stuff <int>*`` will consume each token that matches the integer rule, and stop only after a non-integer token.  When possible, a terminating literal should be provided.
+
+Built-in Rules
+^^^^^^^^^^^^^^
+
+<string>
+   Matches a whitespace delimited character string::
+
+      MY_PLATFORM
+      banana's-apple
+
+<quotable-string>
+   Matches either a whitespace delimited string or a quoted string::
+
+      MY_PLATFORM
+      "C:\Program Files\MyPath"
+
+<string-except>
+   Matches any string with a list of exceptions::
+
+      # Match any space delimited string except invalid_word1 and invalid_word2
+      (string-except invalid_word1 invalid_word2)
+
+<integer>
+   Matches an integer::
+
+      0
+      -123
+
+<real>
+   Matches a real number::
+
+      -2
+      -2.0
+      -2.0e-7
+
+(error {})
+   Defines a sequence which when matched triggers an error::
+
+      #This matches any string.  If it is an integer, an error will be logged.
+      {  (error { <integer> })
+       | <string>
+      }
+
+(delimited ...)
+   Defines a non-space delimited word. All rules are matched assuming whitespace
+   delimited inputs. This provides a way to bypass this limitation. Each
+   argument is matched without spaces. There are some limitations using this
+   rule, most notably, every other argument must be a literal.::
+
+      # this will match latitude values like 10.5n and 60s
+      {
+       (delimited <real> n)
+      | (delimited <real> s)
+      }
+
+(name *name-kind*)
+   Matches the same as <string>, but identifies the word as the name of something.
+   *name-kind* identifies the kind of name.  The purpose of this rule is to allow user interfaces to auto-populate
+   suggestions to fill in this field.  Example usage::
+
+    icon (name icon)
+    | category (name category)
+    | ignore (name category)
+
+(typeref *type-prefix*)
+   Matches the same as <string>, but indicates that the matched word should be an existing type.
+   *type-prefix* indicates the key prefix for the type in the `Symbol Table`_.  Example::
+
+      exclusion_zone (typeref zone)
+      | inlusion_zone (typeref zone)
+
+(nocase { ... })
+   Takes any sequence and makes it case insensitive.::
+
+   (nocase { true | false })
+
+(file-reference *file-type*)
+   Same as <quotable-string>, but also marks the text as being the location of an input file of the specified type.
+
+(output-file-reference *file-type*)
+   Same as <quotable-string>, but also marks the text as being the location of an output file of the specified type.
+
+<TypeCommand>
+   Use the rule associated with the current symbol.  See `Symbol Table`_.
+
+<ScriptBlock>, <ScriptVariables>, <ScriptFunctionBlock>
+   Used with a recurrence (*).  Matches any string, but marks the block of text as belonging to a script.
+   The script contents is parsed in another project, this grammar simply annotates the block of text.
+   ::
+
+      # Reads a script along with its return type, name, arguments
+      script <ScriptFunctionBlock>* end_script
+
+      # Reads a script with no return type, name, arguments
+      on_exit <ScriptBlock>* end_on_exit
+
+      # Reads a script variables block
+      script_variables <ScriptVariables>* end_script_variables
+
+Named Rules
+^^^^^^^^^^^
+
+A new named rule is created using this syntax::
+
+   (rule *rule-name* {
+      *rules*
+   })
+
+Examples::
+
+   # Define a new rule
+   (rule my-rule {
+      end_time <Time>
+   })
+   # Use the new rule
+   (rule my-rule-2 {
+      <my-rule>
+    | not <my-rule>
+   })
+
+Rule names are user-defined with the exception of the ``root-command`` rule.
+The ``root-command`` rule must be defined, and acts as the entry point to the
+grammar.  Any top-level input being processed should match the ``root-command``
+rule in some way.
+
+To support extensibility, named rules can be re-opened.  For instance, these two
+blocks can exist anywhere in any grammar file, and both add new commands to the
+root-command::
+
+   (rule root-command {
+      apple { core | peel }
+   })
+   (rule root-command {
+      banana { seed | peel }
+   })
+
+which is equivalent to::
+
+   (rule root-command {
+      apple { core | peel }
+    | banana { seed | peel }
+   })
+
+Struct
+^^^^^^
+
+A struct is special type of named rule which represents an object WSF
+understands. Platform, Sensor, and Processor are examples of structs. A struct
+may contain rule definitions just as the (rule ..) command, but also may contain
+variables. Example::
+
+   (struct MY_SENSOR :base_type Sensor
+                     :symbol (type sensorType MY_SENSOR)
+      (var String my_setting)
+   {
+      my_command <String>       [my_setting=$1]
+    | <Sensor>
+   })
+
+Structs may be referenced later using the ``<struct-name>`` syntax, just like
+``(rule ...``.
+
+:base_type *BaseTypeName*
+   Indicates that this struct inherits all variables from another struct
+
+:symbol ...
+   specifies that the struct should be inserted in the symbol
+   table used when parsing. Symbols are used by the *new* and *load* rules.
+   See `Symbol Table`_
+
+Variables are used in the Proxy_ representation described later.  They have no
+effect on how the file is parsed.
+
+Symbol Table
+^^^^^^^^^^^^
+
+To parse a file that uses types, we need a symbol table.  Symbols allow a file to reference
+previously defined types.  The symbol table is a mapping from key to a Struct_ type.
+A key is a tuple of strings.
+
+Given this example input file::
+
+   platform_type newtype WSF_PLATFORM
+      processor y WSF_SCRIPT_PROCESSOR  end_processor
+      weapon z WSF_EXPLICIT_WEAPON  end_weapon
+   end_platform_type
+   platform x newtype
+      delete weapon z
+   end_platform
+
+The resulting symbol table looks like this:
+
+==================================== ===============================
+Symbol                               Type
+==================================== ===============================
+platformType.newtype                 struct Platform
+platformType.newtype.processors.y    struct WSF_SCRIPT_PROCESSOR
+platformType.newtype.weapons.z       struct WSF_EXPLICIT_WEAPON
+platform.x                           struct Platform
+platform.x.processors.y              struct WSF_SCRIPT_PROCESSOR
+==================================== ===============================
+
+As you can see, the symbol table contains exactly what's needed to parse the file.
+If a ``edit platform x`` block occurs next, we can determine that ``platform.x`` exists
+and that it has a processor named ``y`` of type ``WSF_SCRIPT_PROCESSOR``.
+
+Maintenance of the symbol table is accomplished through the new_, new_replace_, load_, and delete_ rules. Referencing locations (keys) in the symbol table is done with the type_ and subtype_ commands.
+
+.. _type:
+
+(type ...)
+   Specifies a position in the symbol table. Any number of arguments are allowed.
+   Each argument may be a string or a sequence rule reference.
+   A sequence rule reference inserts the text matched from a given rule as part of a type key.
+   Examples::
+
+   (type platform x)                               # ->  platform.x
+   (type platformType newtype processors y)        # ->  platformType.newtype.processors.y
+
+   # using a sequence rule reference as part of a sequence (not shown)
+   (type platform $1)                              # ->  platform.<text-from-parsed-file>
+
+.. _subtype:
+
+(subtype ...)
+   The same as type_, except appends the arguments to the current type.
+   The current type is initially an empty tuple, but is changed through use of the new_,
+   new_replace_, or load_ rules.
+
+.. _new:
+
+(new *storage-address* *load-address* [:backup *load-address*])
+   Defines a rule which attempts to create a new symbol. The symbol at *load-address* is
+   copied into *storage-address*. The addresses must be a type_ or subtype_ command.
+   If storage-address isn't used yet, and the load-address points to a valid symbol,
+   the rule succeeds.  The storage-address becomes the new current symbol for subsequent
+   commands until the end of the current sequence.::
+
+      {
+         sensor <string> <string> (new (subtype sensors $1) (type sensorType $2)
+            <TypeCommand>*
+         end_sensor
+       | other_command <string>
+      }
+
+   In the above example, if the ``new`` rule succeeds, the current symbol is set to the
+   new symbol table entry.  The ``TypeCommand`` will call the struct associated with the
+   new symbol, and after the ``end_sensor`` token is matched, the current symbol is restored
+   to its previous state.
+
+   If the ``new`` command fails -- either a symbol already exists at the storage-address
+   or no symbol exists at the load-address, the rule does not *match*.  This causes the entire
+   sequence match to fail.
+
+   :backup *alternate-load-address*
+      This option adds an alternate location to load the type if the first load location
+      was not valid.  Additionally, an error is logged.  This is used primarily as a fallback
+      when the user enters a type name that is unknown, the backup type provides at least
+      partial understanding of the user's intention.
+
+.. _new_replace:
+
+(new_replace *storage-address* *load-address* [:option...])
+   Same as (new_ ...), but will replace any existing symbol.
+
+.. _load:
+
+(load *load-address*)
+   Loads an existing symbol from the symbol table and sets it as the current symbol.
+   If the symbol does not exist, this rule fails to *match*.
+
+.. _delete:
+
+(delete *address*)
+   Deletes an existing symbol.  The rule fails to *match* if there is no symbol at that address.
+
+::
+
+  # Make a new sub-symbol on the current symbol named 'mover', loaded from 'moverType.WSF_AIR_MOVER'
+  (new (subtype mover) (type moverType WSF_AIR_MOVER))
+
+  # Try to load a user-defined mover.  If the user-defined type isn't found, make a WSF_AIR_MOVER.  (Logs an error)
+  (new (subtype mover) (type moverType $1) :backup (type moverType WSF_AIR_MOVER))
+
+  # Load 'mover' as the new current symbol
+  (load (subtype mover)
+
+Proxy
+~~~~~
+
+All constructs described above are required to parse an input file correctly.  Constructs in this section provide
+semantics to the grammar, building up a representation of what the input file means, which is what we call the Proxy.
+
+The Proxy has a similar structure to the symbol table.  A symbol table key corresponding to a platform would also
+correspond to the platform in the proxy.  Instead of storing the associated rules that parsed an object, the proxy
+stores information about that object.  For a platform we might store the side, icon, position, list of parts, etc...
+The intention is not to build an all-inclusive description of the objects in the input file, but to save the key bits of
+information needed to build specific user interfaces.  For this reason, some struct_ definitions have little or no
+variables, while others have many variables.
+
+Variables
+^^^^^^^^^
+
+Variables are members of a struct_ that store pieces of data about an object.  A variable consists of a type and a name. The variable type defines what kind of data the variable contains.  A full list of available variable types can be found in the core grammar file -- these are defined with the (value ...) command.  Additionally there are two container types ``List`` and ``ObjectMap``.  ``List`` is a ordered list of objects, used for things like waypoints of a route. ``ObjectMap`` is an associative array that maps a string to a value type.  For List and ObjectMap, the contained type must be specified with the following syntax::
+
+   List/Platform
+   List/Waypoint
+   ObjectMap/Platform
+   ObjectMap/Sensor
+
+Lastly, any structs defined in the grammar have a dual use as variable types.
+
+Within a struct, a variable is defined with this syntax::
+
+   (var *type* *name* [:default <value>])
+
+Where an optional default value may be provided. ::
+
+   (var Real earthRadiusMultiplier :default 1.0)
+   (var String myName :default "a name")
+
+Actions
+^^^^^^^
+
+Actions may be placed before or after entries in a sequence rule.  Actions provide a mechanism to store data in the proxy. Actions are placed between '[' ']' characters. More than one action may be specified by using the ';' character.::
+
+   [my_setting1="ok";my_setting2=$1]
+
+There are multiple types of actions:
+
+Assignment: Assigns a new value to an attribute. **attribute=value** ::
+
+   side=blue
+   icon="F-18"
+   width="24 inches"
+   height=$1
+
+Value can either be a literal value, or a reference to a value input by the user. The input '$0' takes the result of the user's input from the first rule in this sequence.  A *$$* indicates the result of the previous rule.::
+
+   { side <string>                  [side=$1]
+   | set width <Length>             [width=$2]
+   | make height equal to <Length>  [height=$$]
+   }
+
+As a shortcut, the attribute name may be used in the rule reference to denote an automatic assignment. This is equivalent::
+
+   { side <$side>
+   | set width <$width>
+   | make height equal to <$height>
+   }
+
+push(*attribute-name*)
+   Updates the current value to the specified attribute. Actions in the proxy operate on the current object, so this will affect how subsequent actions or sub-rules are processed until after the next subrule is complete:
+
+   This sets the 'auxData' attribute as the current object to later be modified by commands in the 'AuxData.block'
+   rule.::
+
+      {
+       [push(auxData)] <AuxData.block>
+      }
+
+new(*attribute-name*, *key-name*)
+   Adds a new entry to an 'ObjectMap'
+   attribute and sets the current object to the new value.
+
+   This adds a new entry to the category.::
+
+      # Map the command chain name to the commander name
+      (var ObjectMap/String commandChains)
+      {
+         # When this rule is matched, add a new command chain entry with the first user input
+         # Then assign the value to the second user input.
+         command_chain <string> <string> [new(commandChains,$1);this=$2]
+      }
+
+apply($$)
+   Applies previous (new ...) or (load ...) rule to the proxy data structures.
+
+   Normally (new ...) and (load ...) operate only on the symbol table and have no effect on struct attributes. This
+   command effectively does the same action to the proxy structure as the symbol table.
+
+skip()
+   Enters a mode where there is no current proxy object.  This allows execution of rules without applying any proxy
+   changes.  For instance, when using the <Platform> rule, the current proxy object must be of type *Platform* or an
+   error will be reported.  Using ::
+
+      [skip()] <Platform>
+
+   or the abbreviated form (rule name prefixed with a colon) ::
+
+      <:Platform>

@@ -1,0 +1,116 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RADIO_TRANSCEIVER
+---------------------
+
+.. model:: comm WSF_RADIO_TRANSCEIVER
+.. model:: comm WSF_RADIO_XMTR
+.. model:: comm WSF_RADIO_RCVR
+
+.. parsed-literal::
+
+     comm <name-or-type> :model:`WSF_RADIO_TRANSCEIVER` | :model:`WSF_RADIO_XMTR <WSF_RADIO_TRANSCEIVER>` | :model:`WSF_RADIO_RCVR <WSF_RADIO_TRANSCEIVER>`
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`Articulated_Part_Commands` ...
+        ... :ref:`Antenna_Commands` ...
+        ... :command:`comm` Commands ...
+        ... :command:`_.transmitter` ... end_transmitter
+        ... :command:`_.receiver` ... end_receiver
+        snr_transfer_rate_table_ ...
+        bit_error_probability_ ...
+        error_correction_ ...
+        bit_error_rate_ebno_table_ ...
+     end_comm
+
+.. note::
+
+   :model:`WSF_RADIO_XMTR <WSF_RADIO_TRANSCEIVER>` and :model:`WSF_RADIO_RCVR <WSF_RADIO_TRANSCEIVER>` are transmit-only and receive-only versions of :model:`WSF_RADIO_TRANSCEIVER`.
+
+Overview
+========
+
+:model:`WSF_RADIO_TRANSCEIVER` provides a baseline radio implementation that is capable of both transmitting and receiving using a :command:`_.transmitter` and :command:`_.receiver`. If a communication device is required to transmit or receive only, the :model:`WSF_RADIO_XMTR <WSF_RADIO_TRANSCEIVER>` and :model:`WSF_RADIO_RCVR <WSF_RADIO_TRANSCEIVER>` types are available. Both of these types are special cases of the :model:`WSF_RADIO_TRANSCEIVER` type and therefore share the same commands that are listed below in the command section.
+
+For a more detailed look on how this and other communications work in AFSIM, see :doc:`analyst_ocd/communications_primer`. 
+
+.. block:: WSF_RADIO_TRANSCEIVER
+
+Commands
+========
+
+.. command:: snr_transfer_rate_table <absolute-units><data-rate-units><SNR-value 1> <transfer-rate-value 1> ... end_snr_transfer_rate_table
+
+   Specifies a table that maps signal-to-noise-ratio values to message transfer rates.  The SNR-Transfer-Rate table will be interpolated.  If a table is specified, the table transfer rate values will override the value used specified with the :model:`transfer_rate <WSF_COMM_TRANSCEIVER>` command.
+
+   .. note::
+
+       SNR Transfer rate table is mutually exclusive with the Eb/No vs BER table. The last one specified will
+       be used.
+
+   Default:  none
+
+   SNR-Transfer-Rate-Table Example
+
+   ::
+
+      snr_transfer_rate_table
+         dB bit/s
+         0  100
+         1  100
+         2  90
+         3  80
+         4  40
+         5  20
+         55 10
+         70 1
+      end_snr_transfer_rate_table
+
+.. command:: bit_error_probability <real-value>
+
+   Optional parameter that defines the system designed bit error rate probability. It is used to pick the Eb/No values from the Eb/No v.s BER table. Must be greater than or equal to zero.
+
+   Default:  0.0
+
+.. command:: error_correction <dbratio-value>
+
+   Optional parameter that determines how much error correction will be applied when using Eb/No to calculate data rate. Must be between 0.0 and 1.0.
+
+   Default:  0 dB
+
+.. command:: bit_error_rate_ebno_table <absolute-units><ratio-units><BER-value 1> <Eb/No-value 1> ... end_bit_error_rate_ebno_table
+
+   Optional table that defines the Energy per Bit to the Spectral Noise Density (Eb/No) vs. Bit Error Rate (BER). Used in conjunction with the bit_error_probability_ and error_correction_ to calculate the data transfer rate of the radio. When using this table Data Rate = SNR* Error Correction * ( Bandwidth / Eb/No ). The Bit-Error-Rate-EbNo-Table will be interpolated.  If a table is specified, the table transfer rate values will override the value used specified with the :model:`transfer_rate <WSF_COMM_TRANSCEIVER>` command.
+
+   .. note::
+
+       Units for the values in the table are optional and if not entered are assumed to be dimensionless for BER and dB for Eb/No.
+
+   .. note::
+
+       Eb/No vs BER table is mutually exclusive with the SNR Transfer rate table. The last one specified will be used.
+
+   Default:  none
+
+   Bit-Error-Rate-EbNo-Table Example
+
+   ::
+
+      bit_error_rate_ebno_table
+        0.00000001 12
+        0.0000001  11.3
+        0.000001   10.3
+        0.00001    9.5
+        0.0001     8.3
+        0.001      6.5
+        0.01       4.3
+        0.1        0
+      end_bit_error_rate_ebno_table

@@ -1,0 +1,65 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. demo:: cyber
+
+.. |classification| replace:: Unclassified
+.. |date|           replace:: 2019-02-01
+.. |group|          replace:: Demos
+.. |image|          replace:: images/cyber_demo.png
+.. |tags|           replace:: n/a
+.. |title|          replace:: cyber demo
+.. |startup|        replace:: Cyber_Script_Effect_Demo.txt
+.. |summary|        replace:: These demos provide example scenarios that showcase cyber capabilities. 
+
+.. |i| image:: images/cyber_demo.png
+   :height: 150 px
+   :width:  150 px
+
+.. include:: demo_template.txt
+
+| This is a collection of demos that showcase cyber capabilities, specifically :model:`WSF_CYBER_SCRIPT_EFFECT` and :model:`WSF_CYBER_MAN_IN_THE_MIDDLE_EFFECT`.
+
+	  
+Cyber_Script_Effect_Demo.txt
+----------------------------
+
+| In this demo, a UAV attempts to hit a target with a couple of air-to-ground missiles.  The UAV is scripted to release the bombs if within a certain distance without taking into consideration its own altitude.  When it is detected by ground_radar_1 (which is on by default), a track is sent to cyber_command_post_1.  When the UAV is within 10 nm of cyber_command_post_1, a :command:`cyber_attack` is initiated against the UAV.  The attack, LOWER_ALTITUDE, drops the altitude of the UAV to 1000 ft.  The UAV has a :command:`cyber_protect` that recovers and goes back to the original altitude after just 20 seconds.  This 20 seconds is still enough time for the UAV to get within range to release it's weapons, albeit at the lower altitude of 1000 ft.  The weapons are fired, but no longer have enough time to make it to the target, so they fall short, missing the target.  After the weapons have been fired, the 20 seconds elapses and the UAV returns to its original altitude.  If cyber_command_post_1 is commented out of the demo, the UAV should hit and kill the target.
+
+
+MITM_Demo.txt
+-------------
+
+| This demo is very similar to Cyber_Script_Effect_Demo.  However, instead of ground_radar_1 being on by default, a human spotter has been added to the demo.  The spotter sends a message to ground_radar_1 if a UAV is spotted.  Ground_radar_1 turns on when it receives the message.  If the spotter sends the message the moment it spots the UAV, cyber_command_post_1 is able to lower the altitude of the UAV in enough time to cause the UAV's missiles to miss the target.  However, the UAV uses its own :command:`cyber_attack`, DELAY_COMMS, which has a :model:`WSF_CYBER_MAN_IN_THE_MIDDLE_EFFECT` that delays every message spotter_1 sends by 20 seconds.  This allows the UAV to get within range to fire its missiles at its original altitude before ground_radar_1 receives the message from spotter_1, initiating the process shown in Cyber_Script_Effect_Demo.  The target should be killed.  
+
+MITM_exfiltrate_demo.txt
+------------------------
+
+| This demo is derived from the :demo:`iads` demo. In this demo a red plane flies past the iads, and the sensors pick it up and begin to track it. In order to maintain situational awareness, a blue AWACS launches a cyber attack against the red iads commander. This attack uses the :model:`WSF_CYBER_MAN_IN_THE_MIDDLE_EFFECT` with the :command:`WSF_CYBER_MAN_IN_THE_MIDDLE_EFFECT.exfiltrate` parameter enabled. By doing so, every track which the iads commander receives is forwarded to the AWACS via comms.
+
+duck_hunt.txt
+-------------
+
+| This demo derives from the swarm200 demo.  3 ground radars, 3 cyber outposts, and a short range SAM system have all been added.  The cyber outposts each try to attack the cruise missiles in the swarm with a "CRASH" :command:`cyber_attack` if within 40 nm.  The :command:`cyber_effect` "CRASH" does two things if successful.  It first turns off the guidance computer of the cruise missile and then directs it to go to an altitude of 0 m.  The :command:`cyber_attack` CRASH only has a 5% chance of success against the clients, and the leader is immune.  If unsuccessful and still within range, the cyber outpost will attempt to send the cyber attack again every minute.  There is a single short range SAM system to defend the target against any cruise missiles (including the leader) that doesn't get affected by the cyber attacks.    
+
+avengers_detonate_effect.txt
+----------------------------
+
+| This demo is themed after the popular Marvel franchise. In this demo, the Shield helicarrier is trying to deliver the Hulk to New York to foil Loki's plans. However once Loki sees them coming, he will use his mind control on the Hulk to cause him to go on a rampage and destroy the helicarrier. The Hulk is modeled as a :model:`WSF_EXPLICIT_WEAPON`. Loki's mind control is modeled by using a cyber attack to cause a :model:`WSF_CYBER_DETONATE_EFFECT`. This effect will cause the Hulk to detonate, destroying the helicarrier.
+
+GoneFishing_ConstraintDemo.txt
+------------------------------
+ 
+| This demo is derived from the classic 1952 novella "The Old Man and the Sea". In this scenario there is an incoming enemy squadron of fish. These fish include ten "SMALL_FISH" which are modeled by a  drone and one "BIG_FISH" which is modeled by a bomber, all of which are on the red team. The fish squadron is attacking an airport which is modeled as a green team LHA. The blue team consists of three platforms of type "FISHERMEN": HEMINGWAY, YOUNG_MAN, and OLD_MAN. A :command:`cyber_constraint` is added to the FISHERMEN platforms. Using the :command:`cyber_constraint.resources` command, the FISHERMEN are assigned a limit of 5.0 resources available for any :command:`cyber_attack` to use. 
+
+| The blue team is allied with the green team and attempts the defensive :command:`cyber_attack`, of which there are two types, "SMALL_CATCH" and "BIG_CATCH". Each catch type are assigned a maximum resource expenditure of 1.0 and 5.0, respectively. A success probability of 1.0 is assigned to each attack. SMALL_CATCH and BIG_CATCH scramble the GPS of the victim, causing the victim to target a waypoint in the ocean. The victim will self-destruct in route to the new waypoint once it runs out of time to attack.
+
+| HEMINGWAY successfully attacks four small fish and attempts to attack the big fish platform but fails due to lack of resources. YOUNG_MAN successfully attacks five small fish, but due to lack of resources fails to attack a sixth small fish. OLD_MAN successfully attacks the big fish. Since resource limitations prevented the tenth small fish from being attacked successfully, SMALL_FISH_9 destroys the allied airport.

@@ -1,0 +1,223 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Sensor_Plot_Flight_Path_Analysis:
+
+Sensor Plot Flight Path Analysis
+--------------------------------
+
+**Navigation:** :command:`sensor_plot` > **flight_path_analysis**
+
+.. command:: flight_path_analysis ... end_flight_path_analysis
+    :block:
+
+    .. parsed-literal::
+
+       flight_path_analysis
+
+          :ref:`sensor_plot.Stub_Definition_Commands`
+
+          # `Sensor Control`_
+
+          reverse_evaluations_ ...
+          sensor_platform_yaw_ ...
+          sensor_platform_pitch_ ...
+          sensor_platform_roll_ ...
+          mode_name_ ...
+          exclude_ ...
+          no_exclude_ ...
+          automatic_target_cueing_ ...
+
+          # `Jammer Control`_
+
+          jamming_platform_name_ ...
+          jammer_to_signal_reference_ ...
+
+          # `Target Platform Selection`_
+
+          target_platform_name_ ...
+
+          # `Sample Point Specification`_
+
+          path_ ...
+          alarm_fpa_file_ ...
+          tspi_file_ ...
+          sample_interval_ ...
+
+          # `Output Selection`_
+
+          variable_ ...
+          script_variable_ ...
+          detection_reference_ ...
+
+          gnuplot_file_ ...
+          header_line_1_ ...
+          header_line_2_ ...
+          header_line_3_ ...
+
+       end_flight_path_analysis
+
+Overview
+========
+
+The **flight_path_analysis** function will create a file that contains the values of user-requested variables at sample points that have been provided by:
+
+* A list within the command.
+* A standard TSPI file.
+* An ALARM Flight Path Analysis (FPA) file.
+* A platform with a route, and a specified sample interval.
+
+To create a file for active detection systems (e.g.: radar) detecting a target following a specified path, the following process should be followed:
+
+* Define the target platform with the desired characteristics with the desired :command:`radar <radar_signature>`,
+  :command:`infrared <infrared_signature>`, :command`optical <optical_signature>` or :command:`acoustic <acoustic_signature>` signature depending on the type(s) of sensors being tested. The name of the target platform must have the name defined by the target_platform_name_ command (default: TARGET).
+* Define one or more platform instances that contain the sensors that will attempt to detect the target.
+* Define zero or more platform instances that contain jammers that will attempt to jam the sensors.
+* Define the :command:`sensor_plot_flight_path_analysis <flight_path_analysis>` input block with:
+
+  * Commands to select the sensors to be included, and other sensor behavior.
+  * Commands to define the sample points.
+  * Output selection commands.
+
+For analysis of sensors contained on the 'target' platform, see the reverse_evaluations_ command.
+
+.. note::
+    This function maintains the concept of simulation time. The first detection chance will occur at 1 second and subsequent chances will occur at the interval specified by sample_interval_. Any 'execute at_time' blocks used to cue jammers or sensors should specify a time before 1 second. If a route and sample_interval are used to generate the sample points, it may be desirable to specify 'start_time 1 sec' on the route of the target platform so the first detection chance occurs exactly at the first point of the route.
+
+
+Sensor Control
+==============
+
+.. command:: reverse_evaluations <boolean-value>
+   
+   Normally the **flight_path_analysis** function creates the output file using the results of detection attempts against the platform defined by target_platform_name_ performed by all the sensors on the other defined platforms (subject to the exclude_ and no_exclude_ commands). If the value of this command is 'true', the output file is created using the results of the sensors on target_platform_name_ against all other platforms in the scenario. This is primarily used for evaluating passive systems (e.g.: ESM, EO, IR)
+   
+   Several items of interest need to be noted:
+   
+   * The sensor selection, mode selection and sensor orientation defined in this section (i.e.: `Sensor Control`_ are ignored. The sensor definition(s) on the platform defined by target_platform_name_ represent the sensors to be evaluated.
+   * ALL other platforms and the sensors contained on them will be the object of the detection attempts. There are no exclusions.
+   * This function has not been tested where the object of a detection attempt is a tracking sensor or a comm system. These systems should probably be replaced by a simple non-tracking radar system with the same RF parameters.
+
+   **Default** false
+
+.. command:: sensor_platform_yaw <angle-value>
+.. command:: sensor_platform_pitch <angle-value>
+.. command:: sensor_platform_roll <angle-value>
+   
+   Specify the orientation of the sensing platform with respect to the direction of flight. The yaw angle is added to the heading and the pitch and roll angles are used directly as specified. This is useful for examining sensor coverage when the platform is flying in some other condition other than straight-and-level.
+   **Default** 0 degrees for all angles
+
+.. command:: mode_name <mode_name>
+   
+   Specifies the name of the mode to be used if the sensor is a multi-mode sensor.
+    
+   **Default** The default mode of the sensor. This will be the value of the :command:`sensor.initial_mode` command of the sensor (if defined) or the first mode (if :command:`sensor.initial_mode` was not defined).
+
+   .. note::
+      This is valid only for single-sensor executions. For multiple-sensor executions, the default mode as defined above will be used.
+
+
+.. command:: exclude  [ sensor_type | sensor_category | platform_type | platform_category ] <type-or-category>
+.. command:: no_exclude  [ sensor_type | sensor_category | platform_type | platform_category ] <type-or-category>
+   
+   These commands provide the mechanism to choose which sensors in a multiple-sensor scenario are to be included in the plotting process. This is useful when a existing scenario is being used but only a subset of sensors are to be used for the plot.
+   
+   By default, all sensors in the scenario are included in the plot. A sensor will be excluded if specified in an **exclude** command and not specified in a **no_exclude** command. The **no_exclude** command is typically used to prevent the exclusion of a smaller group of sensors from a larger list that have been excluded.
+
+.. command:: automatic_target_cueing <boolean-value>
+   
+   If 'true', the sensor will be cued to point at the target when performing a detection chance. If 'false', the sensor will be remain in its initial condition.
+    
+   **Default** true (The sensor will always be cued to point at the target)
+
+Jammer Control
+==============
+
+.. command:: jamming_platform_name <platform-name>
+   
+   Specifies the platform that will be used to calculate the required jamming power. This input is to be used when plotting the '**required_jamming_power**' variable for the location of the jammer system.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+.. command:: jammer_to_signal_reference <db-ratio-value>
+   
+   Specifies the jammer-to-signal (J/S) reference to be used when plotting the '**required_jamming_power**' variable.
+
+   **Default** 0.0 db
+
+Target Platform Selection
+=========================
+
+.. command:: target_platform_name <platform-name>
+
+   Specify the name of the target platform.
+
+   **Default** TARGET
+
+Sample Point Specification
+==========================
+
+The sample points can be selected by any of the following methods or by specifying a route in the target platform and specifying the 'sample_interval' command. If any of the commands that define points explicitly are used, the route in the target platform is ignored.
+
+.. command:: path <path-points> end_path
+   
+   Define the sample points in standard waypoint format. The points are defined using the following commands
+
+   * position <latitude-value> <longitude-value>
+   * altitude <length-value> *[ msl | agl ]*
+   * speed <speed-value>
+   * heading <angle-value>
+   * pitch <angle-value>
+   * roll <angle-value>
+   
+   A new point is started with each **position** command. Commands up to the next **position** command (or the end of the block) apply to the current position. Unspecified values default to the values from the previous point.
+
+.. command:: alarm_fpa_file <file-name>
+   
+   Specify the name of an ALARM flight path analysis file that contains target sample points.
+
+.. command:: tspi_file <file-name>
+   
+   Specify the name of a time-space-position-information (TSPI) file that contains the target sample points.
+
+   .. note::
+      You may require the use of commands to specify the format of the data contained in the TSPI file. These commands are documented in the :model:`WSF_TSPI_MOVER` section of :model:`WSF_TSPI_MOVER`
+
+
+.. command:: sample_interval <time-value>
+   
+   The time interval to be used for generating sample points when using a route on the target platform.
+
+Output Selection
+================
+
+.. include:: sensor_plot_map_variables.txt
+.. include:: sensor_plot_map_script_variables.txt
+
+.. command:: detection_reference <db-ratio>
+   
+   The reference signal-to-noise ratio used to determine the **required_rcs** or **rcs_required** variable_.
+    
+   **Default** 12.8 dB
+
+.. command:: gnuplot_file <file-name>
+   
+   Specifies the name of the file to which 'gnuplot' output will be written.
+    
+   **Default** None - must be specified.
+
+.. command:: header_line_1 <text>
+.. command:: header_line_2 <text>
+.. command:: header_line_3 <text>
+   
+   Specifies the text to be contained in the first three lines of the output file.
+    
+   **Default** all header lines are blank.

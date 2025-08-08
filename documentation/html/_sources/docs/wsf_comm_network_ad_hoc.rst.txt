@@ -1,0 +1,116 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COMM_NETWORK_AD_HOC
+-----------------------
+
+.. model:: network WSF_COMM_NETWORK_AD_HOC
+
+Script Class: :class:`WsfNetworkAdHoc`
+
+.. parsed-literal::
+
+   network <name> :model:`WSF_COMM_NETWORK_AD_HOC`
+      ... :ref:`network Commands <network.Commands>` ...
+      ... :model:`WSF_COMM_NETWORK_GENERIC` commands ...
+
+      update_rate_ <random-time-reference>
+
+      comm_update_rates_
+         member <platform-name> <comm-name> update_rate <random-time-reference>
+         ...
+      end_comm_update_rates
+
+      remove_comm_update_rate_ <platform-name> <comm-name>
+
+      address_update_rates_
+         member <address> update_rate <random-time-reference>
+         ...
+      end_address_update_rates
+
+      remove_address_update_rate_ <address>
+
+   end_network
+
+Overview
+========
+
+:model:`WSF_COMM_NETWORK_AD_HOC` is a dynamic network type available in AFSIM.
+
+This network, like :model:`WSF_COMM_NETWORK_GENERIC`, does not specify a topology. However, instead of
+a static network with link states defined by the user, this network type will automatically modify its topology
+during runtime based on the potential communication capabilities of its members. This is entirely driven by the
+:command:`comm` model implementation, that dictates if any individual comm can communicate with any other given comm.
+
+During runtime, at time intervals specified by the user, each comm in the network creates links to any other comm in the
+network in which communications are possible, and actively removes any link with a comm that is not available. As such,
+the network state can potentially be constantly modified according to each comm model's implementation.
+
+This network type is primarily intended for comm model implementations with more strict controls or limitations of
+communication ability, as opposed to the perfect or wired comm models (e.g. :model:`WSF_COMM_TRANSCEIVER`) which always assume the ability to communicate with like models (and will effectively just form a mesh network in homogeneous model networks).
+
+During each comm's update in this network, only outgoing states are inspected and potentially modified.
+
+Only links internal to the network are modified in this network type. External network linkage is not considered.
+
+.. warning:: This network type, due to each interface inspecting every other interface in the network at
+   each time interval, can be a performance issue. It is suggested that users limit the number of comms in this network
+   to the greatest extent possible, and use the maximum update rate allowable to suit their use case.
+
+Commands
+========
+
+.. command:: update_rate <random-time-reference>
+
+   Specifies the rate that this network will perform updates to the network state by creating and removing linkage. Every comm
+   in the network that does not have an update rate specific to that instance will use this rate.
+
+   It is suggested that if multiple networks of this type are being used in a single simulation that an appropriate
+   distribution be used instead of a constant value to avoid all networks being updated simultaneously.
+
+   If this value is not specified by the user, any comm using this update rate will never be updated automatically during
+   the simulation. This is useful if wanting to mix dynamic and static link specifications within the network.
+
+   **Default:** Maximum floating point value (update will never occur during the simulation)
+
+.. command:: comm_update_rates ... end_comm_update_rates
+
+   This block allows users to specify a unique update rate for a particular comm interface designated by the
+   platform name and comm name. Any comm interface with an update rate specified in this manner will use this update
+   rate for modifying outgoing links from that interface, not the general update rate specified via update_rate_.
+
+   This command is useful for either increasing or decreasing the update rate for specific members where applicable,
+   such that any single comm interface does not have to dictate the general update rate for the entire network and
+   potentially cause performance issues.
+
+.. command:: remove_comm_update_rate <platform-name> <comm-name>
+
+   Removes a unique update rate entry for the comm specified by platform and comm name. Sets the specified comm to use
+   the general update rate assigned via the update_rate_ command.
+
+   This command is available to allow the removal of specific comm update rates, especially for derived network types.
+
+.. command:: address_update_rates ... end_address_update_rates
+
+   This block allows users to specify a unique update rate for a particular comm interface designated by the
+   comm interface address. Any comm interface with an update rate specified in this manner will use this update
+   rate for modifying outgoing links from that interface, not the general update rate specified via update_rate_.
+
+   This command is useful for either increasing or decreasing the update rate for specific members where applicable,
+   such that any single comm interface does not have to dictate the general update rate for the entire network and
+   potentially cause performance issues.
+
+.. command:: remove_address_update_rate <address>
+
+   Removes a unique update rate entry for the comm specified by comm address. Sets the specified comm to use
+   the general update rate assigned via the update_rate_ command.
+
+   This command is available to allow the removal of specific comm update rates, especially for derived network types.

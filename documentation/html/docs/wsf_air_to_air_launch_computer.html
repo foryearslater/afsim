@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WSF_AIR_TO_AIR_LAUNCH_COMPUTER &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WSF_ALPHA_BETA_FILTER" href="wsf_alpha_beta_filter.html" />
+    <link rel="prev" title="WSF_AIR_TARGET_FUSE" href="wsf_air_target_fuse.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_alpha_beta_filter.html" title="WSF_ALPHA_BETA_FILTER"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsf_air_target_fuse.html" title="WSF_AIR_TARGET_FUSE"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsf-air-to-air-launch-computer">
+<h1>WSF_AIR_TO_AIR_LAUNCH_COMPUTER<a class="headerlink" href="#wsf-air-to-air-launch-computer" title="Permalink to this headline">¶</a></h1>
+<dl class="model">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER">
+launch_computer WSF_AIR_TO_AIR_LAUNCH_COMPUTER<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<pre class="literal-block">launch_computer &lt;name&gt; <a class="reference internal" href="#wsf-air-to-air-launch-computer">WSF_AIR_TO_AIR_LAUNCH_COMPUTER</a>
+   ... <a class="reference internal" href="launch_computer.html#launch_computer" title="launch_computer"><span class="xref wsf wsf-command">launch_computer</span></a> Commands ...
+   ... <a class="reference internal" href="wsf_launch_computer.html#WSF_LAUNCH_COMPUTER" title="WSF_LAUNCH_COMPUTER"><span class="xref wsf wsf-model">WSF_LAUNCH_COMPUTER</span></a> Commands ...
+
+   <a class="reference internal" href="#load_table">load_table</a> ...
+   <a class="reference internal" href="#launch_computer_table">launch_computer_table</a> ... end_launch_computer_table
+
+end_launch_computer</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#wsf-air-to-air-launch-computer">WSF_AIR_TO_AIR_LAUNCH_COMPUTER</a> implements a launch computer for an air-to-air missile. This launch computer accepts
+a target track, and evaluates which tabulated engagement condition most closely matches the track parameters.
+It supplies the (Ranges and Times-of-flight) expected, to use for launch logic.</p>
+<p>Air-to-air missiles are designed with a preferred range of employment:  short, medium, or long.  Regardless, all
+missiles will have a minimum range below which they cannot properly arm and guide to intercept, a maximum range beyond
+which they cannot successfully intercept, and a “no-escape” range of maximum lethality.  The minimum and maximum ranges
+usually assume a level non-maneuvering target.  The “no-escape” range is between the min and max, and assume some
+representative target ability (a G-loading) to turn and run away from the missile the instant it is launched.  Within
+the no-escape range, there is a low probability that the target can be expected to escape.</p>
+</section>
+<section id="method-of-operation">
+<h2>Method of Operation<a class="headerlink" href="#method-of-operation" title="Permalink to this headline">¶</a></h2>
+<p>The engagement results are functions of 6 independent variables (IVs):  <strong>shooter altitude and Mach</strong>,
+<strong>target altitude and Mach</strong>, <strong>target aspect angle</strong> (nose on = 0 deg), and <strong>target lead angle</strong>.
+and 6 dependent variables (DVs): <strong>maximum range and time-of-flight</strong>, <strong>no-escape range and time-of-flight</strong>,
+and <strong>minimum range and time-of-flight</strong>.</p>
+<p>The data tables can be quite large.  So that many launch computer instances may share common data tables, the input processing
+is dedicated primarily to reading in a table of engagement results, which all computers of this type will collectively
+reference.  The table is consulted to time the launch of a <a class="reference internal" href="wsf_explicit_weapon.html#WSF_EXPLICIT_WEAPON" title="WSF_EXPLICIT_WEAPON"><span class="xref wsf wsf-model">WSF_EXPLICIT_WEAPON</span></a> against a target <a class="reference internal" href="script/wsftrack.html#WsfTrack" title="WsfTrack"><span class="xref wsf wsf-class">WsfTrack</span></a>.
+The track must have valid WCS location and velocity.</p>
+<p>Results are found by first taking each IV and finding the nearest in entry in the data table. Then once indices for each IV is determine, this set of
+indices is used to lookup the result. In other words, the results are not interpolated values.</p>
+<p><strong>Target aspect</strong> is defined as follows:  Target aspect angle is measured in the horizontal plane from the velocity vector
+of the target to the shooter line-of-sight vector, with a value from zero to 180 degrees.  This means nose on = 0 degrees target aspect!</p>
+<p><strong>Target lead</strong> angle is also measured in the horizontal plane, from shooter velocity vector to the target line-of-sight (similar to azimuth), but
+positive if the target is converging laterally toward the shooter velocity vector, and negative if diverging away.</p>
+<p>The <a class="reference internal" href="weapon_tools.html#weapon_tools" title="weapon_tools"><span class="xref wsf wsf-command">weapon_tools</span></a> application assists with creation of launch computers of this type.
+(See <a class="reference internal" href="air_to_air_launch_computer_generator.html#AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR" title="AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR"><span class="xref wsf wsf-command">AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR</span></a>).</p>
+</section>
+<section id="commands">
+<span id="wsf-air-to-air-launch-computer-commands"></span><h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.load_table">
+<span id="load_table"></span>load_table<a class="reference internal" href="argumenttypes.html#file-name" title="file-name"><em> &lt;file-name&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.load_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies a separate file to include.  This included file must contain the <a class="reference internal" href="#launch_computer_table">launch_computer_table</a>
+block.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table">
+<span id="launch_computer_table"></span>launch_computer_table … end_launch_computer_table<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the data table for expected results for weapon engagements.  This block may be included in-line in the launch
+computer block, and need not be in a separate file as in <a class="reference internal" href="#load_table">load_table</a> above.  All of the subcommand inputs listed
+below are to be embedded within this block.</p>
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.no_escape_manuever">
+<span id="launch_computer_table.no_escape_manuever"></span><span id="no_escape_manuever"></span>no_escape_manuever<a class="reference internal" href="argumenttypes.html#acceleration-value" title="acceleration-value"><em> &lt;acceleration-value&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.no_escape_manuever" title="Permalink to this definition">¶</a></dt>
+<dd><p>The acceleration used to define the target “turn tail to missile” evade tactic capability. Begins at missile launch.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables">
+<span id="launch_computer_table.independent_variables"></span><span id="independent_variables"></span>independent_variables … end_independent_variables<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>This block contains the data that defines the valid ranges of each of the independent variables for the engagement.
+Each IV must be given in increasing values.  If there are N shooter altitudes, M shooter Machs, P target altitudes, Q
+target Machs, R target aspect angles, and S target lead angles, then the <a class="reference internal" href="#intercept_results">intercept_results</a> block must have
+NxMxPxQxRxS x 6 data values in it.</p>
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.shooter_altitudes">
+<span id="launch_computer_table.independent_variables.shooter_altitudes"></span><span id="independent_variables.shooter_altitudes"></span><span id="shooter_altitudes"></span>shooter_altitudes<em> &lt;distances&gt;</em> end_shooter_altitudes<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.shooter_altitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the shooter altitudes. May be uneven but must be in increasing numerical order. (Minimum delta = 100.0 m)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">shooter_altitudes</span> <span class="mi">10000</span> <span class="n">ft</span> <span class="mi">20000</span> <span class="n">ft</span> <span class="mi">30000</span> <span class="n">ft</span> <span class="n">end_shooter_altitudes</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.shooter_machs">
+<span id="launch_computer_table.independent_variables.shooter_machs"></span><span id="independent_variables.shooter_machs"></span><span id="shooter_machs"></span>shooter_machs<em> &lt;values&gt;</em> end_shooter_machs<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.shooter_machs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the shooter Mach numbers. May be uneven but must be in increasing numerical order. (Minimum delta = 0.05)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">shooter_machs</span> <span class="mf">0.8</span> <span class="mf">1.0</span> <span class="mf">1.2</span> <span class="mf">1.4</span> <span class="mf">1.6</span> <span class="mf">1.8</span> <span class="mf">2.0</span> <span class="n">end_shooter_machs</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_altitudes">
+<span id="launch_computer_table.independent_variables.target_altitudes"></span><span id="independent_variables.target_altitudes"></span><span id="target_altitudes"></span>target_altitudes<em> &lt;distances&gt;</em> end_target_altitudes<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_altitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the target altitudes. May be uneven but must be in increasing numerical order. (Minimum delta = 100.0 m)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_altitudes</span> <span class="mi">10000</span> <span class="n">ft</span> <span class="mi">20000</span> <span class="n">ft</span> <span class="mi">30000</span> <span class="n">ft</span> <span class="n">end_target_altitudes</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_machs">
+<span id="launch_computer_table.independent_variables.target_machs"></span><span id="independent_variables.target_machs"></span><span id="target_machs"></span>target_machs<em> &lt;values&gt;</em> end_target_machs<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_machs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the target Mach numbers. May be uneven but must be in increasing numerical order. (Minimum delta = 0.05)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_machs</span> <span class="mf">0.8</span> <span class="mf">1.0</span> <span class="mf">1.2</span> <span class="mf">1.4</span> <span class="mf">1.6</span> <span class="mf">1.8</span> <span class="mf">2.0</span> <span class="n">end_target_machs</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_aspect_angles">
+<span id="launch_computer_table.independent_variables.target_aspect_angles"></span><span id="independent_variables.target_aspect_angles"></span><span id="target_aspect_angles"></span>target_aspect_angles<em> &lt;angles&gt;</em> end_target_aspect_angles<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_aspect_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the target aspect angles (nose on = 0 deg). May be uneven but must be in increasing numerical order. (Minimum delta = 2.0 deg)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_aspects</span> <span class="mi">0</span> <span class="n">deg</span> <span class="mi">30</span> <span class="n">deg</span> <span class="mi">60</span> <span class="n">deg</span> <span class="mi">90</span> <span class="n">deg</span> <span class="mi">135</span> <span class="n">deg</span> <span class="mi">180</span> <span class="n">deg</span> <span class="n">deg</span> <span class="n">end_target_aspects</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_lead_angles">
+<span id="launch_computer_table.independent_variables.target_lead_angles"></span><span id="independent_variables.target_lead_angles"></span><span id="target_lead_angles"></span>target_lead_angles<em> &lt;angles&gt;</em> end_target_lead_angles<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_lead_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the target lead angles. May be uneven but must be in increasing numerical order. (Minimum delta = 2.0 deg)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_lead_angles</span> <span class="mi">0</span> <span class="n">deg</span> <span class="mi">30</span> <span class="n">deg</span> <span class="mi">60</span> <span class="n">deg</span> <span class="mi">90</span> <span class="n">deg</span> <span class="mi">135</span> <span class="n">deg</span> <span class="mi">180</span> <span class="n">deg</span> <span class="n">end_target_lead_angles</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_lead_angle_limits">
+<span id="launch_computer_table.independent_variables.target_lead_angle_limits"></span><span id="independent_variables.target_lead_angle_limits"></span><span id="target_lead_angle_limits"></span>target_lead_angle_limits from<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a> to<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a> by<a class="reference internal" href="argumenttypes.html#angle-value" title="angle-value"><em> &lt;angle-value&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.independent_variables.target_lead_angle_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the target lead angles using a shorten notation. This is an alternate to the previous target_lead_angles command. (Minimum delta = 2.0 deg)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_lead_angle_limits</span> <span class="kn">from</span> <span class="o">-</span><span class="mi">180</span> <span class="n">deg</span> <span class="n">to</span> <span class="mi">180</span> <span class="n">deg</span> <span class="n">by</span> <span class="mi">10</span> <span class="n">deg</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results">
+<span id="launch_computer_table.intercept_results"></span><span id="intercept_results"></span>intercept_results … end_intercept_results<a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>This block contains all the data points that define the intercept envelope.  There must be as many entries/lines as there are engagement
+conditions (see <a class="reference internal" href="#independent_variables">independent_variables</a>).  Any value of -1.0 indicates not-achievable.  It is recommended that
+this data be generated using the LAR generator tool called <a class="reference internal" href="weapon_tools.html#weapon_tools" title="weapon_tools"><span class="xref wsf wsf-command">weapon_tools</span></a>.</p>
+<p>The format of the data is:</p>
+<pre class="literal-block">intercept_results
+   Rmin <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rne <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rmax <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a>
+   Rmin <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rne <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rmax <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a>
+   ...
+   Rmin <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rne <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> Rmax <a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><span class="xref wsf wsf-argtype">&lt;length-value&gt;</span></a> <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a>
+end_intercept_results</pre>
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rmin">
+<span id="launch_computer_table.intercept_results.Rmin"></span><span id="intercept_results.Rmin"></span><span id="Rmin"></span>Rmin<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rmin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum range and time-of-flight for this condition, below which intercept is unsuccessful.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rne">
+<span id="launch_computer_table.intercept_results.Rne"></span><span id="intercept_results.Rne"></span><span id="Rne"></span>Rne<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rne" title="Permalink to this definition">¶</a></dt>
+<dd><p>No-escape range and time-of-flight for this condition.</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rmax">
+<span id="launch_computer_table.intercept_results.Rmax"></span><span id="intercept_results.Rmax"></span><span id="Rmax"></span>Rmax<a class="reference internal" href="argumenttypes.html#length-value" title="length-value"><em> &lt;length-value&gt;</em></a><a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a><a class="headerlink" href="#WSF_AIR_TO_AIR_LAUNCH_COMPUTER.launch_computer_table.intercept_results.Rmax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum range and time-of-flight for this condition, beyond which intercept is unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>First Example Input Data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">launch_computer</span> <span class="n">airToAirComputer</span> <span class="n">WSF_AIR_TO_AIR_COMPUTER</span>
+   <span class="n">launch_computer_table</span>
+      <span class="n">no_escape_maneuver</span> <span class="mi">7</span> <span class="n">g</span>
+      <span class="n">independent_variables</span>
+         <span class="n">shooter_altitudes</span> <span class="mi">10000</span> <span class="n">ft</span> <span class="mi">20000</span> <span class="n">ft</span> <span class="mi">30000</span> <span class="n">ft</span> <span class="n">end_shooter_altitudes</span>
+         <span class="n">shooter_machs</span> <span class="mf">0.8</span> <span class="mi">1</span> <span class="mf">1.2</span> <span class="mf">1.4</span> <span class="mf">1.6</span> <span class="mf">1.8</span> <span class="mi">2</span>  <span class="n">end_shooter_machs</span>
+         <span class="n">target_altitudes</span> <span class="mi">10000</span> <span class="n">ft</span> <span class="mi">20000</span> <span class="n">ft</span> <span class="mi">30000</span> <span class="n">ft</span>  <span class="n">end_target_altitudes</span>
+         <span class="n">target_machs</span> <span class="mf">0.8</span> <span class="mi">1</span> <span class="mf">1.2</span> <span class="mf">1.4</span> <span class="mf">1.6</span> <span class="mf">1.8</span> <span class="mi">2</span> <span class="n">end_target_machs</span>
+         <span class="n">target_aspect_angles</span> <span class="mi">0</span> <span class="n">deg</span> <span class="mi">60</span> <span class="n">deg</span> <span class="mi">120</span> <span class="n">deg</span> <span class="mi">180</span> <span class="n">deg</span> <span class="n">end_target_aspect_angles</span>
+         <span class="n">target_lead_angles</span> <span class="mi">0</span> <span class="n">deg</span> <span class="mi">60</span> <span class="n">deg</span> <span class="mi">90</span> <span class="n">deg</span> <span class="mi">120</span> <span class="n">deg</span> <span class="mi">180</span> <span class="n">deg</span> <span class="n">end_target_lead_angles</span>
+      <span class="n">end_independent_variables</span>
+      <span class="n">intercept_results</span>
+         <span class="c1"># Shooter Alt=10000 ft, M=0.8, Tgt Alt=10000 ft, M=0.8, Aspect = 0 deg</span>
+         <span class="n">Rmin</span> <span class="mf">1096.54</span> <span class="n">m</span> <span class="mf">1.90483</span> <span class="n">s</span>  <span class="n">Rne</span> <span class="mf">7237.79</span> <span class="n">m</span> <span class="mf">17.35</span> <span class="n">s</span>  <span class="n">Rmax</span> <span class="mi">15904</span> <span class="n">m</span> <span class="mf">20.4</span> <span class="n">s</span>  <span class="c1"># Lead = 0 deg</span>
+         <span class="n">Rmin</span> <span class="mf">4829.64</span> <span class="n">m</span> <span class="mf">12.7495</span> <span class="n">s</span>  <span class="n">Rne</span> <span class="o">-</span><span class="mi">1</span> <span class="n">m</span> <span class="o">-</span><span class="mi">1</span> <span class="n">s</span>  <span class="n">Rmax</span> <span class="o">-</span><span class="mi">1</span> <span class="n">m</span> <span class="o">-</span><span class="mi">1</span> <span class="n">s</span>  <span class="c1"># Lead = 60 deg</span>
+         <span class="n">Rmin</span> <span class="mf">5003.26</span> <span class="n">m</span> <span class="mf">9.83513</span> <span class="n">s</span>  <span class="n">Rne</span> <span class="o">-</span><span class="mi">1</span> <span class="n">m</span> <span class="o">-</span><span class="mi">1</span> <span class="n">s</span>  <span class="n">Rmax</span> <span class="o">-</span><span class="mi">1</span> <span class="n">m</span> <span class="o">-</span><span class="mi">1</span> <span class="n">s</span>  <span class="c1"># Lead = 90 deg</span>
+         <span class="n">Rmin</span> <span class="mf">4208.14</span> <span class="n">m</span> <span class="mf">7.21605</span> <span class="n">s</span>  <span class="n">Rne</span> <span class="mf">5809.84</span> <span class="n">m</span> <span class="mf">16.9783</span> <span class="n">s</span>  <span class="n">Rmax</span> <span class="o">-</span><span class="mi">1</span> <span class="n">m</span> <span class="o">-</span><span class="mi">1</span> <span class="n">s</span>  <span class="c1"># Lead = 120 deg</span>
+         <span class="n">Rmin</span> <span class="mf">1096.54</span> <span class="n">m</span> <span class="mf">1.90482</span> <span class="n">s</span>  <span class="n">Rne</span> <span class="mf">7284.14</span> <span class="n">m</span> <span class="mf">17.4125</span> <span class="n">s</span>  <span class="n">Rmax</span> <span class="mi">15904</span> <span class="n">m</span> <span class="mf">20.4</span> <span class="n">s</span>  <span class="c1"># Lead = 180 deg</span>
+         <span class="c1"># INCOMPLETE EXAMPLE ... Total Conditions = 3 X 7 X 3 X 7 X 4 X 5 = 8820 lines needed.</span>
+      <span class="n">end_intercept_results</span>
+   <span class="n">end_launch_computer_table</span>
+<span class="n">end_launch_computer</span>
+</pre></div>
+</div>
+<p>Second Example Input Data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">launch_computer</span> <span class="n">airToAirComputer2</span> <span class="n">WSF_AIR_TO_AIR_COMPUTER</span>
+   <span class="c1"># Pointed to file must contain the launch_computer_table ... end_launch_computer_table block.</span>
+   <span class="n">load_table</span> <span class="n">launch_computer_table_data</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">end_launch_computer</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/wsf_air_to_air_launch_computer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsf_alpha_beta_filter.html" title="WSF_ALPHA_BETA_FILTER"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsf_air_target_fuse.html" title="WSF_AIR_TARGET_FUSE"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

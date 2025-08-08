@@ -1,0 +1,299 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfBrawlerProcessor
+-------------------
+
+.. class:: WsfBrawlerProcessor inherits WsfQuantumTaskerProcessor
+
+.. contents::
+   :local:
+
+Overview
+========
+
+Most of the script methods on the WsfBrawlerPlatform revolve around either evaluating or flying a maneuver.  The evaluation methods take a given 
+maneuver, project it forward in time, evaluation the future state, and return the value after biasing and multiplicative effects.  The fly methods 
+actually command the platform to fly a maneuver.  The :model:`WSF_BRAWLER_PROCESSOR` (which uses a :model:`WSF_BRAWLER_MOVER`) also supports many of the standard mover 
+commands, such as: GoToLocation(), TurnToHeading(), GoToAltitude(), GoToSpeed(), FollowRoute(), ReturnToRoute().  See the :class:`WsfPlatform` page for
+a full list and reference the :model:`WSF_BRAWLER_MOVER` page for further clarification.
+
+Evaluation Methods
+==================
+
+.. method:: double EvaluateRates(Vec3 angularRates, Vec3 axialAccelerations, int ilevel, int kalt, int icall, int lcall)
+
+Evaluates a maneuver alternative where angular rates and axial accelerations are given.
+
+ * angularRates - radians/sec
+ * axialAccelerations - meters/sec^2.
+
+.. method:: double EvaluateHeadingSpeedAltitude(double heading, double speed, double altitude, double maxGees, double maxClimbRate)
+
+   Evaluates a maneuver alternative to move to the specified heading, speed, and altitude with constraints of maxGees and maxClimbRate.
+
+    * heading  - degrees
+    * speed  - meters/sec
+    * altitude  - meters
+    * maxGees  - Gs
+    * maxClimbRate  - meters/sec
+
+.. method:: double EvaluateTurnInPlaneWithSpeed(Vec3 turningPlane, double maxGees, double speed, int ilevel, int kalt, int icall, int lcall)
+            double EvaluateTurnInPlaneWithThrottle(Vec3 turningPlane, double maxGees, double throttle, int ilevel, int kalt, int icall, int lcall)
+
+    Evaluates a maneuver alternative that pulls into the turning plane constrained by G-force and speed.  The Brawler
+    platform's current location is a point on the plane and the supplied vector defines the surface of the plane.
+
+    * turningPlane  - A directional unit vector in the NED coordinate frame
+    * maxGees  - Gs
+    * speed  - meters/sec
+    * throttle - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+
+.. method:: double EvaluateVectorWithSpeed(Vec3 direction, double maxGees, double speed, int ilevel, int kalt, int icall, int lcall)
+            double EvaluateVectorWithThrottle(Vec3 direction, double maxGees, double throttle, int ilevel, int kalt, int icall, int lcall)
+
+    Evaluates a maneuver alternative to move to the specified direction.
+
+    * direction  - Unit vector in the NED coordinate frame pointing in the desired direction of travel.
+    * maxGees  - Gs
+    * speed  - meters/sec
+    * throttle - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+
+Brawler Methods
+===============
+
+These methods allow scripted modification of BRAWLER values from user input.
+
+.. method:: void SetFlightAggressiveness(double aFactor)
+
+   Set aggressiveness factor for this aircraft's flight (unitless). Corresponds to input ``aggfac``.
+
+.. method:: void SetCombatEffectiveness(double aEffect)
+
+   Set combat effectiveness value of the platform (unitless). Corresponds to input ``cmbeff``.
+
+.. method:: void SetForceRatio(double aRatio)
+
+   Set the force ratio (unitless). Corresponds to input ``fratio``.
+
+.. _bp-mover-methods:
+
+Mover Methods
+=============
+
+.. method:: bool FlyRates(Vec3 angularRates, Vec3 axialAccelerations)
+
+   Flies the specified angular rates and axial accelerations.
+
+    * angularRates  - radians/sec
+    * axialAccelerations  - meters/sec^2.
+
+.. method:: bool FlyHeadingSpeedAltitude(double heading, double speed, double altitude, double maxGees, double maxClimbRate)
+
+   Flies to the specified heading, speed, and altitude with maxGees and maxClimbRate limiting the maneuver.
+
+    * heading  - degrees
+    * speed  - meters/sec
+    * altitude  - meters
+    * maxGees  - Gs
+    * maxClimbRate  - meters/sec
+
+.. method:: bool PullGsInPlaneWithSpeed(Vec3 turningPlane, double maxGees, double speed)
+            bool PullGsInPlaneWithThrottle(Vec3 turningPlane, double maxGees, double throttle)
+
+   Pulls in the specified turning plane.  The brawler platform's current location is a point on the plane and the supplied 
+   vector defines the surface of the plane.
+
+    * turningPlane  - direction vector in the NED coordinate frame
+    * speed  - meters/sec
+    * throttle  - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+    * maxGees  - Gs
+
+.. method:: bool FlyVectorWithSpeed(Vec3 velocity, double maxGees, double speed)
+            bool FlyVectorWithThrottle(Vec3 velocity, double maxGees, double throttle)
+
+   Flies the desired velocity vector and speed while being limited by maxGees.
+
+    * velocity  -  'direction vector ' in the NED coordinate frame (typically normalized)
+    * speed  - meters/sec
+    * throttle  - stick setting in range [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+    * maxGees  - Gs
+
+Aerodynamic Methods
+===================
+
+.. method:: double MaxAvailableGs()
+
+   Returns the maximum instantaneous (not sustainable) Gees the platform could pull at this very moment - meters/sec^2.
+
+.. method:: double MaxSustainedGs()
+
+   Returns the maximum sustainable Gees the platform could pull at this very moment - meters/sec^2.
+
+.. method:: double MaxTacticalGs()
+
+   Returns the Gees that are tactically appropriate to pull at this moment, based on target range &amp; position.  Will return either MaxSustainedGs() or MaxAvailableGs().  Meters/sec^2.
+
+.. method:: double MaxForwardAccelWithGravity()
+            double MinForwardAccelWithGravity()
+
+   Returns the specified maximum or minimum acceleration possible (including the addition of gravity) given the current platform state and engine capability - meters/sec^2.
+
+.. method:: double CorneringVelocity()
+
+   Returns the cornering velocity given the current platform state and engine capability - meters/sec.
+
+.. method:: double Area()
+
+   Returns the surface area (reference area) of the airframe (meters^2).
+
+.. method:: double DynamicPressure()
+
+   Returns the current dynamic pressure (Pascals).
+
+.. method:: double Mach()
+
+   Returns the current mach.
+
+.. method:: double Throttle()
+
+   Returns the current throttle [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+
+.. method:: double EmptyWeight()
+
+   Returns the empty weight (Kilograms).
+
+.. method:: double FuelWeight()
+
+   Returns the current fuel weight (Kilograms).
+
+.. method:: double Weight()
+
+   Returns the current total weight (Kilograms). This is equivalent to :method:`EmptyWeight<WsfBrawlerProcessor.EmptyWeight>` + :method:`FuelWeight<WsfBrawlerProcessor.FuelWeight>`
+
+.. method:: double Lift()
+            double Lift(double angleOfAttack, double speed, double altitude)
+
+   The form without input arguments returns the current lift (Newtons).  Use the form with input arguments to query for hypothetical lift values.
+
+    * angleOfAttack - degrees
+    * speed - meters/sec
+    * altitude - meters
+
+.. method:: double Drag()
+            double Drag(double angleOfAttack, double speed, double altitude)
+
+   The form without input arguments returns the current drag (Newtons).  Use the form with input arguments to query for hypothetical drag values.
+
+    * angleOfAttack - degrees
+    * speed - meters/sec
+    * altitude - meters
+
+.. method:: double Thrust()
+            double Thrust(double throttle, double speed, double altitude)
+
+   The form without input arguments returns the current thrust (Newtons).  Use the form with input arguments to query for hypothetical thrust values.
+
+    * throttle - Query the lift using this throttle setting [1,3]. A value of 1 is idle. A value of 2 is mil power. A value of 3 is max afterburner.
+    * speed - meters/sec
+    * altitude - meters
+
+Location and Geometry Methods
+=============================
+
+.. method:: Vec3 LocationNED()
+            Vec3 LocationNED(WsfPlatform aPlatform)
+            Vec3 LocationNED(WsfTrack aTrack)
+            Vec3 LocationNED(WsfGeoPoint aGeoPoint)
+
+   Returns the NED location (units of meters) of the provided object (yourself if none specified).  The NED location returned is relative to the internal BRAWLER point of reference; typically the reference point will be the location of first BRAWLER platform defined in the simulation.  The NED locations returned are only relevant to other NED locations returned from the methods in this section, as they all use the same reference point.
+
+.. method:: Vec3 ConvertNEDtoWind(Vec3 ned)
+
+   Returns the wind coordinate frame vector of the provided NED location relative to the platform (meters).
+
+.. method:: Vec3 ConvertWindtoNED(Vec3 wind)
+
+   Returns the NED coordinate frame vector of the provided wind vector relative to the platform (meters).
+
+Timing and Event Methods
+========================
+
+.. method:: double ProjectedTimeDelta()
+
+   Returns the time interval used to project forward our mental perception of ourselves &amp; our threats when making choices between alternative.
+
+.. method:: double GetConsciousnessEventTime()
+
+   Returns the time remaining until the next consciousness event update.
+
+.. method:: double GetNextConsciousnessEventTime()
+
+   Returns the simulation time of the next consciousness event update.
+
+.. method:: double ScheduleConsciousnessEvent(double simTime)
+
+   Forces a consciousness event to occur at the provided simulation time.
+
+Utility Methods
+===============
+
+.. method:: Vec3 AimPoint(Vec3 position, double speed, Vec3 targetPosition, Vec3 targetVelocityDirection, double targetSpeed)
+
+   Returns the position vector of the calculated aim point or (0,0,0) if no intercept solution exists.  Units of input parameters do not matter as long as they are all consistent.  
+   Recommended use would be MKS units.
+
+    * position - Position of the attacker.
+    * speed - Speed of the attacker.
+    * targetPosition - Position of the target.
+    * targetVelocityDirection - Unit vector of the target's direction of travel.
+    * targetSpeed - Speed of the target.
+
+.. method:: Vec3 Intercept(Vec3 position, double speed, Vec3 targetPosition, Vec3 targetVelocity, double cosMaxLOS, double desiredLOSAngle, double desiredAltitude)
+
+   Returns the direction and necessary speed the attacker should use to reach an interception point.
+
+    * position - Position of the attacker (meters).
+    * speed - Speed of the attacker (meters/sec).
+    * targetPosition - Position of the target (meters).
+    * targetVelocity - Target's speed and direction of travel (meters/sec).
+    * cosMaxLOS - Cosine of max LOS to the target.
+    * desiredLOSAngle - Desired LOS angle to the intercept point (radians).
+    * desiredAltitude - Desired altitude until 30 degree elevation angle exceeded.
+
+.. method:: double OffBoresightAngle(WsfPlatform platform, WsfPlatform target)
+
+   Returns the off-boresight angle (radians) between the platform and the target.
+
+.. method:: bool SlowFlight()
+
+   Returns true if platform is in slow-flight conditions.
+
+.. method:: Vec3 EvasionDirection()
+
+   Returns the evasion direction computed by the brawler evaluation logic for the evasion maneuver value component.  This 
+   method is used by the evasion alternative.
+
+.. method:: void SuggestVectoredFlight(Vec3 direction, double value, double speed)
+
+   Suggests a vectored flight.  This method is used by flight and/or pilot posture decision levels.  Not currently used by 
+   1v1 WVR-only BRAWLER AFSIM agent.
+
+Subsystem Methods
+=================
+
+.. method:: WsfQuantumTaskerProcessor QuantumTaskerProcessor()
+
+   Returns the default quantum tasker processor being used by the BRAWLER platform.
+
+.. method:: WsfThreatProcessor ThreatProcessor()
+
+   Returns the default threat processor being used by the BRAWLER platform.

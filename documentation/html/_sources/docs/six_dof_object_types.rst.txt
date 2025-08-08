@@ -1,0 +1,79 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+six_dof_object_types
+--------------------
+
+.. command:: six_dof_object_types ... end_six_dof_object_types
+   :block:
+
+.. parsed-literal::
+
+ six_dof_object_types
+
+    // :ref:`Rigid_Body_Vehicle_Type_Label`
+    :command:`rigid_body_vehicle_type` ... end_rigid_body_vehicle_type
+
+    // :ref:`Point_Mass_Vehicle_Type_Label`
+    :command:`point_mass_vehicle_type` ... end_point_mass_vehicle_type
+
+    // :ref:`SixDOF_Thrust_Producer_Types`
+    :command:`rigid_body_engine_type` ... end_rigid_body_engine_type
+    :command:`point_mass_engine_type` ... end_point_mass_engine_type
+
+    // :ref:`SixDOF_Platform_Mappings`
+    :command:`map_vehicle_to_platform` ... end_map_vehicle_to_platform
+
+    // `SixDOF Integrators Support`_
+    integrators_ ...
+
+    // `SixDOF Environment Support`_
+    terrain_ ...
+
+ end_six_dof_object_types
+
+Overview
+========
+
+A six_dof_object_types block is used to specify various **types** of SixDOF objects, subobjects, components (such as engines), and environmental infrastructure (such as terrain). Once defined, a :command:`rigid_body_vehicle_type` or :command:`point_mass_vehicle_type` can be used when defining a :model:`WSF_RIGID_BODY_SIX_DOF_MOVER` or :model:`WSF_POINT_MASS_SIX_DOF_MOVER`.
+
+Multiple six_dof_object_types_ blocks may be utilized. Types defined in the six_dof_object_types_ blocks must be uniquely named. In addition, a type must be defined before it is referenced. As a result, the order in which types are defined is important. Types should be defined in the order in which they are referenced. Thus, if a "F2H_Banshee" rigid-body aircraft uses "Westinghouse_J34" jet engines, the engine type (:command:`rigid_body_engine_type`) should be defined first, followed by the aircraft (:command:`rigid_body_vehicle_type`).
+
+SixDOF Integrators Support
+==========================
+
+SixDOF was designed with the ability to use different numerical integration approaches. These different integrators are "loaded" through the use of the integrators_ command.
+
+At the current time, only a single (default) integrator is provided, but software developers can derive from the base class (WsfSixDOF_Integrator) to introduce other integrators.
+
+.. command:: integrators <file-name>
+
+   This will load one or more SixDOF integrators by reading/loading the specified file.
+   
+   See :ref:`SixDOF_Integrators_File_Definition` for the definition of the integrators file format.
+   
+The integrators_ line can be defined independently, but is often grouped into a another file (typically six_dof_environment.txt) along with the `SixDOF Environment Support`_ items.
+
+SixDOF Environment Support
+==========================
+
+SixDOF movers lean on the AFSIM scenario-local information for most environmental components. These include atmosphere, wind, terrain, and gravity. 
+AFSIM terrain can be augmented to specify areas like airfields, where noise in other terrain data may have an adverse affect on landing, takeoff, or taxi operations.
+
+.. command:: terrain  <file-name>
+
+   Create a SixDOF terrain object using the specified file. Only a single terrain object should be defined for a given scenario.
+
+   See :ref:`SixDOF_Terrain_File_Definition` for the definition of the terrain file format.
+
+A integrators_ command is also typically included in the file for convenience.
+
+It may also be convenient to define a :command:`atmosphere_table` block here. If one is not defined, the default :doc:`atmosphere` is used. This will lead to inaccuracies above 61 Km MSL, where the default atmosphere ends.

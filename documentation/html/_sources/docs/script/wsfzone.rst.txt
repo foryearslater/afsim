@@ -1,0 +1,217 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfZone
+-------
+
+.. class:: WsfZone inherits WsfObject
+
+Static Methods
+==============
+
+All zones created with these static methods are not attached to a platform and do not exist in the global simulation
+context.  They are strictly owned by whatever script created them.
+
+.. method:: static WsfZone CreateCircular(double minRadius, double maxRadius, double startAngle, double stopAngle)
+   
+   Creates and returns a circular zone with the given min/max radius and start/stop angles.
+
+.. method:: static WsfZone CreateElliptical(double latAxis, double lonAxis, double startAngle, double stopAngle)
+   
+   Creates and returns an elliptical zone with the given lat/lon axis and start/stop angles.
+
+.. method:: static WsfZone CreateSpherical(double minRadius, double maxRadius, double startAngle, double stopAngle)
+   
+   Creates and returns a spherical zone with the given min/max radius and start/stop angles.
+
+.. method:: static WsfZone CreatePolygonal(Array<WsfGeoPoint> aGeoPointArray)
+   
+   Creates and returns an independent polygonal zone with the given geodetic coordinates as points.
+
+.. method:: static WsfZone CreatePolygonal(WsfPlatform aPlatform, Array<Vec3> aPoints)
+   
+   Creates and returns a relative polygonal zone with the given vector of relative coordinates as points.  Uses the given
+   platform to initially place the zone.  When dealing with relative zones (e.g., calling "PointIsInside") you must
+   provide an eye point or a relative platform to use.
+
+.. method:: static WsfZone FindZone(string aZoneName)
+   
+   Return the zone with the specified name.
+   
+   .. note::
+
+      The return value will be invalid if the specified zone does not exist. Use
+      :method:`IsValid() <WsfObject.IsValid>` method on the return value to ensure it is valid before performing any operations on
+      it.
+
+
+
+General Methods
+===============
+
+.. method:: WsfGeoPoint Centroid()
+.. method:: WsfGeoPoint Location()
+.. method:: WsfGeoPoint Position()
+   
+   Returns a :class:`WsfGeoPoint` of the centroid or center of mass of the zone. 
+   
+.. note:: These methods are only valid for polygonal zones; use :method:`Reference<WsfZone.Reference>` for other zone types (Circular, Elliptical, Spherical).
+
+.. method:: WsfGeoPoint MaxPoint()
+   
+   Returns a :class:`WsfGeoPoint` of the max point (upper-right corner) of the bounding box of a zone.
+   
+.. note:: This method is only valid for polygonal zones.
+
+.. method:: WsfGeoPoint MinPoint()
+   
+   Returns a :class:`WsfGeoPoint` of the min point (lower-left corner) of the bounding box of a zone.
+
+.. note:: This method is only valid for polygonal zones.
+
+.. method:: double ModifierValue(string aModifierCategoryName)
+   
+   Returns the modifier value of the zone given the modifier category name.
+   
+   .. note::
+
+      The return value will be equal to -1 if the modifier was not found.
+
+
+.. method:: bool PointIsInside(WsfGeoPoint aViewPoint, WsfGeoPoint aEyePoint, double aLookHeading, double aDeltaDownRange)
+   
+   Returns true if the given viewpoint is within the zone.
+   
+   * **aEyePoint** is used if the zone is a relative zone.  If it is, the zone is placed relative to the given eye point
+     and look heading.
+   * **aLookHeading** is used if the zone is a relative zone.
+
+.. method:: bool PointIsInside(WsfPlatform aRelativePlatform, WsfGeoPoint aLocationPoint)
+   
+   Returns true if the given location point is within the zone. 
+   
+   * **aRelativePlatform** is used for a location and look heading if the zone is a relative zone.  If it is, the zone is
+     placed relative to the given platform.
+
+.. method:: bool PointIsInside(WsfGeoPoint aLocationPoint)
+   
+   Returns true if the given location point is within the zone.  Assumes the zone is a global zone with absolute geodetic
+   coordinates.  Returns false if it is a relative zone.
+
+.. method:: WsfGeoPoint Reference()
+   
+   Returns a :class:`WsfGeoPoint` of the reference point of the zone. The reference point is usually the first vertex in the
+   array of vertices that define the zone.
+
+.. method:: double PenetrationDistance(WsfGeoPoint aFromPoint, WsfGeoPoint aToPoint)
+
+   Return the penetration distance in meters through the zone along the line defined by the given points.
+   
+   .. note:: Penetration calculations are approximate. Implicit projections using latitude and longitude are employed in the implementation of this method, so that the farther the penetration distance is from one (latitude, longitude) point to another through a zone, the more inaccurate the result will be (this is not the case for altitude differences).
+   
+   .. note:: Use of this method is only valid with absolute zones for which none of the :command:`minimum_radius<zone.minimum_radius>`, :command:`start_angle<zone.start_angle>`, and :command:`stop_angle<zone.stop_angle>` inputs are specified, as well as the :command:`heading<zone.heading>` input for the :command:`polygonal<zone.polygonal>` zone type.
+   
+.. method:: Array<WsfGeoPoint> PolyPoints()
+   
+   Returns an array of location points that define the zone.
+   
+   .. note::
+
+      The return value will be invalid if the zone is not a "polygonal" zone. Use
+      :method:`IsValid() <WsfObject.IsValid>` method on the return value to ensure it is valid before performing any operations on
+      it.
+
+.. method:: void SetPolyPoints(Array<WsfGeoPoint> aLocationPoints)
+   
+   Makes the zone a polygon zone and sets its points to the given location points.  The zone is now considered independent
+   and relative to nothing, its points are geodetic coordinates.
+
+.. method:: void SetCategory(string aCategory)
+
+   Applies a user supplied string value as the category of the zone. 
+
+.. method:: string GetCategory()
+
+   Returns the string category value of the zone. 
+
+.. method:: void SetPriority(int aPriority) 
+
+   Applies a user supplied int value as the priority of the zone. 
+
+.. method:: string GetPriority() 
+
+   Returns the int priority value of the zone.
+
+.. method:: Color GetFillColor()
+
+   Returns the fill color of the zone.
+
+   .. note:: The returned :class:`Color` object may be a null reference if the fill color has not been explicitly set using :command:`zone.fill_color` or :method:`SetFillColor<WsfZone.SetFillColor>`. Use :method:`IsValid()<Object.IsValid>` to ensure it is valid.
+
+.. method:: Color GetLineColor()
+
+   Returns the line color of the zone.
+
+   .. note:: The returned :class:`Color` object may be a null reference if the line color has not been explicitly set using :command:`zone.line_color` or :method:`SetLineColor<WsfZone.SetLineColor>`. Use :method:`IsValid()<Object.IsValid>` to ensure it is valid.
+
+.. method:: void SetFillColor(Color aFillColor)
+
+   Sets the fill color of the zone to aFillColor.
+
+.. method:: void SetLineColor(Color aLineColor)
+
+   Sets the line color of the zone to aLineColor.
+
+Draw Methods
+============
+
+.. note::
+
+   The following methods are only implemented for polygonal zones. Other zone types (e.g. circular) are not currently supported.
+
+.. method:: void Draw(WsfDraw aDraw)
+   
+   Draws an outline of a polygonal zone, using the :class:`aDraw <WsfDraw>` object.
+
+.. method:: void DebugDrawZone()
+   
+   Draws an outline of a polygonal zone, using :class:`WsfDraw` with a 5 second duration.
+
+.. method:: void Draw(WsfDraw aDraw, WsfGeoPoint aEyePoint, double aLookHeading)
+   
+   Draws an outline of a relative zone using the :class:`aDraw <WsfDraw>` object.
+
+.. method:: void DebugDrawZone(WsfGeoPoint aEyePoint, double aLookHeading)
+   
+   Draws an outline of a relative zone using WsfDraw with a 5 second duration.
+
+.. method:: void DrawCentroid(WsfDraw aDraw)
+   
+   Draws an 'X' at the centroid location of the zone using the :class:`aDraw <WsfDraw>` object.
+
+.. method:: void DebugDrawCentroid()
+   
+   Draws an 'X' at the centroid location of the zone using WsfDraw with a 5 second duration.
+
+.. method:: void DrawBounds(WsfDraw aDraw)
+   
+   Draws an outline of the bounding box of the zone (min and max points) using the :class:`aDraw <WsfDraw>` object.
+
+.. method:: void DebugDrawBounds()
+   
+   Draws an outline of the bounding box of the zone (min and max points) using WsfDraw with a 5 second duration.
+
+.. _WsfZone.Auxiliary_Data_Methods:
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt

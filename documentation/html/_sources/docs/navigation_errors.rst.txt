@@ -1,0 +1,198 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+navigation_errors
+-----------------
+
+.. Put this command in the hidden '_' group so it doesn't show up as a top-level command
+
+.. block:: _
+
+.. command:: navigation_errors ... end_navigation_errors
+
+    .. parsed-literal::
+   
+       navigation_errors_
+
+          gps_status_ ...
+
+          # GPS Error specifications
+
+          gps_in_track_error_ ...
+          gps_cross_track_error_ ...
+          gps_vertical_error_ ...
+          gps_degraded_multiplier_ ...
+          
+          # INS Error specifications
+
+          ins_accelerometer_bias_error_ ...
+          ins_gyroscope_bias_error_ ...
+          ins_random_walk_error_ ...
+          ins_vertical_error_ ...
+          ins_x_errors_ ...
+          ins_y_errors_ ...
+          ins_z_errors_ ...
+          ins_xy_errors_ ...
+
+          # Other parameters
+
+          ins_scale_factors_ ...
+          randomness_ ...
+          show_status_changes_ ...
+          time_history_path_ ...
+
+       end_navigation_errors
+
+Overview
+========
+
+The Navigation_Errors_ block is a subcommand of the :command:`platform` command. The primary function of this block is to
+define the errors that exist between where a platform thinks it is located and where it is actually located. The error
+difference is represented as a 'location error vector'. These errors are used to affect the sensor reports by altering
+the reporting location and any absolute reported locations within the report.
+
+This model provides the capability to produce different errors depending on the availability of GPS. If GPS is defined
+to be available then GPS errors are used. If GPS is not available then the INS errors are used. Script methods are
+available to query and change the GPS availability state.
+
+At each update_interval, the model computes the errors or drift rates to be used for the next update interval.
+
+* If GPS is active, it computes in-track, cross-track and vertical errors using the following:
+
+  in_track_error    = gaussian(gps_in_track_error_)
+  cross_track_error = gaussian(gps_cross_track_error_)
+  vertical_error    = gaussian(gps_vertical_error_)
+
+  Additionally, if gps_status_ is set to 2 (degraded) each of the above errors will be multiplied by the gps_degraded_multiplier_.
+  
+* If GPS is not active, it computes the in-track and cross-track drift rates and vertical error using the following:
+
+  heading_error          = gaussian(ins_heading_error)
+  perceived_speed        = true_speed + gaussian(ins_velocity_error)
+  in_track_drift_rate    = perceived_speed * abs(cos(heading_error)) - true_speed
+  cross_track_drift_rate = perceived_speed * sin(heading_error)
+  vertical_error         = gaussian(ins_vertical_error_)
+
+During each mover update, the model does the following:
+
+* If GPS is not active, the in_track and cross track_errors are updated:
+
+  * dt = *time-since-last-mover-update*
+  * in_track_error    = in_track_error    + dt * in_track_error_drift_rate
+  * cross_track_error = cross_track_error + dt * cross_track_error_drift_rate
+  
+* Then, regardless of the GPS state, the current in_track_error, cross_track_error and vertical_error are converted
+  from the local body frame to the world frame for use as the current location error vector.
+
+Note
+====
+
+This is not a full-fledged navigation error model (i.e., it will not directly
+affect the motion of the platform. Instead, it is used to introduce small errors in the sensor detection reporting
+process that arise because the sensing platform may not know EXACTLY where it is located).
+
+Commands
+========
+
+.. command:: gps_cross_track_error <length-reference>
+.. command:: gps_in_track_error <length-reference>
+.. command:: gps_vertical_error <length-reference>
+   
+   Define the standard deviation of a Gaussian distribution, which is used to create the in-track, cross-track and
+   vertical components of the location error vector when GPS is available.
+   
+   **Default:** 0.0 m
+
+.. command:: gps_degraded_multiplier <real-value>
+
+   Specify a value by which computed GPS location errors will be multiplied when gps_status_ is degraded (2).
+   
+.. command:: gps_status <integer-value>
+   
+   Set the initial operating state:
+   
+   * -1: GPS is not available. Only INS errors will be computed.
+   *  0: The model is disabled. Neither GPS or INS errors will be computed.
+   *  1: GPS is available. Only GPS errors will be computed.
+   *  2: GPS is available with degraded capability. Only GPS errors will be computed, and these will be multiplied by gps_degraded_multiplier_.
+   *  3: GPS errors can be set from an external source (e.g., using :method:`WsfPlatform.SetPerceivedLocationErrorWCS`); otherwise, the model is disabled.
+
+   **Default:** 1 (GPS is available)
+
+.. command:: ins_accelerometer_bias_error <angle-reference>
+   
+   Define the standard deviation of the accelerometer error used when GPS is not available.
+   
+   **Default:** 0.0 m/s^2
+
+.. command:: ins_gyroscope_bias_error <angle-rate-reference>
+   
+   Define the standard deviation of the gyroscope bias error used when GPS is not available.
+   
+   **Default:** 0.0 deg/hour
+
+.. command:: ins_random_walk_error /variable <real-value>
+.. command:: ins_random_walk_error <real-value> deg/sqrt-hr
+   
+   Define the standard deviation of the random walk error used when GPS is not available.
+   
+   **Default:** 0.0 deg/sqrt-hr
+
+.. command:: ins_scale_factors <real-value> <real-value> <real-value>
+.. command:: ins_vertical_error <length-reference>
+   
+   Define the standard deviation of a Gaussian distribution, which is used to create the vertical component of the
+   location error vector when GPS is not available.
+   
+   **Default:** 0.01 m
+
+.. command:: ins_x_errors coefficient <real-value> [ exponent <real-value> ]
+.. command:: ins_y_errors coefficient <real-value> [ exponent <real-value> ]
+.. command:: ins_z_errors coefficient <real-value> [ exponent <real-value> ]
+.. command:: ins_xy_errors coefficient <real-value> [ exponent <real-value> ]
+   
+   Specify an custom error model for each axis in the platform's entity coordinate system (ECS), applicable when gps_status_ is set to "INS" (-1).  Each entry for a given axis represents an term of a polynomial with the specified coefficient and exponent.
+   
+   **Default**
+
+.. command:: time_history_path <dir-name>
+   
+   This enables the writing of a time history file that shows the true position and error components as a function of
+   time. *<dir-name>* is the name of the directory to which the file will be written. The file name will be:
+   
+    *<dir-name>*/*<platform-name>*.neh
+   
+   If this command is omitted then no time history data will be written.
+   
+   **Default:** not specified (no time history will be written).
+
+.. command:: randomness <boolean-value>
+   
+   Specifies whether location errors are computed as gaussian random numbers.  If so, the location errors (gps_in_track_error_, gps_cross_track_error_, and gps_vertical_error_) are used as the standard deviations in the random number generation.  If disabled, the location errors are interpreted as constant offsets.
+   
+   **Default:** enabled
+
+.. command:: show_status_changes <boolean-value>
+
+Script Interface
+================
+
+The :class:`WsfPlatform` script class has methods to query and change the GPS availability status and to query the location
+error vector.
+
+* :method:`GPS_Status <WsfPlatform.GPS_Status>`
+* :method:`SetGPS_Status <WsfPlatform.SetGPS_Status>`
+* :method:`SetPerceivedLocationErrorWCS <WsfPlatform.SetPerceivedLocationErrorWCS>`
+* :method:`PerceivedLocation <WsfPlatform.PerceivedLocation>`
+* :method:`PerceivedLocationErrorNED <WsfPlatform.PerceivedLocationErrorNED>`
+* :method:`PerceivedLocationErrorWCS <WsfPlatform.PerceivedLocationErrorWCS>`
+
+The script methods can be used to change the GPS availability based on any criteria the user desires.

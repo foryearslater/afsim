@@ -1,0 +1,458 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+receiver
+--------
+
+.. put receiver command in the hidden '_' group so it doesn't show up as a top-level command
+
+.. block:: _
+
+.. command:: receiver ... end_receiver
+    :block:
+
+    The **receiver** block defines the attributes of an electromagnetic receiver. Various :command:`sensor` and
+    :command:`communication <comm>` objects make use of receivers.
+
+    .. parsed-literal::
+
+       receiver_
+          ... :ref:`Antenna_Commands` ...
+
+          antenna_ohmic_loss_ <db-ratio-value>
+          antenna_pattern_ <pattern-name>
+          antenna_pattern_table_ ... end_antenna_pattern_table
+          attenuation_model_ <derived-name>
+          attenuation_  .....  (attenuation is a synonym for attenuation_model)
+          aux_data_  ... end_aux_data
+          bandwidth_ <frequency-value>
+          beam_tilt_ <angle-value>
+          check_terrain_masking_ <boolean-value>
+          check_transmitter_masking_ <boolean-value>
+          terrain_masking_mode_ [ terrain_and_horizon | terrain_only | horizon_only ]
+          detection_threshold_ <db-ratio-value>
+          earth_radius_multiplier_ <value>
+          effective_earth_radius_  <length-value>
+          frequency_ <frequency-value>
+          wavelength_ <length-value>
+          instantaneous_bandwidth_ <frequency-value>
+          internal_loss_ <db-ratio-value>
+          noise_figure_ <db-ratio-value>
+          noise_power_ <power-value>
+          polarization_ [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular | default ]
+          polarization_effect_ [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular ] <fraction>
+          propagation_model_ <derived-name>
+          receive_line_loss_ <db-ratio-value>
+       end_receiver
+
+Overview
+========
+
+Commands
+========
+
+.. command:: antenna_ohmic_loss <db-ratio-value>
+
+   This value, along with noise_figure_ and receive_line_loss_, provides one method to determine the receiver noise power. It specifies the ohmic resistance of the antenna.
+
+   **Default:** 0 db (No loss)
+
+   .. note::
+      Specifying antenna_ohmic_loss_ or receive_line_loss_ triggers the use of an alternative method for computing the noise power (See `Receiver Noise`_ below for more information). For many uses internal_loss_ should be used to account for losses.
+
+
+.. command:: antenna_pattern <pattern-name>
+
+   Specifies the name of the antenna gain pattern used by the receiver. The pattern must be defined using the
+   :command:`antenna_pattern` command.
+
+   **Default:** If antenna_pattern_ and antenna_pattern_table_ are omitted, they will be copied from an implicitly associated :command:`_.transmitter` if defined. Otherwise the antenna gain will assumed to be a constant value of 1 (0 dB).
+
+   .. note::
+      If antenna_pattern_ and antenna_pattern_table_ are both specified, the last one specified is used.
+
+
+.. command:: antenna_pattern_table ... end_antenna_pattern_table
+
+   This command allows the definition of frequency-dependent or polarization- and frequency-dependent antenna gain pattern. Each named antenna pattern must be defined using the :command:`antenna_pattern` command.
+
+   To define a table that is only frequency-dependent::
+
+    antenna_pattern_table
+       frequency <frequency-value-1> <pattern-name-1>
+       frequency <frequency-value-2> <pattern-name-2>
+       frequency <frequency-value-n> <pattern-name-n>
+    end_antenna_pattern_table
+
+   To define a table that is polarization- and frequency-dependent:
+
+   .. parsed-literal::
+
+       antenna_pattern_table
+          polarization default
+             frequency <frequency-value-1> <pattern-name-1>
+             frequency <frequency-value-2> <pattern-name-2>
+             frequency <frequency-value-n> <pattern-name-n>
+          polarization <polarization-type>
+             frequency <frequency-value-1> <pattern-name-1>
+             frequency <frequency-value-n> <pattern-name-n>
+          polarization <polarization-type>
+             frequency <frequency-value-1> <pattern-name-1>
+       end_antenna_pattern_table
+
+   When defining a polarization- and frequency-dependent table, the following rules must be noted:
+
+   * Any 'frequency' entry that occurs before the first 'polarization' entry is assumed to apply to the 'default' polarization.
+   * Any polarization that is not defined will use the definition for the 'default' polarization.
+   * A 'default' polarization must be defined.
+
+
+   The process for determining gain uses the following algorithm:
+
+   * If a polarization-dependent table is being used, the polarization of the received signal is used to locate the appropriate polarization-specific set of frequency entries. If there is not a corresponding entry for the polarization of the signal being received, the 'default' entry is used.
+   * Frequencies greater than or equal *frequency-value-m* and less than *frequency-value-m+1* will use *pattern-name-m*
+   * Frequencies less than *frequency-value-1* will use *pattern-name-1*.
+   * Frequencies greater than or equal to *frequency-value-n* will use *pattern-name-n*.
+
+
+   **Default:** If antenna_pattern_ and antenna_pattern_table_ are omitted, they will be copied from an implicitly associated :command:`_.transmitter` if defined. Otherwise the antenna gain will assumed to be a constant value of 1 (0 dB).
+
+   .. note::
+      If antenna_pattern_ and antenna_pattern_table_ are both specified, the last one specified is used.
+
+   .. note::
+      Entries will be sorted into increasing order of frequency.
+
+.. command:: attenuation_model <derived-name>
+             attenuation_model <base-name> ...commands... end_attenuation_model
+.. command:: attenuation  .....  (attenuation is a synonym for attenuation_model)
+
+   Specify the attenuation model. See the global command :command:`attenuation_model` for more information about the available attenuation models and how to configure the models.
+
+   **Default:** **none** (No attenuation effects)
+
+   .. note::
+      This command is valid only for receivers which receive signals that do not originate from a
+      :command:`_.transmitter`
+
+.. command:: aux_data  ... end_aux_data
+
+   Defines application-specific 'auxiliary data'. See :command:`_.aux_data`.
+
+   **Default:** No auxiliary data is defined.
+
+.. command:: bandwidth <frequency-value>
+
+   Specifies the bandwidth of the receiver. The receiver will accept signals whose frequency is between:
+    [ frequency - 1/2 bandwidth, frequency + 1/2 bandwidth ]
+
+   For frequency-hopping systems, the frequency should be set to the center of the frequency-hopping range, and the bandwidth should be set to encompass the range of frequencies. Note that WSF does not currently model the actual instantaneous frequency hopping.
+
+   Default: If omitted, the value of instantaneous_bandwidth_ will be used if it is non-zero. Otherwise a value of zero will be assumed.
+
+   .. note::
+      See `Bandwidth Overlap Ratio`_ below for more information.
+
+   .. note::
+      This command should not be used with :model:`WSF_PASSIVE_SENSOR` as it implicitly generates the required data from its :model:`WSF_PASSIVE_SENSOR` commands.
+
+
+.. command:: beam_tilt <angle-value>
+
+   This is only to be used when defining systems that employ multiple beams (e.g., when using multiple beams in :model:`WSF_RADAR_SENSOR`). It specifies the elevation angle of the beam center above the horizontal plane.
+
+   Default: If there is an implicitly associated transmitter (e.g., as in :model:`WSF_RADAR_SENSOR`), the default will be the value of :command:`_.transmitter.beam_tilt` from the associated :command:`_.transmitter`. Zero degrees is assumed if there is not an associated transmitter, or if **beam_tilt** was not specified in the associated :command:`_.transmitter`
+
+   .. note::
+      the :command:`_.antenna_commands.antenna_tilt` or :command`_.articulated_part.pitch`
+      commands should not be used with this command.
+
+.. command:: check_terrain_masking <boolean-value>
+
+   Toggles the computation of terrain and horizon line of sight. This may be set to 'off' to either reduce computation or model sensors and comm devices which do not have line of sight limitations. By default, horizon masking is checked first, followed by a separate terrain masking check if terrain is loaded. The simple horizon masking check assumes a smooth bald spherical Earth and that any object below zero mean sea level is obscured. For subsurface sensors, horizon checking can be disabled by setting the terrain_masking_mode_ to terrain_only.
+
+   **Default:** on
+
+.. command:: check_transmitter_masking <boolean-value>
+
+   Toggles the computation of terrain and horizon line of sight for transmitter checks.  This may be set to 'off' to either reduce computation or model sensors and comm devices which do not have line of sight limitations, e.g. bistatic sensors.
+
+   **Default:** on
+
+.. command:: terrain_masking_mode [ terrain_and_horizon | terrain_only | horizon_only ]
+
+   Sets the mode or type of masking checks to perform. By default, both horizon and terrain masking checks are enabled.
+
+   **Default:** terrain_and_horizon
+
+.. command:: detection_threshold <db-ratio-value>
+
+   Specifies the signal-to-noise ratio above which the signal is declared to be detectable.
+
+   **Default:** 3 db
+
+   .. note::
+      Some systems (:model:`WSF_PASSIVE_SENSOR` and :model:`WSF_RADAR_SENSOR` in particular) use other criteria to determine if the received signal is sufficient for detection. This command is ineffective and should not be used in those cases.
+
+
+.. command:: earth_radius_multiplier <value>
+.. command:: effective_earth_radius  <length-value>
+
+   Specify either the multiplier for Earth's radius, or the effective earth radius, used to compute the effects of atmospheric refraction of radio-frequency signals.
+
+   This command is only effective for receivers in which an explicit :command:`_.transmitter` is not the source of the signal to be detected.
+
+   .. note::
+      For commands where a :command:`_.transmitter` is involved (such as in RF sensors or communications),
+      this command should be specified in the :command:`_.transmitter` block.
+
+   .. note::
+      The Earth's radius is considered to be 6366707.019 meters.
+
+   **Default:** earth_radius_multiplier 1.0
+
+.. command:: frequency <frequency-value>
+.. command:: wavelength <length-value>
+
+   Specifies the center frequency to which the receiver is tuned. The receiver will accept signals whose frequency is between:
+
+    [ frequency - 1/2 bandwidth, frequency + 1/2 bandwidth ]
+
+   * wavelength is an alternative mechanism for entering the frequency. The resulting frequency will be computed as:
+
+    frequency = speed-of-light / wavelength
+
+   **Default:**
+      Varies. If the receiver is implicitly associated with a transmitter (such as monostatic radar system), the default will be the same as the frequency of the associated transmitter. For stand-alone receivers, a value must be specified.
+
+   .. note::
+      This command should not be used with :model:`WSF_PASSIVE_SENSOR` as it implicitly generates the required data from its :model:`WSF_PASSIVE_SENSOR` commands.
+
+
+.. command:: instantaneous_bandwidth <frequency-value>
+
+   Specifies the instantaneous bandwidth of the receiver. For a frequency hopping or scanning system, this would be the bandwidth that is processed during an individual hop or scan point.
+
+   If noise_power_ is not explicitly supplied then this value is used as the bandwidth to calculate the noise power of the receiver as described in `Receiver Noise`_ below.
+
+   **Default:** If omitted, the value of bandwidth_ will be used if it is non-zero. Otherwise a value of zero will be assumed.
+
+.. command:: internal_loss <db-ratio-value>
+
+   A single number can be used account for miscellaneous losses.  This value occurs in the denominator:
+
+   :math:`S' = S / internal\_loss`
+
+   **Default:** 0 db (no internal loss)
+
+.. command:: noise_figure <db-ratio-value>
+
+   This value, along with antenna_ohmic_loss_ and receive_line_loss_, provide one method to specify the receiver noise power.
+
+   **Default:** 0 db.
+
+   .. note::
+      See `Receiver Noise`_ below for more information.
+
+
+.. command:: noise_power <power-value>
+
+   Specifies the explicit noise power. This is one mechanism for specifying the receiver noise.
+
+   .. note::
+      See `Receiver Noise`_ below for more information.
+
+
+.. command:: polarization [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular | default ]
+
+   Specify the primary polarization of the signals which the receiving antenna will receive.
+
+   **Default:** default
+
+.. command:: polarization_effect [ horizontal | vertical | slant_45 | slant_135 | left_circular | right_circular ] <fraction>
+
+   This command defines the fraction of a received signal of the specified polarization that will be processed. This allows one to override the default behavior when a receiver attempts to receive a signal that is of a different polarization that its primary polarization.
+
+   .. note::
+      If an antenna_pattern_table_ is declared which is a function of polarization, polarization_effects entries will be ignored for received signals whose polarization has a corresponding entry in the antenna_pattern_table_ that is not the default entry. In such a case, the antenna_pattern_table_ entry is assumed to contain any effects of polarization mismatch.
+
+
+   The default response is defined by the following table
+
+   ==============  ==========  ========  ========  =========  =============  ==============  =======
+   rcvr/xmtr       horizontal  vertical  slant_45  slant_135  left_circular  right_circular  default
+   ==============  ==========  ========  ========  =========  =============  ==============  =======
+   horizontal      1.0         0.0       0.5       0.5        0.5            0.5             1.0
+   vertical        0.0         1.0       0.5       0.5        0.5            0.5             1.0
+   slant_45        0.5         0.5       1.0       0.0        0.5            0.5             1.0
+   slant_135       0.5         0.5       0.0       1.0        0.5            0.5             1.0
+   left_circular   0.5         0.5       0.5       0.5        1.0            0.0             1.0
+   right_circular  0.5         0.5       0.5       0.5        0.0            1.0             1.0
+   default         1.0         1.0       1.0       1.0        1.0            1.0             1.0
+   ==============  ==========  ========  ========  =========  =============  ==============  =======
+
+
+.. command:: propagation_model <derived-name>
+             propagation_model <base-name> ...commands... end_propagation_model
+
+   Specify the propagation model. See global command :command:`propagation_model` for more information about the available propagation models and how to configure the models.
+
+   **Default:** **none** (No propagation effects)
+
+   .. note::
+      This command is valid only for receivers which receive signals that do not originate from a
+      :command:`_.transmitter`
+
+
+.. command:: receive_line_loss <db-ratio-value>
+
+   This value, along with antenna_ohmic_loss_ and noise_figure_, provide one method to specify the receiver noise power. It specifies the RF component line loss between the antenna and the receiver.
+
+   **Default:**: 0 db (No loss)
+
+   .. note::
+      Specifying antenna_ohmic_loss_ or receive_line_loss_ triggers the use of an alternative method for computing the noise power (See `Receiver Noise`_ below for more information). For many uses internal_loss_ should be used to account for losses.
+
+
+Bandwidth Overlap Ratio
+=======================
+
+During the course of a one-way interaction involving a :command:`_.transmitter` and a :command:`_.receiver` (e.g., a communications attempt or a passive sensor detection attempt), the frequency and bandwidth of both are used to determine the amount of frequency overlap. This produces a 'bandwidth overlap ratio', which is the amount of the transmitted frequency spectrum that is within the bandwidth of the receiver.
+
+.. note::
+   In two-way interactions such at those involving radars, it is assumed that the transmitter and receiver are matched. The bandwidth effect ratio is assumed to 1.
+
+
+.. note::
+   It may appear that the instantaneous_bandwidth_ should be used for the receiver bandwidth. However, WSF does not model the temporal aspects of scanning or frequency-hopping systems, so it is necessary to consider the scanning or hopping bandwidth.
+
+
+Let:
+
+ :math:`f_x`
+    The :command:`_.transmitter.frequency` from the :command:`_.transmitter`
+ :math:`B_x`
+    The :command:`_.transmitter.bandwidth` from the :command:`_.transmitter`
+ :math:`f_r`
+    The frequency_ from the :command:`_.receiver`
+ :math:`B_r`
+    The :command:`_.transmitter.bandwidth` from the :command:`_.receiver`
+ :math:`f_{xl}`
+    The lower bound of the :command:`_.transmitter` frequency spectrum.
+ :math:`f_{xu}`
+    The upper bound of the :command:`_.transmitter` frequency spectrum.
+ :math:`f_{rl}`
+    The lower bound of the :command:`_.receiver` frequency spectrum.
+ :math:`f_{ru}`
+    The upper bound of the :command:`_.receiver` frequency spectrum.
+ :math:`B'_r`
+    The effective :command:`_.receiver` bandwidth
+ :math:`F_{BW}`
+    The resulting bandwidth overlap ratio in the range [0..1].
+
+Then calculate the bandwidth overlap ratio is as follows:
+
+* Calculate the extent of the transmitter frequency spectrum:
+
+   :math:`f_{xl} = f_x - \frac {B_x} {2} \qquad f_{xu} = f_x + \frac {B_x} {2}`
+
+* Determine the effective receiver bandwidth.
+
+   .. math::
+       B'_r =
+       \begin{cases}
+       B_r & \mbox{if } B_r \ne 0 \\
+       B_t & \mbox{if } f_{xl} \le f_r \le f_{xu} \\
+       \end{cases}
+
+   The second case is to handle the situation where the receiver bandwidth was not specified. This is a simplification which says that as long as the specified receiver frequency is within the transmit frequency spectrum, the receiver and transmitter are assumed to be 'matched.'
+
+* Calculate the extent of the receiver frequency spectrum:
+
+   .. math::
+
+     f_{rl} = f_r - \frac{B'_r} {2} \qquad f_{ru} = f_r + \frac{B'_r} {2}
+
+* Determine the bandwidth overlap ratio
+
+   .. list-table::
+
+      * -
+        - :math:`0`
+        - :math:`\mbox{if} f_{xu} \le f_{rl}`
+
+      * - :math:`F_{BW} =`
+        - :math:`0`
+        - :math:`\mbox{if} f_{xl} \ge f_{ru}`
+
+      * -
+        - :math:`\min \left(\frac{\min(f_{xu},f_{ru}) - \max(f_{xl},f_{rl})} {f_{xu} - f_{xl} }, 1.0\right)`
+        - :math:`\mbox{otherwise}`
+
+Receiver Noise
+==============
+
+The receiver noise can be determined in several ways as described below. The following definitions apply to the equations.
+
+ :math:`k`
+    Boltzmann's constant (1.3806505E-23 J/deg-K)
+ :math:`T_0`
+    Nominal ambient temperature (290 deg-K)
+ :math:`B`
+    The (instantaneous) bandwidth of the receiver.
+
+The process for computing the receiver noise power is as follows. The value from the first step whose conditions for use are satisfied will be used.
+
+
+If :model:`WSF_RADAR_SENSOR` was specified, the noise power is computed. In these cases the receiver noise is considered a variable that needs to be determined. Using the associated :command:`_.transmitter.power` and :command:`_.transmitter.frequency` from the :command:`_.transmitter` and whatever other data is provided (either explicitly or by default), the radar range equation is used to compute a received signal power. The noise power is then computed using:
+
+    :math:`N = received\_power / detection\_threshold`
+
+* If noise_power_ was specified, use the defined value.
+
+* If the bandwidth cannot be determined, use the value of -160 dBW.
+
+The bandwidth of the receiver will be defined to be the explicitly specified value from instantaneous_bandwidth_ or bandwidth_. If none of the values are defined then the bandwidth cannot be determined.
+
+* If noise_figure_ was specified and both antenna_ohmic_loss_ and receive_line_loss_ were omitted, compute the noise power using:
+
+  :math:`N = k * T_0 * B * noise\_figure`
+
+
+Compute the noise power using the algorithm defined in *"Radar Range Performance", Lamont V. Blake, 1986, Artech House, Inc., Chapter 4.*
+
+Sky Noise temperature contribution due to the antenna (:math:`Tant` = sky temperature due to antenna pointing angle).:
+
+ :math:`T_a = T_0 + (0.876 * Tant - 254.0) / antenna\_ohmic\_loss`
+
+Noise temperature contribution due to receive line loss:
+
+ :math:`T_l = T_0 * (receive\_line\_loss - 1.0)`
+
+Noise temperature contribution due to the receiver:
+
+ :math:`T_r = T_0 * (noise\_figure - 1.0)`
+
+Total system temperature:
+
+ :math:`T_s = T_a + T_l + (receive\_line\_loss * T_r)`
+
+The noise power is then computed as:
+
+ :math:`N = k \times T_s \times B`
+
+
+See Also
+========
+
+* :command:`_.transmitter`
+
+.. include:: _receiver.wsf_mil.txt

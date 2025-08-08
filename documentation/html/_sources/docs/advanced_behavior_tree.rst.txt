@@ -1,0 +1,210 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+advanced_behavior_tree
+----------------------
+
+.. **Navigation:** :model:`WSF_SCRIPT_PROCESSOR`
+
+.. contents::
+   :local:
+   :depth: 4
+
+.. command:: advanced_behavior_tree ... end_advanced_behavior_tree
+   :block:
+
+   Advanced Behavior Trees build upon :command:`Behavior Trees <behavior_tree>`, allowing for 3 states (Running, Success, Failure) 
+   rather than two (Success, Failure). The addition of a third state allows the AI to be more complex and reactive.
+
+   .. parsed-literal::
+
+      advanced_behavior_tree_
+         <one or more nodes>
+      end_advanced_behavior_tree
+
+   There are two basic node types:
+
+   * :doc:`Advanced Behavior Nodes <advanced_behavior>` - the leaf nodes of the tree, contain user defined script that performs a particular
+     behavior or action.  See the :doc:`advanced_behavior` page for more info.
+   * Composite Nodes - useful for building & organizing the tree. These nodes specify how behavior nodes are related to
+     each other.
+
+Composite Nodes
+===============
+
+*Composite Node Structure & Syntax*
+
+::
+
+  <composite-node-type>
+     name <string>
+     <one or more nodes>
+  end_<composite-node-type>
+
+Currently, there are seven supported composite-node-types:  sequence, sequence_with_memory, selector, selector_with_memory, parallel,
+priority_selector, and weighted_random.
+
+There are also 4 decorator nodes: repeater, inverter, succeeder, and negator.
+
+Composite nodes may have any number of children nodes. These children can subsequently have any number and type of children as well, and so on.  Decorators may only have one child.
+
+.. command:: selector ... end_selector
+
+   Selector nodes execute all children in order (top to bottom in script, left to right in the behavior tree tool). If any child succeeds, 
+   the selector will succeed and all children after it will be skipped (they are not considered by the tree).  If all children fail, the selector will fail.
+
+.. command:: selector_with_memory ... end_selector_with_memory
+
+   Selector nodes with memory work exactly like normal selector nodes with one caveat:  If a node fails the selector will move memory forward, and will 
+   not check that child until memory is reset.  Memory is reset when a node succeeds, or all children fail.
+
+.. command:: sequence ... end_sequence
+
+   Sequence nodes execute all children in order (top to bottom in script, left to right in the behavior tree tool). If any child fails its precondition or execute script, 
+   the sequence will fail and all children after it will be skipped (they are not considered by the tree).  If all children succeed, the sequence will succeed.
+
+.. command:: sequence_with_memory ... end_sequence_with_memory
+
+   Sequence nodes with memory work exactly like normal sequence nodes with one caveat:  If a node succeeds the sequence will move memory forward, and will
+   not check that child until memory is reset.  Memory is reset when a node fails, or all children succeed.
+
+.. command:: parallel ... end_parallel
+
+   Parallel nodes will execute all children at the same time, regardless of ordering.  Parallel nodes make use of a success policy to determine success/failure (See the :command:`advanced_behavior_tree.success_policy` command below)
+   If all children have finished executing and the policy has not been hit, the parallel node will fail.  By default, parallel nodes use succeed_on_one, which means only one child node
+   needs to succeed for the parallel node to succeed.
+
+.. command:: priority_selector ... end_priority_selector
+
+   Priority-Selector nodes choose and execute whichever child is highest valued.  The value of a child is determined by its precondition script block.
+   Priority-Selector nodes always execute their highest valued child.
+
+.. command:: weighted_random ... end_weighted_random
+
+   Weighted-Random nodes are connector nodes used in the behavior tree in order to randomly choose and execute a child.  A
+   uniform weighted random selection is performed, and the weights for each child are determined by their precondition
+   script blocks.  For example, if a Weighted-Random node has two children and both return a value of "3", then they are
+   equally likely to be chosen.
+
+Decorator Nodes
+===============
+
+Decorator nodes are similar to composite nodes, but with only one child.  Decorators modify how the child below them behaves.
+
+.. command:: decorator inverter ... end_decorator
+
+   Inverter nodes will invert the return status of its child node.  If the child returns success, the inverter will return failure,
+   and if the child returns failure, the inverter will return success.
+
+.. command:: decorator negator ... end_decorator
+
+   Negator nodes will return failure regardless of the return status of the child.
+
+.. command:: decorator succeeder ... end_decorator
+
+   Succeeder nodes will return success regardless of the return status of the child.
+
+.. command:: decorator repeater [ repeat <int> | for <time> | until_done ] ... end_decorator
+
+   Repeater nodes will execute their child repeatedly until the criteria set has been fulfilled.  Repeater nodes return success after
+   reaching this criteria.  Repeat <int> will tick the child node an <int> amount of times before succeeding.  for <time> will tick the
+   child node until an amount of <time> has passed.  Until_done will repeat the child node until it returns either success or failure.
+
+Defining an advanced_behavior_tree
+==================================
+
+Advanced behavior trees are simple to declare. Similar to normal behavior trees, each tree has an invisible root node that is a parallel node.  All nodes directly under the root
+node will be executed in parallel.
+
+``advanced_behavior_tree ... end_advanced_behavior_tree``
+
+Behavior trees can contain [theoretically] and infinite depth of nested connector nodes and behaviors.  Here is an
+example of a behavior tree that doesn't use any connector nodes, and has a depth of one, by attaching only behavior
+nodes themselves to the [invisible] root node of the tree.
+
+*Example Shallow Behavior Tree*::
+
+ # all these named behaviors are assumed to be pre-defined
+ advanced_behavior_tree
+    behavior_node check_fuel
+    behavior_node check_instruments
+    behavior_node drink_coffee
+ end_advanced_behavior_tree
+
+*Example Simple Behavior Tree*::
+
+   # sequences over the "check_fuel" and "check_instruments" behaviors every update
+   advanced_behavior_tree
+      sequence
+         behavior_node  check_fuel
+         behavior_node  check_instruments
+      end_sequence
+   end_advanced_behavior_tree
+
+*Example Nested Behavior Tree*::
+
+ # all these named behaviors are assumed to be pre-defined
+ advanced_behavior_tree
+   sequence
+     behavior_node drink_coffee
+     selector
+       behavior_node check_fuel
+       behavior_node check_instruments
+     end_selector
+   end_sequence
+ end_advanced_behavior_tree
+
+Subtrees
+========
+
+Trees may also be defined within other trees.  This is useful for visually separating sections of a tree, as well as reusing the tree.
+
+.. command:: advanced_behavior_tree ... end_advanced_behavior_tree
+
+*Example Behavior Tree With Subtree*::
+
+ # all these named behaviors are assumed to be pre-defined
+ advanced_behavior_tree
+   sequence
+      behavior_node wake_up
+      advanced_behavior_tree
+         sequence
+            behavior_node eat
+            behavior_node exercise
+         end_sequence
+      end_advanced_behavior_tree
+   end_sequence
+ end_advanced_behavior_tree
+
+Other Commands
+==============
+
+.. command:: name <string>
+
+   Name the tree.  This will display on the root node and in the tree selection combo box in the :doc:`Behavior Tree View<wkf_plugin/rv_behavior_tree_tool>` in Mystic.
+
+.. command:: desc <string>
+
+   Define a description for the tree.  This will show when the root node is hovered over in the :doc:`Behavior Tree View<wkf_plugin/rv_behavior_tree_tool>` in Mystic.
+
+.. command:: btt <boolean>
+
+   Define whether or not the tree sends the required data to show a tree in the :doc:`Behavior Tree View<wkf_plugin/rv_behavior_tree_tool>` in Mystic.
+
+.. command:: root_node_type [parallel | priority_selector | selector | selector_with_memory | sequence | sequence_with_memory | weighted_random ]
+
+   Set the composite node type for the root node of this tree.
+
+.. command:: success_policy [threshold  <int> | succeed_on_one | succeed_on_all ]
+
+   Sets the success_policy for a parallel node or an advanced_behavior_tree using root_node_type parallel. Three policies may be set for handling success on a parallel node:  Threshold
+   will take an integer amount of nodes that must succeed for the parallel node to succeed.  Succeed_on_one will make the parallel node succeed if any child succeeds.
+   Succeed_on_all will make the parallel node succeed only if all children succeed.

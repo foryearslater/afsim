@@ -1,0 +1,136 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_COMM_MEDIUM_UNGUIDED
+------------------------
+
+.. model:: medium WSF_COMM_MEDIUM_UNGUIDED
+
+Script Class :class:`WsfCommMedium`
+
+Script Class :class:`WsfCommMediumModeUnguided`
+
+.. parsed-literal::
+
+   medium <name> :model:`WSF_COMM_MEDIUM_UNGUIDED`
+      ... :command:`medium` Commands ...
+      ... :model:`WSF_COMM_MEDIUM_GUIDED` Commands
+
+      snr_transfer_rate_table_ ...
+      bit_error_probability_ ...
+      error_correction_ ...
+      bit_error_rate_ebno_table_ ...
+
+      :command:`medium.mode` <mode-name>
+         ... :model:`WSF_COMM_MEDIUM_GUIDED` Commands
+         snr_transfer_rate_table_ ...
+         bit_error_probability_ ...
+         error_correction_ ...
+         bit_error_rate_ebno_table_ ...
+      end_mode
+
+   end_medium
+
+Overview
+========
+
+:model:`WSF_COMM_MEDIUM_UNGUIDED` is a generic unguided medium type.
+
+An unguided medium is a type of medium not restricted by a physical medium, typically associated with
+the usage of electromagnetic radiation to convey a signal. This medium type provides a generic specification
+of an unguided medium that has typically been found in previous versions of AFSIM with certain model
+definitions.
+
+This medium type is valid for the following communication object models in the AFSIM core.
+
+* :model:`WSF_RADIO_RCVR <WSF_RADIO_TRANSCEIVER>`
+* :model:`WSF_RADIO_XMTR <WSF_RADIO_TRANSCEIVER>`
+* :model:`WSF_RADIO_TRANSCEIVER`
+* :model:`WSF_COMM_ROUTER`
+
+.. note::
+
+   Currently, routers do not allow for hardware based definitions for the transmitter or receiver.
+   Usage of the unguided medium for a router will currently use the transmitter/receiver capabilities
+   of the comm device originating the message.
+
+Commands
+========
+
+.. command:: snr_transfer_rate_table <absolute-units><data-rate-units><SNR-value 1> <transfer-rate-value 1> ... end_snr_transfer_rate_table
+
+   Specifies a table that maps signal-to-noise-ratio values to message transfer rates.  The SNR-Transfer-Rate table will be interpolated.  If a table is specified, the table transfer rate values will override the value specified with the :model:`transfer_rate <WSF_COMM_MEDIUM_GUIDED>` command.
+
+   .. note::
+
+       SNR Transfer rate table is mutually exclusive with the Eb/No vs BER table. The last one specified will
+       be used.
+
+   Default:  none
+
+   SNR-Transfer-Rate-Table Example
+
+   ::
+
+      snr_transfer_rate_table
+         dB bit/s
+         0  100
+         1  100
+         2  90
+         3  80
+         4  40
+         5  20
+         55 10
+         70 1
+      end_snr_transfer_rate_table
+
+.. command:: bit_error_probability <real-value>
+
+   Optional parameter that defines the system designed bit error rate probability. It is used to pick the Eb/No values from the Eb/No vs. BER table. Must be greater than or equal to zero.
+
+   Default:  0.0
+
+.. command:: error_correction <real-value>
+
+   Optional parameter that determines how much error correction will be applied when using Eb/No to calculate data rate. Must be between 0.0 and 1.0. Units are assumed dB.
+
+   Default:  0 dB
+
+.. command:: bit_error_rate_ebno_table <absolute-units><ratio-units><BER-value 1> <Eb/No-value 1> ... end_bit_error_rate_ebno_table
+
+   Optional table that defines the Energy per Bit to the Spectral Noise Density (Eb/No) vs. Bit Error Rate (BER). Used in conjunction with the bit_error_probability_ and error_correction_ to calculate the data transfer rate over the medium. When using this table Data Rate = SNR* Error Correction * ( Bandwidth / Eb/No ). The Bit-Error-Rate-EbNo-Table will be interpolated.  If a table is specified, the table transfer rate values will override the value specified with the :model:`transfer_rate <WSF_COMM_MEDIUM_GUIDED>` command.
+
+   .. note::
+
+       Units for the values in the table are optional and if not entered are assumed to be dimensionless for BER and dB for Eb/No.
+
+   .. note::
+
+       Eb/No vs BER table is mutually exclusive with the SNR Transfer rate table. The last one specified will be used.
+
+   Default:  none
+
+   Bit-Error-Rate-EbNo-Table Example
+
+   ::
+
+      bit_error_rate_ebno_table
+        0.00000001 12
+        0.0000001  11.3
+        0.000001   10.3
+        0.00001    9.5
+        0.0001     8.3
+        0.001      6.5
+        0.01       4.3
+        0.1        0
+      end_bit_error_rate_ebno_table
+
+.. include:: _wsf_comm_medium_unguided.wsf_mil.txt

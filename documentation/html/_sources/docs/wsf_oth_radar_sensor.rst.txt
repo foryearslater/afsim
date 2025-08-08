@@ -1,0 +1,135 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_OTH_RADAR_SENSOR
+--------------------
+
+.. model:: sensor WSF_OTH_RADAR_SENSOR
+
+.. parsed-literal::
+
+   sensor <name> :model:`WSF_OTH_RADAR_SENSOR`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... sensor :ref:`Sensor.Commands` ...
+
+      show_calibration_data
+      mode <name>
+        ... sensor :ref:`Sensor.Common_Mode_Commands` ...
+        ... :ref:`WSF_RADAR_SENSOR Mode Commands <WSF_RADAR_SENSOR.Mode_Commands>` ...
+
+         beam 1
+            :ref:`Antenna_Commands` ...
+            :command:`_.transmitter`
+              ... transmitter commands ...
+            end_transmitter
+            :command:`_.receiver`
+              ... receiver commands ...
+            end_receiver
+            ... :ref:`WSF_RADAR_SENSOR Beam Commands <WSF_RADAR_SENSOR.Beam_Commands>` ...
+            ... `OTH Beam Commands`_ ...
+         end_beam
+         beam <n>
+            :ref:`Antenna_Commands` ...
+            :command:`_.transmitter`
+              ... transmitter commands ...
+            end_transmitter
+            :command:`_.receiver`
+              ... receiver commands ...
+            end_receiver
+            ... :ref:`WSF_RADAR_SENSOR Beam Commands <WSF_RADAR_SENSOR.Beam_Commands>` ...
+            ... `OTH Beam Commands`_ ...
+         end_beam
+      end_mode
+   end_sensor
+
+Overview
+========
+
+:model:`WSF_OTH_RADAR_SENSOR` provides a baseline Over-The-Horizon Backscatter (OTH-B) Skywave radar implementation. It is
+capable of using the ionosphere to reflect energy over the visual horizon in an attempt to detect targets. Note to
+analysts:  This implementation is a single-bounce only sensor that is based on the Chapman Ionosphere model. This
+implementation focuses on a bounce in the F Region of the ionosphere, specifically the F2 Layer. This area has the
+highest electron density.
+
+The OTH-B radar definition is very similar to that found in the baseline :model:`WSF_RADAR_SENSOR`. The OTH Mode Commands
+are identical to the baseline :ref:`WSF_RADAR_SENSOR Mode Commands <WSF_RADAR_SENSOR.Mode_Commands>`. In addition to the
+baseline :ref:`WSF_RADAR_SENSOR Beam Commands <WSF_RADAR_SENSOR.Beam_Commands>`, new OTH specific Beam commands allow the
+user to define the ionospheric conditions, the solar characteristics, and the noise environment.
+
+Please refer to :model:`WSF_RADAR_SENSOR` for the Multiple Beam Considerations, Mode Commands, and Radar Beam Commands. OTH
+Beam Commands are discussed below.
+
+.. block:: WSF_OTH_RADAR_SENSOR
+
+OTH Beam Commands
+=================
+
+.. command:: noise environment <noise-environment-type>
+   
+   Controls the computation of galactic noise, atmospheric noise, and man-made noise. The noise is computed and applied
+   ONLY if the noise environment command is used. If it is not present, no additional noise is computed.
+   
+   Default: quiet_rural
+
+.. command:: solar_characteristics  ... end_solar_characteristics
+   
+   This command allows the initialization of time of day and day of year. These control the solar declination angle and
+   the solar zenith angles used by the routine to determine if an ionospheric bounce can occur.
+   
+   ::
+   
+      solar_characteristics
+         hour_of_day  <int>
+         day_of_year  <int>
+      end_solar_characteristics
+   
+   The hour_of_day is based upon the 24 hour clock, and is LOCAL time. If the solar_characteristics data block is not
+   invoked, or if day_of_year and/or hour_of_day are not specified, they each default to 1 and 12, respectively, so
+   January 1st, 1200 hours.
+
+.. command:: ionosphere_characteristics  ... end_ionosphere_characteristics
+   
+   This command allows the initialization of data that will control if and where an ionospheric bounce can occur.
+   
+   ::
+   
+      ionosphere_characteristics
+         electron_temperature                <double>
+         electron_density_at_max             <double>
+         electron_height_at_max              <length>
+         reflection_height                   <length>
+         ionosphere_constrains_minimum_range <bool>
+      end_ionosphere_characteristics
+   
+   * **electron_temperature** is specified in degrees Kelvin. **Default is 1540 K**.
+   * **electron_density_at_max** is the highest electron density measured in electrons per cubic meter. **Default is
+     4.0e11**.
+   * **electron_height_at_max** corresponds to the height/altitude at which maximum electron density occurs. **Default is
+     250 km**.
+   * **reflection_height** height/altitude used to compute the geometry for an ionospheric bounce. This is also used to
+     compute minimum detection range (i.e., skip-zone distance). **Default is 300 km**.
+   * **ionosphere_constrains_minimum_range** allows the setting of a computed minimum and maximum range. **Default is set
+     to false**. If a minimum and/or maximum range is specified by the user, and ionosphere_constrains_minimum_range is set
+     to **true**, then the user-defined range limits will be ignored and the computed ranges will be used. A warning
+     statement to the user will alert them to this fact.
+     
+OTH Reflection Points
+=====================
+
+The estimated reflection point of the ionosphere can be accessed through the :method:`AuxDataDouble<WsfTrack.AuxDataDouble>` method on the tracks provided by the sensor. 
+
+Example::
+
+   double lat = track.AuxDataDouble("oth_reflection_point_lat");
+   double lon = track.AuxDataDouble("oth_reflection_point_lon");
+   double alt = track.AuxDataDouble("oth_reflection_point_alt");
+   

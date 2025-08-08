@@ -1,0 +1,408 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Sensor_Plot_Horizontal_Map:
+
+Sensor Plot Horizontal Map
+--------------------------
+
+**Navigation:** :command:`sensor_plot` > **horizontal_map**
+
+.. command:: horizontal_map ... end_horizontal_map
+   :block:
+
+   .. parsed-literal::
+
+    horizontal_map_
+        
+       :ref:`sensor_plot.Stub_Definition_Commands`
+
+       # `Sensor Control`_
+
+       sensor_platform_yaw_ ...
+       sensor_platform_pitch_ ...
+       sensor_platform_roll_ ...
+       mode_name_ ...
+       exclude_ ...
+       no_exclude_ ...
+       automatic_target_cueing_ ...
+       platform_to_detect_name_ ...
+
+       # `Jammer Control`_
+
+       jammer_to_signal_reference_ ...
+       jamming_platform_name_ ...
+
+       target_platform_type_
+       target_speed_
+       target_mach_
+       target_heading_
+       target_yaw_
+       target_pitch_
+       target_roll_
+       target_altitude_ ...
+
+       # `Target Region`_
+
+       down_range_limits_ ...
+       down_range_step_ ...
+       cross_range_limits_ ...
+       cross_range_step_ ...
+       latitude_limits_ ...
+       latitude_step_ ...
+       longitude_limits_ ...
+       longitude_step_ ...
+       sensor_relative_orientation_ ...
+
+       # `Output Selection`_
+
+       variable_ ...
+       script_variable_ ...
+       detection_reference_ ...
+       use_tm_projection_
+
+       pd_map_file_ ...
+       header_line_1_ ...
+       header_line_2_ ...
+       header_line_3_ ...
+       output_column_limit_ ...
+
+       gnuplot_file_ ...
+       gnuplot_player_file_ ...
+	   
+       tiff_file_ ...
+
+       contour_level_ ... end_contour_level
+       contour_variable_ ...
+       wsf_file_ ...
+       kml_file_ ...
+       shapefile_ ...
+       sedit_file_ ...
+
+       defended_area_report_file_ ...
+       analysis_map_ ... end_analysis_map
+
+    end_horizontal_map
+
+Overview
+========
+
+The horizontal_map command is used to generate a plot file of target detectability at the intersection points of a horizontal rectangular mesh. Five types of plot files can be produced:
+
+* A 'pd map' file for the program 'plotview' to show  a typical downrange/crossrange plot.
+* A file suitable for plotting with the program 'gnuplot'.
+* A 'sedit' file for the programs 'sedit' or 'vespa' to show coverage over a geographic map.
+* An 'analysis map' file which can be rasterized (as opposed to contour lines) in 'vespa'.
+* A 'tiff' file for 'Wizard', 'Mystic', 'Warlock', or other applications.  'tiff' data will contain multiple layers for each variable.  Data ranges generated may not be suitable for viewing in image editor applications.
+
+To create a file, the following process should be followed:
+
+* Define a platform type of the type specified by the command target_platform_type_ (**Default** TARGET_PLATFORM_TYPE) with the desired :command:`radar <radar_signature>`, :command:`infrared <infrared_signature>`, :command:`optical <optical_signature>` or :command:`acoustic <acoustic_signature>` signature depending on the type(s) of sensors being tested.
+* Define one or more platform instances that contain the sensors that will attempt to detect the target or optionally, define a platform type of **SENSOR_PLATFORM_TYPE**, which contains one or more the sensor(s) to be used to detect the target..
+* Define zero or more platform instances that contain jammers that will attempt to jam the sensors.
+* Define the :command:`horizontal_map` input block with:
+
+   * Commands to define limits and spacing of the sample points in the `Target Region`_.
+   * A target_altitude_ command to specify the altitude at which the target will be placed at each sample point.
+   * An optional target_speed_ command to specify the target speed.
+   * Optional target_heading_, target_pitch_ and target_roll_ commands to specify the target orientation when placed at sample point. The default is level flight, pointed at the sensor.
+   * Output selection commands.
+
+Notes
+=====
+
+If the `Target Region`_ uses the down-range/cross-range format, it must be noted that even though a Cartesian frame is used externally, all operations are internally performed in a latitude/longitude coordinate system. The position and heading of the platform with the first sensor defines the origin and orientation of the down_range/cross_range coordinate system. The heading points down the increasing down-range axis. Down-range/cross-range coordinates are converted to an East/North frame and then converted to latitude/longitude using a transverse Mercator projection.
+
+This discussion is of no importance unless one or more of the following conditions exist:
+
+* target_heading_ is used.
+* Jammers are employed.
+* The sensor has scan or slew limits that are not 360 degrees in azimuth.
+
+Be aware that target_heading_ and the positioning and pointing of jammers is always done in the latitude/longitude coordinate system.
+
+Sensor Control
+==============
+
+.. command:: sensor_platform_yaw <angle-value>
+.. command:: sensor_platform_pitch <angle-value>
+.. command:: sensor_platform_roll <angle-value>
+   
+   Specify the orientation of the sensing platform with respect to the direction of flight. The yaw angle is added to the heading and the pitch and roll angles are used directly as specified. This is useful for examining sensor coverage when the platform is flying in some other condition other than straight-and-level.
+
+   **Default** 0 degrees for all angles
+
+.. command:: mode_name <mode_name>
+   
+   Specifies the name of the mode to be used if the sensor is a multi-mode sensor.
+
+   **Default** The default mode of the sensor. This will be the value of the :command:`sensor.initial_mode` of the sensor (if defined) or the first mode (if :command:`sensor.initial_mode` was not defined).
+
+   .. note::
+      This is valid only for single-sensor executions. For multiple-sensor executions, the default mode as defined above will be used.
+
+
+.. command:: exclude  [ sensor_type | sensor_category | platform_type | platform_category ] <type-or-category>
+.. command:: no_exclude  [ sensor_type | sensor_category | platform_type | platform_category ] <type-or-category>
+   
+   These commands provide the mechanism to choose which sensors in a multiple-sensor scenario are to be included in the plotting process. This is useful when a existing scenario is being used but only a subset of sensors are to be used for the plot.
+   
+   By default, all sensors in the scenario are included in the plot. A sensor will be excluded if specified in an **exclude** command and not specified in a **no_exclude** command. The **no_exclude** command is typically used to prevent the exclusion of a smaller group of sensors from a larger list that have been excluded.
+
+.. command:: automatic_target_cueing <boolean-value>
+   
+   If 'true', the sensor will be cued to point at the target when performing a detection chance. If 'false', the sensor will be remain in its initial condition.
+
+   **Default** true (The sensor will always be cued to point at the target)
+
+.. command:: platform_to_detect_name <platform-name>
+   
+   Normally the sensor is held stationary and the target is placed at the grid points specified by the `Target Region`_. There are cases, however, where it is desirable to exchange the role of the sensor and target (i.e.: the sensor is moved about the target region and the target is fixed at the center). This is typically used when on has a passive sensor that one wants to move around an emitting target.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+Jammer Control
+==============
+
+.. command:: jammer_to_signal_reference <db-ratio-value>
+   
+   Specifies the jammer-to-signal (J/S) reference to be used when plotting the '**required_jamming_power**' variable.
+
+   **Default** 0.0 db
+
+.. command:: jamming_platform_name <platform-name>
+   
+   Specifies the platform that will be used to calculate the required jamming power. This input is to be used when plotting the '**required_jamming_power**' variable for the location of the jammer system.
+
+   **Default** TARGET_PLATFORM_TYPE
+
+.. include:: sensor_plot_target_characteristics.txt
+
+.. command:: target_altitude <length-value> [ msl | agl ]
+   
+   Specify the altitude at which the target is to be placed. **msl** or **agl** may be specified to indicate if the altitude is above mean sea level (**msl**) or above ground level (**agl**). If neither **msl** or **agl** is present then **msl** is assumed.
+
+   **Default** 0 m msl
+
+Target Region
+=============
+
+Specifies extent and spacing of the rectangular mesh that defines the points at which the target will be placed. The extent may be specified using either:
+
+* Latitude and longitude limits with the spacing in units of fractions of degrees.
+* Downrange and crossrange limits with spacing in normal length units.
+
+.. note::
+   Only one form may be specified.
+
+These two forms are further described in the following two sections.
+
+Latitude/Longitude Specification
+================================
+
+.. command:: latitude_limits min-lat-value <latitude-value> max-lat-value <latitude-value>
+   
+   Specifies the latitude limits of the target region.
+
+.. command:: latitude_step <lat-step real-value>
+   
+   Specifies the increment between sample points in the latitude direction.
+
+.. command:: longitude_limits min-lon-value <longitude-value> max-lon-value <longitude-value>
+   
+   Specifies the longitude limits of the the target region.
+
+.. command:: longitude_step <lon-step real-value>
+   
+   Specifies the increment between sample points in the longitude direction.
+
+.. command:: sensor_relative_orientation <boolean-value>
+   
+   If true, when the target is moved, it is oriented with the same NED coordinate system as the sensor's.  This corrects issues with maps rendered with a very large area (~>100 nautical miles on a side), or for maps near the poles (more than ~+-80 degrees latitude). If false, the target is oriented relative to its local NED frame.
+
+   **Default** disabled
+
+Downrange/Crossrange Specification
+==================================
+
+.. command:: down_range_limits <length-value> <length-value>
+   
+   Specifies the downrange limits (minimum, maximum) of the target region.
+
+.. command:: down_range_step <length-value>
+   
+   Specifies the increment between samples points in the down_range direction.
+
+.. command:: cross_range_limits <length-value> <length-value>
+   
+   Specifies the crossrange limits (minimum, maximum) of the target region.
+
+.. command:: cross_range_step <length-value>
+   
+   Specifies the increment between samples points in the cross_range direction.
+
+.. _Sensor_Plot_Horizontal_Map.Output_Selection:
+
+Output Selection
+================
+
+.. include:: sensor_plot_map_variables.txt
+
+.. _Sensor_Plot_Horizontal_Map.Script_Variable:
+
+Script Variable
+===============
+
+.. include:: sensor_plot_map_script_variables.txt
+
+.. command:: detection_reference <db-ratio-value>
+   
+   The reference signal-to-noise ratio used to determine the **required_rcs** or **rcs_required** variable_.
+
+   **Default** 12.8 dB
+
+.. command:: use_tm_projection <boolean-value>
+   
+   Specifies whether to use the transverse Mercator (true) or the default (x, y) (false) projection.
+
+   **Default** false (uses x,y projection)
+   
+.. command:: line_of_sight_masking  <boolean-value>
+
+   If this selection is enabled, sensor plot will perform a terrain masking calculation, if not already performed in the sensor detection attempts. In the case of a blocked LOS the default values of the output variables will be returned.
+
+   **Default** disabled
+
+.. command:: pd_map_file <file-name>
+   
+   Specifies the name of the file to which 'pd map' output will be written. The name does not imply that only **pd** can be written, but rather denotes a common file format.
+
+   **Default** no 'pd map' formatted file will be produced.
+
+.. command:: header_line_1 <text>
+.. command:: header_line_2 <text>
+.. command:: header_line_3 <text>
+   
+   Specifies the text to be contained in the first three lines of the output file when pd_map_file_ is specified.
+
+   **Default** all header lines are blank.
+
+.. command:: output_column_limit <integer>
+   
+   Specifies the maximum number of columns per physical line in the output file when pd_map_file_ is specified.
+
+   **Default** 100
+
+   .. note::
+      If the file is to be imported into a spreadsheet such as Microsoft Excel, this value should be set so that the rows do not have to be split into multiple physical lines.  
+
+.. command:: gnuplot_file <file-name>
+   
+   Specifies the name of the file to which 'gnuplot' output will be written.
+
+   **Default** 'gnuplot' output will not be produced.
+
+.. command:: gnuplot_player_file <file-name>
+
+   Specifies the name of the file to which player's Downrange/Crossrange or Latitude/Longitude will be written. Will not output target locations.
+
+   **Default** 'gnuplot' player location output will not be produced.
+   
+.. command:: tiff_file <filename>
+
+   Specifies the name of a file to which 'tiff' output will be written.  This file can be displayed with :doc:`wizard`, :doc:`warlock`, or :doc:`Mystic<mystic>` (as an map layer)
+   
+   **Default** 'tiff' output will not be produced.
+
+.. command:: contour_level <level> ... end_contour_level
+   :block:
+
+   Specifies a contour level and defines the line attributes for the contour line for wsf_file_, kml_file_, shapefile_ or sedit_file_ output. This command may be specified multiple times to define multiple contour levels.  The variable defined by the contour_variable_ is used as the base data for this capability.
+
+   .. command:: line_color <color-value>
+
+      Specify the color of the line for the current contour level.
+
+      .. note:: The alpha component of the color will not be used even if specified.
+
+   .. command:: line_width <width>
+      
+      Specify the width of the line (in pixels) for the current contour level.  This feature will not apply to wsf_file_ outputs.
+
+.. end::
+
+.. command:: contour_variable <variable>
+
+   Specifies the variable to be contoured.  This command uses the same values as variable_.  If unset, sensor_plot will contour pd (probability of detection).
+
+.. command:: wsf_file <file-name>
+
+   Specifies the name of an AFSIM file to which the geographic contour plot will be written to as zones. This file can be displayed with Wizard. This file format allows for multi-dimensional contour output.
+
+   .. note::
+      The variable defined by contour_variable_ (or 'pd' if undefined) will be automatically selected if this option is specified. 
+
+.. command:: kml_file <file-name>
+
+   Specifies the name of the KML (Keyhole Markup Language) file to which the geographic contour plot will be written. This file can be displayed with Google Earth or any other program that accepts KML files. The contour levels to be produced are specified by one or more contour_level_ blocks.
+
+   .. note::
+      The variable defined by contour_variable_ (or 'pd' if undefined) will be automatically selected if this option is specified.  
+
+.. command:: shapefile <file-name>
+
+   Specifies the name of the ESRI shapefile to which the geographic contour plot will be written. This file can be displayed with :doc:`wizard`, :doc:`warlock`, or :doc:`Mystic<mystic>` (as a map layer) or any other program that accepts ESRI shapefiles.
+
+   .. note::
+      The variable defined by contour_variable_ (or 'pd' if undefined) will be automatically selected if this option is specified. 
+	  
+.. command:: sedit_file <file-name>
+
+   Specifies the name of the file to which the geographic contour plot will be written. This file can be displayed with 'sedit' or 'vespa'. The contour levels to be produced are specified by one or more contour_level_ blocks.
+
+   .. note::
+      The variable defined by contour_variable_ (or 'pd' if undefined) will be automatically selected if this option is specified. 
+
+.. command:: defended_area_report_file <file-name>
+
+   Specifies the name of the file to which summary information is to be written. The summary includes the total area covered and the coverage as a function of Pd.
+
+   .. note:: 
+      The variable defined by contour_variable_ (or 'pd' if undefined) will be automatically selected if this option is specified. 
+
+.. command:: analysis_map  ... analysis map options... end_analysis_map
+   :block:
+
+   .. command:: file <file-name>
+      
+      Specifies the name of the file to which the analysis map output will be written.
+
+      **Default** 'analysis map' output will not be produced.
+
+   .. command:: color_range <min-value> to <max-value> <color-value>
+      
+      Specifies a color for a given range of values in the output. This command may be specified multiple times to define multiple color rules.
+
+      **Default** If no color ranges are specified, the analysis map will use any contour_level_ blocks defined. If none of those are defined, a default color lookup will be used by VESPA.
+
+   .. command:: data_title <title>
+      
+      Specifies the title for the data.
+
+      **Default** "Unknown"
+
+   .. command:: units <data-units>
+      
+      Specifies the units of the data.
+
+      **Default** "Unknown"
+
+.. end::

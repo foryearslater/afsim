@@ -1,0 +1,158 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _Convert_RIPR_To_Quantum_Guide:
+
+Convert RIPR To Quantum Guide
+-----------------------------
+
+Overview
+========
+
+If you are converting an old scenario from WSF 1.7.5 or earlier up to WSF 1.8 or later there are likely several
+issues to be resolves with your RIPR agents.  Some issues are simple syntax enhancements and others require a little
+restructuring of your agent.  This guide will also help you convert your agents from using WSF_RIPR_PROCESSOR to the
+WSF_QUANTUM_TASKER_PROCESSOR.  We will not be making any enhancements, adding any features, or making changes to the
+WSF_RIPR_PROCESSOR from this point forward. We encourage you to migrate your agents to the Quantum Tasker.
+
+Behavior Tree Changes
+=====================
+
+   Before WSF 1.8, the behavior tree was specific to only the RIPR processor, but now all processors that derive from
+   the script processor can utilize behavior trees (this includes the WSF_QUANTUM_TASKER_PROCESSOR, WSF_SCRIPT_PROCESSOR,
+   WSF_RIPR_PROCESSOR, & WSF_TASK_PROCESSOR).  Because of this, and other related enhancements, you will have to make the
+   following changes:
+
+   * When attaching behavior nodes to a tree, the syntax "behavior <name> end_behavior" is now just "behavior_node <name>"
+   * The "query_bid_type" script blocks are no longer valid in behaviors.  This is OK, most processors do not use jobs or
+     bids anymore.
+   * The "PROCESSOR" script object in behaviors now refers to a WsfProcessor (script processor).  If your behavior is
+     intended to exist on a tree on a special processor (like a WSF_QUANTUM_TASKER_PROCESSOR) and the behavior intends to
+     utilize script methods on that processor script object, then the PROCESSOR variable must be cast to that processor
+     type. E.G.
+
+   ::
+
+    ((WsfQuantumTaskerProcessor)PROCESSOR).TasksReceived();
+
+Introduction of the Perception Processor
+========================================
+
+   Before AFSIM 1.8 all friendly perception was actually truth data.  It was typical of agent behavior scripts to "cheat"
+   and use real time truth data about friendly assets.  The :class:`WsfPerceptionProcessor` was introduced in AFSIM 1.8 and
+   should be used when at all possible.  Asset status reporting is very similar to track reporting.  Please see
+   :model:`WSF_PERCEPTION_PROCESSOR` for an example of setting one up.  When using a Quantum Tasker it is imperative
+   to use a Perception Processor.
+
+Use Quantum Tasker instead of Job Board
+=======================================
+
+   The job board feature resident on the WSF_RIPR_PROCESSOR was a way to perform "bottom up" job allocation.  If you are
+   familiar with RIPR agents in AFSIM 1.7.5 or earlier then you have likely used this feature.  Copied immediately below
+   is a simple example of job board use.  Notice how the commander adds jobs to its job board in its "on_update" script
+   block.  The subordinate bids on jobs, so the script for evaluating possible platform-job pairings is located on the
+   subordinate and thus this system is considered "bottom up".  The subordinate also queries the commander for what job he
+   has won, and this triggers the allocation algorithm on the commander (so it can run with the new bid data just
+   provided).
+
+   **Job Board Example using WSF_RIPR_PROCESSOR:**
+
+   ::
+
+    platform commander WSF_PLATFORM
+      //...other stuff (movers, comm, track manager, etc)...
+      add processor ripr **WSF_RIPR_PROCESSOR**
+        update_interval      1.0 sec
+        <span style="color:#ff0000">on_update
+          foreach (WsfLocalTrack x in PLATFORM.MasterTrackList())
+          {
+            WsfRIPRJob job = PROCESSOR.GetJobByData("id", x.TargetName());
+            if (job.IsValid()) continue;   //do not add job again
+            WsfRIPRJob temp = WsfRIPRJob.Create(PROCESSOR, "target", "description", 1.0, 1);
+            temp.SetData("id", x.TargetName());
+            temp.SetData("track", x);
+            PROCESSOR.AddJob(temp);
+          }
+        end_on_update</span>
+      end_processor
+    end_platform
+
+    platform subordinate WSF_PLATFORM
+      //...other stuff (movers, comm, track manager, etc)...
+      commander commander
+      add processor ripr **WSF_RIPR_PROCESSOR**
+        update_interval      1.0 sec
+        <span style="color:#00aa00">query_bid_type    target
+          WsfTrack t = (WsfTrack)JOB.GetData("track");
+          return 1.0 / PLATFORM.SlantRangeTo(t);
+        end_query_bid_type</span>
+        on_update
+          WsfRIPRProcessor commander = PROCESSOR.GetRIPRCommanderProcessor();
+          <span style="color:#00aa00">foreach (WsfRIPRJob job in commander.GetJobs())
+          {
+            double bid = PROCESSOR.QueryBid(job);
+            job.BidJob(PROCESSOR, bid);
+          }</span>
+          <span style="color:#0000aa">WsfRIPRJob myJob = commander.GetJobFor(TIME_NOW, PROCESSOR);</span>
+          //do something with job
+        end_on_update
+      end_processor
+    end_platform
+
+   An equivalent representation using the Quantum Tasker for top down task allocation is copied immediately below.  Notice
+   the color coded sections for help in comparing.  Because this is a top-down task allocation system, you will notice an
+   appropriate increase in script on the commander and a decrease on the subordinate.  When considering all the varied
+   behaviors that subordinate agents typically use, a subordinate will still have a substantially greater quantity of
+   script attached to them.
+
+   **Task Example using WSF_QUANTUM_TASKER_PROCESSOR:**
+
+   ::
+
+    platform commander WSF_PLATFORM
+      //...other stuff (movers, comm, track manager, etc)...
+      add processor quantum **WSF_QUANTUM_TASKER_PROCESSOR**
+        update_interval      1.0 sec
+        <span style="color:#ff0000">generator custom MyGenerator</span>
+        <span style="color:#00aa00">evaluator custom MyEvaluator</span>
+        allocator optimal_profit
+        <span style="color:#ff0000">script Array<WsfTask> MyGenerator (Array<WsfLocalTrack> TRACKS,
+        Array<WsfAssetPerception> ASSETS )
+          Array<WsfTask> tasks = Array<WsfTask>();
+          foreach (WsfLocalTrack lt in TRACKS)
+          {
+            WsfTask task = WsfTask.Construct(1.0, "WEAPON", lt);
+            tasks.PushBack(task);
+          }
+          return tasks;
+        end_script</span>
+        <span style="color:#00aa00">script double MyEvaluator ( WsfTask TASK, WsfAssetPerception ASSET)
+          WsfTrack track = PLATFORM.MasterTrackList().FindTrack(TASK.TrackId());
+          if (TASK.TaskType() == "WEAPON" && track.IsValid())
+          {
+            return 1.0 / track.SlantRangeTo(ASSET.Location());
+          }
+          return 0;
+        end_script</span>
+      end_processor
+    end_platform
+
+    platform subordinate WSF_PLATFORM
+      //...other stuff (movers, comm, track manager, etc)...
+      commander commander
+      add processor quantum **WSF_QUANTUM_TASKER_PROCESSOR**
+        update_interval      1.0 sec
+        on_update
+          <span style="color:#0000aa">WsfTaskList tasks = PROCESSOR.TasksReceivedOfType("WEAPON");</span>
+          //do something with task(s)
+        end_on_update
+      end_processor
+    end_platform

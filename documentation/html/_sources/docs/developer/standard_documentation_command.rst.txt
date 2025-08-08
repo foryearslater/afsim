@@ -1,0 +1,410 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Documentation Standard: Command
+===============================
+
+This document extends the :doc:`afsim_documentation_standard`.
+
+To support documentation of AFSIM commands, the AFSIM Sphinx Extension, *wsf.py* defines the **command** object type.
+
+This includes the following utilities:
+
+* A role and directive pair to support cross-referencing commands throughout the documentation.
+* Blocking markup to unambiguously reference identically named commands whose purposes and effects vary by context.
+
+The **\.. command::** directive is used to document a command and its syntax. This directive creates an entry in the command index and a link target to its definition.
+
+The **:command:** role may be used to cross-reference commands that have been defined using the command directive.
+
+.. contents::
+   :backlinks: none
+   :local:
+
+Command Markup
+--------------
+
+Stand-Alone Commands
+""""""""""""""""""""
+
+Stand-Alone Commands exist at the scenario global scope.
+
+.. list-table::
+   :class: example-rst
+   :header-rows: 1
+
+   * - **Example**
+     - **Markup**
+
+   * - .. parsed-literal::
+
+         :command:`end_time` 1 hour
+         :command:`include` platform_file.txt
+
+     - ::
+
+            .. command:: end_time <time-value>
+            .. command:: include <file-name>
+
+   * - ::
+
+          <command-name> <arg-list>
+
+
+     - ::
+
+          .. command:: <command-name> [<arg-list>]
+
+Cross-Referencing Stand-Alone Commands
+''''''''''''''''''''''''''''''''''''''
+
+.. list-table::
+   :class: example-rst
+   :header-rows: 1
+
+   * - **Markup**
+     - **Result**
+
+   * - .. code-block:: rest
+
+         Stand-Alone Command Cross-Reference
+
+         See :command:`include`
+
+     -   Stand-Alone Command Cross-Reference
+
+         See :command:`include`
+
+
+Block Commands
+""""""""""""""
+
+Block Commands define a block scope. Each Block Command includes a command pair to open and close the block. Within a given block, particular Block Sub-Commands are valid.
+Careful use of `Blocking Markup`_ in a given command document allows for unambiguous cross-referencing of commands throughout the documentation.
+
+Block Sub-Commands (sub-commands) are valid within the scope of a particular block command.
+Commands in this category affect the properties of the parent model or behavior of the parent command.
+Block Commands may be defined within the scope of other block commands, as sub-commands. These are known as nested blocks.
+
+Blocking Markup
+'''''''''''''''
+
+Command blocking markup is provided through the AFSIM Sphinx Extension, "wsf.py", which provides several forms of block markup. A block implicitly ends at the end of the section and/or file in which it is declared.
+
+.. topic:: \:block\:
+
+   The simplest way to declare a command block is to use the **:block:** option/field of the **.. command::** directive:
+
+   .. list-table::
+      :class: example-rst
+      :header-rows: 1
+
+      * - **Example**
+        - **Markup**
+
+      * - .. parsed-literal::
+
+            :command:`event_output`
+               :command:`file` events.evt # A block sub-command
+               ...
+            end_event_output
+
+        - ::
+
+            .. command:: event_output ... end_event_output
+               :block:
+
+               .. command:: file <file-name>
+
+      * - ::
+
+            <block-command-name> [<arg-list>]
+               <sub-command-name> [<arg-list>]
+               ...
+
+            end_<block-command-name>
+
+        - ::
+
+            .. command:: <block-command-name> ... end_<block-command-name>
+               :block: # Subsequent commands/command blocks
+                       # are defined within the scope of this block
+
+               .. command:: <sub-command-name> [<arg-list>]
+
+   The **:block:** option scopes all subsequent commands, regardless of indentation, into the scope of the parent block.
+
+.. topic:: \.\. block \:\:
+
+   The **.. block::** directive overrides the current block, if any, and the new current block is defined by the argument passed to this directive.
+
+   .. list-table::
+      :class: example-rst
+      :header-rows: 1
+
+      * - **Example**
+        - **Markup**
+
+      * - .. parsed-literal::
+
+            :command:`platform` pickup_truck :model:`WSF_PLATFORM`
+               :command:`platform.icon` truck
+            end_platform
+
+        - ::
+
+            .. block:: platform
+
+            .. command:: icon <name>
+
+      * - ::
+
+            <block-command-name> [<arg-list>]
+               <sub-command-name> [<arg-list>]
+            end_<block-command-name>
+
+        - ::
+
+            .. block:: <block-name>
+
+            .. command:: <sub-command-name> [<arg-list>]
+
+.. topic:: \.\. begin\:\: & \.\.end\:\:
+
+   This directive pair may be used to maintain discrete, explicit control over the current block scope. The **.. begin::** directive may be used to
+   initialize a new block scope or append to the current block scope, while the **.. end::** directive may be used to close the current scope, ascending
+   to the parent block scope, if any. These two directives should occur in pairs.
+
+   .. list-table::
+      :class: example-rst
+      :header-rows: 1
+
+      * - **Example**
+        - **Template Markup**
+
+      * - .. parsed-literal::
+
+            \.\. begin\:\: :model:`WSF_GEOMETRIC_SENSOR`
+
+            // Document WSF_GEOMETRIC_SENSOR commands
+
+            \.\. begin\:\: mode
+
+            // Document WSF_GEOMETRIC_SENSOR.mode commands
+
+            \.\. end\:\:
+
+            // Document WSF_GEOMETRIC_SENSOR commands
+
+            \.\. end\:\:
+
+        - ::
+
+            .. begin:: <block-name>
+
+            ...
+
+            .. begin:: <sub-block-name>
+
+            ...
+
+            .. end::
+
+            ...
+
+            .. end::
+
+Cross-Referencing Block Commands
+''''''''''''''''''''''''''''''''
+
+.. topic:: Top Level Block Commands
+
+   .. list-table::
+      :class: example-rst
+      :header-rows: 1
+
+      * - **Markup**
+        - **Result**
+
+      * - .. code-block:: rest
+
+            Block Command Cross-Reference
+
+            See :command:`platform`
+
+        -   Block Command Cross-Reference
+
+            See :command:`platform`
+
+.. topic:: Block Sub-Commands
+
+   .. list-table::
+      :class: example-rst
+      :header-rows: 1
+
+      * - **Markup**
+        - **Result**
+
+      * - .. code-block:: rest
+
+            Block Sub-Command Cross-Reference
+
+            See :command:`platform.icon`
+
+            See :command:`WSF_GEOMETRIC_SENSOR.mode.check_terrain_masking`
+
+        -   Block Sub-Command Cross-Reference
+
+            See :command:`platform.icon`
+
+            See :command:`WSF_GEOMETRIC_SENSOR.mode.check_terrain_masking`
+
+Model Commands
+""""""""""""""
+
+Model commands are sub-commands belonging to a :doc:`model<standard_documentation_model>` block.
+
+Command Page Building
+---------------------
+
+Stand-Alone Command Page Structure
+""""""""""""""""""""""""""""""""""
+
+Stand-alone commands are often grouped into categories and presented as a command group in a single documentation page.
+
+Every documentation page should begin with a page title. If appropriate, an *Overview* section may be included to generally describe the command group before defining individual commands.
+
+If a group of stand-alone commands can reasonably be separated into subgroups within a page, these sub-groups should be divided into separate sections as is necessary.
+
+For a given page, if the order of appearance among a set of stand-alone commands is arbitrary, they should be documented in alphabetical order.
+
+.. topic:: Example Pages
+
+   .. hlist::
+      :columns: 4
+
+      * :doc:`../file_commands`
+      * :doc:`../simulation_control_commands`
+
+.. topic:: Page Template
+
+   .. code-block:: rest
+
+      // File <group-name>_commands.rst
+
+      <group-name> Commands
+      =====================
+
+      .. command:: <stand-alone-command-1> [<arg-list>]
+
+         Description of <stand-alone-command-1>
+
+      ...
+
+Block-Command Page Structure
+""""""""""""""""""""""""""""
+
+Block commands often include a number of sub-commands, as a result, these commands are most often documented individually. In other words, a block command and all of its subcommands are defined
+together in a single page.
+
+Pages which document these commands vary significantly, but share a number of common features:
+
+* A block command page should begin with a title. Both the file name and the title name should match that of the block command to be documented. The title may be followed immediately by a local
+  table of contents, as generated by the **.. contents::** directive.
+
+* If applicable, a cross-reference to any related script class should be provided.
+
+* The subject block command should then be defined with the **.. command::** directive. This is immediately followed by a parsed literal block containing a template of the command block as it
+  would appear in an AFSIM scenario file. This templated block should include a cross-reference to each of the block's sub-commands, which will be documented further down the page. This structure
+  serves the dual purpose of providing a high-level syntax diagram for the block command and acting as a sub-command level table of contents.
+
+* Often this is followed by an *Overview* section, which summarizes the subject command's purpose and significant features. This section is required for block commands which are content dense,
+  and recommended for all but very simple block commands. To this end, complex commands should include within the *Overview* one or more sub-sections containing relatively simple, self contained
+  examples and descriptions. Demos often contain simple uses of command blocks, and may be used for the provided examples where applicable.
+
+* A *Command* section should be provided following example sections, as a sibling/peer to the *Overview* section. This section should begin with **.. begin:: <block-command-name>**
+  or **.. block:: <block-command-name>** and end with **.. end::**. This blocking markup is critical to ensure each sub-command is unambiguously cross-referenceable elsewhere in the documentation.
+  Explicit blocking safeguards against potential future errors, resulting from the addition of new sub-commands, and guarantees that each sub-command is associated with its containing block command.
+  For organization and readability of the ReStructuredText, blocked content may be indented a single level. This indentation has no effect on generated output.
+
+* Finally, a *Script Interface* section should be provided as a sibling/peer to the *Command* section. Any script commands implemented by the subject block command should be documented here.
+
+Sections beyond those described here may be necessary and/or appropriate, depending on the subject command. These may be incorporated into the given page structure as needed.
+
+.. tip:: If applicable, distribution specific components will be automatically appended to the end of the page during generation.
+
+.. important:: Care should be taken to preserve section hierarchy in distribution specific components to ensure page structure is coherent and consistent across all distributions.
+
+.. topic:: Example Pages
+
+   .. hlist::
+      :columns: 4
+
+      * :doc:`../aero`
+      * :doc:`../platform`
+      * :doc:`../sensor`
+
+.. topic:: Page Template
+
+   File: <block-command-name>.rst
+
+   .. code-block:: rest
+
+      <block-command-name>
+      ====================
+
+      .. contents::
+
+      Script Class: <script-class-name>
+
+      .. command:: <block-command-name> ... end_<block-command-name>
+
+         .. parsed-literal::
+
+            <block-command-name> [<arg-list>]
+               :command:`<block-command-name>.<sub-command-1>` or <sub-command-1>_
+
+               ...
+
+            end_<block-command-name>
+
+      Overview
+      --------
+
+      ...
+
+      Example 1
+      """""""""
+
+      ...
+
+      Example 2
+      """""""""
+
+      ...
+
+      Commands
+      --------
+
+      .. begin:: <block-command-name>
+
+         .. command:: <sub-command-1>
+
+            Description of <sub-command-1>
+
+      ...
+
+      .. end::
+
+      Script Interface
+      ----------------
+
+      ...

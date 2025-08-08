@@ -1,0 +1,76 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfAddress
+----------
+
+.. class:: WsfAddress inherits Object
+
+   WsfAddress_ is a comms based object that allows the definition and usage of IPV4 based addresses using CIDR notation. These addresses are what is used internally by AFSIM for identification, tracking, and manipulation of comm objects during the simulation run. Addresses are available via the scripting language for the same purposes by the user. 
+   
+Methods
+=======
+
+.. method:: string AddressToken()
+
+   If the address was dynamically generated using a string token, this method will return the string token used to originally create the address. This is useful in determining the network membership of an address via the provided string name (the comm "network_name" command). 
+   
+.. method:: string GetAddress()
+
+   Returns the IPV4 CIDR notation based address in a string format. 
+   
+.. method:: void Increment()
+
+   Increases the value of the address by one. Note that addresses in IPV4 are four sets of values ranging from 0 to 255, such that incrementing a value of 255 by one will set the corresponding field to zero, and increment the previous field by one. 
+   
+   .. note:: Take care when incrementing and using address values. With CIDR notation, incrementing an address beyond the assigned subnet value will change the network membership of the address. These values may not be obvious given that the CIDR notation allows for more variability in subnet size from the previously used and deprecated Type A, B, and C addressing schema. 
+   
+.. method:: double AddressValue()
+
+   Returns the integer value equivalent of the 32-bit IPV4 address. Note that this is provided in the form of a double, as the integer value is unsigned and would otherwise exceed the possible signed integer values. If the address has not been initialized, then the returned value will be -1.0.
+   
+.. method:: bool IsNull()
+
+   Returns a boolean value if the address is valid and has been initialized, which is typically an address of 0.0.0.0. 
+   
+.. method:: double PossibleHosts()
+
+   Given an initialized address and evaluating the CIDR notation subnet, provides the number of addresses that can be assigned in a particular address. Note that this is provided as a double to avoid signed integer overflow for very large subnets. 
+   
+.. method:: string RoutingPrefix()
+
+   Provides the network address, or routing prefix, of the address in a string format. 
+   
+.. method:: bool SetAddress(string aAddress, int aCIDR)
+
+   Sets an address to a user provided address, based on a string IPV4 address (such as "192.168.1.1", for example) or an integer CIDR value denoting how many bits of the address pertain to networking addressing. For example, a CIDR value of 24 infers a 24 bit network address, with 8 bits left for addressing, allowing for ~256 hosts to exist. 
+   
+   This method returns true if the user provided values were viable and used to set the address, false otherwise.
+   
+.. method:: string Subnet()
+
+   Provides the string representation of the subnet portion of the address. 
+   
+.. method:: int SubnetMaskBitSize()
+
+   Provides the integer value representing the number of bits used to store the subnet in this address. 
+   
+.. method:: bool WithinRange(WsfAddress aNetworkAddress, WsfAddress aHostAddress)
+
+   Given a network address, and a host address, this method checks if the host address is an address assigned to the range of addresses assigned to the network address. If the host address is an assigned address of the network address, this method returns true, false otherwise. This method is useful for a quick determination of network membership without resorting to string comparisons. 
+   
+.. method:: double IntegerValue()
+
+   Returns a double as the integer representation of the address. This is required as a double, since the default script integer value is signed and can not encompass the entire range of address values.
+   
+.. method:: string GetBroadcastAddress()
+
+   Returns an address as a string that represents the broadcast address. This can be used to form an address used to broadcast to all members.

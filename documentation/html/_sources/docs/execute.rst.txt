@@ -1,0 +1,63 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+execute
+-------
+
+.. command:: execute ... end_execute
+
+.. parsed-literal::
+
+   execute_ at_time :argtype:`\<time-value> <time-value>` [ absolute | relative ]
+      ...script commands...
+   end_execute
+
+   execute_ at_interval_of :argtype:`\<time-value> <time-value>`
+      ...script commands...
+   end_execute
+
+Overview
+========
+
+execute is used to define a script that is to be executed either once at a specified time or repeatedly at a
+specified interval. The command may occur in the simulation context (i.e., not inside a platform) or may occur in the
+context of a platform or platform part.
+
+The first form of the command, i.e. ***at_time***, causes the enclosed script to be executed once. If a time reference
+of **absolute** is specified, the script will be executed at the specified simulation time. If the time is in the past
+then the script will execute immediately. If a time reference of **relative** is specified, the script will be executed
+at the specified time relative to the time when the platform was created (this option is not valid if the command occurs
+within the global simulation context).
+
+The second form of the command, i.e. ***at_interval***, causes the enclosed script to be executed at the specified time
+interval. In order to distribute the workload more evenly, the first execution will occur at a random time within the
+defined interval. Subsequent iterations will occur at the specified interval.
+
+If the command occurs within the context of a platform, the script variable PLATFORM will refer to the platform. In
+addition, if the command occurs within the context of a processor, the script variable PROCESSOR will refer to the
+processor.
+
+Example
+=======
+
+The following will cause a sensor to be turned on and off at a specified time.
+
+.. parsed-literal::
+
+ platform radar-site-1 RADAR_SITE
+    sensor radar ... end_sensor
+    execute at_time 10 minutes absolute
+       PLATFORM.TurnSensorOn("radar");
+    end_execute
+    execute at_time 20 minutes absolute
+       PLATFORM.TurnSensorOff("radar");
+    end_execute
+  end_platform

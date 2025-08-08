@@ -1,0 +1,143 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_EXPLICIT_WEAPON
+-------------------
+
+.. model:: weapon WSF_EXPLICIT_WEAPON
+
+**Script Class**: :class:`WsfWeapon`
+
+.. parsed-literal::
+
+   weapon <name> :model:`WSF_EXPLICIT_WEAPON`
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :command:`weapon` Commands ...
+
+      launched_platform_type_ ...
+      launch_delta_v_ ...
+      ignore_launch_platform_velocity_ ...
+      require_loft_angle_ ...
+      require_intercept_point_ ...
+      commander_ ...
+      command_chain ...
+      dis_entity_id_offset_ ...
+
+      # `Script Interface`_
+
+     :command:`on_initialize` ... end_on_initialize
+     :command:`on_initialize2` .. end_on_initialize2
+     :command:`on_update` ... end_on_update
+     :command:`_.script_commands.script_variables` ... end_script_variables
+     :ref:`scripts <Script_Commands>` ... end_script
+     ... Other :ref:`Script Commands <Common_Script_Interface>` ...
+
+     script void on_create_\ (:class:`WsfPlatform` aWeapon, :class:`WsfTrack` aTarget) ... end_script
+
+   end_weapon
+
+Overview
+========
+
+:model:`WSF_EXPLICIT_WEAPON` represents a :command:`weapon` that is modeled as an independent platform when it is fired.
+
+.. block:: WSF_EXPLICIT_WEAPON
+
+Commands
+========
+
+.. command:: launched_platform_type <string-reference>
+   
+   Specifies the type of platform to be created when a weapon of this type is launched. The specified value must represent
+   a valid platform type that must be defined when this object is initialized in the simulation.
+   
+   **Default:** No default. Must be specified.
+
+.. command:: launch_delta_v <x-velocity> <y-velocity> <z-velocity> <speed-units>
+   
+   Specifies the vector that represents the additional velocity, relative to the launching platform, provided by the
+   launching mechanism.  This value is specified in the entity coordinate system (+X is forward, +Y to the right and +Z
+   down) of the launching part (see :ref:`Articulated_Part_Commands`).
+   
+   .. note::
+
+      If the net speed is less than 1 m/s, then a 10 m/s speed forward will be used if launch_delta_v_ is less than or equal to 1 m/s.
+   
+   **Default:** 0.0 0.0 0.0 m/s (i.e., the initial velocity relative to the velocity of the launching platform)
+
+.. command:: ignore_launch_platform_velocity <boolean-value>
+   
+   Specifies that the initial velocity of a launched explicit weapon will ignore the vector component of launch platform
+   velocity.  Normally the initial weapon velocity is the vector sum of launch_delta_v_ plus the launching platform
+   velocity. 
+   
+   .. note::
+
+      It is best to set this to true for ship-launched weapons because of a typical guided mover's
+      large integration time increment (typically set between 0.1 to 0.5 seconds).
+   
+   .. note::
+
+      If launched from a moving platform, it is best to set this to true to avoid possible misfires.
+   
+   **Default:** false
+
+.. command:: require_loft_angle 
+
+.. command:: require_intercept_point 
+   
+   Indicates that the :command:`launch_computer` must have provided the attribute specified by the command.
+
+.. command:: commander  <commander> [ command_chain <command-chain> ]
+   
+   Specifies the commander(s) of the launched platform. If **command_chain** is not provided, the default command chain
+   will be assumed. **<commander>** may be one of the following values:
+   
+   * A platform name, indicating the specified platform is the commander.
+   * SELF, indicating that the launched platform is its own commander.
+   * LAUNCHER, indicating that the launching platform is the commander.
+   * LAUNCHER_COMMANDER, indicating the the launching platforms' commander is the commander.
+   
+   This command can be repeated multiple times to assign multiple commands (on different command chains).
+   
+   **Default:** The launching platform is designated as the commander of the launched platform for each of the command chains
+   in which the launching platform is a member.
+
+.. command:: dis_entity_id_offset <integer-value>
+   
+   Adds this value onto the value of the platform index and sets the the weapon dis entity id.  This value is used in the
+   entity id fields in all DIS PDUs associated with this weapon.  It is a way for the user to have some control of
+   assigning weapon ids to weapons prior to launch and/or in a DIS environment.  The the sum of the platform index and the
+   value must not exceed 65535.
+   
+   **Default:** 0
+
+Script Interface
+================
+
+:model:`WSF_EXPLICIT_WEAPON` uses the :ref:`Common_Script_Interface`, as well as providing the following:
+
+.. command:: on_create
+
+   .. parsed-literal::
+   
+      script void on_create(:class:`WsfPlatform` aWeapon, :class:`WsfTrack` aTarget) ... end_script
+   
+   Defines a script that is called immediately after the weapon platform is created but before it is actually inserted
+   into the simulation.  This script is typically used to modify attributes of the weapon platform that must change before
+   the weapon is added to the simulation. 'aWeapon' is a reference to the newly created weapon platform and 'aTarget' is a
+   reference to the target track object.
+   
+   .. note::
+
+      The weapon platform has not been initialized yet. It has a name, side, commander's name, launch state, and target track.
+      All other data on the platform is undefined.

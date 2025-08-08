@@ -1,0 +1,302 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+antenna_pattern
+---------------
+
+.. command:: antenna_pattern ... end_antenna_pattern
+   :block:
+
+.. parsed-literal::
+
+ antenna_pattern *<pattern-name>*
+    :ref:`<pattern-type-name> <antenna_pattern.antenna_pattern_types>`
+       `Common Commands`_
+       ... `Available Antenna Patterns`_ Commands ...
+ end_antenna_pattern
+
+Overview
+========
+
+antenna_pattern is used in :command:`_.transmitter` and :command:`_.receiver` commands to define the gain of an antenna for communication and sensor devices.
+
+**<pattern-name>** Specifies the name of the antenna pattern.
+
+.. _antenna_pattern.antenna_pattern_types:
+
+**<pattern-type-name>** Specifies one of the `Available Antenna Patterns`_:
+
+.. include:: antenna_pattern_types.txt
+
+Common Commands
+===============
+
+The following commands can be used in any of the antenna pattern definitions:
+
+.. command:: minimum_gain <db-ratio-value>
+
+   The minimum gain that will be returned.
+
+   **Default:** -300 db
+
+.. command:: gain_adjustment <db-ratio-value>
+
+   An adjustment factor to be applied to the raw gain. This is especially useful if one wants to reuse a pattern that has been defined by a file (such as the :ref:`antenna_pattern.pattern_table`) and simply scale the definition.
+
+   **Default:** 1.0 (no adjustment)
+
+   .. note::
+      This gain_adjustment_ AND gain_adjustment_table_ can be used together. The results are
+      additive in logarithmic space (multiplicative in linear space).
+
+.. command:: gain_adjustment_table  ... end_gain_adjustment_table
+   :block:
+
+   This command provides the means to define a frequency-dependent adjustment to the gain. The points define a curve on a plot whose x-axis is the log_10 of the frequency and the y-axis is adjustment factor in dB. Linear interpolation is used to derive the values for intermediate frequencies. Signals whose frequencies are outside the range of the table use the value from the appropriate endpoint (i.e., extrapolation is not performed).
+
+   The format of the table is:
+
+   .. parsed-literal::
+    gain_adjustment_table
+       frequency <frequency-value> :argtype:`\<db-ratio-1> <db-ratio-value>`
+       frequency <frequency-value> :argtype:`\<db-ratio-2> <db-ratio-value>`
+       ...
+       frequency <frequency-value> :argtype:`\<db-ratio-n> <db-ratio-value>`
+    end_gain_adjustment_table
+
+   The following rules must be observed:
+
+   * The entries must be in order monotonically increasing frequency.
+   * There must be at least two entries, except that if no entries are provided then it is treated as though the table is not provided.
+
+   .. note::
+      This gain_adjustment_ AND gain_adjustment_table_ can be used together. The results are additive in logarithmic space (multiplicative in linear space).
+
+Available Antenna Patterns
+==========================
+
+.. _antenna_pattern.pattern_table:
+
+Azimuth/Elevation Table
+***********************
+
+.. parsed-literal::
+
+ antenna_pattern *<pattern-name>*
+    pattern_table
+       # :ref:`Azimuth-elevation_Table_Definition`
+
+       azimuth_beamwidth_ <angle-value>
+       elevation_beamwidth_ <angle-value>
+
+       # `Common Commands`_
+
+       minimum_gain_ <db-ratio-value>
+
+       gain_adjustment_ <db-ratio-value>
+       gain_adjustment_table_ ... end_gain_adjustment_table
+ end_antenna_pattern
+
+Defines a pattern using any of the standard :ref:`Azimuth-elevation_Table_Definition`
+formats.
+
+.. block:: antenna_pattern.pattern_table
+
+.. command:: azimuth_beamwidth <angle-value>
+
+   Defines the width of the beam in azimuth.
+
+   **Default:** none - must be provided
+
+.. command:: elevation_beamwidth <angle-value>
+
+   Defines the width of the beam in elevation.
+
+   **Default:** none - must be provided
+
+.. _antenna_pattern.uniform_pattern:
+
+Uniform or Constant Pattern
+***************************
+
+.. parsed-literal::
+
+ antenna_pattern_ *<pattern-name>*
+    uniform_pattern
+       peak_gain_ <db-ratio-value>
+       azimuth_beamwidth_ <angle-value>
+       elevation_beamwidth_ <angle-value>
+
+       # `Common Commands`_
+
+       minimum_gain_ <db-ratio-value>
+       gain_adjustment_ <db-ratio-value>
+       gain_adjustment_table_ ... end_gain_adjustment_table
+ end_antenna_pattern
+
+Defines a pattern whose gain is the *peak_gain* within the specified beamwidth limits and *minimum_gain* everywhere else.
+
+.. block:: antenna_pattern.uniform_pattern
+
+.. command:: peak_gain <db-ratio-value>
+
+   Defines the peak gain of the antenna referenced to a perfect isotropic antenna.
+
+   **Default:** 1 db
+
+.. command:: azimuth_beamwidth <angle-value>
+
+   Defines the width of the beam in azimuth.
+
+   **Default:**  180 deg
+
+.. command:: elevation_beamwidth <angle-value>
+
+   Defines the width of the beam in elevation.
+
+   **Default:**  90 deg
+
+
+.. _antenna_pattern.circular_pattern:
+
+Circular sine(x)/x Pattern
+**************************
+
+.. parsed-literal::
+
+ antenna_pattern *<pattern-name>*
+    circular_pattern
+       peak_gain_ <db-ratio-value>
+       beamwidth_ <angle-value>
+
+       # `Common Commands`_
+
+       minimum_gain_ <db-ratio-value>
+       gain_adjustment_ <db-ratio-value>
+       gain_adjustment_table_ ... end_gain_adjustment_table
+ end_antenna_pattern
+
+Defines a sine(x)/x pattern with circular symmetry.
+
+.. block:: antenna_pattern.circular_pattern
+
+.. command:: peak_gain <db-ratio-value>
+
+   Defines the peak gain of the antenna referenced to a perfect isotropic antenna.
+
+   **Default:** 1 db
+
+.. command:: beamwidth <angle-value>
+
+   Defines the half-power beamwidth (The angle subtended by points at which the gain becomes one-half the peak gain).
+
+.. _antenna_pattern.rectangular_pattern:
+
+Rectangular sine(x)/x Pattern
+*****************************
+
+.. parsed-literal::
+
+ antenna_pattern *<pattern-name>*
+    rectangular_pattern
+       peak_gain_ <db-ratio-value>
+       azimuth_beamwidth_ <angle-value>
+       elevation_beamwidth_ <angle-value>
+
+       # `Common Commands`_
+
+       minimum_gain_ <db-ratio-value>
+       gain_adjustment_ <db-ratio-value>
+       gain_adjustment_table_ ... end_gain_adjustment_table
+ end_antenna_pattern
+
+Defines a sine(x)/x pattern where the azimuth and elevation beamwidths do not have to be the same.
+
+.. block:: antenna_pattern.rectangular_pattern
+
+.. command:: peak_gain <db-ratio-value>
+
+   Defines the peak gain of the antenna referenced to a perfect isotropic antenna.
+
+   **Default:** 1 db
+
+.. command:: azimuth_beamwidth <angle-value>
+
+   Defines the half-power beamwidth in azimuth (The angle subtended by points at which the gain becomes one-half the peak gain).
+
+.. command:: elevation_beamwidth <angle-value>
+
+   Defines the half-power beamwidth in elevation (The angle subtended by points at which the gain becomes one-half the peak gain).
+
+
+.. _antenna_pattern.cosecant_squared_pattern:
+
+Cosecant Pattern
+****************
+
+.. parsed-literal::
+
+ antenna_pattern *<pattern-name>*
+    cosecant_squared_pattern
+       peak_gain_ <db-ratio-value>
+       azimuth_beamwidth_ <angle-value>
+       elevation_beamwidth_ <angle-value>
+       minimum_elevation_for_peak_gain_ <angle-value>
+       `elevation_of_peak/csc2_boundary`_ <angle-value>
+       maximum_elevation_for_csc2_ <angle-value>
+
+       # `Common Commands`_
+
+       minimum_gain_ <db-ratio-value>
+       gain_adjustment_ <db-ratio-value>
+       gain_adjustment_table_ ... end_gain_adjustment_table
+ end_antenna_pattern
+
+Defines a antenna pattern that will:
+
+ * Use a sin x/x pattern for elevation angles less than minimum_elevation_for_peak_gain_.
+ * Use the peak gain from [ minimum_elevation_for_peak_gain_, `elevation_of_peak/csc2_boundary`_ ]
+ * Use a csc^2 pattern from [ `elevation_of_peak/csc2_boundary`_, maximum_elevation_for_csc2_ ]
+ * Use a sin x/x pattern for angles above maximum_elevation_for_csc2_.
+
+.. block:: antenna_pattern.cosecant_squared_pattern
+
+.. command:: peak_gain <db-ratio-value>
+
+   Defines the peak gain of the antenna referenced to a perfect isotropic antenna.
+
+   **Default:** 1.0 db
+
+.. command:: azimuth_beamwidth <angle-value>
+
+   Defines the half-power beamwidth in azimuth (The angle subtended by points at which the gain becomes one-half the peak gain). This is used to the determine the azimuth-dependent portion of the gain.
+
+.. command:: elevation_beamwidth <angle-value>
+
+   Defines the half-power beamwidth in elevation (The angle subtended by points at which the gain becomes one-half the peak gain). This is used to determine the elevation-dependent port of the gain when the elevation angle is above or below the cosecant_squared region.
+
+.. command:: minimum_elevation_for_peak_gain <angle-value>
+
+   Defines the minimum elevation angle for the peak_gain_ value.
+   
+   .. note::
+      A non-zero value result in issues for radars which slew or scan using a non-peak gain at 0 degrees, i.e. the elevation cueing/scanning angle.
+
+.. command:: elevation_of_peak/csc2_boundary <angle-value>
+
+   Defines the elevation angle for the peak cosecant-squared boundary value.
+
+.. command:: maximum_elevation_for_csc2 <angle-value>
+
+   Defines the maximum elevation angle for the peak_gain_ value.
+
+.. include:: _antenna_pattern.wsf_mil.txt
+.. include:: _antenna_pattern.wsf_nx.txt

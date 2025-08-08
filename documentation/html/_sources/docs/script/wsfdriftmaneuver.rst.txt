@@ -1,0 +1,66 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfDriftManeuver
+----------------
+
+.. class:: WsfDriftManeuver inherits WsfOrbitalManeuver
+
+**Input type:** :doc:`drift<../drift>`
+
+:class:`WsfDriftManeuver` is used to move a platform on a circular orbit to a similar circular orbit in which the platform would advance or recede from its initial orbit at a given angular rate. The initial and final orbits do not intersect, and so there is a third transfer orbit that the executing platform will perform while moving from one radius to the next. This transfer can be optimized for duration or for delta-V usage, or it can be given a fixed duration. When the transfer ends, the platform will have a state that will have already drifted the correct amount based on the time of transfer.
+
+Methods
+*******
+
+.. method:: static WsfDriftManeuver Construct(WsfOrbitalEventCondition aCondition, int aOptimizeOption, double aMaximumDeltaTime, double aMaximumDeltaV, double aDriftRate)
+
+   Create a :class:`WsfDriftManeuver` with the intent of finding an optimal transfer solution in delta-V or time, using the following:
+
+   * **aCondition**: A specific :class:`WsfOrbitalEventCondition` that specifies when the transfer to the final drifting orbit should begin. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aOptimizeOption**: The return value from :method:`WsfDriftManeuver.EARLIEST_TIME` or :method:`WsfDriftManeuver.LEAST_DELTA_V`, specifying if the transfer should solve for the least time of transfer, or the least delta-V for the transfer.
+   * **aMaximumDeltaTime**: The maximum time in seconds after the transfer begins to consider in computing a solution.
+   * **aMaximumDeltaV**: The maximum delta-V in meters per second to consider when computing a solution.
+   * **aDriftRate**: The rate in degrees per second the final orbit will drift relative to the initial orbit.
+
+.. method:: static WsfDriftManeuver Construct(WsfOrbitalEventCondition aCondition, WsfOrbitalOptimizationCost aCost, double aMaximumDeltaTime, double aMaximumDeltaV, double aDriftRate)
+
+   Create a :class:`WsfDriftManeuver` with the intent of finding a transfer solution minimizing a given cost, using the following:
+
+   * **aCondition**: A specific :class:`WsfOrbitalEventCondition` that specifies when the transfer to the final drifting orbit should begin. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aCost**: A :class:`WsfOrbitalOptimizationCost` instance specifying the cost function to minimize.
+   * **aMaximumDeltaTime**: The maximum time in seconds after the transfer begins to consider in computing a solution.
+   * **aMaximumDeltaV**: The maximum delta-V in meters per second to consider when computing a solution.
+   * **aDriftRate**: The rate in degrees per second the final orbit will drift relative to the initial orbit.
+
+.. method:: static WsfDriftManeuver Construct(WsfOrbitalEventCondition aCondition, double aDeltaTime, double aDriftRate)
+
+   Create a :class:`WsfDriftManeuver` without optimizing the transfer, taking a fixed time to complete the transfer:
+
+   * **aCondition**: A specific :class:`WsfOrbitalEventCondition` that specifies when the transfer to the final drifting orbit should begin. The provided condition must be :method:`WsfOrbitalEventCondition.NONE`, :method:`WsfOrbitalEventCondition.AT_RELATIVE_TIME`, :method:`WsfOrbitalEventCondition.AT_ASCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_DESCENDING_NODE`, :method:`WsfOrbitalEventCondition.AT_ECLIPSE_ENTRY`, or :method:`WsfOrbitalEventCondition.AT_ECLIPSE_EXIT`.
+   * **aDeltaTime**: The time in seconds to complete the transfer.
+   * **aDriftRate**: The rate in degrees per second the final orbit will drift relative to the initial orbit.
+
+.. method:: static int EARLIEST_TIME()
+
+   Return the value to be used when constructing a :class:`WsfDriftManeuver` when optimizing the maneuver such that it will complete at the earliest possible time, up to delta-t and delta-V constraints provided during construction.
+
+.. method:: static int LEAST_DELTA_V()
+
+   Return the value to be used when constructing a :class:`WsfDriftManeuver` when optimizing the maneuver such that it will execute with the least possible delta-v, up to delta-t and delta-V constraints provided during construction.
+
+.. method:: double DriftRate()
+
+   Return the drift rate in degrees per second.
+
+.. method:: void SetDriftRate(double aDriftRate)
+
+   Set the drift rate in degrees per second to the given value.

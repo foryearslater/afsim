@@ -1,0 +1,130 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.6.3:
+
+WSF 1.6.3 - 30 Oct 2009
+-----------------------
+
+Corrections
+===========
+
+:command:`SOSM sensor installation_adjustment_table <_.sosm_sensor_model_commands.installation_adjustment_table>`
+
+* **(CR 6915)** The file referenced by the :command:`SOSM sensor installation_adjustment_table 
+  <_.sosm_sensor_model_commands.installation_adjustment_table>`
+  command could not be opened if the file name was not an absolute file name.
+
+* :command:`sensor_plot`:
+
+  * **(CR 6903)** Fixed units for the 'radar_signature' and 'optical_signature' outputs in
+    :command:`sensor_plots's <sensor_plot>` :command:`horizontal_map` and
+    :command:`vertical_map` outputs.
+  
+  * **(CR 6926)** Fixed a segmentation fault when using steered_array patterns within sensor_plot that happened
+    after the output file is created and program is closing.
+
+* **(CR 6937)** Fixed a bug with the multi-access protocols (CSMA, ethernet, etc.) where a network would stop
+  allowing transmissions at a random point in a scenario.
+
+* **(CR 6970)** Fixed a bug that occurred when running in realtime and the CME other PDU not being sent.
+
+* **(CR 6546)** Fixed a segmentation fault that would occur when declaring a container (Array or Map) if the
+  variable name was missing (i.e. Array<int>; or Map<int, string>;).
+
+* Fixed some issues in the :model:`WSF_FUSION_CENTER` where tracks were not being updated and removed properly.
+
+Enhancements
+============
+
+* Added an additional form of WsfComm.SendUnicastMessage script method to allow a
+  message to be directed to a platform with a specified name.
+
+* Enhanced false-target capabilities for :model:`WSF_RADAR_SENSOR` with multiple beams. The logic will now select the
+  beam with the greatest power and use it for the calculations, as opposed to taking the first beam with a detection.
+
+* Moved the :command:`false_target_screener` definition block from being located on a :command:`_.receiver` to
+  being located on a :command:`sensor` to allow for the roll-up of multiple beams radar sensors into a single result for each
+  false-target interaction.
+
+* False-target blip locations/altitudes are now along the beam center. This altitude is especially important for
+  multi-beam radars/sensors that have altitude reporting capabilities.
+
+* :command:`sensor_plot`:
+
+  * **(CR 6904)** Added '**detection_threshold**' output for a minimum detectable signal level in
+    :command:`sensor_plots's <sensor_plot>` :command:`horizontal_map` and
+    :command:`vertical_map` outputs.
+
+* **(CR 6904)** Added '**noise_power**' output to output the receiver noise in :command:`sensor_plots's <sensor_plot>`
+  :command:`horizontal_map` and :command:`vertical_map` outputs.
+  
+  * **(CR 6904)** Added '**noise_jammer_power**', '**pulse_jammer_power**', '**coherent_jammer_power**',
+    '**noise_jammer_to_signal**', '**pulse_jammer_to_signal**', '**coherent_jammer_to_signal**' and
+    '**coherent_jammer_to_noise**'  outputs in :command:`sensor_plots's <sensor_plot>` :command:`horizontal_map`
+    and :command:`vertical_map` outputs.
+  
+  * **(CR 6911)** Added target-to-sensor geometry outputs similar to the sensor-to-target geometry output methods
+    in :command:`sensor_plots's <sensor_plot>` :command:`horizontal_map` output.
+  
+  * Added pixel_count variable option to :command:`sensor_plots's <sensor_plot>`
+    :command:`horizontal_map` output.
+
+* **(CR 6949)** Added script methods :method:`Seed <Math.Seed>` and :method:`SetSeed <Math.SetSeed>` methods to :class:`MATH <Math>` script
+  variable to access and set the current seed.
+
+* Added in more debug output for outputting calculated values during initialization of the
+  :command:`antenna_pattern steered_array_pattern <antenna_pattern>`.
+
+* Added **flight_path_angle**, **target_flight_path_angle** and **on_commanded_flight_path_angle** as a phase-change
+  criteria that can be checked by **WSF_NEW_GUIDANCE_COMPUTER**.
+
+* Added :model:`WSF_BALLISTIC_MISSILE_LAUNCH_COMPUTER` that uses a user generated surface-to-surface_table or
+  surface-to-air_table for ballistic impacts or intercepts. These tables are generated with the
+  :command:`BALLISTIC_LAUNCH_COMPUTER_GENERATOR` (part of :command:`weapon_tools`) to determine initial trajectory launch angle for the
+  desired impact point.  In addition, divert_thrust, divert_fuel_mass, and divert_fuel_flow_rate was added to the
+  **WSF_NEW_GUIDED_MOVER** for ballistic terminal intercepts.
+
+* False-target tracks are now processed with the :command:`track_manager` perfect correlation scheme. The
+  :command:`track_manager` for the most part seems to be working properly with false-targets as designed.
+
+* Added the :command:`dis_interface.suppress_cme_draw_data` command to the :command:`dis_interface` block that allows users to
+  suppress DIS PDUs generated through the WsfDraw interface.
+
+* The :command:`false_target_screener` will allow a real target to be tracked that has a range from the sensor that is less
+  than that of the closest false target. This behavior is default in the functionality of the :command:`false_target_screener`.
+
+* Added inputs to allow for the forcing target tracks in the :command:`false_target_screener` given a set of criteria using
+  :command:`false_target_screener.force_target_tracks` input block data items. The methods allow for forcing
+  a target track based on range constraining of the blips and the target track location being outside of those
+  constrained limits, also forcing is allowed for a given sector around the target track location not having a maximum
+  number of false targets present.
+
+* Can now report PW and PRI of a detected signal for :model:`WSF_ESM_SENSOR` by setting the '**
+  reports_pulse_repetition_interval**' and '**reports_pulsewidth**' in the :command:`sensor`
+  :ref:`sensor_track_information_reporting_commands`.
+
+* Added :class:`WsfTrack` script :ref:`Signal Methods <WsfTrack.Signal_Methods>` to get the :ref:`PRI <WsfTrack.Signal_Methods>`
+  and :ref:`PW <WsfTrack.Signal_Methods>` of the detected emitter.
+
+* **(CR 6996)** Modified :model:`WSF_EOIR_SENSOR` and :model:`WSF_SAR_SENSOR` so they issue
+  :ref:`docs/event/sensor_events:SENSOR_DETECTION_CHANGED` events whenever a transition between detectability and
+  non-detectability occurs for a specific platform.
+
+* **(CR 6997)** Added the :command:`platform.navigation_errors` block to :command:`platform` to allow
+  introduction of errors resulting from differences in where a platform believes itself to be located and where it is
+  actually located.
+
+* Added :command:`route.time_to_point` route command.
+
+* **(CR 7002)** Added the :command:`antenna_pattern.gain_adjustment_table` to :command:`antenna_pattern` to
+  allow the resulting gain to be scale by the signal frequency. Also added a scalar
+  :command:`antenna_pattern.gain_adjustment` command to allow simple scaling.

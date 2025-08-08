@@ -1,0 +1,167 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_RIPR_PROCESSOR
+------------------
+
+**Derives From:** :model:`WSF_SCRIPT_PROCESSOR`
+
+**Script Object:** :class:`WsfRIPRProcessor`
+
+.. model:: processor WSF_RIPR_PROCESSOR
+
+    .. parsed-literal::
+
+     processor <name> :model:`WSF_RIPR_PROCESSOR`
+
+       ... :model:`Script Processor Commands <WSF_SCRIPT_PROCESSOR>` ...
+
+       // job related inputs
+       channel_job_type_ *<channel-index> <job-type>*
+       job_board_comm_ *<comm-name>*
+       job_pass_through_
+       job_stickiness_ *<real-value>*
+       num_job_channels_ *<integer-value>*
+       //windowing inputs
+       auto_exclusive_mode_ *<boolean-value>*
+       bid_window_open_length_ *<time-value>*
+       job_window_open_length_ *<time-value>*
+
+       // uplink related inputs
+       max_weapon_uplinks_ *<integer-value>*
+       use_remote_tracks_for_uplink_ *<boolean-value>*
+       weapon_uplink_path_ *<sensor-name> <comm-name>*
+
+       query_bid_type_ *<job-type>*
+       end_query_bid_type
+
+     end_processor
+
+Overview
+========
+
+WSF_RIPR_PROCESSOR is the foundation for all :ref:`RIPR` agents in WSF.  Most RIPR agents are built using a
+:command:`behavior_tree`, now defined on the :model:`WSF_SCRIPT_PROCESSOR`.  Any new :ref:`RIPR` agent classes should
+inherit from :class:`WsfRIPRProcessor`.  The RIPR processor's unique offering is the job board, and any agents that wish to
+take advantage of the bottom-up job bidding system should utilize this processor.  A different option would be the
+:model:`WSF_QUANTUM_TASKER_PROCESSOR`.
+
+Commands
+========
+
+.. command:: channel_job_type  <channel-index> <job-type>
+
+   Specifies that the indicated channel on this RIPR agent processor will be allowed to bid on and win jobs of the
+   indicated type.  If no types are specified for a channel than all types are allowed on that channel.  The channel-index
+   is an integer value and the job-type is a string that equals the job name (also called the job type).  Users can
+   specify many job types for particular channels, or one, or none.  If a particular channel bids on a job of type that is
+   not allowed, that bid is ignored.  A job of the wrong type will never be awarded to a channel.
+
+   Default: all types allowed on all channels
+
+.. command:: job_board_comm  <comm-name>
+
+   Specifies the name of a comm device that all job interactions will take place over.  This includes bidding, status
+   update, and winning jobs.
+
+   Default: no comm defined, job interactions completed instantly and perfectly
+
+.. command:: job_pass_through
+
+   If specified, this RIPR processor will simply act as a pass-through for jobs and bids.  If asked for its jobs or job
+   board, it will reply with its commander's jobs or job board.  It will not hold any jobs on its own board.
+   Subsequently, all bids from its subordinates go up to its commander and its subordinates will win jobs from its
+   commander's job board.
+
+   Default: not specified (not a pass-through)
+
+.. command:: job_stickiness  <real-value>
+
+   A RIPR processor's job stickiness is the value used to provide a little extra stability to the current job allocation.
+   When a RIPR processor has won a job and is performing that job, then all of it bids on that job are multiplied by the
+   job_stickiness value.  In this way, it's harder to dislodge somebody from their job once they have won it.
+
+   Default: 1.5  (bids are increased by 50% if the bidder has already allocated the job)
+
+.. command:: num_job_channels  <integer-value>
+
+   The number of channels a RIPR processor has represents its capability to perform jobs at the same time.  If the RIPR
+   processor is bidding on tracking jobs and its radar can track four targets at once, then it might have four job
+   channels.  This way, each channel can bid on jobs, win jobs separately, and allow the agent to perform them
+   concurrently.  The responsibility lies with the scenario developer to use the channels.  The extended forms of these
+   methods must be used to specify the channel index as parameter **aChannelIndex**, referenced here::
+
+    void BidJob(WsfRIPRProcessor aProc, int aChannelIndex, double aBid, double aProgress)
+
+    :class:`WsfRIPRJob` JobFor(WsfRIPRProcessor aProc, int aChannelIndex)
+
+   BidJob( ) is used when adding your bid to a job (usually from your commander's job board).  GetJobFor( ) is used when
+   querying your commander for the job you've won, based on the bids you have previously provided.
+
+   Default: 1
+
+.. command:: auto_exclusive_mode  <boolean-value>
+
+   If set to true, the RIPR processor job board will use the time values given with "job_window_open_length" and
+   "bid_window_open_length" to automatically alternate the windows for job bidding and job awarding of the job board
+   according to the proper durations.  While the bidding window is closed, all bids given to the job board are ignored.
+   While the job window is closed, all jobs maintain a constant allocation (nobody changes jobs).
+
+   Default: false
+
+.. command:: bid_window_open_length  <time-value>
+
+   Specifies the amount of time the bidding window will be open each cycle. While the bidding window is closed, all bids
+   given to the job board are ignored.
+
+   Default: 0 (must be user defined)
+
+.. command:: job_window_open_length  <time-value>
+
+   Specifies the amount of time the job window will be open each cycle. While the job window is closed, all jobs maintain
+   a constant allocation (nobody changes jobs).
+
+   Default: 0 (must be user-defined)
+
+.. command:: max_weapon_uplinks  <integer-value>
+
+   Specifies the maximum number of active uplinks the RIPR agent is capable of.
+
+   Default: 1
+
+.. command:: use_remote_tracks_for_uplink  <boolean-value>
+
+   If set to true, the RIPR processor will send tracks from any sensor and any source to weapons it is supporting with an
+   uplink.
+
+   Default: false
+
+.. command:: weapon_uplink_path  <sensor-name> <comm-name>
+
+   If a weapon uplink path is specified for a RIPR processor, then the processor will support uplinks for all fired
+   weapons.  It will send track updates over the designated comm to the fired weapon platform using tracks from the
+   designated sensor.  Uplinks can be stopped and started from script, see :model:`WSF_RIPR_PROCESSOR`.
+
+   Default: no uplinks
+
+.. command:: query_bid_type  <job-type>
+
+   Determines and returns an agent's bid on a given job of the indicated type.  No other query_bid_type block for the same
+   job type is allowed to be defined on this agent.  The script method :method:`WsfRIPRProcessor.QueryBid`
+   will execute this block on the given job. You can access the job object by using the "JOB" keyword within the
+   query_bid_type script block.  This input is the preferred and explicit method for providing bid values from agents.
+
+DEPRECATED
+==========
+
+.. command:: query_bid
+
+   This input block is obsolete and now deprecated.  See the "query_bid_type" script block definition above.

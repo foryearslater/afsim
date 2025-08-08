@@ -1,0 +1,90 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ORBIT_DETERMINATION_FILTER
+------------------------------
+
+.. model:: filter WSF_ORBIT_DETERMINATION_FILTER
+
+.. parsed-literal::
+
+   filter <name> :model:`WSF_ORBIT_DETERMINATION_FILTER`
+      ... Commands_ ...
+   end_filter
+ 
+Overview
+========
+
+Implementation of an Unscented Kalman Filter (UKF) for orbital determination and tracking.
+Like the Kalman Filter, the WSF_ORBIT_DETERMINATION_FILTER accepts input locations (from range, bearing, elevation, or
+location measurements), and it produces an estimate of the tracked target's location and velocity, as well as a state
+and covariance.  
+Unlike the WSF_KALMAN_FILTER, the WSF_ORBIT_DETERMINATION_FILTER filter produces state 
+and covariance estimates appropriate for orbital motion.  It provides these estimates differently depending on whether the filter is stabilized (typically, after three measurements have been received).  Before stabilization, the filter relies on either a linear extrapolation (used when explicitly added in a :command:`filter` definition), or an explicit orbital propagation of the filtered state (used internally in :doc:`orbit_determination_fusion`).  Once the filter stabilizes, state and covariance predictions are computed through a nonlinear (unscented) transform using orbital propagators.
+
+.. note:: This filter is used by the :doc:`orbit determination<orbit_determination_fusion>` track fusion method.  Do not combine use of this filter in a :command:`track_manager` definition with the :doc:`orbit determination<orbit_determination_fusion>` fusion method.
+
+.. block:: WSF_ORBIT_DETERMINATION_FILTER
+
+Commands
+========
+
+.. command:: process_noise_sigmas_XYZ <X-value> <Y-value> <Z-value>
+   
+   Defines the filter's noise standard deviation for the three directions.  The values correspond with accelerations in the
+   :ref:`entity coordinate system (ECS) <coordinate_systems>` of the tracked platform.
+   
+   Default:  0 0 0 
+
+.. command:: propagator <propagator-type> propagator-commands ... end_propagator
+
+   Specifies the :doc:`propagator` type that will be used to track the target.
+   
+   Default: The tracked target's propagator type, if a truth target type is available from the track; otherwise, :model:`WSF_KEPLERIAN_PROPAGATOR`.
+   
+   .. note:: The initial state of the propagator will be provided using provided track updates; any provided initial state configuration (initial orbital elements or orbital state) of the propagator will be ignored.
+
+.. command:: range_measurement_sigma <length-value>
+   
+   Defines the standard deviation that is applied to the measurement's range prior to filtering.
+
+   .. note::
+   
+      This input is usually not needed.  It is only used if there is no range error on the associated
+      track.
+   
+   Default:  0 m 
+
+.. command:: bearing_measurement_sigma <length-value>
+   
+   Defines the standard deviation that is applied to the measurement's bearing prior to filtering.
+
+   .. note::
+   
+      his input is usually not needed.  It is only used if there is no bearing error on the associated
+      track.
+   
+   Default:  0 deg 
+
+.. command:: elevation_measurement_sigma <length-value>
+   
+   Defines the standard deviation that is applied to the measurement's elevation prior to filtering.
+
+   .. note::
+   
+      This input is usually not needed.  It is only used if there is no elevation error on the associated
+      track.
+   
+   Default:  0 deg 
+
+.. command:: debug
+   
+   When specified, writes filtered measurements data and filter performance data to the file **KFILT_DEBUG.out**.

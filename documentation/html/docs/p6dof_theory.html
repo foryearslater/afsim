@@ -1,0 +1,716 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>P6DOF Theory &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="P6DOF Thrust Producer Types" href="p6dof_thrust_producer_types.html" />
+    <link rel="prev" title="P6DOF Terrain File Definition" href="p6dof_terrain_file_definition.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_thrust_producer_types.html" title="P6DOF Thrust Producer Types"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_terrain_file_definition.html" title="P6DOF Terrain File Definition"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="p6dof-theory">
+<h1>P6DOF Theory<a class="headerlink" href="#p6dof-theory" title="Permalink to this headline">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This document exists to explain the physics of the P6DOF Mover (see the <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-command">WSF_P6DOF_MOVER</span></a> input type and the <a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover" title="WsfP6DOF_Mover"><span class="xref wsf wsf-class">WsfP6DOF_Mover</span></a> script class).
+The kinematic and dynamic equations are defined, and where applicable, parallels are drawn between the mathematical symbols in this document and existing P6DOF commands.</p>
+<p>The <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-command">WSF_P6DOF_MOVER</span></a> provides a 6 DOF (degrees-of-freedom) physics-based mover that supports a wide range of aircraft and weapons modeling.
+The 6DOFs include translational position (<img class="math" src="../_images/math/6a375b1d9ae3e83777bc9c45868fcbf3d96e705f.png" alt="\vec{x}"/>) as well as attitude (<img class="math" src="../_images/math/b6c245d487949782a89cab9ee83504a62fdc2337.png" alt="\psi"/>, <img class="math" src="../_images/math/8a87f04e7d7cca18343c084cceca5237fae62491.png" alt="\theta"/>, <img class="math" src="../_images/math/fffd2357ee88a9c50ba9e831ed64c39c73d54a07.png" alt="\phi"/>).
+The attitude of the vehicle is determined by momentum-based calculations, providing realistic vehicle pointing as well as proper angle of attack (<img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/>) and angle of sideslip (<img class="math" src="../_images/math/7138dad9ac96835665b17f5817eacfcaa9b834c9.png" alt="\beta"/>) modeling.
+Rotational kinematics are influenced by aerodynamic and propulsion forces and moments along with rotational inertia.
+Although P6DOF movers include full 6DOF modeling, they utilize some angular/attitude simplifications to reduce the required data and to simplify control – hence the “pseudo” of the Pseudo-6DOF name.
+In particular, they only use the diagonal of the inertia tensor to reduce inertial cross-coupling (<img class="math" src="../_images/math/904db0356b543e2ea6a5d297632721998df86b3a.png" alt="I_{xx}"/>, <img class="math" src="../_images/math/492fb2540411a257cf2c6f1e39a778ee6d293210.png" alt="I_{yy}"/>, <img class="math" src="../_images/math/c8bb06bf385efa627bf78fc2048fd2a550ac5754.png" alt="I_{zz}"/>).
+However, P6DOF movers support a full 6 DOFs and include a detailed, stability derivative build-up approach to aerodynamics as described in this document.
+This allows detailed aerodynamics modeling, based on Mach, to provide accurate modeling of the transonic, supersonic, and hypersonic regimes.</p>
+<p>P6DOF movers include type-specific modeling of turbojets, turbofans, ramjets/scramjets, liquid-propellant rockets, and solid-propellant rockets, providing a wide range of propulsion types.
+This means each engine model includes the parameters that have the largest impact on thrust performance, such as Mach and altitude.</p>
+</section>
+<section id="list-of-symbols">
+<h2>List of Symbols<a class="headerlink" href="#list-of-symbols" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-left">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 35%" />
+<col style="width: 30%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Definition</p></th>
+<th class="head"><p>P6DOF Command</p></th>
+<th class="head"><p>P6DOF Script Method</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/></p></td>
+<td><p>angle of attack</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetAlpha" title="WsfP6DOF_Mover.GetAlpha"><span class="xref wsf wsf-method">GetAlpha</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/7138dad9ac96835665b17f5817eacfcaa9b834c9.png" alt="\beta"/></p></td>
+<td><p>angle of side slip</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetBeta" title="WsfP6DOF_Mover.GetBeta"><span class="xref wsf wsf-method">GetBeta</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/4abba779877abb276b98ccb2b4ba9bf2e41947ab.png" alt="M"/></p></td>
+<td><p>Mach number</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetMach" title="WsfP6DOF_Mover.GetMach"><span class="xref wsf wsf-method">GetMach</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/b6c245d487949782a89cab9ee83504a62fdc2337.png" alt="\psi"/></p></td>
+<td><p>yaw angle</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetHeading" title="WsfP6DOF_Mover.GetHeading"><span class="xref wsf wsf-method">GetHeading</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/8a87f04e7d7cca18343c084cceca5237fae62491.png" alt="\theta"/></p></td>
+<td><p>pitch angle</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetPitch" title="WsfP6DOF_Mover.GetPitch"><span class="xref wsf wsf-method">GetPitch</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/fffd2357ee88a9c50ba9e831ed64c39c73d54a07.png" alt="\phi"/></p></td>
+<td><p>roll angle</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetRoll" title="WsfP6DOF_Mover.GetRoll"><span class="xref wsf wsf-method">GetRoll</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/79a3d439d28652c547386f39b555d90d3aaf102d.png" alt="r"/></p></td>
+<td><p>body yaw rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetYawRate" title="WsfP6DOF_Mover.GetYawRate"><span class="xref wsf wsf-method">GetYawRate</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/a5fa84b363f309ebc8fe7db38304541732c7de9a.png" alt="q"/></p></td>
+<td><p>body pitch rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetPitchRate" title="WsfP6DOF_Mover.GetPitchRate"><span class="xref wsf wsf-method">GetPitchRate</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/></p></td>
+<td><p>body roll rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetRollRate" title="WsfP6DOF_Mover.GetRollRate"><span class="xref wsf wsf-method">GetRollRate</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/8b57e957824277356e6192b8719850b63c2bfa82.png" alt="\overline{c}"/></p></td>
+<td><p>wing chord</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#wing_chord_ft" title="wing_chord_ft"><span class="xref wsf wsf-command">wing_chord_ft</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/c15b31e0d3557442119a606de6ca5ceca6b62fe8.png" alt="\overline{s}"/></p></td>
+<td><p>wing span</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#wing_span_ft" title="wing_span_ft"><span class="xref wsf wsf-command">wing_span_ft</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/></p></td>
+<td><p>time</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/6a375b1d9ae3e83777bc9c45868fcbf3d96e705f.png" alt="\vec{x}"/></p></td>
+<td><p>inertial position</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/7ce5309e3e8acd7010f58ff00bd39f570ca0ad83.png" alt="\vec{v}"/></p></td>
+<td><p>inertial velocity</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/3dd91bdb04651379ddb8398fb5f2b236dec053d8.png" alt="\vec{a}"/></p></td>
+<td><p>inertial acceleration</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/c735e1ac7647b5b6ffe19aecffa8279dcf0986e7.png" alt="\vec{\omega}"/></p></td>
+<td><p>rotational velocity</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/415899a608a8c4aaa215667299cbd710e11fb435.png" alt="\vec{\alpha}"/></p></td>
+<td><p>rotational acceleration</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/9e6c91d71b1df5575fd9d3dff63eaa7329b0e571.png" alt="\hat{v}"/></p></td>
+<td><p>velocity unit vector in inertial coordinates</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e2d3c278bc34556bac952a235785a6d11c6a6713.png" alt="\bold{R}"/></p></td>
+<td><p>direction cosine matrix transforming a vector in the inertial frame to the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/e9bc7da808d33a16a8347f27a519bd067186aa66.png" alt="m"/></p></td>
+<td><p>mass</p></td>
+<td><p><a class="reference internal" href="p6dof_mass_properties_data.html#mass" title="mass"><span class="xref wsf wsf-command">mass</span></a></p></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetEmptyWeight" title="WsfP6DOF_Mover.GetEmptyWeight"><span class="xref wsf wsf-method">GetEmptyWeight</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/a784a4204985eba14fc47e114f1b231531106f6d.png" alt="\bold{I}"/></p></td>
+<td><p>moment of inertia matrix</p></td>
+<td><p><a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_ixx" title="moment_of_inertia_ixx"><span class="xref wsf wsf-command">moment_of_inertia_ixx</span></a>, <a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_iyy" title="moment_of_inertia_iyy"><span class="xref wsf wsf-command">moment_of_inertia_iyy</span></a>, <a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_izz" title="moment_of_inertia_izz"><span class="xref wsf wsf-command">moment_of_inertia_izz</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/831f79b4fbe26b6ee2425a0fe53a690ab1c6ca88.png" alt="\vec{F}_{T,i}"/></p></td>
+<td><p>total force in the inertial frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/c72cc8b5670162cc88c1ed5bce3edd8c15d59e87.png" alt="\vec{M}_T"/></p></td>
+<td><p>total moment</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/d0722ac198102cc87e9f993d8cedf0353ad93f1f.png" alt="\vec{F}_{T,b}"/></p></td>
+<td><p>total force in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/48741a2e8c9987056122ea17b8f86472fc366325.png" alt="\vec{F}_a"/></p></td>
+<td><p>aerodynamic force in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/1d2a185e15a0a6e8650d0eeccf8b7c6ef3c32340.png" alt="\vec{F}_g"/></p></td>
+<td><p>gravitational force in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e735c8fcfdd4567e7e3f179e243b7e6fd46fd5be.png" alt="\vec{F}_p"/></p></td>
+<td><p>force from propulsion in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/53a9c0acb914b85791d2c68380ddf61e1431af5a.png" alt="\vec{F}_l"/></p></td>
+<td><p>force from the landing gear in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/8d190dcaf7ca25ae3d38356733305c18204ba040.png" alt="\vec{M}_a"/></p></td>
+<td><p>moment produced from aerodynamics</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/597e2d809216862ee4a3a2e6d875576289ab9b5c.png" alt="\vec{r}_{cm/a}"/></p></td>
+<td><p>center of mass relative to the aerodynamic reference point</p></td>
+<td><p><a class="reference internal" href="p6dof_object_type.html#center_of_mass_x1" title="center_of_mass_x1"><span class="xref wsf wsf-command">center_of_mass_x1</span></a>, <a class="reference internal" href="p6dof_object_type.html#center_of_mass_y1" title="center_of_mass_y1"><span class="xref wsf wsf-command">center_of_mass_y1</span></a>, <a class="reference internal" href="p6dof_object_type.html#center_of_mass_z1" title="center_of_mass_z1"><span class="xref wsf wsf-command">center_of_mass_z1</span></a></p></td>
+<td><p><a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetCgX" title="WsfP6DOF_Mover.GetCgX"><span class="xref wsf wsf-method">GetCgX</span></a>, <a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetCgY" title="WsfP6DOF_Mover.GetCgY"><span class="xref wsf wsf-method">GetCgY</span></a>, <a class="reference internal" href="script/wsfp6dof_mover.html#WsfP6DOF_Mover.GetCgZ" title="WsfP6DOF_Mover.GetCgZ"><span class="xref wsf wsf-method">GetCgZ</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/82ed9e27dab1bd3c7fe66bc60e58258e46b1be61.png" alt="\vec{g}_i"/></p></td>
+<td><p>gravitational vector in the inertial frame</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/f12fdb97016a7e6ab1e7cd3c0a2d2227652c5731.png" alt="\tilde{q}"/></p></td>
+<td><p>dynamic pressure</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/4fcfd33d8fb7c987ac6576497fe5a9f258b73ded.png" alt="A_r"/></p></td>
+<td><p>reference area</p></td>
+<td><p><a class="reference internal" href="aero.html#aero.reference_area" title="reference_area (aero)"><span class="xref wsf wsf-command">reference_area</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/34d137cf01c787ecda732761c3f95b0f65a6c3e9.png" alt="\gamma"/></p></td>
+<td><p>area multiplier</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/25a419974df890708bc3da4fd2b44d08c1a140db.png" alt="C_L"/></p></td>
+<td><p>lift coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cL_alpha_beta_mach_table" title="cL_alpha_beta_mach_table"><span class="xref wsf wsf-command">cL_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/cc5095c3b353ca793345d9668c17bf6f2b28a147.png" alt="C_{Lq}"/></p></td>
+<td><p>lift coefficient contribution due to pitch rate, <img class="math" src="../_images/math/6431800821af3c8405eea05ab731a9dec05ccd3e.png" alt="\frac{dC_L}{dq}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cLq_alpha_mach_table" title="cLq_alpha_mach_table"><span class="xref wsf wsf-command">cLq_alpha_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/0c18759f0787481071f98060af2cc4ebaef1887e.png" alt="C_{L\dot{\alpha}}"/></p></td>
+<td><p>lift coefficient contribution due to the rate of change of angle of attack, <img class="math" src="../_images/math/e7d0d9050e0544ca14078f94aab13026db72662c.png" alt="\frac{dC_L}{d\dot{\alpha}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cL_alphadot_alpha_mach_table" title="cL_alphadot_alpha_mach_table"><span class="xref wsf wsf-command">cL_alphadot_alpha_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/0b33acc067eabb49e01dc6f7a834abfd10c67f03.png" alt="C_d"/></p></td>
+<td><p>drag coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cd_alpha_beta_mach_table" title="cd_alpha_beta_mach_table"><span class="xref wsf wsf-command">cd_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/b837bfde8372b2f0887521ab665fb63ee28e5754.png" alt="C_Y"/></p></td>
+<td><p>side force coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cy_alpha_beta_mach_table" title="cy_alpha_beta_mach_table"><span class="xref wsf wsf-command">cy_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/cdb7e3e00589a87da04d0265106d1946270b3368.png" alt="C_{Yr}"/></p></td>
+<td><p>side force coefficient contribution due to yaw rate, <img class="math" src="../_images/math/e14104ae3d810bf1f421190b315e017ebeabc5ec.png" alt="\frac{dC_Y}{dr}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cyr_beta_mach_table" title="cyr_beta_mach_table"><span class="xref wsf wsf-command">cyr_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/3184d5755d064bd33f7f93174bc76c3a3a651ec6.png" alt="C_{Y\dot{\beta}}"/></p></td>
+<td><p>side force coefficient contribution due to the rate of change of side slip, <img class="math" src="../_images/math/020b7dbc093f7e8bcee997f5461ed71e27cc70b5.png" alt="\frac{dC_Y}{d\dot{\beta}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cy_betadot_beta_mach_table" title="cy_betadot_beta_mach_table"><span class="xref wsf wsf-command">cy_betadot_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/1c3a998b8373a51853392b778767731097bb9e32.png" alt="C_n"/></p></td>
+<td><p>yaw moment coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cn_alpha_beta_mach_table" title="cn_alpha_beta_mach_table"><span class="xref wsf wsf-command">cn_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/b3019674b2b0c3b2f7f400c97c4c3aa669b56339.png" alt="C_{nr}"/></p></td>
+<td><p>yaw moment coefficient contribution due to yaw rate, <img class="math" src="../_images/math/281a760dd9cd9687a6d9ae1f6327025387a48060.png" alt="\frac{dC_n}{dr}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cnr_mach_table" title="cnr_mach_table"><span class="xref wsf wsf-command">cnr_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/fea5a716b846f020417dc474965e63ff4b131ead.png" alt="C_{np}"/></p></td>
+<td><p>yaw moment coefficient contribution due to roll rate, <img class="math" src="../_images/math/a3d8c43f26f96b347cfdbcab61e81c12aeb18c3a.png" alt="\frac{dC_n}{dp}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cnp_mach_table" title="cnp_mach_table"><span class="xref wsf wsf-command">cnp_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/403da3975fcb413d2585db7cbaae8d3d1fdc95a1.png" alt="C_{n\dot{\beta}}"/></p></td>
+<td><p>yaw moment coefficient contribution due to the rate of change of side slip, <img class="math" src="../_images/math/dacce38586345844a295c3f62868e8cf027e4ba5.png" alt="\frac{dC_n}{d\dot{\beta}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cn_betadot_mach_table" title="cn_betadot_mach_table"><span class="xref wsf wsf-command">cn_betadot_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/4577806854ed7741af5ad0aa1abe2909567a3083.png" alt="C_m"/></p></td>
+<td><p>pitch moment coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cm_alpha_beta_mach_table" title="cm_alpha_beta_mach_table"><span class="xref wsf wsf-command">cm_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/49daaed1e89622108b92a14f92f98369ff71a5c2.png" alt="C_{mq}"/></p></td>
+<td><p>pitch moment coefficient contribution due to pitch rate, <img class="math" src="../_images/math/ff934fae43b81d489d60e110a497e7fb2c9bc297.png" alt="\frac{dC_m}{dq}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cmq_mach_table" title="cmq_mach_table"><span class="xref wsf wsf-command">cmq_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/8013b574db9a8da828a71372ee3b7e9eaf171ff0.png" alt="C_{mp}"/></p></td>
+<td><p>pitch moment coefficient contribution due to roll rate, <img class="math" src="../_images/math/8f77bd507481695469809d377bef1cce0afcf3de.png" alt="\frac{dC_m}{dp}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cmp_mach_table" title="cmp_mach_table"><span class="xref wsf wsf-command">cmp_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/79bfb292d0de2b59eae29229cfd1acfe4cd5e067.png" alt="C_{m\dot{\alpha}}"/></p></td>
+<td><p>pitch moment coefficient contribution due to the rate of change of angle of attack, <img class="math" src="../_images/math/3ef90b3f1da60e928ec7ab2c86ce2d56b8b1d0b5.png" alt="\frac{dC_m}{d\dot{\alpha}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cm_alphadot_mach_table" title="cm_alphadot_mach_table"><span class="xref wsf wsf-command">cm_alphadot_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/b343116e58d7b0bffa1b569fc48967192d3e9f6b.png" alt="C_l"/></p></td>
+<td><p>roll moment coefficient</p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cl_alpha_beta_mach_table" title="cl_alpha_beta_mach_table"><span class="xref wsf wsf-command">cl_alpha_beta_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/31c29a08efc5d90f5ae8cca3e6d52b76b72b7eb5.png" alt="C_{lp}"/></p></td>
+<td><p>roll moment coefficient contribution due to roll rate, <img class="math" src="../_images/math/27cceb8ac06cf21d8533ece0a1bed241bf7d9d7f.png" alt="\frac{dC_l}{dp}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#clp_mach_table" title="clp_mach_table"><span class="xref wsf wsf-command">clp_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/be1a2e72272fdfeb9173232adf5a23620793c471.png" alt="C_{lr}"/></p></td>
+<td><p>roll moment coefficient contribution due to yaw rate, <img class="math" src="../_images/math/ea9781ea88dc4de15b38756d163551049f113a67.png" alt="\frac{dC_l}{dr}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#clr_mach_table" title="clr_mach_table"><span class="xref wsf wsf-command">clr_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/58b9b9ec53bf0e1e0c248feb8a39e278cb5cdc1c.png" alt="C_{lq}"/></p></td>
+<td><p>roll moment coefficient contribution due to pitch rate, <img class="math" src="../_images/math/a897d0b0ed2bcd0d92964b67dff50b2cc4c2bc56.png" alt="\frac{dC_l}{dq}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#clq_mach_table" title="clq_mach_table"><span class="xref wsf wsf-command">clq_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/6b10183b06c1341513f33dc07f6b5b561126102f.png" alt="C_{l\dot{\alpha}}"/></p></td>
+<td><p>roll moment coefficient contribution due to the rate of change of angle of attack, <img class="math" src="../_images/math/15c2bfbf09aa7e5291d69d7c77d0198a403e8f4c.png" alt="\frac{dC_l}{d\dot{\alpha}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cl_alphadot_mach_table" title="cl_alphadot_mach_table"><span class="xref wsf wsf-command">cl_alphadot_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e8686fa3d9b75a9bc15c6ccfcfd8f683b01e9180.png" alt="C_{l\dot{\beta}}"/></p></td>
+<td><p>roll moment coefficient contribution due to the rate of change of side slip, <img class="math" src="../_images/math/1d6dc5cbb9b58a94962a314689b250db547b4c12.png" alt="\frac{dC_l}{d\dot{\beta}}"/></p></td>
+<td><p><a class="reference internal" href="p6dof_aerodynamics_data.html#cl_betadot_mach_table" title="cl_betadot_mach_table"><span class="xref wsf wsf-command">cl_betadot_mach_table</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/5b45e8d65fe86884e53e691e2acd7ce072ed8296.png" alt="\hat{l}"/></p></td>
+<td><p>lift unit vector in body coordinates</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/ec92e94c278d7b366ab7cdc46dccb417650582bd.png" alt="\hat{d}"/></p></td>
+<td><p>drag unit vector in body coordinates</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/c9eb25f1fc8ff09305963446c57a1b5c5eac05d8.png" alt="\hat{s}"/></p></td>
+<td><p>side force unit vector in body coordinates</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e8dea8254118f111b5fb20895b03528c17566f06.png" alt="T"/></p></td>
+<td><p>engine thrust, dependent on the engine type</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/d3317dcfdb7bcf34a016e7e14686cfb63c8ac602.png" alt="\hat{t}"/></p></td>
+<td><p>thrust unit vector in the body frame</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="equations-of-motion">
+<h2>Equations of Motion<a class="headerlink" href="#equations-of-motion" title="Permalink to this headline">¶</a></h2>
+<p>The inertial acceleration is found by dividing the total inertial force by the total mass.
+In a similar manner, the rotational acceleration is found by dividing the total moment by the total moment of inertia.
+These accelerations, given by <a class="reference internal" href="#equation-f-equals-ma">(1)</a>, are computed using the average force and moment between two time steps, as shown in equation <a class="reference internal" href="#equation-avg-fm">(2)</a>.</p>
+<div class="math" id="equation-f-equals-ma">
+<p><span class="eqno">(1)<a class="headerlink" href="#equation-f-equals-ma" title="Permalink to this equation">¶</a></span><img src="../_images/math/c8987877723f4a8fb6c6dc5a9fd5ce6986598623.png" alt="\vec{a} &amp;= \frac{\overline{\vec{F}}_{T,i}}{m}
+
+\vec{\alpha} &amp;= \bold{I}^{-1}\overline{\vec{M}}_T"/></p>
+</div><div class="math" id="equation-avg-fm">
+<p><span class="eqno">(2)<a class="headerlink" href="#equation-avg-fm" title="Permalink to this equation">¶</a></span><img src="../_images/math/1bab595c165a7dce0d7a1dad38bbfb98174c7b97.png" alt="\overline{\vec{F}}_{T,i} = \frac{1}{2} [\vec{F}_{T,i}]_{t} + \frac{1}{2} [\vec{F}_{T,i}]_{t+\Delta t}
+
+\overline{\vec{M}}_{T} = \frac{1}{2} [\vec{M}_{T}]_{t} + \frac{1}{2} [\vec{M}_{T}]_{t+\Delta t}"/></p>
+</div><p>It should be noted that one of the simplifications of P6DOF is that the moment of inertia from <a class="reference internal" href="#equation-f-equals-ma">(1)</a> is a diagonal matrix given by <a class="reference internal" href="#equation-moment-of-inertia">(3)</a>.</p>
+<div class="math" id="equation-moment-of-inertia">
+<p><span class="eqno">(3)<a class="headerlink" href="#equation-moment-of-inertia" title="Permalink to this equation">¶</a></span><img src="../_images/math/f41105640351f4a4a6cba0bac0b34ed4c9227654.png" alt="\bold{I} =
+\left[ {\begin{array}{rrr}
+I_{xx} &amp; 0      &amp; 0 \\
+0      &amp; I_{yy} &amp; 0 \\
+0      &amp; 0      &amp; I_{zz}
+\end{array}} \right]"/></p>
+</div><p>First, the force <img class="math" src="../_images/math/b429ca0014892c7ede1650f13cf1ced00ca4813d.png" alt="[\vec{F}_{T,i}]_{t}"/> and moment <img class="math" src="../_images/math/9b4bbd9928244a8140d68e4a1b7368542c9891bb.png" alt="[\vec{M}_{T}]_{t}"/> are computed at the current time step, which are used to calculate the linear and angular acceleration. Then, the states are propagated forward in time using <a class="reference internal" href="#equation-eom">(4)</a>.
+The force and moment are then computed at this new state, producing <img class="math" src="../_images/math/2e88e2802a175e63c419d4c6545fe739a51b77cd.png" alt="[\vec{F}_{T,i}]_{t+\Delta t}"/> and <img class="math" src="../_images/math/765c5edffc9615dd2ef6dd01990df9bfb45d9c4f.png" alt="[\vec{M}_{T}]_{t+\Delta t}"/>. The average force and the average moment are computed using <a class="reference internal" href="#equation-avg-fm">(2)</a>.
+These are then used to compute the linear and angular accelerations in <a class="reference internal" href="#equation-f-equals-ma">(1)</a>. The states are then updated using <a class="reference internal" href="#equation-eom">(4)</a>.</p>
+<div class="math" id="equation-eom">
+<p><span class="eqno">(4)<a class="headerlink" href="#equation-eom" title="Permalink to this equation">¶</a></span><img src="../_images/math/b0ceaf5e5da35be7bbb4a0fd2b2d11bddd4288e3.png" alt="\vec{x}_{t+\Delta t} &amp;= \vec{x}_t + \vec{v}_t \Delta t + \frac{1}{2} \vec{a}_t {\Delta t}^2
+
+\vec{v}_{t+\Delta t} &amp;= \vec{v}_t + \vec{a}_t \Delta t
+
+\vec{Q}_{t+\Delta t} &amp;= \vec{Q}_t + \vec{\dot{Q_t}} \Delta t
+
+\vec{\omega}_{t+\Delta t} &amp;= \vec{\omega}_t + \vec{\alpha}_t \Delta t"/></p>
+</div><p>The body angular rates <img class="math" src="../_images/math/c735e1ac7647b5b6ffe19aecffa8279dcf0986e7.png" alt="\vec{\omega}"/>, quaternion <img class="math" src="../_images/math/4462fb05308cdbdeeb092466e24f652612995a00.png" alt="\vec{Q}"/>, and rate quaternion <img class="math" src="../_images/math/cd7f4f26beb6532f2ac80587d5d9492c1887297e.png" alt="\vec{\dot{Q}}"/> are defined in <a class="reference internal" href="#equation-omega-quat">(5)</a>.</p>
+<div class="math" id="equation-omega-quat">
+<p><span class="eqno">(5)<a class="headerlink" href="#equation-omega-quat" title="Permalink to this equation">¶</a></span><img src="../_images/math/b47419475869edb13ee6aa4f018b2d5bfba4291b.png" alt="\vec{\omega} &amp;=
+\left[ {\begin{array}{ccc}
+r &amp; q &amp; p
+\end{array}} \right]^\top
+
+\vec{Q} &amp;=
+\left[ {\begin{array}{c}
+\cos{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} + \sin{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \sin{\frac{\phi}{2}} \\
+\cos{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \sin{\frac{\phi}{2}} - \sin{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \cos{\frac{\phi}{2}} \\
+\cos{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \cos{\frac{\phi}{2}} + \sin{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} \\
+\sin{\frac{\psi}{2}} \cos{\frac{\theta}{2}} \cos{\frac{\phi}{2}} - \cos{\frac{\psi}{2}} \sin{\frac{\theta}{2}} \sin{\frac{\phi}{2}}
+\end{array}} \right]
+
+\vec{\dot{Q_t}} &amp;= \frac{1}{2}
+\left[ {\begin{array}{cccc}
+0 &amp; -r &amp; -q &amp; -p \\
+r &amp; 0 &amp; p &amp; -q \\
+q &amp; -p &amp; 0 &amp; r \\
+p &amp; q &amp; -r &amp; 0
+\end{array}} \right]
+\vec{Q}_t"/></p>
+</div><p>If the quaternion <img class="math" src="../_images/math/4462fb05308cdbdeeb092466e24f652612995a00.png" alt="\vec{Q}"/> is defined by <img class="math" src="../_images/math/e60e4a019d5c3aef4c877a8bd0b66341d7687f26.png" alt="\left[ {\begin{array}{cccc}a &amp; b &amp; c &amp; d\end{array}} \right]^\top"/>, then the corresponding direction cosine matrix is computed using <a class="reference internal" href="#equation-r-from-q">(6)</a>.</p>
+<div class="math" id="equation-r-from-q">
+<p><span class="eqno">(6)<a class="headerlink" href="#equation-r-from-q" title="Permalink to this equation">¶</a></span><img src="../_images/math/52ac504f74a84d94614cbe38ae388da3cb977536.png" alt="\bold{R} =
+\left[ {\begin{array}{ccc}
+a^2 + b^2 - c^2 - d^2 &amp; 2(bc + ad)            &amp; 2(bd - ac)\\
+2(bc - ad)            &amp; a^2 - b^2 + c^2 - d^2 &amp; 2(cd + ab) \\
+2(bd + ac)            &amp; 2(cd - ab)            &amp; a^2 - b^2 - c^2 + d^2
+\end{array}} \right]"/></p>
+</div></section>
+<section id="forces-and-moments">
+<span id="p6dof-fm"></span><h2>Forces and Moments<a class="headerlink" href="#forces-and-moments" title="Permalink to this headline">¶</a></h2>
+<p>The forces are calculated in the body frame, and then converted to the inertial frame to use in equation <a class="reference internal" href="#equation-f-equals-ma">(1)</a>. This conversion is accomplished through equation <a class="reference internal" href="#equation-body-to-inertial">(7)</a>.</p>
+<div class="math" id="equation-body-to-inertial">
+<p><span class="eqno">(7)<a class="headerlink" href="#equation-body-to-inertial" title="Permalink to this equation">¶</a></span><img src="../_images/math/c96b311ca60bfa4a3e969e756f3eaf33f7a80d3a.png" alt="\vec{F}_{T,i} = \bold{R}^{-1}\vec{F}_{T,b}"/></p>
+</div><p>where <img class="math" src="../_images/math/e2d3c278bc34556bac952a235785a6d11c6a6713.png" alt="\bold{R}"/> is defined as a 3-2-1 rotation matrix (yaw-pitch-roll) shown in equation <a class="reference internal" href="#equation-dcm">(8)</a>.</p>
+<div class="math" id="equation-dcm">
+<p><span class="eqno">(8)<a class="headerlink" href="#equation-dcm" title="Permalink to this equation">¶</a></span><img src="../_images/math/c7acc783e199dc58fee39fd760fa4f961632f7f5.png" alt="\bold{R} =
+\left[ {\begin{array}{rrr}
+\cos(\theta)\cos(\psi)                                  &amp; \cos(\theta)\sin(\psi)                                    &amp; -\sin(\theta) \\
+\sin(\phi)\sin(\theta)\cos(\psi) - \cos(\phi)\sin(\psi) &amp; \sin(\phi)\sin(\theta)\sin(\psi) + \cos(\phi)\cos(\psi)  &amp; \sin(\phi)\cos(\theta) \\
+\cos(\phi)\sin(\theta)\cos(\psi) + \sin(\phi)\sin(\psi) &amp; \cos(\phi)\sin(\theta)\sin(\psi) - \sin(\phi)\cos(\psi)  &amp; \cos(\phi)\cos(\theta) \\
+\end{array}} \right]"/></p>
+</div><p>The total body force, <img class="math" src="../_images/math/59ad159a02a66db6166afc23e77cfbe8f7c537ea.png" alt="\vec{F}_{t,b}"/> from equation <a class="reference internal" href="#equation-body-to-inertial">(7)</a> is calculated as the sum of the aerodynamic, gravitational, and propulsion forces in the body frame. It also includes, if applicable, the force from landing gear.</p>
+<div class="math">
+<p><img src="../_images/math/7b5bb74b802108fad501ec58bf1902deea833bf4.png" alt="\vec{F}_{T,b} = \vec{F}_a + \vec{F}_g + \vec{F}_p + \vec{F}_l"/></p>
+</div><p>The total moment is given by equation <a class="reference internal" href="#equation-total-moment">(9)</a>.</p>
+<div class="math" id="equation-total-moment">
+<p><span class="eqno">(9)<a class="headerlink" href="#equation-total-moment" title="Permalink to this equation">¶</a></span><img src="../_images/math/78301452e311c8d75de25b3acbd125fa40686b85.png" alt="\vec{M}_T = \vec{M}_a + \vec{r}_{cm/a} \times (\vec{F}_a + \vec{F}_p + \vec{F}_l)"/></p>
+</div><p>The body frame gravitational force is calculated in <a class="reference internal" href="#equation-f-g">(10)</a>.</p>
+<div class="math" id="equation-f-g">
+<p><span class="eqno">(10)<a class="headerlink" href="#equation-f-g" title="Permalink to this equation">¶</a></span><img src="../_images/math/57ef82dc68522aeabd5b8b28de063573b501a288.png" alt="\vec{F}_g = m\bold{R}\vec{g}_i"/></p>
+</div><p>The body frame propulsion force is given by <a class="reference internal" href="#equation-f-p">(11)</a>.</p>
+<div class="math" id="equation-f-p">
+<p><span class="eqno">(11)<a class="headerlink" href="#equation-f-p" title="Permalink to this equation">¶</a></span><img src="../_images/math/ef9532b53ab29d7d85144229c424e1b1f1e4ad45.png" alt="\vec{F}_p = T\hat{t}_b"/></p>
+</div><p>The force and moment produced from aerodynamics is given by <a class="reference internal" href="#equation-aero-forces">(12)</a> and <a class="reference internal" href="#equation-aero-moments">(13)</a>.</p>
+<div class="math" id="equation-aero-forces">
+<p><span class="eqno">(12)<a class="headerlink" href="#equation-aero-forces" title="Permalink to this equation">¶</a></span><img src="../_images/math/9e9f89399df91deed87679d12c9cb9b5d0c11875.png" alt="\vec{F}_a = \tilde{q}A_r\gamma[(C_L(\alpha, \beta, M) + k_{Lq}C_{Lq}(\alpha, M) + k_{L\dot{\alpha}}C_{L\dot{\alpha}}(\alpha, M))&amp;\hat{l} \\
++ (C_Y(\alpha, \beta, M) + k_{Yr}C_{Yr}(\beta, M) + k_{Y\dot{\beta}}C_{Y\dot{\beta}}(\beta, M))&amp;\hat{s} \\
++ C_d(\alpha, \beta, M)&amp;\hat{d}]"/></p>
+</div><div class="math" id="equation-aero-moments">
+<p><span class="eqno">(13)<a class="headerlink" href="#equation-aero-moments" title="Permalink to this equation">¶</a></span><img src="../_images/math/84c4322290a5a6b2a4e927245204880d1f44b696.png" alt="\vec{M}_a = \tilde{q}A_r[ (C_l(\alpha, \beta, M) + k_{lp}C_{lp}(M) + k_{lr}C_{lr}(M) + k_{lq}C_{lq}(M) + k_{l\dot{\alpha}}C_{l\dot{\alpha}}(M) + k_{l\dot{\beta}}C_{l\dot{\beta}}(M))&amp;\hat{i} \\
++ (C_m(\alpha, \beta, M) + k_{mq}C_{mq}(M) + k_{mp}C_{mp}(M) + k_{m\dot{\alpha}}C_{m\dot{\alpha}}(M))&amp;\hat{j} \\
++ (C_n(\alpha, \beta, M) + k_{nr}C_{nr}(M) + k_{np}C_{np}(M) + k_{n\dot{\beta}}C_{n\dot{\beta}}(M))&amp;\hat{k}]"/></p>
+</div><p>The vectors <img class="math" src="../_images/math/81a2708ff84c7576b53d727e6faa3cb37cae4e18.png" alt="\hat{i}"/>, <img class="math" src="../_images/math/27d4e164256851bf63de3965235c60ca5a3b351b.png" alt="\hat{j}"/>, <img class="math" src="../_images/math/66a68dd5a0f30aa4fa3746d6b66b4bb9aefd9553.png" alt="\hat{k}"/> in <a class="reference internal" href="#equation-aero-moments">(13)</a> are the unit vectors that form the standard orthonormal basis in the body frame.</p>
+<p>The vectors <img class="math" src="../_images/math/5b45e8d65fe86884e53e691e2acd7ce072ed8296.png" alt="\hat{l}"/>, <img class="math" src="../_images/math/ec92e94c278d7b366ab7cdc46dccb417650582bd.png" alt="\hat{d}"/>, <img class="math" src="../_images/math/c9eb25f1fc8ff09305963446c57a1b5c5eac05d8.png" alt="\hat{s}"/> in <a class="reference internal" href="#equation-aero-forces">(12)</a> are the lift, drag, and side force unit vectors in the body frame, and are computed using <a class="reference internal" href="#equation-lds-unit">(14)</a>.</p>
+<div class="math" id="equation-lds-unit">
+<p><span class="eqno">(14)<a class="headerlink" href="#equation-lds-unit" title="Permalink to this equation">¶</a></span><img src="../_images/math/019fe12b0522fd5ceb39b18cbbeb14e6f8cf1ecb.png" alt="\hat{l} &amp;= \hat{j} \times \bold{R}\hat{v}
+
+\hat{d} &amp;= - \bold{R}\hat{v}
+
+\hat{s} &amp;= \hat{l} \times \hat{d}"/></p>
+</div><section id="reduced-frequency">
+<span id="id1"></span><h3>Reduced Frequency<a class="headerlink" href="#reduced-frequency" title="Permalink to this headline">¶</a></h3>
+<p>The reduced frequencies <a class="footnote-reference brackets" href="#jenk15" id="id2">1</a>, denoted by <img class="math" src="../_images/math/af419e0810a5e2ec55809e610f1a76ffbc840936.png" alt="k_{\{x\}}"/>, in <a class="reference internal" href="#equation-aero-forces">(12)</a> and <a class="reference internal" href="#equation-aero-moments">(13)</a> are calculated using <a class="reference internal" href="#equation-reduced-frequencies">(15)</a>.
+If <a class="reference internal" href="p6dof_aerodynamics_data.html#use_reduced_frequency" title="use_reduced_frequency"><span class="xref wsf wsf-command">use_reduced_frequency</span></a> is set to false, then the corresponding angular rates are used instead of the non-dimensional reduced frequencies,
+and the stability derivative tables should be adjusted accordingly.</p>
+<div class="math" id="equation-reduced-frequencies">
+<p><span class="eqno">(15)<a class="headerlink" href="#equation-reduced-frequencies" title="Permalink to this equation">¶</a></span><img src="../_images/math/bb8d6b8cd41675784d43929c230bfc74a67038fc.png" alt="k_{Lq} &amp;= \frac{\overline{c} q}{2 \lVert \vec{v} \rVert}
+
+k_{L\dot{\alpha}} &amp;= \frac{\overline{c}\dot{\alpha}}{2 \lVert \vec{v} \rVert}
+
+k_{Yr} &amp;= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+k_{Y\dot{\beta}} &amp;= \frac{\overline{s} \dot{\beta}}{2 \lVert \vec{v} \rVert}
+
+k_{lp} &amp;= \frac{\overline{s} p}{2 \lVert \vec{v} \rVert}
+
+k_{lr} &amp;= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+k_{lq} &amp;= \frac{\overline{s} q}{2 \lVert \vec{v} \rVert}
+
+k_{mq} &amp;= \frac{\overline{c} q}{2 \lVert \vec{v} \rVert}
+
+k_{mp} &amp;= \frac{\overline{c} p}{2 \lVert \vec{v} \rVert}
+
+k_{m\dot{\alpha}} &amp;= \frac{\overline{c} \dot{\alpha}}{2 \lVert \vec{v} \rVert}
+
+k_{nr} &amp;= \frac{\overline{s} r}{2 \lVert \vec{v} \rVert}
+
+k_{np} &amp;= \frac{\overline{s} p}{2 \lVert \vec{v} \rVert}
+
+k_{n\dot{\beta}} &amp;= \frac{\overline{s} \dot{\beta}}{2 \lVert \vec{v} \rVert}"/></p>
+</div><p>The terms <img class="math" src="../_images/math/8b57e957824277356e6192b8719850b63c2bfa82.png" alt="\overline{c}"/> and <img class="math" src="../_images/math/c15b31e0d3557442119a606de6ca5ceca6b62fe8.png" alt="\overline{s}"/> refer to the wing chord and span, respectively.</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="jenk15"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p>Jenkins, J. “Dynamic Stability Derivatives”, Air Force Research Laboratory - Aerodynamic Technology Branch Aerospace Vehicles Division, June 2015. AFRL-RQ-WP-TR-2015-0141.</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/p6dof_theory.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="p6dof_thrust_producer_types.html" title="P6DOF Thrust Producer Types"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="p6dof_terrain_file_definition.html" title="P6DOF Terrain File Definition"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

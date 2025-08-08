@@ -1,0 +1,256 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfWeaponEngagement
+-------------------
+
+.. class:: WsfWeaponEngagement 
+
+:class:`WsfWeaponEngagement` contains information about an ongoing weapon engagement among a shooter, target, and weapon.
+
+The object is available during engagement termination as defined in :command:`weapon_effects`:
+
+.. parsed-literal::
+
+ script void on_weapon_target_engagement(:class:`WsfPlatform` aTarget)
+     ...
+ end_script
+
+This script can be used to examine the conditions that exist at the time of the engagement termination and potentially
+degrade the probability of kill.
+
+An older, alternative method is also available in which the script is defined on either the weapon or firing platform
+(depending on the type of weapon):
+
+.. parsed-literal::
+
+ script void on_weapon_target_engagement(:class:`WsfWeaponEngagement` aEngagement,
+                                         :class:`WsfPlatform`         aTarget)
+     ...
+ end_script
+
+If the engagement involves an explicit weapon, such as a bomb or missile, the script must be defined on the launched
+weapon platform. If the engagement involves an implicit weapon, such as a directed energy weapon, the script must be
+defined on the firing platform.
+
+The older alternative method is not recommended because it requires modification of the weapon or firing platform. The
+first method allows the :command:`weapon_effects` to simply be redefined without the need to modify the weapon definition.
+
+The object is also available to :command:`simulation event observers <observer>` that involve weapon engagement (WEAPON_HIT,
+WEAPON_MISSED, WEAPON_TERMINATED).
+
+Methods
+=======
+
+.. method:: double StartTime()
+   
+   Returns the simulation time (in seconds) when the engagement started (i.e., weapon fired).
+
+.. method:: double TimeSinceStarted()
+   
+   Returns the number of seconds since the engagement started (i.e., weapon fired).
+
+.. method:: double CompletionTime()
+   
+   Returns the simulation time (in seconds) when the engagement completed (i.e., weapon detonated).
+
+.. method:: int SerialNumber()
+   
+   Returns the unique serial number associated with the engagement.
+
+.. method:: WsfPlatform FiringPlatform()
+   
+   Returns the platform that initiated the engagement (i.e., fired the weapon).
+   
+   .. note::
+
+      The :method:`IsValid() <WsfObject.IsValid>` method should be applied to the return value to ensure the
+      platform still exists.
+
+
+.. method:: string FiringPlatformName()
+   
+   Returns the name of the platform that initiated the engagement (i.e., fired the weapon).
+
+.. method:: string WeaponSystemName()
+   
+   Returns the name of the weapon system on the firing platform associated with the engagement.
+
+.. method:: string WeaponSystemType()
+   
+   Returns the type of the weapon system on the firing platform associated with the engagement.
+
+.. method:: WsfPlatform WeaponPlatform()
+   
+   Returns the platform reference to the weapon platform that was released. This is only applicable for explicit weapons
+   that are modeled as distinct entities (e.g., bomb, missile).
+   
+   .. note::
+
+      The :method:`IsValid() <WsfObject.IsValid>` method should be applied to the return value to ensure the
+      platform still exists.
+
+
+.. method:: string WeaponPlatformName()
+   
+   Returns the name of the weapon platform that was released. This is only applicable for explicit weapons that are
+   modeled as distinct entities (e.g., bomb, missile). This will be an empty string for implicit weapons.
+
+.. method:: WsfGeoPoint WeaponLocation()
+   
+   Returns the location of the weapon **at the point of closest approach** between the weapon and the target.
+   
+   .. note::
+
+      This location is **not** the same as the location retrieved directly from the
+      weapon platform. The simulation may allow the weapon and target to move slightly past the point of closest
+      approach. The location returned by this method is adjusted to reflect the weapon's location when it was
+      closest to the target.
+
+.. method:: WsfGeoPoint WeaponLocationAtLaunch()
+   
+   Returns the location of the weapon at the time of launch.
+
+.. method:: Vec3 WeaponLocationECS()
+	
+   Returns the weapon's location in the :ref:`Entity Coordinate System <ECS>` of the target.
+   
+.. method:: Vec3 WeaponVelocityECS()
+
+   Returns the weapon's relative velocity to the target in the :ref:`Entity Coordinate System <ECS>` of the target.
+
+.. method:: WsfPlatform TargetPlatform()
+   
+   Returns a reference to the 'target' platform, declared at the start of the engagement.
+   
+   .. note::
+
+      The :method:`IsValid() <WsfObject.IsValid>` method should be applied to the return value to ensure the
+      platform still exists.
+
+
+.. method:: string TargetPlatformName()
+   
+   Returns the name of the platform that was declared the 'target' at the time the engagement was started.
+   
+   .. note::
+
+      This will be an empty string if a target was not declared at the time the engagement was started.
+
+
+.. method:: string TargetOffsetName()
+   
+   Returns the name of the platform offset that was declared the 'target' at the time the engagement was started.
+   
+   .. note::
+
+      This is often the target of a directed energy engagement; for example, "IRST" or "SEEKER", and these
+      may exist as offset regions on the target platform's :model:`WSF_INTERSECT_PROCESSOR`.  This might also indicate the name of
+      a platform part on the target, to which damage should be applied.
+
+   .. note::
+
+      This will be an empty string if a target was not declared at the time the engagement was started.
+
+
+.. method:: WsfGeoPoint TargetLocation(WsfPlatform aTarget)
+.. method:: WsfGeoPoint TargetLocation()
+   
+   The first form returns the location of the specific target **at the point of closest approach** between the weapon and
+   the specified target. The second form does the same but for the **intended** target (or aim-point).
+   
+   .. note::
+
+      This location is **not** the same as the location retrieved directly from the
+      weapon target. The simulation may allow the weapon and target to move slightly past the point of closest
+      approach. The location returned by this method is adjusted to reflect the target's location when it was
+      closest to the weapon.
+
+
+.. method:: WsfGeoPoint TargetLocationAtLaunch()
+   
+   Returns the location of the **intended** target (or aim-point) at the time of launch.
+
+.. method:: WsfTrackId TargetTrackId()
+   
+   Returns the track ID of the track that was supplied to the weapon firing request.
+   
+   .. note::
+
+      Executing :method:`IsNull() <Object.IsNull>` on the return value will give 'true' if a target was not
+      assigned at the time the engagement was started.
+
+.. method:: string TargetResult()
+
+   Returns the engagement result with respect to the intended target. Possible return values include: MISSED, DAMAGED, KILLED, and UNKNOWN.
+   
+   .. note::
+
+      Not valid in :command:`on_weapon_detonation<weapon_effects.on_weapon_detonation>`
+
+.. method:: string IncidentalResult()
+
+   Returns the engagement result with respect to an incidental target. Possible return values include: MISSED, DAMAGED, KILLED, and UNKNOWN.
+   
+   .. note::
+
+      Not valid in :command:`on_weapon_detonation<weapon_effects.on_weapon_detonation>`
+
+.. method:: string ExtendedResult()
+
+   Returns additional information about the result of the engagement. When no additional information exists, the function returns an empty string. 
+
+.. method:: double MissDistance(WsfPlatform aTarget)
+            double MissDistance()
+   
+   The first form returns the distance (in meters) between weapon and the specified target. This is the distance between
+   :method:`WeaponLocation <WsfWeaponEngagement.WeaponLocation>` and the best estimate of the supplied targets position at :method:`CompletionTime <WsfWeaponEngagement.CompletionTime>`.
+   
+   The second form returns the distance (in meters) between the weapon and the **intended** target (or aim-point). This
+   represents the point-of-closest-approach between the weapon and the intended target (the difference between
+   :method:`WeaponLocation <WsfWeaponEngagement.WeaponLocation>` and :method:`TargetLocation <WsfWeaponEngagement.TargetLocation>` .
+
+.. method:: double Pk()
+   
+   Returns the proposed probability-of-kill (Pk) for the engagement. This is evaluated prior to called the
+   :command:`weapon_effects.on_weapon_target_engagement` script and represents the raw Pk before potentially
+   being degraded by the script.
+   
+   This value is zero if the weapon missed the target (i.e., is outside the lethal range as defined by the
+   :command:`weapon_effects`).
+
+.. method:: double PkDegrade()
+   
+   Returns the proposed probability-of-kill degrade factor for the current engagement. This is initialized to 1.0 at the
+   start of each weapon-target engagement. It may be updated using the :method:`SetPkDegrade <WsfWeaponEngagement.SetPkDegrade>` method within the
+   :command:`weapon_effects.on_weapon_target_engagement` script.
+    
+   **Default** 1.0
+
+.. method:: void SetPkDegrade(double aDegradeFactor)
+   
+   Sets the factor in the range [0..1] by which the resulting probability of kill (Pk) should be multiplied to arrive at
+   the effective Pk.
+
+.. method:: double PkDrawn()
+   
+   Returns the draw used to determine if the result of the engagement was a hit or a miss if the target was inside the
+   potentially lethal radius of the weapon.
+   
+   This value is valid **only** in the simulation observers when the target was inside the potentially lethal radius of
+   the weapon. The return value will be less than zero inside the on_weapon_target_engagement script and in simulation
+   observers where the target was outside the lethal radius.
+
+See Also
+========
+
+* :command:`weapon_effects`
+* :command:`observer`

@@ -1,0 +1,102 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WEAPON_TURNED_OFF:
+
+WEAPON_TURNED_OFF
+-----------------
+
+:command:`event_output` for **WEAPON_TURNED_ON** and **WEAPON_TURNED_OFF** differ only in the **event** field.
+
+Format
+======
+
+*All Events*
+
+::
+
+ <time> <event> <platform> weapon: <name> Type: <type>
+
+Breakdown
+=========
+
+<time>
+    current simulation time
+<event>
+    simulation event recorded in this message
+<platform>
+    name of platform added
+weapon: <name>
+    weapon name
+Type: <type>
+    weapon inherits characteristics and behavior from this weapon type
+
+How it Appears in Output
+========================
+
+*WEAPON_TURNED_ON:*
+
+::
+
+ 0.00000 WEAPON_TURNED_ON sam-tel-sw-6 weapon: sam Type: SA-10C
+
+*WEAPON_TURNED_OFF:*
+
+::
+
+ 0.00000 WEAPON_TURNED_OFF sam-tel-sw-6 weapon: sam Type: SA-10C
+
+
+How to Show Event Messages
+==========================
+
+.. parsed-literal::
+
+ :command:`event_output`
+    file replay.evt              # write event messages to file "replay.evt"
+    enable WEAPON_TURNED_ON
+    enable WEAPON_TURNED_OFF
+ end_event_output
+
+ #------# Define weapon :command:`platform.platform_type` "SAM_TEL" that includes the weapon sam of type SA-10C
+ :command:`platform.platform_type` SAM_TEL :model:`WSF_PLATFORM`
+    :command:`radar_signature`    SAM_TEL_RADAR_SIGNATURE
+
+    comm local-net LOCAL_SAM_COMM
+       processor controller
+    end_comm
+
+    processor controller :model:`WSF_TASK_PROCESSOR`
+       #show_task_messages
+    end_processor
+
+    # We're using the unclassified SA-10C definition
+    weapon sam SA-10C
+       # Select one of the following launched_platform_type entries.
+       launched_platform_type SAM_ACTIVE
+       #launched_platform_type SAM_SEMI_ACTIVE
+       #launched_platform_type SAM_COMMAND_GUIDED
+
+       # The weapon should be cued to the predicted intercept location
+       # instead of the current target location.
+       cue_to_predicted_intercept true
+    end_weapon
+ end_platform_type
+
+ #------# Define a platform of type SAM_TEL
+ platform sam-tel-sw-6 SAM_TEL
+   side red
+   position 35:52:15.94n 115:35:33.92w altitude 1 ft agl
+   heading 240 deg
+   commander sam-cmdr-sw
+   category  ignored-by-iads-radar
+   comm      local-net network_name sam-local-net-sw end_comm
+ end_platform

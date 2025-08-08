@@ -1,0 +1,257 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_SCRIPT_PROCESSOR
+--------------------
+
+Script Class: :class:`WsfProcessor`
+
+.. model:: processor WSF_SCRIPT_PROCESSOR
+
+    .. parsed-literal::
+
+     processor <name> :model:`WSF_SCRIPT_PROCESSOR`
+        ... :command:`processor` Commands ...
+        ... :ref:`Platform_Part_Commands` ...
+        ... :ref:`External_Link_Commands` ...
+
+        :command:`behavior_tree` ...
+
+        ... `Finite State Machine Commands`_ ...
+
+        update_interval_ *<time-value>*
+
+        on_initialize_
+           ...script definition...
+        end_on_initialize
+
+        on_initialize2_
+           ...script definition...
+        end_on_initialize2
+
+        on_update_
+           ...script definition...
+        end_on_update
+
+        on_message_
+           ...script definition...
+        end_on_message
+
+        script void on_message_create_\ (:class:`WsfMessage` aMessage)
+           ...script definition...
+        end_script
+
+     end_processor
+
+Overview
+========
+
+:model:`WSF_SCRIPT_PROCESSOR` is a processor that allows the user to provide scripts that can be executed whenever the
+processor receives a message or is called for a periodic update. In addition, it allows the definition of
+:ref:`external links <External_Link_Commands>` to route messages to other platforms.  Besides the regular "on_update"
+script block on the processor, users can use :command:`behavior_tree` and `Finite State Machine Commands`_ on the
+script processor to help them organize their script.  The order of operation of a script processor each update is:
+
+#. on_update script block
+#. :command:`behavior_tree` on the processor.
+#. finite state machine evaluates the current state.
+
+.. block:: WSF_SCRIPT_PROCESSOR
+
+Commands
+========
+
+.. command:: on_initialize
+
+   .. parsed-literal::
+
+      on_initialize_
+         ...script definition...
+      end_on_initialize
+
+   This block defines a script that is executed during 'phase 1' initialization of the processor. During phase 1
+   initialization the processor may not assume anything about state of platform or any of its constituent parts.
+
+   The following script variables are predefined:
+
+   .. parsed-literal::
+
+      double       TIME_NOW;          // The current simulation time
+      :class:`WsfMessage`   MESSAGE;           // The received message
+      :class:`WsfPlatform`  PLATFORM;          // The platform containing this processor
+      :class:`WsfProcessor` PROCESSOR;         // This processor (the use of "this" has been deprecated)
+
+.. command:: on_initialize2
+
+    .. parsed-literal::
+
+       on_initialize2
+        ...script definition...
+       end_on_initialize2
+
+    This block defines a script that is executed during 'phase 2' initialization of the processor. During phase 2
+    initialization the processor may assume the platform and its constituent parts have completed phase 1 initialization.
+
+    The following script variables are predefined:
+
+    .. parsed-literal::
+
+       double       TIME_NOW;          // The current simulation time
+       :class:`WsfMessage`   MESSAGE;           // The received message
+       :class:`WsfPlatform`  PLATFORM;          // The platform containing this processor
+       :class:`WsfProcessor` PROCESSOR;         // This processor (the use of "this" has been deprecated)
+
+.. command:: update_interval <time-value>
+
+   Specify the interval at which the on_update_ script should be executed. If this value is not specified then the
+   on_update_ script will not be executed (even if it is defined).
+
+   Default: 0.0 secs
+
+.. command:: on_update
+
+    .. parsed-literal::
+
+       on_update
+          ...script definition...
+       end_on_update
+
+   This block defines a script that is executed in response to the processors periodic update (as defined by the
+   update_interval_).  If update_interval_ is not defined or is zero then this block will not be executed.
+
+   The following script variables are predefined:
+
+   .. parsed-literal::
+
+      double       TIME_NOW;          // The current simulation time
+      :class:`WsfPlatform`  PLATFORM;          // The platform containing this processor
+      :class:`WsfProcessor` PROCESSOR;         // This processor (the use of "this" has been deprecated)
+
+.. command:: on_message
+
+    .. parsed-literal::
+
+        on_message
+           [type <message-type> [subtype <message-subtype>] ]
+           [default]
+              :command:`_.script_commands.script`
+                 ...script definition...
+              end_script
+           ...
+        end_on_message
+
+   This command block defines a script that is executed whenever the processor receives a message.  If the **script**
+   block is preceded by a **type** / **subtype** commands, the script will process any messages matching the type/subtype.
+   If the **script** block is preceded by **default**, it will process the any message type not yet processed in this
+   block.
+
+   **type** can be any of the following:
+
+   .. include:: message_types.txt
+
+   The following script variables are predefined:
+
+   .. parsed-literal::
+
+      double       TIME_NOW;          // The current simulation time
+      :class:`WsfMessage`   MESSAGE;           // The received message
+      :class:`WsfPlatform`  PLATFORM;          // The platform containing this processor
+      :class:`WsfProcessor` PROCESSOR;         // This processor (the use of "this" has been deprecated)
+
+   Example
+
+   ::
+
+      on_message
+         type WSF_TRACK_MESSAGE
+            script
+               WsfTrackMessage trackMsg = (WsfTrackMessage)MESSAGE;
+               writeln("T=", TIME_NOW, " Received track: ", trackMsg.Track().TrackId().ToString());
+            end_script
+         default
+            script
+               writeln("T=", TIME_NOW, " Received other message");
+            end_script
+      end_on_message
+
+   .. note::
+
+      WSF_SCRIPT_PROCESSOR will forward the message to any links after on_message executes.  Use
+      :method:`WsfProcessor.SuppressMessage`\ () to prevents this behavior.
+
+.. comment Following is needed so external files can reference this section
+
+.. _WSF_SCRIPT_PROCESSOR.Finite-State-Machine-Commands:
+
+Finite State Machine Commands
+=============================
+
+.. command:: show_state_evaluations
+
+   Indicates that information about state evaluations should be written to standard output. This essentially shows the
+   true or false status of the evaluation of each next_state block.
+
+.. command:: show_state_transitions
+
+   Indicates that information about state transitions should be written to standard output.
+
+.. command:: state <state-name>
+
+   Defines a state in a state machine with the name <state-name>.  Each state can use a different :command:`behavior_tree`.
+   Each state can have child states defined inside of it.
+
+   .. parsed-literal::
+
+    state <state-name>
+      on_entry
+         ... <script-commands> ...
+      end_on_entry
+      on_exit
+         ... <script-commands> ...
+      end_on_exit
+      next_state <next-state-name-1>
+         ... <script-commands> ...
+      end_next_state
+      next_state <next-state-name-n>
+         ... <script-commands> ...
+      end_next_state
+      behavior_tree
+         ... :command:`behavior_tree` Commands ...
+      end_behavior_tree
+      state <child-state-name-1>
+         ...
+      end_state
+      state <child-state-name-N>
+         ...
+      end_state
+    end_state
+
+Script Interface
+================
+
+All of the methods defined in :class:`WsfProcessor` (and by derivation those in :class:`WsfPlatformPart` and :class:`WsfObject`) are available to any of the scripts defined within this processor.
+
+.. command:: on_message_create
+
+   .. parsed-literal::
+   
+      script void on_message_create(:class:`WsfMessage` aMessage) ... end_script
+
+   This is an optional script that can be defined, which allows one to modify a message internally created by a processor
+   prior to it being sent. This is typically used to override the default priority of a message using
+   :method:`WsfMessage.SetPriority`
+
+   .. note::
+
+       This script is currently invoked ONLY by :model:`WSF_TRACK_PROCESSOR` prior to sending a
+       :class:`WsfTrackMessage` or a :class:`WsfTrackDropMessage` to external recipients. Other processors will be modified in the
+       future to invoke this script if it is defined.
+

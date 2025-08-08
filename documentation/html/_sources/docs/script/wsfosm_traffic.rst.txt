@@ -1,0 +1,89 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WsfOSM_Traffic:
+
+WsfOSM_Traffic
+------------------
+
+.. class:: WsfOSM_Traffic inherits Object
+
+**Input type:** :command:`osm_traffic`
+
+Static Methods
+==============
+
+.. method:: WsfOSM_Traffic Traffic()
+
+   Returns the WsfOSM_Traffic class object. All other methods are members of the WsfOSM_Traffic class object, so it is necessary to use this method to access the other OSM Traffic related methods. 
+
+General Methods
+===============
+
+.. method:: Array<WsfRoute> TrafficRoutes(string aNetworkName)
+
+   Returns the list of routes in the route_network. These will be the modified routes used by :command:`osm_traffic`, so their names will follow the additional syntax guidelines described on the main page. 
+
+.. method:: WsfRoute IndividualRoute(string aNetworkName, string aBaseRouteName, int aSegmentNumber, bool aDirection, int aLaneNumber)
+
+   Returns the route with the described characteristics. The base route name refers to the route's original name (without additional suffixes). Unless otherwise specified, when subsequent methods require a route name they are referring to the "Individual Route" as opposed to the base route. 
+
+.. method:: WsfPlatformList VehiclesAlongRoute(string aNetworkName, string aRouteName)
+
+   Returns the list of vehicles that are currently on the route.
+
+.. method:: WsfWaypoint NextPointInRoute(string aNetworkName, string aRouteName, double aDistance)
+
+   Returns the next waypoint along the route that occurs after the specified distance.
+
+.. method:: string IntersectionFlow(double aTime, string aNetworkName, string aNodeId) 
+
+   This method should be used on intersections (node ids) with traffic lights. Returns the base name of road that is currently allowed to pass through the intersection. 
+
+.. method:: string IntersectionOnRoute(string aNetworkName, string aRouteName, bool aDirection)
+
+   Returns the node id of any intersection along the route. The direction argument refers to whether the node id should be at the beginning (true) or end (false) of the route. 
+
+.. method:: Array<WsfRoute> ConnectedRoads(string aNetworkName, string aNodeId)
+
+   Returns the list of routes that are connected to a node id (intersection).
+
+.. method:: bool AddVehicleToTraffic(WsfPlatform aPlatform, string aNetworkName, WsfRoute aRoute)
+
+   Add a scripted vehicle to :command:`osm_traffic` to the beginning of the specified route. This vehicle's behavior should later be controlled via script, but background vehicles will attempt to avoid collisions with it. The return value is whether the vehicle was successfully added. 
+
+.. method:: void FollowRoute(WsfPlatform aPlatform, WsfRoute aRoute)
+
+   Commands a vehicle to follow a route, starting at the first waypoint. If there is a gap between the current route and the destination route, the vehicle will exit its current route, and take the shortest path to the destination route. Should generally be used by scripted vehicles instead of background traffic, and only near intersections. 
+
+.. method:: void FollowRoute(WsfPlatform aPlatform, WsfRoute aRoute, int aWaypointIndex)
+
+   Commands a vehicle to follow a route, starting at the specified waypoint index. Should generally only be used when entering the traffic network from an off-road position. 
+
+.. method:: bool ChangeLane(WsfPlatform aPlatform, bool aDirection)
+
+   Commands a vehicle to attempt to change lanes. The return value is whether this operation was successful, while the direction refers to whether the vehicle changes lanes to the left (true) or the right (false).
+
+.. method:: bool AddConvoyToTraffic(Array<WsfPlatform> aConvoy, string aNetworkName, WsfRoute aRoute, double aSpacing)
+
+   Adds a scripted convoy to :command:`osm_traffic` at the beginning of the specified route. The spacing parameter represents a "time" between vehicles. The convoy's behavior should be controlled via script. The return value is whether the convoy was successfully added. 
+
+.. method:: bool LockIntersection(string aNetworkName, string aNodeId)
+
+   Prevents background traffic vehicles from going through the specified intersection. The return value is whether the lock was successful. 
+
+.. method:: bool UnlockIntersection(string aNetworkName, string aNodeId)
+
+   Allows background traffic vehicles to go through the specified intersection. The return value is whether the unlock was successful. 
+
+.. method:: void GoOffroad(WsfPlatform aPlatform, WsfGeoPoint aPoint)
+
+   Commands a vehicle to go off-road to the specified location. 

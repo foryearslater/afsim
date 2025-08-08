@@ -1,0 +1,157 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+track_manager
+-------------
+
+.. command:: track_manager
+   :block:
+
+.. parsed-literal::
+
+ track_manager
+    debug_
+    correlation_method_ ...
+    fusion_method_ ...
+    tracker_type_ ...
+    uncorrelated_track_drops_ ...
+    retain_raw_tracks_
+    retain_track_history_
+    filter_ ... end_filter
+    track_ ... end_track
+    aux_data_ ... end_aux_data
+    aux_data_fusion_rules_ ... end_aux_data_fusion_rules
+    type_specific_tracker_inputs_
+ end_track_manager
+
+Overview
+========
+
+The track_manager_ block is a subcommand of a :command:`platform` that defines subcommands for the platform's master track
+manager.  A track manager maintains the platform's master track list.
+It can also be used to maintain alternate track lists with the standard WSF processor, :model:`WSF_TRACK_PROCESSOR`.
+
+Commands
+========
+
+.. command:: debug
+
+   Enable the writing of debugging information to standard output.
+
+.. command:: correlation_method
+
+   .. parsed-literal::
+
+     correlation_method :ref:`<correlation-method> <correlation_methods.available_correlation_methods>`
+        :ref:`Correlation commands... <correlation_methods>`
+     end_correlation_method
+
+   Specifies the correlation algorithm used by the track manager.
+
+   A correlation (association) algorithm determines whether new information in the form of track and measurement updates is matched with existing tracks.  If so, the new information is fused with the existing tracks using the fusion_method_; otherwise, new tracks are created.
+
+   **<correlation-method>** can be:
+
+.. include:: correlation_types.txt
+
+.. command:: fusion_method
+
+   .. parsed-literal::
+
+     fusion_method <fusion-method>
+        Fusion Commands...
+     end_fusion_method
+
+   Specifies the fusion algorithms used by the track manager.
+
+   A fusion algorithm combines information about a single entity from two or more sources into a coherent information set, or :command:`track`.
+
+   **<fusion-method>** can be:
+
+.. include:: fusion_types.txt
+
+.. command:: tracker_type
+
+ .. parsed-literal::
+
+   tracker_type <type-name>
+      :ref:`Correlation commands... <correlation_methods>`
+      :ref:`Fusion commands...      <fusion_methods>`
+      Other tracker commands...
+   end_tracker_type
+
+ Specifies a standard tracker type to use.  Use of this input means that one does not have to specify correlation_method_ or fusion_method_.
+
+ .. note::
+    Currently the only valid tracker_type_ is "mtt" (Multi-Target Tracker; see MTT documentation for specific tracker inputs).
+
+.. command:: uncorrelated_track_drops [ on; off ]
+
+   Specifies whether uncorrelated local tracks (tracks that no longer have any associated raw tracks) are to be
+   dropped.  Automatically set to off if tracks are purged in an associated :model:`WSF_TRACK_PROCESSOR`.
+
+   **Default** on
+
+.. command:: retain_raw_tracks
+
+   Specifies that the track manager is to retain all raw track information.  If set, it is the responsibility of the user
+   to manage raw track information.
+
+   **Default** No raw track information is retained.
+
+.. command:: retain_track_history
+
+   Specifies that the track manager is to retain track history information.  If set, it is the responsibility of the user
+   to manage the track history.
+
+   **Default** No track history information is retained
+
+.. command:: filter <type-name> end_filter
+
+   Associates a :command:`filter` type with the track manager.  All incoming tracks of type "unfiltered sensor" will be filtered
+   with this filter type.
+
+.. command:: track ... end_track
+
+   Defines a pre-briefed :command:`track`.
+
+.. command:: aux_data ... end_aux_data
+
+   Specifies additional data that will be added to any :class:`"local" track <WsfLocalTrack>` created and maintained by the track
+   manager.  These will be in addition to any :command:`_.aux_data` present in the associated / correlated
+   :class:`"raw" tracks <WsfTrack>`, as they are naturally merged into the local tracks.  These data are useful as additional
+   aids to tracking and resource allocation.
+
+.. command:: aux_data_fusion_rules ... end_aux_data_fusion_rules
+
+   Defines the rules to be applied when 'fusing' :command:`_.aux_data` variables from a raw track into a local track. Normally a
+   variable in a raw track will overwrite one in the local track with the same name.
+
+   **variable <name> private**
+
+      A variable marked "private' is one that will never be overwritten by when fusion occurs. The variable can only be
+      manipulated by various local script/task processors.
+
+   **variable <name> only_local**
+
+       A variable marked "only_local' can only be overwritten by incoming raw tracks that originate from the this platform.
+
+   **variable <name> prefer_local**
+
+      A variable marked "prefer_local' can be overwritten by an incoming track from the local platform OR from an incoming
+      track from another platform IF the local track does not have any other contributing track from this platform that
+      contains the same variable.
+
+
+.. command:: type_specific_tracker_inputs
+
+   Various inputs will be valid, based on the  tracker_type_ selected.  Specifically, see the
+   :ref:` mtt <MTT Configuration>` inputs for the MTT tracker.

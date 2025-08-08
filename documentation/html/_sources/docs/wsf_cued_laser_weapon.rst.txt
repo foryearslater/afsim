@@ -1,0 +1,59 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CUED_LASER_WEAPON
+---------------------
+
+.. model:: weapon WSF_CUED_LASER_WEAPON
+
+.. parsed-literal::
+
+   weapon <name> :model:`WSF_CUED_LASER_WEAPON`
+      beam_director_ <string>
+      use_default_beam_director_
+      ... :ref:`Platform_Part_Commands` ...
+      ... :ref:`Articulated_Part_Commands` ...
+      ... :model:`Laser Weapon Commands <WSF_LASER_WEAPON>` ...
+      ... :ref:`Weapon Commands <docs/weapon:Commands>` ...
+   end_weapon
+
+Overview
+========
+
+WSF_CUED_LASER_WEAPON_ is an implementation of :model:`WSF_LASER_WEAPON` that is cued by a separate
+:model:`beam director <WSF_BEAM_DIRECTOR>`.  This beam director model is a sensor that acquires HEL targets and ensures that
+the HEL is capable of firing at them..  Once the weapon is fired, the beam director attempts to cue to the targeted
+region of interest.  The weapon only commences high energy lasing once the beam director cue is in constraints, which
+include image size, gimbal rates, and target occlusion).  If the cue is lost for any reason, HEL lasing ceases, and the
+target cue must be re-acquired by the beam director.
+
+.. note::
+
+   It is sufficient to define a the WSF_CUED_LASER_WEAPON_ and :model:`WSF_BEAM_DIRECTOR` on the same
+   platform; the weapon will automatically find and link with the beam director. Specifying a
+   beam director using the beam_director_ command is also possible.
+
+.. block:: WSF_CUED_LASER_WEAPON
+
+Commands
+========
+
+.. command:: beam_director <string>
+
+   Specifies a :model:`WSF_BEAM_DIRECTOR` object to attach to this cued laser weapon. When specified, the cued laser
+   weapon will search for a beam director on the same platform with the specified name. If the beam director is found, the weapon will link to it. If
+   the beam director is not found on the platform, initialization will fail.
+
+.. command:: use_default_beam_director
+
+   Disables the ability to specify a :model:`WSF_BEAM_DIRECTOR` to link the WSF_CUED_LASER_WEAPON_ with. When this command is used,
+   the laser will not search for the :model:`WSF_BEAM_DIRECTOR` specified by the beam_director_ command, instead linking to the first
+   :model:`WSF_BEAM_DIRECTOR` it encounters.

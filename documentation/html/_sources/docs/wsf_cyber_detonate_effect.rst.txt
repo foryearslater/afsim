@@ -1,0 +1,115 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CYBER_DETONATE_EFFECT
+-------------------------
+
+.. model:: cyber_effect WSF_CYBER_DETONATE_EFFECT
+
+.. parsed-literal::
+
+   cyber_effect <effect_name> `WSF_CYBER_DETONATE_EFFECT`
+	   
+      weapon_name ...
+
+      weapon_type ...
+      
+   end_cyber_effect
+   
+Overview
+========
+
+:model:`WSF_CYBER_DETONATE_EFFECT` is a cyber_effect that allows for an attacking platform to remotely detonate
+specified weapons on the victim platform. When successful, the cyber_effect will continue to detonate 
+weapons with the name or type defined in the effect until either all of the weapons are detonated, or the target 
+is destroyed. 
+
+Currently, only weapons with base type :model:`WSF_EXPLICIT_WEAPON` can be designated for detonation.
+
+.. note:: This effect does NOT require user supplied data during a CyberAttack initiation call.
+
+
+Commands
+========
+
+.. command:: weapon_type <string>
+
+   All weapons that inherit from the specified weapon type (as long as they are of base type :model:`WSF_EXPLICIT_WEAPON`)
+   will be detonated upon successful attack.
+
+.. command:: weapon_name <string>
+
+   All weapons on a victim platform that have the specified weapon name (as defined by the user in a scenario) will be
+   detonated.
+
+Multiple weapon_types and weapon_names can be specified for a given detonation_effect. As long as a weapon on the platform
+has the same name, inherits from the type, or both, the weapon can be detonated, as long as the victim has not yet been destroyed.
+
+Example
+========
+
+Note, that on the target platform "test_weapon" is the weapon_name, and "TEST_WEAPON" (along with WSF_EXPLICIT_WEAPON)
+is the weapon_type. 
+
+.. parsed-literal::
+
+   platform target WSF_PLATFORM 
+      add weapon test_weapon TEST_WEAPON
+         quantity 2
+      end_weapon
+   end_platform
+
+   platform attacker WSF_PLATFORM
+      add processor CYBER_ROCESSOR WSF_SCRIPT_PROCESSOR
+         execute at_time 5 sec absolute 
+            PLATFORM.CyberAttack(WsfSimulation.FindPlatform("target"), "DETO"); 
+         end_execute
+      end_processor
+   end_platform
+
+   cyber_attack DETO WSF_CYBER_ATTACK 
+      effect Deto_Effect
+   end_cyber_attack
+
+   cyber_effect Deto_Effect WSF_CYBER_DETONATE_EFFECT
+      weapon_type TEST_WEAPON
+   end_cyber_effect
+
+Included for sake of completeness:
+
+.. parsed-literal::
+
+   weapon TEST_WEAPON WSF_EXPLICIT_WEAPON
+      launched_platform_type TEST_WEAPON
+.. TODO: Note that this must be specified here and not on the launched platform for this effect to work
+      weapon_effects         TEST_EFFECT
+   end_weapon
+
+   platform_type TEST_WEAPON WSF_PLATFORM
+   
+     mover WSF_GUIDED_MOVER
+        aero none
+        total_mass 500.0 lbm
+        update_interval 0.5 s
+     end_mover
+
+     processor guidance_computer WSF_GUIDANCE_COMPUTER
+     end_processor
+
+     processor fuse WSF_GROUND_TARGET_FUSE
+     end_processor
+     
+   end_platform_type
+
+   weapon_effects TEST_EFFECT WSF_SPHERICAL_LETHALITY
+      minimum_radius   25.0 m
+      maximum_radius   30.0 m
+   end_weapon_effects

@@ -1,0 +1,390 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Common Script Interface &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Compound" href="compound.html" />
+    <link rel="prev" title="Command Chains" href="command_chains.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="compound.html" title="Compound"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="command_chains.html" title="Command Chains"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="common-script-interface">
+<span id="id1"></span><h1>Common Script Interface<a class="headerlink" href="#common-script-interface" title="Permalink to this headline">¶</a></h1>
+<p>Many WSF components use the WSF ‘common script interface’. An WSF component that uses the interface will accept:</p>
+<ul class="simple">
+<li><p>Definitions of script variables: <strong>script_variables</strong> … <strong>end_script_variables</strong></p></li>
+<li><p>Definitions of scripts: <strong>script</strong> … <strong>end_script</strong></p></li>
+<li><p>Scripting system control commands (e.g., <a class="reference internal" href="script_commands.html#_.script_commands.script_call_trace" title="script_call_trace (_.script_commands)"><span class="xref wsf wsf-command">script_call_trace</span></a>)</p></li>
+<li><p><a class="reference internal" href="#common-scripts">Common Scripts</a> (defined below)</p></li>
+</ul>
+<p>The WSF components that currently implement common script interface include:</p>
+<ul class="simple">
+<li><p>The simulation.</p></li>
+<li><p>The platform.</p></li>
+<li><p>Some processors such as <a class="reference internal" href="wsf_script_processor.html#WSF_SCRIPT_PROCESSOR" title="WSF_SCRIPT_PROCESSOR"><span class="xref wsf wsf-model">WSF_SCRIPT_PROCESSOR</span></a>, and many others.</p></li>
+<li><p>Some other platform parts, such as sensors.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">processor</span> <span class="n">my</span><span class="o">-</span><span class="n">script</span><span class="o">-</span><span class="n">proc</span> <span class="n">WSF_SCRIPT_PROCESSOR</span>
+   <span class="n">update_interval</span> <span class="mi">10</span> <span class="n">sec</span>
+   <span class="n">on_update</span>
+      <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;T=&quot;</span><span class="p">,</span> <span class="n">TIME_NOW</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">PLATFORM</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; is updating&quot;</span><span class="p">);</span>
+   <span class="n">end_on_update</span>
+<span class="n">end_processor</span>
+</pre></div>
+</div>
+<section id="predefined-variables">
+<h2>Predefined Variables<a class="headerlink" href="#predefined-variables" title="Permalink to this headline">¶</a></h2>
+<p>All components that use the <a class="reference internal" href="#common-script-interface"><span class="std std-ref">Common Script Interface</span></a> will have the following predefined variables as is appropriate
+for the component:</p>
+<p>double TIME_NOW</p>
+<blockquote>
+<div><p>The current simulation time in seconds. This is available to all scripts.</p>
+</div></blockquote>
+<p><a class="reference internal" href="script/wsfplatform.html#WsfPlatform" title="WsfPlatform"><span class="xref wsf wsf-class">WsfPlatform</span></a> PLATFORM</p>
+<blockquote>
+<div><p>A reference to the platform. This is valid only within the platforms, sensors, and processors that implement the
+common script interface</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is not available in simulation-level scripts.</p>
+</div>
+</div></blockquote>
+<p><a class="reference internal" href="script/wsfprocessor.html#WsfProcessor" title="WsfProcessor"><span class="xref wsf wsf-class">WsfProcessor</span></a> PROCESSOR</p>
+<blockquote>
+<div><p>A reference to the processor. This is valid only in processors that use the common script interface (e.g.,
+<a class="reference internal" href="wsf_script_processor.html#WSF_SCRIPT_PROCESSOR" title="WSF_SCRIPT_PROCESSOR"><span class="xref wsf wsf-model">WSF_SCRIPT_PROCESSOR</span></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This variable is not available in simulation-level or platform-level scripts</p>
+</div>
+</div></blockquote>
+<p><a class="reference internal" href="script/wsfsensor.html#WsfSensor" title="WsfSensor"><span class="xref wsf wsf-class">WsfSensor</span></a> SENSOR</p>
+<blockquote>
+<div><p>A reference to the <a class="reference internal" href="sensor.html#sensor" title="sensor"><span class="xref wsf wsf-command">sensor</span></a>. This is valid within AFSIM’s predefined sensors, as well as any other sensors that use the common script interface.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This variable is not available in simulation-level or platform-level scripts</p>
+</div>
+</div></blockquote>
+<p><a class="reference internal" href="script/wsfrandom.html#WsfRandom" title="WsfRandom"><span class="xref wsf wsf-class">WsfRandom</span></a> RANDOM</p>
+<blockquote>
+<div><p>A reference to the random number generator used by the simulation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use of this object will affect the simulation’s random draws and therefore repeatability of simulation outcomes.</p>
+</div>
+</div></blockquote>
+</section>
+<section id="common-scripts">
+<h2>Common Scripts<a class="headerlink" href="#common-scripts" title="Permalink to this headline">¶</a></h2>
+<p>Every WSF component that uses the common script interface will accept the following common scripts:</p>
+<dl class="command">
+<dt id="execute">
+execute at_time<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a> [ absolute | relative ] …script body… end_execute<a class="headerlink" href="#execute" title="Permalink to this definition">¶</a></dt>
+<dt id="execute">
+execute at_interval_of<a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><em> &lt;time-value&gt;</em></a> …script body… end_execute<a class="headerlink" href="#execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>These commands allow you define a script that is to execute once at a specific time or repeatedly at a specified time
+interval.</p>
+<p>To execute a script at a specific time:</p>
+<pre class="literal-block">execute at_time <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a> [ absolute | relative ]
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">Script Body</span></a>
+end_execute</pre>
+<p>If <strong>absolute</strong> is specified then the script will be executed at the specified simulation time.</p>
+<p>If <strong>relative</strong> is specified then the script will be executed at the specified time relative to the creation time of the platform.</p>
+<p>To execute a script repeatedly at a specified interval:</p>
+<pre class="literal-block">execute at_interval_of <a class="reference internal" href="argumenttypes.html#time-value" title="time-value"><span class="xref wsf wsf-argtype">&lt;time-value&gt;</span></a>
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">Script Body</span></a>
+end_execute</pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If defined in the context of a processor, these scripts will execute even if the
+system is turned off as the purpose of the script may be to turn the system on!</p>
+</div>
+</dd></dl>
+
+<dl class="command">
+<dt id="on_initialize">
+on_initialize …script_body… end_on_initialize<a class="headerlink" href="#on_initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This command lets one define a script that is executed during phase 1 of platform initialization, if defined within the context of a platform, or during simulation initialization, if defined in the global script context.</p>
+<p>During phase 1 initialization one may not assume anything about the state of the platform or any other platform
+component. If such a requirement is needed use the on_initialize2 script defined below.</p>
+<pre class="literal-block">on_initialize
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">Script Body</span></a>
+end_on_initialize</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="on_initialize2">
+on_initialize2 …script_body… end_on_initialize2<a class="headerlink" href="#on_initialize2" title="Permalink to this definition">¶</a></dt>
+<dd><p>This command lets one define a script that is executed during phase 2 of platform initialization. Phase 2
+initialization occurs when all platforms and their components (including those in the same platform context)
+have completed phase 1 initialization. Furthermore, phase 2 initialization at the platform context only occurs
+after phase 1 initialization at the global context.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The on_initialize2 command is not available in the global (simulation-level) script context.</p>
+</div>
+<pre class="literal-block">on_initialize2
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">Script Body</span></a>
+end_on_initialize2</pre>
+</dd></dl>
+
+<dl class="command">
+<dt id="on_update">
+on_update …script_body… end_on_update<a class="headerlink" href="#on_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>This command lets one define a script that is executed whenever the platform or processor is updated. When
+specified within the context of a processor, the “update_interval’ command defines the interval at which the
+simulation invokes the “Update’ method.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use this with great caution at the platform level as it can have severe performance impacts. The on_update command is not available in the global (simulation-level) script context.</p>
+</div>
+<pre class="literal-block">on_update
+   <a class="reference internal" href="script.html#script"><span class="std std-ref">Script Body</span></a>
+end_on_update</pre>
+</dd></dl>
+
+</section>
+<section id="military-specific">
+<h2>Military Specific<a class="headerlink" href="#military-specific" title="Permalink to this headline">¶</a></h2>
+<p>An WSF component that uses the interface will accept:</p>
+<ul class="simple">
+<li><p>Some weapons such as <a class="reference internal" href="wsf_explicit_weapon.html#WSF_EXPLICIT_WEAPON" title="WSF_EXPLICIT_WEAPON"><span class="xref wsf wsf-model">WSF_EXPLICIT_WEAPON</span></a>.</p></li>
+</ul>
+<section id="id2">
+<span id="docs/common_script_interface:military specific:Predefined Variables"></span><h3>Predefined Variables<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="script/wsfweapon.html#WsfWeapon" title="WsfWeapon"><span class="xref wsf wsf-class">WsfWeapon</span></a> WEAPON</p>
+<blockquote>
+<div><p>A reference to the weapon. This is valid only within weapons that use the common script interface (e.g.,
+<a class="reference internal" href="wsf_explicit_weapon.html#WSF_EXPLICIT_WEAPON" title="WSF_EXPLICIT_WEAPON"><span class="xref wsf wsf-model">WSF_EXPLICIT_WEAPON</span></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This variable is not available in simulation-level or platform-level scripts.</p>
+</div>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/common_script_interface.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="compound.html" title="Compound"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="command_chains.html" title="Command Chains"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

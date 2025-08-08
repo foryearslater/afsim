@@ -1,0 +1,219 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.5:
+
+WSF 1.7.5 - 28 Mar 2013
+-----------------------
+
+General
+=======
+
+* The target recognition capabilities of WSF_AIMS_IMAGE_PROCESSOR were merged into :model:`WSF_IMAGE_PROCESSOR`, and
+  WSF_AIMS_IMAGE_PROCESSOR is now deprecated.  In order to enable the :ref:`target_recognition_commands`
+  capabilities in :model:`WSF_IMAGE_PROCESSOR`, a new flag, :model:`target_recognition <WSF_IMAGE_PROCESSOR>` must
+  be set.
+
+Corrections
+===========
+
+* Corrected a bug found in WsfTerrain::GetHeightExtremaIn() function, which intermittently failed to find terrain height maxima within a zone.
+
+* **(CR 6564)** Fixed errors with script parsing/compiling. The file/line/column was not being reported correctly when an error was found.
+
+* **(CR 9040)** Corrected an issue with the :model:`WSF_THREAT_PROCESSOR`.  It was erroneously classifying every track
+  that lacked location and velocity data as a threat. Added two more input parameters that allow for such tracks to be
+  threats, but their default value will not.
+
+* **(CR 9779)** Corrected errors when using casting in script.
+
+* Corrected an issue with :model:`WSF_TRACK_EFFECT` where it would not use the
+  :model:`required_j_to_s <WSF_TRACK_EFFECT>` value to limit the effects requirements.
+
+* Corrected an issue with :model:`WSF_ESM_SENSOR` where the signal list for detected multi-beam systems would list all of
+  the signals on the detected system instead of just those that met threshold once one of the beams were detected.
+
+* Corrected an issue with :model:`WSF_SIMPLE_FT_EFFECT` where default data was being used after the first interaction
+  instead of input data for the EA interaction.
+
+* Corrected an issue with waypoint movers where flying to far away points would sometimes not work.
+
+* Corrected an issue where the spatial domain of the **WSF_HARM_MOVER** was being reported incorrectly.
+
+* Corrected an issue where the distance limit given to a :class:`WsfClusterManager` was being doubled and so it created
+  clusters twice the desired size.
+
+* Corrected an error that caused a crash when using the "job_board_comm" feature of the :model:`WSF_RIPR_PROCESSOR`.
+
+* Corrected an issue with comm routing that erroneously classified some routing as a relay and then failed to route
+  messages.
+
+* Corrected an issue when comm routing with :model:`WSF_RADIO_TRANSCEIVER` where routes with more than one hop would
+  fail.
+
+* Corrected an issue where engagements with a weapon impacting a location, with no specific target and incidental
+  damage turned on, resulted in erroneous incidental kills.
+
+* Corrected an issue relating to route movers computing accelerations using waypoint speeds.  This behavior will now
+  be triggered any time a waypoint speed is specified and no acceleration is specified on the mover or route.
+  Previously, the computed acceleration would occur for only the first waypoint.
+
+* Corrected an issue with the  :command:`platform.use_zone` command. If the <shared-zone-type> does not exist the
+  simulation will halt with an error.
+
+* **(CR 10079)** Corrected an issue where frequencies in RCS tables with the "plt_file" format weren't being read
+  correctly.
+
+* Corrected a problem in the :model:`WSF_RADAR_SENSOR` when
+  :model:`compute_measurement_errors <WSF_RADAR_SENSOR>` is enabled, where errors in az and el were
+  being computed using standard deviation values from the transmitter, rather than the receiver.
+
+* **(CR 10118)** Corrected an issue with the Doppler shift calculation in :model:`WSF_ACOUSTIC_SENSOR`; it now uses the
+  appropriate equation for the calculation.
+
+* **(CR 10137)** Corrected an error with the :command:`observer` PLATFORM_APPEARANCE_CHANGED event. The expected script
+  method is now PlatformAppearanceChanged not PlatformAppearance.
+
+* **(CR 10146)** Corrected an error in the :class:`RIPR Job Board <WsfRIPRProcessor>` allocation
+  algorithm: if there were more jobs than bidders, only the first jobs posted to the job board were allocated and awarded
+  to the bidders.
+
+Enhancements
+============
+
+* Extensively improved WsfExchange functionality so that exchanges of named goods types may occur across a DIS
+  connection (i.e., a Tanker supplying JP8_Fuel to a Receiver).  See :model:`WSF_EXCHANGE_PROCESSOR`.
+
+* Added in the capability to check if a given :model:`WSF_EP_TECHNIQUE` is active (i.e., in use/turned on) for a sensor
+  via script interface call :method:`IsTechniqueActive <WsfSensor>`.
+
+* Added :model:`WSF_MOBILITY_AND_FIREPOWER_LETHALITY` weapon effect.  Allows an explicit weapon to impart a Mobility or
+  Firepower Kill, in addition to Catastrophic Kill.
+
+* Added Mover "Mode" switching, via either waypoint crossing or upon script command.  Effect is Mover implementation
+  defined.  See :model:`WSF_ROTORCRAFT_MOVER` for more details.
+
+* **(CR 5718)** Script now supports operators \+\=, \-\=, \*\=, \/\=.
+
+* **(CR 6786)** :class:`script_struct` added, allowing user-defined structs in script.
+
+* **(CR 9364)** Script strings may now contain comment characters, i.e., string abc = "This #2 isn't a \/\* \*\/ \/\/
+   comment";
+
+* **(CR 9894)** Add the ability to set a purge interval on :model:`WSF_COMM_TRANSCEIVER` and :model:`WSF_RADIO_TRANSCEIVER`.
+  For any message waiting in the transmission queue for a time greater than the purge interval will be dropped. The
+  MESSAGE_DISCARDED event will be generated.
+
+* **(CR 9928)** When using :command:`dis_interface.simple_miss_reporting` in the :command:`dis_interface` block a detonation
+  result of 1 was being set when either the target was killed or damaged. This enhancement restricts the reporting of the
+  Detonation PDU's detonation result to 1 when the target is killed otherwise a detonation result of 6 is reported for
+  all other conditions.
+
+* **(CR 10022)** If a probability of detection (Pd) vs range table is defined in the :model:`WSF_GEOMETRIC_SENSOR` the
+  required Pd will now be random variable unless :command:`use_constant_required_pd` is set to true.
+
+* Added the capability to the :command:`false_target_screener` to specify a
+  :command:`false_target_screener.j_to_s_delta_threshold` for limiting the sector count to only the false
+  targets within the threshold wrt to the target threshold return.
+
+* Added the capability for the **WSF_COMM_ROUTER** to use the proper comm device for outbound routed messages if
+  that comm is on the same network as the next receiver.
+
+* It is now possible to execute scripts on other objects, and access script variables on other objects, using the
+  '->' operator.
+
+  ::
+
+   WsfPlatform plat = WsfPlatform.FindPlatform("plat");
+   double x = plat->x;        // Get variable 'x' on the platform
+   plat->y = 1.0;             // Set variable 'y' on the platform
+   plat->local_script(1,2,3); // Call script 'local_script()' on the platform
+
+  See :ref:`Script_Right_Arrow_Operator`
+
+* New script functions: :class:`__print_callstack(), assert(), has_attr(...), has_script(...) <__BUILTIN__>`
+
+* Added the "priority_selector" and "weighted_random" intermediate connector node types to the :command:`behavior_tree`
+  for prioritized node selection and weight random selection, respectively.  Also added the complimentary parameters
+  "run_selection" and "make_selection".
+
+* Added the "channel_job_type" feature to the :model:`WSF_RIPR_PROCESSOR` for allowing designation of some job channels
+  for certain types of jobs.
+
+* Added the :class:`WsfRouteFinder` capability.  Generates a route around given avoidance regions and returns a
+  :class:`WsfRoute` to you for use.
+
+* Added indirect fire capability with the wsf_fires library.  This capability allows for relatively easy
+  definition of new indirect fire types (both explicit and implicit), and time-on-target.  New types defined in
+  wsf_fires include :model:`WSF_FIRES_MOVER` and associated launch computer, :model:`WSF_FIRES_LAUNCH_COMPUTER`.  Also included
+  is the script object, :class:`WsfBallisticPath`, which allows for impact prediction, time-of-flight prediction, and
+  trajectory visualization.  The input option, :command:`ballistic_types` is used to categorize all launched platform types that
+  are used for indirect fire.  Test cases and unclassified definitions for rocket, artillery, and mortars are provided in
+  the "fires_demo" directory.
+
+* Added a global selection to utilize :command:`quantitative_track_quality`.
+  This selection enforces computation of track quality based on the track's state covariance, allowing for
+  track "coasting."  It will be desirable to use this feature for more sophisticated tracking studies; however, it may
+  invalidate task manager logic that uses track quality to make decisions (do not use with the WSF IADS, for instance).
+  This feature defaults to "disabled."
+
+* **(CR 10058)** radio entity type fields now populated in DIS transmitter PDUs.
+
+* Added a high-energy laser (HEL) model, :model:`WSF_LASER_WEAPON`, to the WSF core.  This includes a core :ref:`default fluence model <Default_Fluence_Model>`.
+
+
+* Moved :command:`thermal_system` model to the WSF core.  This is optionally used with the HEL weapons (e.g., :model:`WSF_LASER_WEAPON`) to model the total available shot time.
+
+* Added the simulation control command, :command:`start_time_now`, for the purpose of synchronizing real-time simulations to the system clock.
+
+* Added :command:`wsf_weapon_server` interface.  If defined, the interface listens for ASCII interface RELEASE_STORE commands and fires weapons.
+
+* Added the script function :method:`System.Time() <System.Time>`.
+
+* Added a filter option for the :model:`WSF_DIRECTION_FINDER_PROCESSOR`, as in use a Kalman filter.
+
+* Added options to retain track history in the :command:`track_manager` and :model:`WSF_TRACK_PROCESSOR`.  The option to retain
+  track a track history is specified using :command:`track_manager.retain_raw_tracks`, and the length of
+  history to keep is set with the
+  :model:`track_history_retention_interval <WSF_TRACK_PROCESSOR>` option.
+
+* **(CR 10109)** Allows the user to specify that each event be written as a single line in the event output file. A new flag was added to the event_output block called
+  :command:`event_output.print_single_line_per_event`.
+
+* **(CR 10110)** Added the :ref:`SetDamageFactor <WsfPlatform.Appearance_Methods>` script method to the :class:`WsfPlatform` script object.
+
+* **(CR 10119)** Added the WsfPlatform.SetCommander() script access method.
+
+* Implemented a much more extensive set of clutter data in the :ref:`ALARM clutter model <clutter_model.alarm>` than either the original ALARM data or the later tables that it replaces.  These data include most of the table sets from the book <u>Low-Angle Radar Clutter</u>, by Billingsley.
+
+Developer Items
+===============
+
+* **(CR 10020)** Moved the WsfScriptGeoPointClass out of the WsfGeoPoint.cpp file and into a separate file.
+  Performed some cleanup to the WsfScriptGeoPointClass.
+
+* Refactored WsfSpaceMover and WsfNORAD_SpaceMover to derive from the base class WsfSpaceMoverBase.  This moves the
+  orbital propagator object into the base class, along with common code for Initialize and Update methods.
+
+* Removed, moved WsfCovariance::InitializeProcessNoiseECS into WsfKalman filter for clarity.  It masked what the
+  position values were being set to.
+
+* Code for the script parsing and execution was reworked to support features in this release and in support of a
+  future script debugger.
+
+Data Items
+==========
+
+* Added fires_demo to illustrate the use of :model:`WSF_FIRES_MOVER` and :model:`WSF_FIRES_LAUNCH_COMPUTER`.
+
+* Added acoustic_demo to illustrate how to set up acoustic sensors and acoustic signatures.
+
+* Added exchange_proc_demo to illustrate the use of the WSF_EXCHANGE_PROCESSOR.

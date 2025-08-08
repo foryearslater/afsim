@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SixDOF Theory &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SixDOF Thrust Producer Types" href="six_dof_thrust_producer_types.html" />
+    <link rel="prev" title="SixDOF Terrain File Definition" href="six_dof_terrain_file_definition.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_thrust_producer_types.html" title="SixDOF Thrust Producer Types"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_terrain_file_definition.html" title="SixDOF Terrain File Definition"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sixdof-theory">
+<h1>SixDOF Theory<a class="headerlink" href="#sixdof-theory" title="Permalink to this headline">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Theory behind the rigid-body 6DOF model (<a class="reference internal" href="wsf_rigid_body_six_dof_mover.html#WSF_RIGID_BODY_SIX_DOF_MOVER" title="WSF_RIGID_BODY_SIX_DOF_MOVER"><span class="xref wsf wsf-model">WSF_RIGID_BODY_SIX_DOF_MOVER</span></a>, <a class="reference internal" href="script/wsfrigidbodysixdofmover.html#WsfRigidBodySixDOF_Mover" title="WsfRigidBodySixDOF_Mover"><span class="xref wsf wsf-class">WsfRigidBodySixDOF_Mover</span></a>) is identical to that of the antecedent P6DOF, and can be studied via the <a class="reference internal" href="p6dof_theory.html"><span class="doc">P6DOF Theory</span></a> article. When <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-model">WSF_P6DOF_MOVER</span></a> is removed, that document will be folded into this one.</p>
+</div>
+<p>The <a class="reference internal" href="wsf_point_mass_six_dof_mover.html#WSF_POINT_MASS_SIX_DOF_MOVER" title="WSF_POINT_MASS_SIX_DOF_MOVER"><span class="xref wsf wsf-model">WSF_POINT_MASS_SIX_DOF_MOVER</span></a> is intended to bridge the gap between 3DOF models such as <a class="reference internal" href="wsf_guided_mover.html#WSF_GUIDED_MOVER" title="WSF_GUIDED_MOVER"><span class="xref wsf wsf-model">WSF_GUIDED_MOVER</span></a> and <a class="reference internal" href="wsf_air_mover.html#WSF_AIR_MOVER" title="WSF_AIR_MOVER"><span class="xref wsf wsf-model">WSF_AIR_MOVER</span></a> and full 6DOF models such as <a class="reference internal" href="wsf_p6dof_mover.html#WSF_P6DOF_MOVER" title="WSF_P6DOF_MOVER"><span class="xref wsf wsf-model">WSF_P6DOF_MOVER</span></a> and <a class="reference internal" href="wsf_rigid_body_six_dof_mover.html#WSF_RIGID_BODY_SIX_DOF_MOVER" title="WSF_RIGID_BODY_SIX_DOF_MOVER"><span class="xref wsf wsf-model">WSF_RIGID_BODY_SIX_DOF_MOVER</span></a>.</p>
+<p>Where 3DOF models are required to assume elements of their orientation, a full 6DOF model will propagate orientation according to conservation of angular momentum (<img class="math" src="../_images/math/93eb79df7ed83cb7a35790969c40d5e9a750f3c0.png" alt="\Sigma M = I \dot{\omega}"/>).
+This approach is kinematically correct, but imposes data requirements which may not be practical.
+Specifically, the net moment requires accurate and timely knowledge of the distribution of force about the body, while the moment of inertia tensor requires knowledge of the of the distribution of mass throughout the body.</p>
+<p>The PointMass SixDOF mover uses a effects-based system to estimate <img class="math" src="../_images/math/7151aa363db382cfeb1b9a7e76d8390bcd1fa2a9.png" alt="\dot{\omega}"/>, composed as much as possible by rotation data that can be directly measured or assumed.
+Like similar models, the aerodynamic force coefficients for a PM6DOF model should represent a trim (zero net moment) state for a given airspeed and angle of attack.
+Rotation rates are either commanded by the active pilot (human-in-the-loop or otherwise) or are generated to mimic the effects of aerodynamic stability or instability.</p>
+<p>Thrust magnitude calculations are identical to that used for the RigidBody model, but the nature of the kinematic model requires that thrust vectoring must also be effects-based.
+Additionally, thrust reversal is not currently considered for PointMass vehicles.</p>
+</section>
+<section id="list-of-symbols">
+<h2>List of Symbols<a class="headerlink" href="#list-of-symbols" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-left">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 35%" />
+<col style="width: 30%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Definition</p></th>
+<th class="head"><p>SixDOF Command</p></th>
+<th class="head"><p>SixDOF Script Method</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/2f5aa019312e1bbc969deab8dca8b00f76025404.png" alt="\alpha"/></p></td>
+<td><p>angle of attack</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetAlpha" title="WsfSixDOF_Mover.GetAlpha"><span class="xref wsf wsf-method">GetAlpha</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/7138dad9ac96835665b17f5817eacfcaa9b834c9.png" alt="\beta"/></p></td>
+<td><p>angle of side slip</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetBeta" title="WsfSixDOF_Mover.GetBeta"><span class="xref wsf wsf-method">GetBeta</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e809f399dd565e7d2f458a14a7a37b95a68f1b64.png" alt="\alpha_{T}"/></p></td>
+<td><p>total angle of attack</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetAlpha" title="WsfSixDOF_Mover.GetAlpha"><span class="xref wsf wsf-method">GetAlpha</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/4abba779877abb276b98ccb2b4ba9bf2e41947ab.png" alt="M"/></p></td>
+<td><p>Mach number</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetMach" title="WsfSixDOF_Mover.GetMach"><span class="xref wsf wsf-method">GetMach</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/></p></td>
+<td><p>time</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/></p></td>
+<td><p>body roll rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetRollRate" title="WsfSixDOF_Mover.GetRollRate"><span class="xref wsf wsf-method">GetRollRate</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/a5fa84b363f309ebc8fe7db38304541732c7de9a.png" alt="q"/></p></td>
+<td><p>body pitch rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetPitchRate" title="WsfSixDOF_Mover.GetPitchRate"><span class="xref wsf wsf-method">GetPitchRate</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/79a3d439d28652c547386f39b555d90d3aaf102d.png" alt="r"/></p></td>
+<td><p>body yaw rate</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetYawRate" title="WsfSixDOF_Mover.GetYawRate"><span class="xref wsf wsf-method">GetYawRate</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/fa846323a1c93dd7ed7bb6ee3e07929d96dee06e.png" alt="\dot{p}"/></p></td>
+<td><p>body roll acceleration</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/aab80699c8386fc6f708152ae731cf3c5d7ff953.png" alt="\dot{q}"/></p></td>
+<td><p>body pitch acceleration</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/6893fd2c937136b086278b4e8b3385132a27209b.png" alt="\dot{r}"/></p></td>
+<td><p>body yaw acceleration</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/c735e1ac7647b5b6ffe19aecffa8279dcf0986e7.png" alt="\vec{\omega}"/></p></td>
+<td><p>rotational velocity vector</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/6eb8707d19eb07dbdb3fba8be54339673c1aeff1.png" alt="\vec{\dot{\omega}}"/></p></td>
+<td><p>rotational acceleration vector</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/4e087ffc8204eb0b641d58eecdaa60f33e0661cf.png" alt="\vec{\dot{\omega}}_{max}"/></p></td>
+<td><p>total limit of angular acceleration from controls</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/966649ef22b2c176d8255355fe60d31e4974d86e.png" alt="\vec{\dot{\omega}}_{max, aero}"/></p></td>
+<td><p>limit of angular acceleration from aerodynamic controls</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/be21dd9ed39b920f92a2143e3db99389ea0e3be8.png" alt="\vec{\dot{\omega}}_{max, aero_{0}}"/></p></td>
+<td><p>value of <img class="math" src="../_images/math/c77ce43d3ac032d0c77bce2bc36c19ccbbbb4e92.png" alt="\vec{\omega}_{max, aero}"/> at dry weight under standard sea-level conditions</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/0c8180169c69ef9bce5d8b7463bc7d5ccc3f256c.png" alt="\vec{\dot{\omega}}_{max, prop}"/></p></td>
+<td><p>limit of angular acceleration from propulsive controls</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/4973c566edfd090657808bdfc431062f87844e1d.png" alt="\vec{\dot{\omega}}_{max, prop_{0}}"/></p></td>
+<td><p>value of <img class="math" src="../_images/math/0f249188603c55a784b31f7834f4f95457e8d50f.png" alt="\vec{\omega}_{max, prop}"/> at dry weight</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/5bfcd8f9a325dfe3313ddaa01c970c80fea91db9.png" alt="\vec{\omega}_{n}"/></p></td>
+<td><p>natural frequency of the stabilizing aerodynamic response</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/7943e6fc34a5c36e6768276a959b14c1e4f72fd0.png" alt="\vec{\omega}_{n_{0}}"/></p></td>
+<td><p>value of <img class="math" src="../_images/math/5bfcd8f9a325dfe3313ddaa01c970c80fea91db9.png" alt="\vec{\omega}_{n}"/> at dry weight under standard sea-level conditions</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e9bc7da808d33a16a8347f27a519bd067186aa66.png" alt="m"/></p></td>
+<td><p>current mass</p></td>
+<td></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetCurrentWeight" title="WsfSixDOF_Mover.GetCurrentWeight"><span class="xref wsf wsf-method">GetCurrentWeight</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/227d3347bb4a88066da9dd580c891f66b4f844fb.png" alt="m_{0}"/></p></td>
+<td><p>empty mass</p></td>
+<td><p><a class="reference internal" href="p6dof_mass_properties_data.html#mass" title="mass"><span class="xref wsf wsf-command">mass</span></a></p></td>
+<td><p><a class="reference internal" href="script/wsfsixdofmover.html#WsfSixDOF_Mover.GetEmptyWeight" title="WsfSixDOF_Mover.GetEmptyWeight"><span class="xref wsf wsf-method">GetEmptyWeight</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/a784a4204985eba14fc47e114f1b231531106f6d.png" alt="\bold{I}"/></p></td>
+<td><p>moment of inertia matrix</p></td>
+<td><p><a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_ixx" title="moment_of_inertia_ixx"><span class="xref wsf wsf-command">moment_of_inertia_ixx</span></a>, <a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_iyy" title="moment_of_inertia_iyy"><span class="xref wsf wsf-command">moment_of_inertia_iyy</span></a>, <a class="reference internal" href="p6dof_mass_properties_data.html#moment_of_inertia_izz" title="moment_of_inertia_izz"><span class="xref wsf wsf-command">moment_of_inertia_izz</span></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/c72cc8b5670162cc88c1ed5bce3edd8c15d59e87.png" alt="\vec{M}_T"/></p></td>
+<td><p>total moment</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/e8dea8254118f111b5fb20895b03528c17566f06.png" alt="T"/></p></td>
+<td><p>engine thrust, dependent on the engine type</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><img class="math" src="../_images/math/21dbb4cef70e602db8c85016ba89020982c224a0.png" alt="rho"/></p></td>
+<td><p>density of the atmosphere at the vehicle’s current altitude</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><img class="math" src="../_images/math/edb0d599576201f89339c765164a3ee8dfeefd4e.png" alt="rho_{0}"/></p></td>
+<td><p>standard density of the atmosphere at the ellipsoid surface</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="equations-of-motion">
+<h2>Equations of Motion<a class="headerlink" href="#equations-of-motion" title="Permalink to this headline">¶</a></h2>
+<p>As with the rigid-body models, linear motion is a second-order integral of acceleration, calculated according to conservation of momentum (<a class="reference internal" href="p6dof_theory.html#equation-f-equals-ma">(1)</a>).</p>
+<p>Orientation is similarly a second-order integral of angular acceleration, but unlike the rigid-body models, there is no real consideration for angular momentum in the PointMass mover - angular acceleration <img class="math" src="../_images/math/6eb8707d19eb07dbdb3fba8be54339673c1aeff1.png" alt="\vec{\dot{\omega}}"/> is simply built up by control capabilities and (de-)stabilizing effects.</p>
+<p>The <a class="reference internal" href="p6dof_theory.html"><span class="doc">P6DOF Theory</span></a> document contains an in-depth discussion of how these differential equations are integrated (see <a class="reference internal" href="p6dof_theory.html#equations-of-motion"><span class="std std-ref">Equations of Motion</span></a>), and we will not duplicate that here.</p>
+</section>
+<section id="control-forces-and-rotation">
+<h2>Control Forces and Rotation<a class="headerlink" href="#control-forces-and-rotation" title="Permalink to this headline">¶</a></h2>
+<p>While the forces on a PM6DOF are summed in the same way as for an RB6DOF, the angular acceleration is built up in a way that abstracts away the actual torques on the vehicle.</p>
+<p>Control response data does not need to be supplied for unguided munitions (bombs, rockets, decoys), but is required for a vehicle to be guided or piloted.
+Baseline angular acceleration limits are provided in user-defined tables with respect to Mach number, then modified to account for air density and angle-of-attack effects.
+The angular acceleration tables should be informed by reference data for the vehicle or class of vehicle, but can also be estimated kinematically.</p>
+<p>As an example, consider a description of a reasonable fighter which specifies an ability at Mach 0.8 to accelerate from wings-level to a roll rate of 180 deg/s within one second.
+In this case, the peak acceleration should be specified at least 180 deg/s/s at Mach 0.8 - possibly higher to account for altitude and any stabilizing effects (see <a class="reference internal" href="#sixdof-stabilizing-effects"><span class="std std-ref">Stabilizing Rotation Effects</span></a> below).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>How this changes with respect to Mach will vary per vehicle type, but a reasonable first-pass strategy is to scale the acceleration limit with the square of Mach, remembering that aerodynamic torques scale with the square of speed. Shifts in center of pressure or controllers which back down control authority into the transonic and supersonic regimes can be approximated by reducing maximum acceleration down from this initial estimate at those Mach numbers.</p>
+</div>
+<div class="math" id="equation-omega-dot-aero-limits">
+<p><span class="eqno">(1)<a class="headerlink" href="#equation-omega-dot-aero-limits" title="Permalink to this equation">¶</a></span><img src="../_images/math/25fe1e3d074eb63a69fe9ded8b073920e7407899.png" alt="\vec{\dot{\omega}}_{max, aero} = \left( \frac{\rho}{\rho_{0}} \right) \left( \frac{m_{0}}{m} \right) \vec{\dot{\omega}}_{max, aero_{0}} \cos{\alpha_{T}}"/></p>
+</div><p>These corrections account for reduced control efficacy at higher altitudes and at higher slip angles, and for changes in inertia as mass is added or removed.</p>
+<p>A separate, second term is added to account for the effects of thrust vectoring given some amount of thrust.</p>
+<div class="math" id="equation-omega-dot-prop-limits">
+<p><span class="eqno">(2)<a class="headerlink" href="#equation-omega-dot-prop-limits" title="Permalink to this equation">¶</a></span><img src="../_images/math/5a8d5e606bd064ce48a54277f64a4f160e5ea8a4.png" alt="\vec{\dot{\omega}}_{max, prop} &amp;= \left( \frac{m_{0}}{m} \right) \left( \frac{\Delta \vec{\dot{\omega}}_{prop}}{\Delta T} \right) T"/></p>
+</div><p>Thrust itself is modeled as a function of altitude, so additional altitude effects are not considered.
+To account for increased agility as fuel is burned away, a mass factor is introduced.</p>
+<div class="math" id="equation-omega-dot-final-limits">
+<p><span class="eqno">(3)<a class="headerlink" href="#equation-omega-dot-final-limits" title="Permalink to this equation">¶</a></span><img src="../_images/math/f9ddb6a48f6352bf1e1294935063b9a1e4259948.png" alt="\vec{\dot{\omega}}_{max} &amp;= \vec{\dot{\omega}}_{max, aero} + \vec{\dot{\omega}}_{max, prop}"/></p>
+</div><p>The stick-and-rudder flight controls on a PM6DOF are mapped directly to rotational rate commands.
+This map is a 1D table defined by the user in script, which allows for linear or nonlinear mappings.
+The rotational rate commands are achieved via a linear ramp, with a slope limited by the angular acceleration limit.</p>
+<div class="math" id="equation-omega-dot-controls">
+<p><span class="eqno">(4)<a class="headerlink" href="#equation-omega-dot-controls" title="Permalink to this equation">¶</a></span><img src="../_images/math/47da1349c05f9f4840ac1201400abb22db669387.png" alt="\vec{\dot{\omega}}_{desired} &amp;= \frac{\vec{\omega}_{cmd} - \vec{\omega}}{\Delta t}"/></p>
+</div></section>
+<section id="stabilizing-rotation-effects">
+<span id="sixdof-stabilizing-effects"></span><h2>Stabilizing Rotation Effects<a class="headerlink" href="#stabilizing-rotation-effects" title="Permalink to this headline">¶</a></h2>
+<p>The impact of the stabilizing effect is most obvious on unguided projectiles.
+By default, a PM6DOF vehicle has no tendency to change its rotation rate absent some action by a pilot.
+This includes pointing into the wind, or “weathervaning.”</p>
+<p>This effect can be introduced by adding tables that specify a baseline stabilizing frequency as a function of Mach number.
+These frequencies specify the critically damped system response of an uncontrolled vehicle as it returns to equilibrium.
+Currently, equilibrium states are 0 degrees angle-of-attack for the pitch axis, 0 degrees sideslip for the yaw axis, and 0 deg/s roll rate for the roll axis.
+Settings may be introduced in future releases to allow for modifications to the equilibrium state such as a nonzero angle of attack for aircraft, or a specified spin rate for projectiles.</p>
+<p>As with the control acceleration data, the input parameters are modified to account for changes in loadout and operating air density.</p>
+<div class="math" id="equation-stabilizing-freq">
+<p><span class="eqno">(5)<a class="headerlink" href="#equation-stabilizing-freq" title="Permalink to this equation">¶</a></span><img src="../_images/math/f85827ece767963b4299d2f6981cbeaf7fb4d86d.png" alt="{\omega}_{n} = \frac{m_{0}}{m} \frac{\rho}{\rho_{0}} {\omega}_{n_{0}}"/></p>
+</div><p>The response frequency is then translated into a rotational acceleration for the pitch and yaw axes:</p>
+<div class="math" id="equation-stabilizing-accel-pitch-yaw">
+<p><span class="eqno">(6)<a class="headerlink" href="#equation-stabilizing-accel-pitch-yaw" title="Permalink to this equation">¶</a></span><img src="../_images/math/b0aeb86e8e7632c7ff2eea91f66781afd98098d0.png" alt="\dot{q} = (0 - \alpha) {\omega}^{2}_{n_{pitch}} - 2 {\omega}_{n_{pitch}} \dot{\alpha}
+
+     \dot{r} = (0 - \beta) {\omega}^{2}_{n_{yaw}} - 2 {\omega}_{n_{yaw}} \dot{\beta}"/></p>
+</div><p>For the roll axis, we are affecting rotation <em>rate</em> rather than rotation, so a first-order lag system is employed:</p>
+<div class="math" id="equation-stabilizing-accel-roll">
+<p><span class="eqno">(7)<a class="headerlink" href="#equation-stabilizing-accel-roll" title="Permalink to this equation">¶</a></span><img src="../_images/math/d24fe826bdc38e4238b96aec7281e4ce3a31dde6.png" alt="f &amp;= \frac{\omega_{roll} \Delta t}{1 + \omega_{n_{roll}} \Delta t}
+
+     p_{t+\Delta t} &amp;= (1 - f) p_{t}
+
+     \dot{p} &amp;= \frac{p_{t+\Delta t} - p_{t}}{\Delta t}"/></p>
+</div><p>To avoid overshoot and numerical instability, these accelerations are limited based on kinematic extrapolations:</p>
+<div class="math" id="equation-stabilizing-accel-limits">
+<p><span class="eqno">(8)<a class="headerlink" href="#equation-stabilizing-accel-limits" title="Permalink to this equation">¶</a></span><img src="../_images/math/c65bf1c259533928b85ce0338097baaf31fc218d.png" alt="\dot{p}_{max} &amp;= \left| \frac{-p}{\Delta t} \right|
+
+     \dot{q}_{max} &amp;= \left| \frac{2}{\Delta t^{2}} (-\alpha - \dot{\alpha} \Delta t) \right|
+
+     \dot{r}_{max} &amp;= \left| \frac{2}{\Delta t^{2}} (-\beta - \dot{\beta} \Delta t) \right|"/></p>
+</div><p>The final rotational acceleration for a PM6DOF is the sum of the control acceleration and stabilizing accelerations.</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/six_dof_theory.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="six_dof_thrust_producer_types.html" title="SixDOF Thrust Producer Types"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="six_dof_terrain_file_definition.html" title="SixDOF Terrain File Definition"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

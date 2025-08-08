@@ -1,0 +1,334 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+terrain
+-------
+
+.. command:: terrain ... end_terrain
+   :block:
+
+.. parsed-literal::
+
+  terrain_
+
+     // `DTED Commands`_
+
+     dted_ <level> <directory>
+     raw_dted_ <level> <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+     raw-dted_ <level> <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>(For compatibility with CME geodata)
+     validate_terrain_
+     dted_checksum_ <boolean-value>
+
+     // `Float Grid Commands`_
+
+     float_grid_ <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+     float_grid_file_ <filename>
+     float_grid_vegetation_ <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+     float_grid_vegetation_file_ <filename>
+
+     // `GeoTIFF Commands`_
+
+     geotiff_ <source>
+
+     // `Bathymetry Commands`_
+
+     bathymetry_ <file-name>
+
+     // `Other Terrain`_
+
+     visual_db_ <filename>
+     load_cme_terrain_
+     cme_path_ <directory>
+
+     // `Optional Performance Improvement Commands`_
+
+     maximum_data_size_ <data-size-value>
+     maximum_terrain_height_ <length-value>
+     minimum_allowable_step_size_ <length-value>
+     
+     use_fast_masking_check_
+     disable_
+
+    // Inline gravity model definition
+
+    :command:`gravity_model` ... end_gravity_model
+
+  end_terrain
+
+Overview
+========
+
+The terrain block is used to specify the source of the terrain elevation data and various control parameters.
+
+.. note::
+   The terrain_ block may occur multiple times in the input file, with the effects accumulating with occurrence.
+
+DTED Commands
+=============
+
+.. command:: dted <level> <directory>
+
+   Specify the location of a directory that contains DTED as it would exist if it were copied directly from a NIMA CD. This command assumes the 'dmed' file exists and properly reflects the extent of the data contained in the directory. This command may be specified multiple times to indicate multiple sources of DTED.
+
+   **<level>**
+      must be 0, 1, or 2.
+
+   **<directory>**
+      should be the name of the directory that contains a file named 'dmed' and a subdirectory called 'dted'.
+
+   .. note::
+
+      This is mutually exclusive with float_grid_, geotiff_, and visual_db_.
+
+   Example::
+
+    terrain
+       dted 2 /db/nga/DTED2/dted201
+       dted 2 /db/nga/DTED2/dted202
+       dted 1 /sdadev1a/nima/dted/lvl1-21n-38n-34e-52e
+    end_terrain
+
+.. command:: raw_dted <level> <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+.. command:: raw-dted <level> <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>(For compatibility with CME geodata)
+
+   This is an alternative method to specify the location of DTED.  This is used if the 'dmed' file does not exist, is corrupted, or in some way does not properly reflect the extent of the data contained in the directory.  This command may be specified multiple times to indicate multiple sources of DTED.
+   Where:
+
+   **<level>**
+      Must be 0, 1, or 2.
+   **<directory>**
+      Must be the path name to the DTED.  This should be the name of the directory that contains the longitudinal directories.
+
+      The longitudinal directories are named with the first letter of the hemisphere, and the western-most longitude (for example w032, or e119). The longitudinal directories contain latitude files. These files are named with the first letter of the hemisphere, and the southern-most latitude (for example n01, or s37).
+   **<sw-lat> <sw-lon> <ne-lat> <ne-lon>**
+      Signed integer values that specify the latitude and longitude of the southwest and northeast corners of the data extent. The values are subject to the following constraints:
+
+      * Latitude: must be in the closed range [-90, 90].  Use negative values for the southern hemisphere.
+      * Longitude values must be in the range [-180, 180].  Use negative values for the western hemisphere.
+      * The value for *<ne_lat>* must be greater than the value for *<sw_lat>*.
+      * The value for *<ne_lon>* must be greater than the value for *<sw_lon>*.
+
+   .. note::
+      This is mutually exclusive with float_grid_, geotiff_, and visual_db_.
+
+   Example::
+
+    terrain
+      raw_dted 1 /db/nga/SRTF1/srtf101/dted  42 -180  60 -45
+      raw_dted 1 /db/nga/SRTF1/srtf102/dted  14 -179  42 -60
+      raw_dted 1 /db/nga/SRTF1/srtf103/dted -12 -177  14 -32
+      raw_dted 1 /db/nga/SRTF1/srtf104/dted -55 -180 -12 -37
+      raw_dted 1 /db/nga/SRTF1/srtf105/dted  42  -14  60  82
+      raw_dted 1 /db/nga/SRTF1/srtf106/dted  30  -29  42  82
+      raw_dted 1 /db/nga/SRTF1/srtf107/dted  14  -25  30  82
+      raw_dted 1 /db/nga/SRTF1/srtf108/dted -12  -17  14  82
+      raw_dted 1 /db/nga/SRTF1/srtf109/dted -54   11 -12  78
+      raw_dted 1 /db/nga/SRTF1/srtf110/dted  42   82  60 180
+      raw_dted 1 /db/nga/SRTF1/srtf111/dted  14   82  42 170
+      raw_dted 1 /db/nga/SRTF1/srtf112/dted -12   92  14 180
+      raw_dted 1 /db/nga/SRTF1/srtf113/dted -56   96 -12 180
+    end_terrain
+
+   This is a "catch-all" example if all the files listed above where put into one subdirectory::
+
+    terrain
+      raw_dted 1 /db/Level_1_dted -90 -180 90 180
+    end_terrain
+
+   To demonstrate the expected directory structure, consider the following:
+
+   1) Two dted level 2 files are downloaded from USGS
+
+         * ``n37_w115_1arc_v2.dt2``
+         * ``n37_w116_1arc_v2.dt2``
+
+   2) Create two subdirectories in ``your-dted-path`` for the longitudes
+
+         * ``w115``
+         * ``w116``
+
+   3) Rename the two files and place them in their appropriate subdirectories
+
+         * ``w115``
+            * ``n37.dt2`` *(was n37_w115_1arc_v2.dt2)*
+         * ``w116``
+            * ``n37.dt2`` *(was n37_w116_1arc_v2.dt2)*
+
+   4) Edit the terrain...end_terrain block::
+
+            terrain
+               raw_dted 2 your-dted-path     37 -116 38 -114
+            end_terrain
+
+.. command:: validate_terrain
+
+   Immediately checks all of the currently supplied DTED-format terrain for reasonable values. This command should occur AFTER any dted_ or raw_dted_ commands for the terrain data to be checked. Progress messages will be issued as directories are processed and error messages will be issued if suspicious data is found.
+
+   .. note::
+      This command can take a long time to execute. It should only be used when introducing new
+      sources of terrain.
+
+.. command:: dted_checksum <boolean-value>
+
+   Enable or disable the checksum operation when loading DTED terrain.  If enabled, and a specified DTED file does not pass the checksum test, it is not used.  Set this flag to "disabled" if one must use DTED files with invalid checksums.
+
+   **Default** enabled
+
+Float Grid Commands
+===================
+
+.. command:: float_grid <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+
+   Specify that the source of elevation data is in 'float grid' format. This is essentially United States Geological Survey (USGS) Digital Elevation Model (DEM) data that has been reprocessed to a form that is compatible with the ESRI ArcGIS\ |reg| products (http://www.esri.com).
+
+   Where:
+
+   **<directory>**
+      must be the path name to the float_grid elevation data.
+   **<sw-lat> <sw-lon> <ne-lat> <ne-lon>**
+      Signed integer values that specify the latitude and longitude of the southwest and northeast corners of the data extent. The values are subject to the following constraints:
+
+     * Latitude: must be in the closed range [-90, 90].  Use negative values for the southern hemisphere.
+     * Longitude values must be in the range [-180, 180].  Use negative values for the western hemisphere.
+     * The value for *<ne_lat>* must be greater than the value for *<sw_lat>*.
+     * The value for *<ne_lon>* must be greater than the value for *<sw_lon>*.
+
+   .. note::
+
+      This is mutually exclusive with dted_, raw_dted_, geotiff_ and visual_db_.
+
+
+.. command:: float_grid_file <filename>
+
+   Specify that the source of elevation data is in 'float grid' format (see float_grid_).  Multiple float_grid_file_ inputs can be provided.
+
+   <filename>
+        is a single float-grid file name, without extension.
+
+.. command:: float_grid_vegetation <directory> <sw_lat> <sw_lon> <ne_lat> <ne_lon>
+
+   Same as float_grid_ but specifies a vegetation layer that is accessed primarily for the purpose of sensor line-of-sight masking.  For example, a bush occludes the line of sight between a sensor and target, the vegetation
+   layer can be utilized to determine this block.  Note that the vegetation layer is defined to be the bare earth terrain elevation plus height of vegetation above bare earth.
+
+.. command:: float_grid_vegetation_file <filename>
+
+   Specify that the source of vegetation layer data is in 'float grid' format (see float_grid_vegetation_).
+   Multiple  float_grid_vegetation_file_ inputs can be provided.
+
+   **<filename>**
+      is a single float-grid vegetation file name, without extension.
+
+GeoTIFF Commands
+================
+
+.. command:: geotiff <source>
+
+   Specify that the source of elevation data is in the geotiff format.  The command may be called multiple times; in the event of overlap the last **geotiff** command will produce the
+   result.
+
+   .. note::
+
+      There are a number of limitations to what AFSIM is capable of reading.
+
+      * The geotiff may not use compression.
+      * The geotiff must be in a geographic latitude-longitude projection.
+      * The data must be single-channel in 2-byte integer, 4-byte floating point, or 8-byte floating point formats.
+
+   .. warning::
+
+      Not all geotiff files are appropriate to use for digital elevation.  AFSIM will load an entire file of data into memory as it is used; consider the performance and memory cost of the size of your files.
+
+   **<source>**
+      this may either be a directory of geotiff files, or an individual geotiff file
+
+   .. note::
+      This is mutually exclusive with dted_, raw_dted_, visual_db_ and float_grid_.
+
+Bathymetry Commands
+===================
+
+.. command:: bathymetry <file-name>
+
+   Specify a bathymetry source file in ASCII XYZ format. This command may be used more than once to indicate multiple sources of bathymetry.
+
+   .. note::
+
+      There are a number of limitations to what AFSIM is capable of reading.
+
+      * Datasets are expected to be an ASCII file with 3 columns of data for longitude (x), latitude (y), and elevation (z), respectively.
+      * Expected units are decimal degrees, decimal degrees, meters.
+      * Data can be delimited by spaces, commas, semicolons, or tabs.
+      * If a header line is present then simple check for key words is performed (ie. (x,y), (lon,lat), or (east,north)).
+      * Longitude data must be in ascending order. Latitude data can be in either ascending or descending order.
+
+   **<filename>**
+      is a single bathymetry file name, with extension.
+
+Other Terrain
+=============
+
+.. command:: visual_db <file_name>
+
+   Specify that the source of elevation data is from a 'visual database' file (xxxx.eld file). This is a proprietary file format that is correlated the a visual database used by Boeing St. Louis Center for Integrated Defense Simulation (CIDS). The visual_db command can only be used once. If multiple eld files are to be read in, create a new text file that lists the eld files and reference the new text file with the visual_db command.
+
+   .. note::
+      This is mutually exclusive with dted_, raw_dted_, geotiff_ and float_grid_.
+
+.. command:: load_cme_terrain
+
+   Load terrain as directed by using the Common Modeling Environment (CME) configuration files.  In order to locate the configuration files, the environment variable CME_REL_BASE must be defined and point to the CME root directory. The file $CME_REL_BASE/site/geodata.dat should contain the commands that define the terrain sources.
+
+.. command:: cme_path <directory>
+
+   Used in conjunction with the load_cme_terrain_ command to specify the path to the CME configuration files. If specified, this will override any path defined in the environment variable CME_REL_BASE.
+
+Optional Performance Improvement Commands
+=========================================
+
+.. command:: maximum_data_size <data-size-value>
+
+   Specify the maximum amount of terrain elevation data that can remain in memory.
+
+   Most terrain data is stored in 'tiles', each of which covers a certain geographic area (typically 1 degree square). All references to a given tile (e.g., platforms within a given tile) refer to the same tile in memory. When the last user of the tile no longer needs the tile (e.g., the platforms have all moved into a different tile), the tile is declared as 'inactive' and moved to the head of the inactive list. If the purging of inactive tiles is enabled (i.e., if the value of this command is greater than zero), tiles at the end of the inactive list will be purged from memory until the amount of memory occupied by the remaining tiles (active and inactive) falls below the value specified by this command, or until the inactive list is empty.
+
+   If a reference is made to a tile that is in the inactive list (e.g., a platform moves into its area), the tile will be made 'active' by simply removing it from the inactive list. This prevents the tile from having to be reloaded from the terrain database.
+
+   **Default** 0 bytes (i.e.: inactive terrain data is never purged.)
+
+   .. note::
+      Setting this to a small non-zero positive value can cause excessive purging and reloading of terrain data.
+
+   .. note::
+      Active tiles are never purged from memory.
+
+.. command:: maximum_terrain_height <length-value>
+
+   Specify the maximum terrain height in the region.  This is optional and is used to improve performance when performing terrain-masking checks.
+
+   **Default** 8850 meters (The height of Mount Everest).
+
+.. command:: minimum_allowable_step_size <length-value>
+
+   Specify the minimum allowable step size to be used when performing terrain-masking checks. Increasing this value above the resolution of the terrain will improve performance at the expense of reducing fidelity.
+
+   **Default** The resolution of the terrain data.
+
+.. command:: use_fast_masking_check
+
+   Specify that the 'fast masking check' should be used for performing terrain-masking checks.  This algorithm makes certain assumptions about the terrain slope in order to increase the step size.  There is a small probability that an obscuration will be missed if the terrain has very steep gradients (> 71 degrees, or more precisely > atan(3)).
+
+   **Default** false
+
+.. command:: disable
+
+   Prevent the use of terrain elevation data by the framework.  This is typically used to temporarily disable the use of terrain for the current simulation.
+
+.. |reg|    unicode:: U+000AE .. REGISTERED SIGN

@@ -1,0 +1,174 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSixDOF_Maneuver
+------------------
+
+.. class:: WsfSixDOF_Maneuver
+
+Overview
+========
+
+The :class:`WsfSixDOF_Maneuver` is an object representing a maneuver that a
+:class:`WsfSixDOF_Mover` can execute that changes the state of that mover.
+
+Created maneuvers will not cause anything to occur until they are assigned
+to a specific :class:`WsfSixDOF_Mover` through either
+:method:`WsfSixDOF_Mover.ExecuteManeuver` or
+:method:`WsfSixDOF_Mover.ExecuteManeuverSequence`. The entry and exit constraints
+provide further control over the exact execution of a maneuver. These
+constraints, of type :class:`WsfSixDOF_ManeuverConstraint`, give the conditions that
+are required to be met for the maneuver to begin executing (the entry
+constraint), and the conditions that must be met for a maneuver that has
+finished its execution to be marked complete (the exit condition). In
+isolation the entry and exit constraints are of more limited utility; in the
+context of a :class:`WsfSixDOF_ManeuverSequence` the entry and exit constraints
+become central in obtaining complex behaviors.
+
+General Methods
+===============
+
+.. method:: bool GetDebug()
+
+   Returns if the maneuver is set to produce extra debugging output.
+
+.. method:: void SetDebug(bool aDebug)
+
+   Enable or disable extra debugging output.
+
+   .. note:: In some cases debugging output can produce a significant amount
+             of output.
+
+.. method:: WsfSixDOF_Mover GetMover()
+
+   Return the :class:`WsfSixDOF_Mover` to which this maneuver is assigned. If
+   this maneuver has not yet been assigned, this will return an invalid object.
+
+.. method:: void Cancel()
+
+   Cancel this maneuver if it is assigned and has not completed. If it has not
+   been assigned, or has completed, this method will do nothing.
+
+.. method:: double GetUrgency()
+
+   Get the urgency of the maneuver. The urgency of a maneuver is a parameter
+   that controls the manner of execution of some maneuvers. The use of this
+   parameter is up to the individual maneuver; see the documentation for
+   specific maneuvers for details.
+
+.. method:: void SetUrgency(double aUrgency)
+
+   Set the urgency of this maneuver.
+
+.. method:: string GetManeuverType()
+
+   Return a string giving the type of this maneuver.
+
+.. method:: bool IsSequence()
+
+   Return true if this maneuver is a sequence.
+
+Constraint Methods
+==================
+
+.. method:: WsfSixDOF_ManeuverConstraint GetEntryConstraint()
+
+   Return the entry constraint for this maneuver.
+
+.. method:: void SetEntryConstraint(WsfSixDOF_ManeuverConstraint aConstraint)
+
+   Set the entry constraint for this maneuver.
+
+.. method:: WsfSixDOF_ManeuverConstraint GetExitConstraint()
+
+   Return the exit constraint for this maneuver.
+
+.. method:: void SetExitConstraint(WsfSixDOF_ManeuverConstraint aConstraint)
+
+   Set the exit constraint for this maneuver.
+
+Status Methods
+==============
+
+.. method:: bool IsAssigned()
+
+   Return true if this maneuver has been assigned to a :class:`WsfSixDOF_Mover`.
+
+.. method:: bool IsPending()
+
+   Returns true if this maneuver is pending. A maneuver is pending if it has
+   been assigned, but the entry constraint has not yet been met. If the
+   maneuver was not given an entry constraint, it will never be pending.
+
+.. method:: bool IsExecuting()
+
+   Returns true if this maneuver is executing. A maneuver is executing if it
+   has been assigned, and the entry constraint is satisfied.
+
+.. method:: bool IsCompleting()
+
+   Returns true if a maneuver is completing. A maneuver is completing if it 
+   has been assigned, it is no longer executing, but the exit constraint is
+   not satisfied.
+
+.. method:: bool IsCompleted()
+
+   Returns true if this maneuver is completed. A maneuver is completed it has
+   been assigned, is no longer executing, and the exit constraint is satisfied.
+
+.. method:: bool IsCanceled()
+
+   Returns true if this maneuver was canceled. A canceled maneuver was 
+   halted before it reached the completed state. A completed maneuver cannot
+   be canceled, nor can an unassigned maneuver.
+
+Available Maneuvers
+===================
+
+Elemental Maneuvers
+"""""""""""""""""""
+
+Elemental maneuvers are the simplest available maneuvers, all of which set one
+feature of the motion of the assigned platform. These maneuvers all
+operate by interacting with the autopilot on the :class:`WsfSixDOF_Mover` to
+which the maneuver is assigned, so all of these should be thought of as setting
+target motions, which may eventually be fulfilled by the autopilot.
+By stringing together these maneuvers with careful use of the set of
+:class:`WsfSixDOF_ManeuverConstraint` types, one can produce arbitrarily complex
+motions.
+
+* :class:`WsfSixDOF_FlightPathAngleManeuver`
+* :class:`WsfSixDOF_HoldCurrentSpeedManeuver`
+* :class:`WsfSixDOF_PitchAngleManeuver`
+* :class:`WsfSixDOF_PitchDeltaManeuver`
+* :class:`WsfSixDOF_PitchGLoadManeuver`
+* :class:`WsfSixDOF_PitchRateManeuver`
+* :class:`WsfSixDOF_RollAngleManeuver`
+* :class:`WsfSixDOF_RollDeltaManeuver`
+* :class:`WsfSixDOF_RollRateManeuver`
+* :class:`WsfSixDOF_ScriptedManeuver`
+* :class:`WsfSixDOF_SpeedKCAS_Maneuver`
+* :class:`WsfSixDOF_SpeedKTAS_Maneuver`
+* :class:`WsfSixDOF_SpeedMachManeuver`
+* :class:`WsfSixDOF_TurnToHeadingManeuver`
+
+Relative Maneuvers
+""""""""""""""""""
+
+All maneuvers affect changes to the platform to which they are assigned. A
+relative maneuver's changes depend not only on the state of the platform to
+which it is assigned, but also on some other platform in the simulation.
+Relative maneuvers control the executing platform to create a specific 
+situation for that platform relative to a target platform. See 
+:class:`WsfSixDOF_RelativeManeuver` for more details on features of all relative
+maneuvers.
+
+* :class:`WsfSixDOF_PursueManeuver`

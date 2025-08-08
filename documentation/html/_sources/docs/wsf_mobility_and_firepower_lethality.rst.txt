@@ -1,0 +1,314 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_MOBILITY_AND_FIREPOWER_LETHALITY
+====================================
+
+.. model:: weapon_effects WSF_MOBILITY_AND_FIREPOWER_LETHALITY
+
+.. parsed-literal::
+
+ :command:`weapon_effects` <name> :model:`WSF_MOBILITY_AND_FIREPOWER_LETHALITY`
+   :command:`weapon_effects` Commands ...
+   :command:`WSF_EXPLICIT_WEAPON_EFFECTS` Commands ...
+   ... WSF_MOBILITY_AND_FIREPOWER_LETHALITY_ Commands_ ...
+   table_ <table_name>
+      ...
+   end_table
+   target_type_ <target_type>
+      ...
+      vulnerability_ <cm_type>
+         ...
+      end_vulnerability
+   end_target_type
+ end_weapon_effects
+ 
+.. warning::
+
+   The following :command:`weapon_effects` commands are not compatible with WSF_MOBILITY_AND_FIREPOWER_LETHALITY.  Use of these commands will result in an input processing error.
+   
+   * :command:`weapon_effects.intercept_pk`
+   * :command:`weapon_effects.launch_pk`
+   * :command:`weapon_effects.use_launch_pk`
+ 
+Overview
+--------
+
+:model:`WSF_MOBILITY_AND_FIREPOWER_LETHALITY` is used by an explicit weapon during fly-out, and discretely inflicts damage
+upon a target, and potentially other proximate collateral targets, categorized discretely as follows:  <No Damage>,
+Mobility Kill, Firepower Kill, Combined Mobility and Firepower Kill, and Catastrophic Kill (MK, FK, MFK, and KK,
+respectively).  The model allows for relative target hardness to be considered during the engagement, and also allows
+for consideration of countermeasures (CM) employed by the target for self-protection, which may partially or totally
+defeat the engagement.
+
+As noted above some target types are inherently harder to damage than others.  The model permits zero or more named
+probability tables to be defined via the table_ block.  A single Table named "default" is always used when no
+other Table is explicitly applied.  The user may provide this "default" table, or if not provided, one will be created
+by the implementation (with its own internal defaults).
+
+The model allows for differing lethality Tables to be applied to a specific <target-type>, using zero or more
+target_type_ blocks.  The set of probabilities specific to a given target type are collectively assigned to that
+target type via the table_name_ command.  If the munition being defined does not explicitly provide a lethality
+to apply to <target-type>, then the "default" target type is used.  As in the Tables specification, there is a special
+"default" target_type_ block, which the implementation will supply if the user does not.  As a minimum, each
+target_type_ block will usually contain a table_name_ specification, or the "default" Table will be used.
+
+At the :model:`WSF_WEAPON_FUSE` termination of explicit weapon munition flyout, the miss distance from the target platform
+is examined.  If the miss distance is less than the defined maximum lethal radius, a random uniform draw is made.  If
+the draw value exceeds the Pmk_damage threshold, then some damage has been done by the munition upon the target. 
+Depending upon the part of the draw that is "excess" to the threshold value, a comparison to a "kill-thermometer" is
+made, with a larger draw value causing increasing damage to the threat, as noted above.  Note that a draw is ONLY made
+in the event that the closest-pass miss distance is less than the :model:`WSF_EXPLICIT_WEAPON_EFFECTS` 'maximum_radius'
+setting.
+
+Also note that subsequent to the first weapon impact, multiple weapon impacts upon the same target may produce additive
+damage upon the target, but do not guarantee to do so.  Each weapon impact is considered in isolation, and does not
+consider existing target damage.
+
+Mobility Kill (MK) imposes full damage (Platform Part DamageFactor = 1.0, or total damage) to the :command:`mover`, and
+depending upon the implementation, can cause motion paralysis.  Currently not all WSF mover types respond to this
+damage setting.  Paralysis effect has been implemented for Waypoint Movers who are of the "Land" Domain.
+
+Firepower Kill (FK) imposes full damage (Platform Part DamageFactor = 1.0, or total damage) to _each_ of the
+:command:`Weapons <weapon>` on the platform.  Currently not all WSF weapon types respond to this damage setting.  No
+:model:`WSF_EXPLICIT_WEAPON` type is permitted to fire a weapon if so damaged.
+
+Catastrophic Kill (KK) imposes full damage to all aspects of the platform, and all its attached parts, i.e. platform
+death, and usually, removal of the dead platform.
+
+::
+
+   Probability Definitions (either of two keywords below are accepted):
+   probability_of_damage_given_proximity_hit = Pd_hit        = Probability of damage, given a proximity hit                 (default = 0.50)
+   probability_of_mk_given_damage            = Pmk_damage    = Probability of receiving only a Mobility Kill, given damage  (default = 0.15)
+   probability_of_fk_given_damage            = Pfk_damage    = Probability of receiving only a Firepower Kill, given damage (default = 0.15)
+   probability_of_kk_given_damage            = Pkk_damage    = Probability of receiving a Catastrophic Kill, given damage   (default = 0.50)
+   <probability_of_mfk_given_damage>         = <Pmfk_damage> = Probability of simultaneous M and F Kills, given damage      (calculated = 0.20)
+
+The top four probability threshold values above are constrained by input to the range within [0,1]; with defaults as
+shown.  The user may then specify any or all values to override the defaults.  The last one listed is not directly
+specifiable by the user, but is calculated to fill a uniform probability (the sum of MK, FK, MFK, and KK will be
+exactly 1.0).  If the sum of the last four probabilities will exceed 1.0, the model will fail Initialization.
+
+Weapon Vulnerability:  As yet, no consideration has been given for a target which deploys explicit countermeasures (CM,
+which are explicit weapons in themselves) as a self-defense mechanism.  Examples would include Flares, Chaff, or even
+obscurants such as Smoke grenades.  So to cover this possibility, for each CM that the offensive weapon is vulnerable
+to, a degradation in lethality may be specified via the vulnerability_ block.  This block may degrade lethality
+in one of three ways:  a) by calling out an alternate_table_name_ which replaces the table_name_ Table, or
+b) a pk_factor degradation to be applied to the table_name_ Table, or c) a
+probability_of_weapon_defeat_ value, which removes the offensive weapon.  While (a) overriding one table with
+another provides more specificity to the user, it only permits one CM type to have an effect upon the end lethality at
+a time.  If multiple CM types are employed against the offensive weapon simultaneously, the (b) Pk degrade effects are
+cumulative only when Pk_factor is used for each vulnerability_ block in the target_type_ block.  In
+the case of option (c), when the CM is judged to be "effective" (detail in paragraph below), the offensive weapon is
+immediately removed from the simulation.  (Reason - CMs are often deployed in order to mis-track an inbound weapon away
+from its intended target.  This lethality model _never_ diverts a weapon's guidance, however, the removal of the
+inbound weapon approximates the effect.  Both the shooter and the target may use the premature disappearance of the
+weapon platform as a visual cue that the CM was effective.)
+
+For each vulnerability_ block defined for a CM type, there are minimum constraints that must be met before it is
+considered "effective" to inject its effect into the lethality model.  Those constraints are: a) field-of-view
+half-cone angle, b) minimum and maximum distance limits, and c) a minimum persistence time in field-of-view.  Each of
+these three constraints are defaulted to values which immediately pass the respective check (FOV=180deg, min=0
+max=<huge>, duration=0 sec).  Before a CM may inject its effect, then, every supplied constraint must be satisfied
+simultaneously.  Example: "vulnerability FLARE probability_of_weapon_defeat 1.0 end_vulnerability" would guarantee that
+if even one FLARE-type exists in the simulation at time of fly-out, the target would immediately see the fired inbound
+weapon disappear. To add "minimum_duration 3.5 sec" to the block would require that the FLARE-type be persistent 3.5
+seconds before it becomes effective.
+
+CM existing in the simulation are each evaluated periodically to determine if they have become effective during the
+previous time interval.  They become effective only once, and latch in that position ever after.  The
+update_interval_ in the model is used to determine how often this evaluation is computed.  A smaller interval
+provides greater time granularity, but at computational overhead.
+
+Example Input
+-------------
+
+::
+
+   weapon_effects ANTIARMOR_EFFECT WSF_MOBILITY_AND_FIREPOWER_LETHALITY
+     #debug
+     maximum_radius 30 m   # No damage will occur to any platform unless detonation is within this radius.
+     update_interval 1.0 sec
+     table default  # MUST be the first lethality Table specified.
+        probability_of_damage_given_proximity_hit 0.50
+        probability_of_mk_given_damage            0.20
+        probability_of_fk_given_damage            0.20
+        probability_of_kk_given_damage            0.80
+     end_table
+     table TARGET_TABLE
+        probability_of_damage_given_proximity_hit 0.55
+        probability_of_mk_given_damage            0.22
+        probability_of_fk_given_damage            0.15
+        probability_of_kk_given_damage            0.60
+     end_table
+     table FLARE_DEGRADE_TABLE
+        probability_of_damage_given_proximity_hit 0.35
+        probability_of_mk_given_damage            0.20
+        probability_of_fk_given_damage            0.20
+        probability_of_kk_given_damage            0.80
+     end_table
+     table SMOKE_DEGRADE_TABLE
+        probability_of_damage_given_proximity_hit 0.30
+        probability_of_mk_given_damage            0.25
+        probability_of_fk_given_damage            0.25
+        probability_of_kk_given_damage            0.50
+     end_table
+     target_type default  # MUST be the first lethality specified,
+                          # for all target types _not_ specified below.
+        table_name default    # By default, this is "default", if not specified otherwise!
+        vulnerability FLARE
+           minimum_duration         0.5 sec
+           maximum_half_cone_angle   15 deg
+           minimum_distance          20 m
+           maximum_distance        5000 m
+           distance_value   missile_to_target
+           #alternate_table_name FLARE_DEGRADE_TABLE  # Table or Pk_Factor mutually exclusive.
+           pk_factor                 0.8              # Table or Pk_Factor mutually exclusive.
+           probability_of_weapon_defeat 0.15 # This value will short-circuit the two above, and remove the weapon
+        end_vulnerability
+        vulnerability SMOKE
+           minimum_duration        5.0 sec
+           minimum_distance         20 m
+           maximum_distance       5000 m
+           alternate_table_name SMOKE_DEGRADE_TABLE
+        end_vulnerability
+     end_target_type
+     target_type TARGET
+        table_name TARGET_TABLE
+        vulnerability FLARE
+           minimum_duration       1.5 sec
+           maximum_half_cone_angle 15 deg
+           minimum_distance        50 m
+           maximum_distance      5000 m
+           alternate_table_name FLARE_DEGRADE_TABLE # Table or Pk_Factor mutually exclusive.
+           #pk_factor             0.8               # Table or Pk_Factor mutually exclusive.
+        end_vulnerability
+        vulnerability SMOKE
+           minimum_duration      10.0 sec
+           alternate_table_name SMOKE_DEGRADE_TABLE
+           minimum_distance        50 m
+           maximum_distance      5000 m
+        end_vulnerability
+     end_target_type
+   end_weapon_effects
+
+.. block:: WSF_MOBILITY_AND_FIREPOWER_LETHALITY
+   
+Table Definition
+----------------
+
+.. command:: table <table_name> ... end_table
+   
+   A named 'table' block supplies a set of four probabilities to be considered as a set under given conditions, and will
+   be referenced by name elsewhere.  It calculates a fifth probability, and assures that the aggregate probability is
+   unity.
+
+Table Commands
+--------------
+
+.. command:: probability_of_damage_given_proximity_hit <floating-point-value>
+   
+   Specifies the probability threshold for applying damage to the target platform.  (A shortcut of "Pd_hit" is also
+   permitted.)  A value of 0.90 indicates a 90% likelihood of some damage occurring, or a 10% likelihood of no damage
+   occurring.  Only if the threshold for damage is reached, is any further damage probability considered (as below).
+
+.. command:: probability_of_mk_given_damage <floating-point-value>
+   
+   Specifies the probability that the platform (if damaged) will suffer a mobility kill only.  (A shortcut of "Pmk_damage"
+   is also permitted.)
+
+.. command:: probability_of_fk_given_damage <floating-point-value>
+   
+   Specifies the probability that the platform (if damaged) will suffer a firepower kill only.  (A shortcut of
+   "Pfk_damage" is also permitted.)
+
+.. command:: probability_of_kk_given_damage <floating-point-value>
+   
+   Specifies the probability that the target platform (if damaged) will suffer a catastrophic kill.  (A shortcut of
+   "Pkk_damage" is also permitted.)
+
+Vulnerability Definition
+------------------------
+
+.. command:: vulnerability <cm-type> ... end_vulnerability
+   
+   A 'vulnerability' block specifies a degrading effect upon this offensive weapon, if it encounters the existence of
+   countermeasure(s) of type <cm-type> employed by the target for self-protection.  This block is accepted as a
+   sub-command within target_type_ block.
+
+Vulnerability Commands
+----------------------
+
+.. command:: minimum_duration <TimeValue>
+   
+   Specifies the minimum time the CM must be present to have its effect upon the inbound offensive weapon.  Default = 0.0,
+   or immediately.
+
+.. command:: maximum_half_cone_angle <angle-value>
+   
+   Specifies the maximum field of view angle allowable and still be regarded as a potentially valid CM.  This is the 3-D
+   angle measured between the LOS munition-to-CM, and LOS munition-to-target.  Default = 180 deg, or always visible.
+
+.. command:: minimum_distance <length-value>
+   
+   Specifies the minimum distance allowable and still be regarded as a potentially valid CM.  Measurement is determined by
+   the distance_value_ setting.  Default = 0.
+
+.. command:: maximum_distance <length-value>
+   
+   Specifies the maximum distance allowable and still be regarded as a potentially valid CM.  Measurement is determined by
+   the distance_value_ setting.  Default = <huge>.
+
+.. command:: distance_value <string>
+   
+   Specifies the type of distance measurement to use in distance constraints.  Possibilities are:  "missile_to_target",
+   "countermeasure_to_target", or "missile_to_countermeasure".  Default = "missile_to_target".
+
+.. command:: alternate_table_name <string>
+   
+   Specifies the name of the table that will replace the table_name_ in the event that this CM is deemed
+   "effective".  The CM is "effective" if it simultaneously passes the distance, half-cone, and duration tests above.
+
+.. command:: probability_of_weapon_defeat <floating-point-value>
+   
+   Specifies the probability that the given CM type will decoy the munition.  The CM must first pass the "effective"
+   criteria above.  If this value is non-zero, a one-time random draw will taken for each instance of a CM of this type. 
+   If the random draw is successful, the offensive munition will not be diverted, but will instead be immediately removed
+   from the simulation.  Constrained to [0.0, 1.0].  Default = 0.0.
+
+Target Type Definition
+----------------------
+
+.. command:: target_type <target_type>'' ... end_target_type
+   
+   A 'target_type' block provides the probabilities to be used and applied only to an engagement of a specific target
+   type.  It should contain one table_name_ to use, and zero or more vulnerability_ blocks.
+
+Target Type Commands
+--------------------
+
+.. command:: table_name <string>
+   
+   Specifies the name of the probability Table to be referenced for an engagement against the given target type.  The
+   Table values will defined outside of the target_type_ block scope.  Default = "default".
+
+vulnerability_ <string> ... end_vulnerability
+
+Commands
+--------
+
+.. command:: update_interval <TimeValue>
+   
+   Specifies the interval between countermeasure state evaluations, which computes at what time they may be considered as
+   "effective".  Default = 1.0 sec.
+
+table_ <table_name> ... end_table target_type_ <cm_type> ... end_target_type

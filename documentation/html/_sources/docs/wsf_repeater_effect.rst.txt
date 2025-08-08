@@ -1,0 +1,212 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_REPEATER_EFFECT
+-------------------
+
+.. model:: effect WSF_REPEATER_EFFECT
+
+    .. parsed-literal::
+
+       effect <effect-name> WSF_REPEATER_EFFECT
+          :command:`electronic_warfare_effect` Commands
+          :model:`WSF_RADIUS_EFFECT` Commands
+
+          repeater_effect_control_method_ *<repeater-control-method>*
+          gain_control_method_ *<gain-control-method>*
+          repeater_factor_limits_ *<min-repeater-factor>* *<max-gain-factor>*
+          desired_false_target_rcs_ <area-value>
+          desired_jammer_to_noise_ <dbratio-value>
+          desired_jammer_to_signal_ <dbratio-value>
+          minimum_detect_factor_ <dbratio-value>
+          masking_factor_ <dbratio-value>
+          system_type_data_ *<system-type-name>* ... end_system_type_data
+       end_effect
+
+    The repeater effect is essentially an implementation of applying some automated gain control methodology to the
+    physical jamming power using an effect variable called the *repeater factor*. This effect can be used to mimic
+    inverse gain and gain control/leveling methods of many repeater jamming systems.
+
+    This base effect type can be included in the :command:`electronic_attack` technique block as one
+    of the many available effects for a given technique. The commands listed below are the base-type commands that can be
+    specified in the effect block for this effect type.
+
+.. block:: WSF_REPEATER_EFFECT
+
+.. _WSF_REPEATER_EFFECT.Commands:
+    
+Commands
+========
+
+.. command:: repeater_effect_control_method  <repeater-control-method> 
+   
+    Specifies a repeater control method as described in the table below for setting the type of data that will be used in
+    calculating the *repeater factor* that will be applied to the jamming power.  This adjustment modifies the
+    normally-determined jamming power. If this input is specified within the system_type_data_ input block then it is
+    specific to a system-type, otherwise this input is defined as the 'default' data to use for undefined system-types in
+    the system_type_data_.
+
+    <repeater-control-method>    
+        A string input that defines , valid values are listed in the table below:
+    
+        none
+            No repeater effects will be applied. This control method is the default so inheriting effects only
+            apply if this command is set to any other method besides this one.
+        actuals
+            Uses actual receiver (i.e., sensor or comm) data to derive the minimum, peak and actual gain values in which to set the repeater factor.
+        repeater
+            Uses the data from the :command:`repeater's <WSF_RF_JAMMER.mode.repeater>` ESM system's detection update to get the minimum, peak and 
+            actual gain values in which to set the repeater factor. If the data is not set the repeater factor is not calculated.
+        repeater_actuals
+            Tries to use the repeater data first if it is available.  If this data is not available then actuals are used. Both of 
+            these are described above in this table.
+
+    Default: none
+
+.. command:: gain_control_method  <gain-control-method> 
+
+    Specifies the control method that will be used to determine the minimum gain value for use in calculating the
+    **repeater factor**.  This adjustment modifies the normally-determined jamming power. If this input is specified
+    within the system_type_data_ input block then it is specific to a system-type, otherwise this input is defined as
+    the 'default' data to use for undefined system-types in the system_type_data_. If more than one type is to be
+    used then this input can be entered multiple times.
+
+    <gain-control-method>
+        A string input that defines , valid values are listed in the table below:
+   
+        none
+            No repeater minimum gain control method will be applied. This gain control method is the default so
+            inheriting effects only apply if this command is set to any other method besides this one.
+        minimum_detect
+            The minimum value of the repeater factor will be set based on the minimum power for which the
+            jamming will be detected by the receiver plus the minimum_detect_factor_ and within the maximum gain data of the
+            impending transmitter. For coherent type jamming waveforms the minimum repeater factor will be calculated using the
+            minimum detection threshold as the base, for noncoherent (i.e., noise types) this value will calculated using receiver
+            noise power value for the base.
+        jammer_to_noise
+            The minimum value of the repeater factor will be set based on the minimum power for which
+            the jamming meets the desired_jammer_to_noise_ value and within the maximum gain data of the impending
+            transmitter. For coherent and noncoherent type jamming waveforms the minimum repeater factor will be calculated using
+            the receiver noise power value for the base.
+        jammer_to_signal
+            The minimum value of the repeater factor will be set based on the minimum power for which
+            the jamming meets the desired_jammer_to_signal_ value and within the maximum gain data of the impending
+            transmitter. For coherent and noncoherent type jamming waveforms the minimum repeater factor will be calculated using
+            the receiver received signal power value for the base.
+        masking
+            The minimum value of the repeater factor will be set based on the minimum power for which the
+            jamming will be effectively mask the target return in the receiver plus the masking_factor_ value and within
+            the maximum gain data of the impending transmitter. For coherent type jamming waveforms the minimum repeater factor
+            will be calculated using the target return power for the interaction currently be calculated or using the desired
+            return power for the RCS of the false target interaction, for noncoherent (i.e., noise types) this value will
+            calculated using the power that is required to mask the target return of the impending interaction being calculated.
+        desired_rcs
+            The minimum value of the repeater factor will set based on the minimum power for which the
+            jamming will be effectively meet the desired_false_target_rcs_ value by the receiver based on the maximum gain
+            data of the impending transmitter.  This is for coherent type jamming waveforms only and the minimum repeater factor
+            will be calculated using the target return power with the RCS ratio of the desired over the actual used in the
+            interaction. This method only affects false target blips currently.
+
+    .. note::
+   
+       The maximum repeater factor for multiple of the above will be used, within the limits of the gain data
+       for the transmitter.
+
+    Default: none
+
+.. command:: repeater_factor_limits  <min-repeater-factor> <max-gain-factor> 
+
+    Specifies the minimum and maximum gain factors, respectively, that the calculated repeater factor will be limited by.
+    If this input is specified within the system_type_data_ input block then it is specific to a system-type,
+    otherwise this input is defined as the 'default' data to use for undefined system-types in the system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: desired_false_target_rcs <area-value> 
+
+    Specifies the desired RCS value for false target blips that the repeater factor will be calculated for when false
+    target effects are turned on within the technique also. This input automatically sets the gain_control_method_ to
+    **desired_rcs**. If this input is specified within the system_type_data_ input block then it is specific to a
+    system-type, otherwise this input is defined as the 'default' data to use for undefined system-types in the
+    system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: desired_jammer_to_noise  <dbratio-value> 
+
+    Specifies the desired J/N value, where J is the jamming power and N is the receiver noise power, that the repeater
+    factor will calculated for. This input automatically sets the gain_control_method_ to **jammer_to_noise**. If
+    this input is specified within the system_type_data_ input block then it is specific to a system-type, otherwise
+    this input is defined as the 'default' data to use for undefined system-types in the system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: desired_jammer_to_signal  <dbratio-value> 
+
+    Specifies the desired J/S value, where J is the jamming power and S is the signal power in the receiver, that the
+    repeater factor will calculated for. This input automatically sets the gain_control_method_ to
+    **jammer_to_signal**. If this input is specified within the system_type_data_ input block then it is specific to
+    a system-type, otherwise this input is defined as the 'default' data to use for undefined system-types in the
+    system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: minimum_detect_factor  <dbratio-value> 
+
+    Specifies the factor that will be added to (in db, multiplied in absolute) to the calculated minimum detect repeater
+    factor when the gain_control_method_ is set to **minimum_detect**. If this input is specified within the
+    system_type_data_ input block then it is specific to a system-type, otherwise this input is defined as the
+    'default' data to use for undefined system-types in the system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: masking_factor  <dbratio-value> 
+
+    Specifies the factor that will be added to (in db, multiplied in absolute) to the calculated minimum detect repeater
+    factor when the gain_control_method_ is set to **masking**. If this input is specified within the
+    system_type_data_ input block then it is specific to a system-type, otherwise this input is defined as the
+    'default' data to use for undefined system-types in the system_type_data_.
+
+    Default: 0.0 dB 
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data 
+
+    Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this
+    technique for a given system type. Default data can be set up for system types not defined using the "default" string
+    as the system type.
+
+    .. parsed-literal::
+
+     system_type_data_ <system-type-name>
+        :command:`electronic_warfare_effect` Commands
+        :model:`WSF_RADIUS_EFFECT` Commands
+        repeater_effect_control_method_ *<repeater-control-method>*
+        gain_control_method_ *<gain-control-method>*
+        repeater_factor_limits_ *<min-repeater-factor>* *<max-gain-factor>*
+        desired_false_target_rcs_ <area-value>
+        desired_jammer_to_noise_ <dbratio-value>
+        desired_jammer_to_noise_ <dbratio-value>
+        desired_jammer_to_signal_ <dbratio-value>
+        minimum_detect_factor_ <dbratio-value>
+        masking_factor_ <dbratio-value>
+     end_system_type_data
+
+    <system-type-name>
+        A string input of the system-type the following data applies to, valid values are
+        **[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will
+        be applied for the given system-type.
+
+    .. note::
+
+        This input is most often used by :command:`electronic_attack` definitions to specify different sensor-type
+        data. It may be used by an :command:`electronic_protect` definitions to specify jammer-type data inputs, but most often data
+        is just entered outside this input block and is applied against all jammer-types for :command:`electronic_protect` effects.
+

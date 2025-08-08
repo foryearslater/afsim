@@ -1,0 +1,356 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_WEAPON_SERVER_PROCESSOR
+---------------------------
+
+**Script Class:** :class:`WsfWeaponServerProcessor`
+
+.. model:: processor WSF_WEAPON_SERVER_PROCESSOR
+
+.. parsed-literal::
+
+   processor <name> :model:`WSF_WEAPON_SERVER_PROCESSOR`
+      :command:`processor Commands <processor>` ...
+      :ref:`Platform_Part_Commands` ...
+      :ref:`External_Link_Commands` ...
+
+      wpn_server_type_
+      wpn_server_site_
+      wpn_server_application_
+      wpn_server_entity_
+      ack_time_tolerance_
+      :command:`WSF_WEAPON_SERVER_PROCESSOR.reallocate_on_NACK`
+      debug_
+
+   end_processor
+
+Overview
+========
+
+:model:`WSF_WEAPON_SERVER_PROCESSOR` implements a processor interface to an external weapon server. It is responsible for
+handling the outgoing weapon transfer to the appropriate weapon server over a specified network connection.
+
+Background Information:
+
+The id for a weapon is to be unique. Before the weapon allocation stage and during setup, the id will be referred to as
+the store id. After the weapon has actually been allocated, the id for the weapon will be referred to as weapon id. The
+store id is sent into the weapon server processor. The weapon server processor may or may not change the store id. That
+would depend on whether or not the dis_entity_id_offset value is set in the :model:`WSF_EXPLICIT_WEAPON` block for that
+particular weapon_system_type.
+
+.. parsed-literal::
+
+    weapon USER_WEAPON_TYPE WSF_EXPLICIT_WEAPON
+        .
+        .
+        .
+       :command:`dis_entity_id_offset <WSF_EXPLICIT_WEAPON.dis_entity_id_offset>` 5000
+    end_weapon
+
+The weapon server processor in this case adds the store id to the dis_entity_id_offset (if not supplied then the
+dis_entity_id_offset is 0) to form the weapon id. The weapon id will be considered the datalink or ju number for the
+weapon. This value used also in the weapon's DisEntityState entity id field, and is set accordingly in the SetData
+PDUs, which is passed to the DREAMS weapon server. Upon allocation of the weapon, the SetData PDU is sent to the DREAMS
+Weapon Server Application. If the DREAMS weapon server validates the Allocation Set Data PDU, it sends back a
+responding Data PDU with the allocation field set to 1 indicating the weapon is allocated, then the weapon goes to an
+ALLOCATE (1) state, after which the weapon server processor will send umbilical data. If that data is acknowledged by
+the Weapon Server Application, then the process is complete and the weapon goes to the READY (4) state. The weapon can
+ONLY be launched when it is in the READY state, else the Fire command is not functional.
+
+If the process was successful, and the 'Fire' command was executed using the weapon id parameter, the DisFire PDU
+issued by the WSF application will have the weapon id inserted into the DisFire Pdu entity id field. If the fire
+command is executed without the weapon id parameter, the DisFire PDU is issued by WSF using the WSF id method to id
+the missile. Most likely the id that was set up during the allocation sequence will not match and there may be problems
+with the launch sequence.
+
+.. comment TODO
+   The weapon id value can be retrieved by using one of the following **WsfWeaponServerProcessor** functions:
+    * :method:`FindWeaponIdByEntry() <WsfWeaponServerProcessor.FindWeaponIdByEntry>`
+    * :method:`FindAllocatedWeaponIdByTrack() <WsfWeaponServerProcessor.FindAllocatedWeaponIdByTrack>`
+    * :method:`FindAllocatedWeaponIdByStoreId() <WsfWeaponServerProcessor.FindAllocatedWeaponIdByStoreId>`
+    * :method:`FindAllocatedWeaponStoreIdByTrack() <WsfWeaponServerProcessor.FindAllocatedWeaponStoreIdByTrack>`
+
+The weapon can be allocated using the following **WsfWeapon** script command:
+:method:`AllocateTheWeapon() <WsfWeapon.AllocateTheWeapon>`
+
+The weapon State must be evaluated prior to launch and must be in the READY state (4) to be fired.  A return
+state of 1 indicates the weapon was allocated.  A return state of (3) indicates the weapon was never allocated.  The
+user can check to see if the DIS Entity Type for the outgoing **weapon_system_type** matches.
+
+.. comment
+   for example,  what was
+   defined in the **name** block in the :ref:`DREAMS.Munitions_Definition` xml file if connected to that weapon server.
+
+The weapon can be fired by using the **WsfWeapon** :method:`Fire <WsfWeapon.Fire>` script command.
+
+Initially, the store_id value can be set using the **WsfWeaponServerProcessor** function:
+SetStoreIdTrackPairing_()
+
+.. block:: WSF_WEAPON_SERVER_PROCESSOR
+
+Commands
+========
+
+.. command:: wpn_server_type [ DREAMS | WSF | VENDOR_R ]
+   
+   Acceptable weapon server choices are DREAMS, WSF and VENDOR_R.
+
+   .. comment
+      As of 6/2010, DREAMS is the only weapon server
+      integrated with WSF, thus DREAMS must be selected.
+
+.. command:: wpn_server_site <positive-integer>
+   
+   Unsigned 16-bit integer value that matches weapon server site.
+   
+   .. comment
+      If DREAMS is the weapon server of choice it will match
+      the site value defined in the munition_repeater block of the :ref:`DREAMS` xml input file.
+
+.. command:: wpn_server_application <positive-integer>
+   
+   Unsigned 16-bit integer value that matches weapon server application.
+
+   .. comment
+      If DREAMS is the weapon server of choice it will
+      match the application value defined in the munition_repeater block of the :ref:`DREAMS` xml input file.
+
+.. command:: wpn_server_entity <positive-integer>
+   
+   Unsigned 16-bit integer value that matches weapon server entity.
+
+   .. comment
+      If DREAMS is the weapon server of choice it will
+      match the entityvalue defined in the munition_repeater block of the :ref:`DREAMS` xml input file.
+
+.. command:: ack_time_tolerance <time-value>
+   
+   Time allowed before the Set Data PDU to allocate the weapon is resent to the weapon server on receipt of a NACK or no
+   reply.
+
+   Default (1.0 second)
+
+.. command:: reallocate_on_NACK <boolean-value>
+   
+   Keep resending even if weapon server sends a NACK signal back for a weapon.  If this flag is set to false, will only
+   try to send once, may assume the data is bad going to the weapon server.
+
+   Default (true)
+
+.. command:: debug <boolean-value>
+   
+   Allows some debug statements to be written to console.
+
+   Default (false)
+
+The DIS Interface File Inputs for the DREAMS Weapon Server
+==========================================================
+
+The dis_interface block would be set up as usual with the site and application fields matching what is in the platform
+block in the xml input file shown below::
+
+  wsrc_userName.xml input file
+
+  .
+  .
+  .
+
+  <platform>
+   <entity-id>
+   <site>79</site>
+   <appv2000</app>
+    .
+    .
+    .
+   </entity-id>
+   </platform>
+
+  <munition-type-defn>
+   <!-- Assign a unique identifier to the munition type  -->
+    <name>JDRADM_POD</name>
+    <enable>true</enable>
+    <entity-type>
+     <kind>2</kind>
+     <domain>1</domain>
+     <country>225</country>
+     <category>1</category>
+     <subcategory>29</subcategory>
+     <specific>0</specific>
+     <extra>0</extra>
+    </entity-type>
+    .
+    .
+    .
+  </munition-type-defn>
+  .
+  .
+  .
+  end of wsrc_userName.xml file.
+
+.. parsed-literal::
+
+    dis_interface
+
+      :command:`dis_interface.site`              79
+      :command:`dis_interface.application` 2000
+      :command:`dis_interface.exercise`     1
+      :command:`dis_interface.port`             3456
+        .
+        .
+        .
+
+      //List both the weapon system type and the weapon platform type in the entity_type list
+      //in the entity_type list.  Note the entity type match in the munition-type-defn portion
+      //of the DREAMS xml file.
+
+      //entity_type_keyword      weapon_server_type      kind do main country cat subcat specific extra
+
+      :command:`dis_interface.entity_type`            &nbsp
+        ;       **ATA_POD**           
+                2 1 225 1 29 0 0  // Must match
+                                // out_going_weapon_transfer
+                                // input line
+      :command:`dis_interface.entity_type`            &nbsp
+        ;      ATA_PLATFORM           &nbsp
+        ;  2 1 225 1 29 0 0  // Must match the
+                               // out_going_weapon_transfer
+                               // input line
+
+        .
+        .
+        .
+
+    This is the critical line that does the weapon transfer out and does the fire PDU and drops the weapon on the WSF
+    side. Add this line for all weapon_system_types that are going to be controlled by the weapon server.
+
+      :command:`dis_interface.outgoing_weapon_transfer` **ATA_POD**
+      :command:`dis_interface.outgoing_weapon_transfer` msl_weapon_jassm
+      :command:`dis_interface.outgoing_weapon_transfer` msl_weapon_sdb_new
+
+    end_dis_interface
+
+WSF Input File Changes for the Weapon Server Interface
+======================================================
+
+The spatial_domain for the target MUST be specified for each DREAMS weapon target in order to fill the
+air-to-ground or air-to-air field the DREAMS weapon server is expecting.
+::Add spatial_domain <;air | land>; appropriately for the platform type.
+
+Each missile type will have its own range and this gets set by using the input dis_entity_id_offset on the
+WSF_EXPLICIT_WEAPON block.
+
+.. parsed-literal::
+
+      weapon msl_weapon_jassm WSF_EXPLICIT_WEAPON
+       quantity 12
+       launched_platform_type msl_platform_jassm
+       weapon_effects msl_effects
+       dis_entity_id_offset <DisUint16 Value>
+
+       aux_data
+        // available fields to set umbilical data
+        // 1 = laser; 2 = sensor; 3 = coordinate (default 2)
+        int attack_mode = 2
+
+        // To define one of the source target originator fields, use one of the two options 
+        // 1) use initial_target_index_originator - track information coming from launching platform
+        // 2) use third_party_source_number to set a third party as the source of track information.
+        // They are mutually exclusive
+        // Each option has a bool input that must be set to, true, in order for the field to be
+        // set with the assigned data.
+        // To use the initial target index originator/target index pair (and NOT the third party
+        // source number).
+        // Set the associated bool first 
+        //    bool use_initial_target_index_originator <true | yes | false | no>
+        // if omitted will be 0 or false and data field will not get set.
+        //
+        // bool use_initial_target_index_originator = true
+        //
+        // Then set data for the the initial target index originator field,
+        //    initial_target_index_originator <decimal-track-number>
+        // where decimal-track-number = decimal_track_number defined in the l16_computer block.
+        //
+        // int initial_target_index_originator = 121
+        //
+        // XOR
+        //
+        // Set the bool to allow the third_party_source_number field to be filled.
+        //    use_third_party_source_number <true | yes | false | no>
+        // If omitted or use_third_party_source_number set to <no | false > then the third-party source number
+        // will not be used.
+        //bool use_third_party_source_number = true
+        //
+        // Set the third-party source number field 
+        //    third_party_source_number <decimal-track-number>
+        // Where the decimal-track-number = decimal_track_number defined in the l16_computer block.
+        int third_party_source_number = 121
+        //
+        // can reassign the weapon site and application value, else will be site and
+        app found in dis text file
+        int weapon_site
+        int weapon_app
+       end_aux_data
+
+      end_weapon
+
+     platform platform_name WSF_PLATFORM
+      aux_data
+       int initial_target_index_originator = 120
+       // match decimal_track_number in l16_computer, else will use the platform's index
+       int decimal_track_number = 120
+      aux_data
+     end_platform
+
+For Each Platform that is to interact with the weapon server must have a weapon server processor.
+
+.. parsed-literal::
+
+    processor <name> WSF_WPN_SERVER_PROCESSOR
+      available inputs 
+       <on | off>
+       update_interval time
+       wpn_server_type <DREAMS | WSF | VENDOR_R>
+       wpn_server_site
+    value
+    // maps to site macrotag
+       wpn_server_application value     // maps to app macrotag
+       wpn_server_entity
+    value              // maps to entity macrotag
+       ack_tolerance_time
+    time             // time it takes before resend if weapon server does not respond
+    end_processor
+
+Example shown below:
+
+.. parsed-literal::
+
+     platform_type weapon_server_type WSF_PLATFORM
+        .
+        .
+        .
+      // would have link16 comm set up here also
+
+      // launching platform or at least the one sending the initial
+      // allocation data (set data pdus) to the weapon server
+      processor wpn_server_proc WSF_WPN_SERVER_PROCESSOR
+       on
+       update_interval 1 sec
+       wpn_server_type DREAMS
+       wpn_server_site 11
+       wpn_server_application 22
+       wpn_server_entity 33
+       ack_tolerance_time 3 s
+      end_processor
+        .
+        .
+        .
+     end_platform

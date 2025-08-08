@@ -1,0 +1,815 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _SixDOF_Control_Inputs_Label:
+
+SixDOF Pilot Manager and Control Inputs
+=======================================
+
+Each SixDOF object may include one or more pilot objects (simple or augmented manual pilot, synthetic pilot) to provide inputs to the flight control system. A pilot manager may contain/control one or more pilot objects, although only one will be active at any point in time. The flight control system gets its input from the "active pilot". The control inputs and configuration of pilot objects are defined through the pilot_manager_ block.
+
+.. command:: pilot_manager ... end_pilot_manager
+
+The pilot_manager block defines control inputs, pilot objects, active pilot, and the common autopilot support file.
+
+   .. parsed-literal::
+
+    pilot_manager 
+    
+       // RB6-Only Control Inputs
+       control_inputs_ ... end_control_inputs
+
+       // Pilot Objects (at least one pilot object should be defined)
+
+       // Only one manual pilot may be defined
+       manual_pilot_simple_controls_ ... end_manual_pilot_simple_controls
+       manual_pilot_augmented_controls_ ... end_manual_pilot_augmented_controls
+       manual_pilot_augmented_stability_ ... end_manual_pilot_augmented_stability
+
+       synthetic_pilot_ ... end_synthetic_pilot
+
+       // Set one of the pilot objects to serve as the active pilot
+       active_pilot_ ...
+
+       // Provide an autopilot support file for all common controller (autopilot) objects
+       common_autopilot_support_file_ ...
+
+    end_pilot_manager
+
+
+RB6 Control Data
+----------------
+
+.. command:: control_inputs ... end_control_inputs
+
+The control_inputs block defines the named control inputs of the vehicle as well as matching control inputs with "standard controls", which are used with control augmentation systems, autopilots, and guidance systems.
+
+   .. parsed-literal::
+
+    control_inputs
+
+       // List of control_names to define control inputs
+       control_name_ ...
+       control_name_ ...
+       ...
+       control_name_ ...
+
+       std_stick_back_ ...
+       std_stick_right_ ...
+       std_rudder_right_ ...
+       std_throttle_mil_ ...
+       std_throttle_ab_ ...
+       std_thrust_reverser_ ...
+       std_thrust_vectoring_yaw_ ...
+       std_thrust_vectoring_pitch_ ...
+       std_thrust_vectoring_roll_ ...
+       std_speed_brakes_out_ ...
+       std_spoilers_out_ ...
+       std_flaps_down_ ...
+       std_landing_gear_down_ ...
+       std_nose_wheel_steering_ ...
+       std_nws_steering_ ...
+       std_nws_enabled_ ...
+       std_wheel_brake_left_ ...
+       std_wheel_brake_right_ ...
+
+    end_control_inputs
+
+.. command:: control_name <string>
+
+   The primary purpose of the controls provider is to provide the multiple control_input feeds needed by the
+   :command:`flight_controls`. Each control input represents the positioning and movement of various controls
+   in the cockpit or control signals within autopilots and guidance systems. Control inputs are defined by
+   the control_name_ command. The name must be unique within a given :command:`p6dof_object_type`. The
+   :command:`flight_controls` will "connect" to control inputs via these control names. Typically, multiple
+   control_name_ commands will be defined for each pilot_manager_.
+
+   .. warning::
+      The key concept is that each **control_input** in :command:`flight_controls` should be "connected" to a
+      **control_name** in :command:`control_inputs`.
+
+      The names must match exactly and are case-sensitive.
+
+.. command:: std_stick_back <string>
+
+   This provides a mapping from the standard stick back command to the control input name.
+
+.. command:: std_stick_right <string>
+
+   This provides a mapping from the standard stick right command to the control input name.
+
+.. command:: std_rudder_right <string>
+
+   This provides a mapping from the standard rudder right to the control input name.
+
+.. command:: std_throttle_mil <string>
+
+   This provides a mapping from the standard throttle mil command to the control input name.
+
+.. command:: std_throttle_ab <string>
+
+   This provides a mapping from the standard throttle ab command to the control input name.
+
+.. command:: std_thrust_reverser <string>
+
+   This provides a mapping from the standard thrust reverser back command to the control input name.
+
+.. command:: std_thrust_vectoring_yaw <string>
+
+   This provides a mapping from the standard thrust vectoring yaw command to the control input name.
+
+.. command:: std_thrust_vectoring_pitch <string>
+
+   This provides a mapping from the standard thrust vectoring pitch command to the control input name.
+
+.. command:: std_thrust_vectoring_roll <string>
+
+   This provides a mapping from the standard thrust vectoring roll command to the control input name.
+
+.. command:: std_speed_brakes_out <string>
+
+   This provides a mapping from the standard speed brakes command to the control input name.
+
+.. command:: std_spoilers_out <string>
+
+   This provides a mapping from the standard spoilers command to the control input name.
+
+.. command:: std_flaps_down <string>
+
+   This provides a mapping from the standard flaps command to the control input name.
+
+.. command:: std_landing_gear_down <string>
+
+   This provides a mapping from the standard landing gear command to the control input name.
+
+.. command:: std_nose_wheel_steering <string>
+
+   This provides a mapping from the standard low-gain nose wheel steering back command to the control input name.
+
+.. command:: std_nws_steering <string>
+
+   This provides a mapping from the standard high-gain nose wheel steering command to the control input name.
+
+.. command:: std_nws_enabled <string>
+
+   This provides a mapping from the standard NWS enabled command to the control input name.
+
+.. command:: std_wheel_brake_left <string>
+
+   This provides a mapping from the standard wheel brake left command to the control input name.
+
+.. command:: std_wheel_brake_right <string>
+
+   This provides a mapping from the standard wheel brake right command to the control input name.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: manual_pilot_simple_controls ... end_manual_pilot_simple_controls
+
+The manual_pilot_simple_controls_ provides control inputs for the flight control system that are only modified by
+simple control mapping tables.
+
+   .. parsed-literal::
+
+    manual_pilot_simple_controls
+
+       pitch_control_mapping_table_ ...
+       roll_control_mapping_table_ ...
+       yaw_control_mapping_table_ ...
+
+       pitch_trim_factor_ ...
+       roll_trim_factor_ ...
+       yaw_trim_factor_ ...
+
+       simple_yaw_damper_ ...
+
+    end_manual_pilot_simple_controls
+
+.. command:: manual_pilot_augmented_controls ... end_manual_pilot_augmented_controls
+
+The manual_pilot_augmented_controls_ uses a control augmentation system (CAS) to generate control inputs for the flight
+control system. The CAS uses a common controller (autopilot) to generate inputs based on manual control inputs. Manual
+inputs for the control stick (right and back) are modified by mapping tables and a pitch_control_augmentation_factor_g_
+and roll_control_augmentation_factor_dps_ to generate pitch g-load and roll rate commands (respectively), which are fed
+to the CAS, which provides signals that serve as inputs to the flight control system. The CAS will strive to keep the
+aircraft flying within its current limits settings. This allows the pilot to pull full stick back, for example, without
+concern for causing a stall -- the AP will keep the aircraft below the max alpha angle, preventing a stall.
+
+Note that the CAS-relevant autopilot channels should be tuned for best results. For bank-to-turn vehicles, this is
+comprised of alpha (for g-load), beta (for controlled sideslip), and roll rate. For yaw-to-turn vehicles, this will
+consist of alpha and beta (in this case, for lateral g-load). Manual roll control is disabled in yaw-to-turn CAS,
+instead deferring to the autopilot's selected roll damper control mode (null control, zero-roll-rate, or
+zero-bank-angle).
+
+As a temporary measure, yaw augmentation control is informed by the pitch augmentation setting. For bank-to-turn
+vehicles, the maximum beta command (in degrees) is set equal to the maximum pitch g command. For example, if
+pitch_control_augmentation_factor_g_ is set to 6 for a vehicle, a 100% stick-back command will translate to a 6g pull,
+and a 100% right rudder command will translate to a 6 degree sideslip. For yaw-to-turn vehicles, the same right rudder
+command will result in a 6g pull to the right-hand side. In future releases, these will likely be separated into
+different values, both in script and in Mover Creator.
+
+   .. parsed-literal::
+
+    manual_pilot_augmented_controls
+
+       autopilot_config_ (CAS Settings) ...
+
+       pitch_control_mapping_table_ ...
+       roll_control_mapping_table_ ...
+       yaw_control_mapping_table_ ...
+
+       pitch_control_augmentation_factor_g_ ...
+       yaw_control_augmentation_factor_g_ ...
+       yaw_control_augmentation_factor_deg_ ...
+       roll_control_augmentation_factor_dps_ ...
+
+       pitch_trim_factor_ ...
+       roll_trim_factor_ ...
+       yaw_trim_factor_ ...
+
+    end_manual_pilot_augmented_controls
+
+.. command:: manual_pilot_augmented_stability ... end_manual_pilot_augmented_stability
+
+The manual_pilot_augmented_stability_ uses a stability augmentation system (SAS) to generate control inputs for the
+flight control system. The SAS uses a common controller (autopilot) to generate inputs based on manual control inputs.
+Manual inputs for the control stick (right and back) and rudder are mixed with stabilizing autopilot inputs, requesting
+zeroed rotation rates. SAS commands have an input ceiling of 25%, with the remainder provided by the manual flight
+control inputs. For example, while the vehicle is at a stable roll position, the average input of the roll SAS should
+sit around 0%, and the pilot is free to contribute as much stick-right as she likes. If she opts to pull hard to the
+right, the roll SAS will attempt to resist the new rolling action, possibly with a 100% stick-left command. This
+contribution will be limited to 25% stick-left, leaving the pilot limited to 75% stick-right.
+
+Because SAS is designed to work against a pilot, it is less broadly useful than CAS, but can still be worthwhile. CAS
+will be the preferable option for airframes which tend toward instability through parts (or all) of their flight
+envelope, like flying wings (unstable in yaw) or agile fighters (unstable or neutrally stable in pitch). Where SAS may
+be most useful is in flying larger, more stable aircraft, particularly those which are further along in their life
+cycle, and whose flight control systems may not be as accurately modeled by a CAS-style system.
+
+Note that the SAS-relevant autopilot channels should be tuned for best results. Unlike CAS, which adds an autopilot
+layer between the stick and the flight controls, SAS can be thought of as being applied on top of the direct stick
+input. The relevant channels for all vehicles, then, will be pitch rate, yaw rate, and roll rate.
+
+   .. parsed-literal::
+
+    manual_pilot_augmented_stability
+
+       autopilot_config_ (SAS Settings) ...
+
+       pitch_control_mapping_table_ ...
+       roll_control_mapping_table_ ...
+       yaw_control_mapping_table_ ...
+
+       roll_stability_augmentation_ ...
+       pitch_stability_augmentation_ ...
+       yaw_stability_augmentation_ ...
+
+       pitch_trim_factor_ ...
+       roll_trim_factor_ ...
+       yaw_trim_factor_ ...
+
+    end_manual_pilot_augmented_stability
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: synthetic_pilot ... end_synthetic_pilot
+
+The synthetic_pilot_ includes a common controller (autopilot) as well as support for direct control input via script. 
+
+   .. parsed-literal::
+
+    synthetic_pilot       
+
+       autopilot_config_ (Autopilot/Controller Settings) ...
+
+       pitch_control_mapping_table_ ...
+       roll_control_mapping_table_ ...
+       yaw_control_mapping_table_ ...
+
+       pitch_trim_factor_ ...
+       roll_trim_factor_ ...
+       yaw_trim_factor_ ...
+
+    end_synthetic_pilot
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: inherit_controls <boolean-value>
+
+This must be set inside a pilot definition block. When enabled, this flag directs a pilot object to use the control
+data used by the vehicle's parent. This is used to allow subobjects to draw controls from their parent vehicle. This
+can be used in series.
+       
+.. command:: active_pilot <string>
+
+This sets the active pilot. The string must be one of the following: manual_pilot_simple_controls, 
+manual_pilot_augmented_controls, synthetic_pilot, hardware_autopilot_bank_to_turn, hardware_autopilot_skid_to_turn,
+guidance_autopilot_bank_to_turn, or guidance_autopilot_skid_to_turn.
+       
+.. command:: common_autopilot_support_file <string>
+
+This defines the path/filename of the common_autopilot_support_file that provides configuration data for all common
+controllers (autopilots).
+
+The common_autopilot_support_file_ contains several tables (cl_max_mach_table, cl_min_mach_table, alpha_max_mach_table,
+alpha_min_mach_table, alpha_versus_mach_cl_table, stick_zero_moment_mach_alpha_table, and 
+effective_CL_versus_mach_alpha_table). These tables are used by the common controller (autopilot) to help predict
+response and calculate feed-forward.
+
+It is not practical to create this file manually, but a "helper" tool is provided to generate the file by running
+the "GenerateSecondaryAeroFile.txt" in the six_dof demos directory.
+
+To create the file, begin by editing the file, changing the included model file path and the MOVER_TYPE to the
+desired model. Next, run the scenario to generate the "autopilot_support_tables.txt" file. Copy the 
+autopilot_support_tables.txt file to model's folder/directory.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: pitch_control_mapping_table .. end_pitch_control_mapping_table
+
+This defines a mapping table, adjusting normalized control values between "raw" control input and "mapped" or
+"adjusted" control input. It is used to provide greater control sensitivity near the zero position of controls,
+preventing manual controls from becoming overly responsive/sensitive.
+
+   .. parsed-literal::
+   
+      pitch_control_mapping_table
+        -1.00    -1.00
+        -0.90    -0.75
+        -0.75    -0.45
+        -0.50    -0.15
+        -0.25    -0.05
+         0.00     0.00
+         0.25     0.05
+         0.50     0.15
+         0.75     0.45
+         0.90     0.75
+         1.00     1.00
+      end_pitch_control_mapping_table
+
+.. command:: roll_control_mapping_table .. end_roll_control_mapping_table
+
+This defines a mapping table, adjusting normalized control values between "raw" control input and "mapped" or "adjusted"
+control input. It is used to provide greater control sensitivity near the zero position of controls, preventing manual
+controls from becoming overly responsive/sensitive.
+      
+   .. parsed-literal::
+   
+      roll_control_mapping_table
+        -1.00    -1.00
+        -0.90    -0.75
+        -0.75    -0.45
+        -0.50    -0.15
+        -0.25    -0.05
+         0.00     0.00
+         0.25     0.05
+         0.50     0.15
+         0.75     0.45
+         0.90     0.75
+         1.00     1.00
+      end_roll_control_mapping_table
+
+.. command:: yaw_control_mapping_table .. end_yaw_control_mapping_table
+
+This defines a mapping table, adjusting normalized control values between "raw" control input and "mapped" or "adjusted"
+control input. It is used to provide greater control sensitivity near the zero position of controls, preventing manual
+controls from becoming overly responsive/sensitive.
+      
+   .. parsed-literal::
+   
+      yaw_control_mapping_table
+        -1.00    -1.00
+        -0.90    -0.75
+        -0.75    -0.45
+        -0.50    -0.15
+        -0.25    -0.05
+         0.00     0.00
+         0.25     0.05
+         0.50     0.15
+         0.75     0.45
+         0.90     0.75
+         1.00     1.00
+      end_yaw_control_mapping_table
+
+.. command:: pitch_trim_factor <real-value>
+
+This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.
+
+.. command:: roll_trim_factor <real-value>
+
+This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.
+
+.. command:: yaw_trim_factor <real-value>
+
+This defines a multiplier for adjusting the sensitivity of the trim control input. Typical values are around 0.1, but are
+fully adjustable.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: pitch_control_augmentation_factor_g <real-value>
+
+This defines a multiplier for the normalized pitch input, mapping the input to g-load. A value of 8, for example, results
+in a command of 8 gees when full stick back is input.
+
+.. command:: yaw_control_augmentation_factor_g <real-value>
+
+This defines a multiplier for the normalized skid-to-turn yaw input, mapping the input to lateral g-load. A value of 8, for example, results
+in a command of 8 gees rightward when full stick right is input.
+
+.. command:: yaw_control_augmentation_factor_deg <real-value>
+
+This defines a multiplier for the normalized bank-to-turn yaw input, mapping the input to sideslip angle. A value of 10, for example, results
+in a command of 10 degrees rightward slip when full stick right is input.
+
+.. command:: roll_control_augmentation_factor_dps <real-value>
+
+This defines a multiplier for the normalized roll input, mapping the input to roll rate. A value of 180, for example, results
+in a command of 180 deg/sec when full stick right is input.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: roll_stability_augmentation <boolean-value>
+
+When enabled, this enables stability augmentation on the roll axis for manually controlled vehicles.
+
+.. command:: pitch_stability_augmentation <boolean-value>
+
+When enabled, this enables stability augmentation on the pitch axis for manually controlled vehicles.
+
+.. command:: yaw_stability_augmentation <boolean-value>
+
+When enabled, this enables stability augmentation on the yaw axis for manually controlled vehicles.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: simple_yaw_damper <boolean-value>
+
+If true, a very "simple" (but not realistic) yaw damper action will be used to zero any sideslip (beta), making the RB6 more like a 5DOF. This will negate any sideslip, and so should only be used for bank-to-turn objects such as fixed-wing aircraft.
+
+This command has a similar effect to use_simple_yaw_damper_ but is used on a manual_pilot_simple_controls_ which lacks
+an inherent autopilot. The simple yaw damper will automatically be disengaged when operating on the ground and re-engaged
+once the vehicle is airborne.
+
+///////////////////////////////////////////////////////////////////////////////
+
+.. command:: autopilot_config ... end_autopilot_config
+
+   The **autopilot_config** block is structured as follows:
+   
+   .. parsed-literal::
+
+      autopilot_config
+
+        vertical_middle_loop_rate_factor_ ...
+        vertical_outer_loop_rate_factor_ ...
+        lateral_middle_loop_rate_factor_ ...
+        lateral_outer_loop_rate_factor_ ...
+        speed_middle_loop_rate_factor_ ...
+        speed_outer_loop_rate_factor_ ...
+
+        control_method_ ...
+
+        use_legacy_beta_ ...
+
+        min_taxi_turn_radius_ ...
+        use_simple_yaw_damper_ ...
+        
+        // `PIDs`_
+        pid_group
+
+          pid_alpha ... end_pid_alpha
+          pid_delta_pitch ... end_pid_delta_pitch
+          pid_vert_speed ... end_pid_vert_speed
+          pid_pitch_angle ... end_pid_pitch_angle
+          pid_pitch_rate ... end_pid_pitch_rate
+          pid_flightpath_angle ... end_pid_flightpath_angle
+          pid_altitude ... end_pid_altitude
+          pid_beta ... end_pid_beta          
+          pid_yaw_rate ... end_pid_yaw_rate          
+          pid_yaw_heading ... end_pid_yaw_heading          
+          pid_taxi_heading ... end_pid_taxi_heading          
+          pid_roll_rate ... end_pid_roll_rate          
+          pid_delta_roll ... end_pid_delta_roll
+          pid_bank_angle ... end_pid_bank_angle          
+          pid_roll_heading ... end_pid_roll_heading          
+          pid_forward_accel ... end_pid_forward_accel          
+          pid_speed ... end_pid_speed          
+          pid_taxi_forward_accel ... end_pid_taxi_forward_accel          
+          pid_taxi_speed ... end_pid_taxi_speed          
+          pid_taxi_yaw_rate ... end_pid_taxi_yaw_rate
+          
+          // `SixDOF Limits and Settings`_
+          limits_and_settings ... end_limits_and_settings
+
+        end_pid_group
+        
+      end_autopilot_config
+
+.. command:: vertical_middle_loop_rate_factor <integer-value>
+
+   This specifies how many times the vertical channel inner-loop activates before the vertical channel middle-loop activates.
+   
+.. command:: vertical_outer_loop_rate_factor <integer-value>
+
+   This specifies how many times the vertical channel middle-loop activates before the vertical channel outer-loop activates.
+   
+.. command:: lateral_middle_loop_rate_factor <integer-value>
+
+   This specifies how many times the lateral channel inner-loop activates before the lateral channel middle-loop activates.
+   
+.. command:: lateral_outer_loop_rate_factor <integer-value>
+
+   This specifies how many times the lateral channel middle-loop activates before the lateral channel outer-loop activates.
+   
+.. command:: speed_middle_loop_rate_factor <integer-value>
+
+   This specifies how many times the speed channel inner-loop activates before the speed channel middle-loop activates.
+   
+.. command:: speed_outer_loop_rate_factor <integer-value>
+
+   This specifies how many times the speed channel middle-loop activates before the speed channel outer-loop activates.
+
+///////////////////////////////////////////////////////////////////////////////
+   
+.. command:: control_method <string>
+
+   This sets the control method. There are two main methods -- bank-to-turn and yaw-to-turn. Bank-to-turn involves
+   banking/rolling in order to perform a turn, like a normal aircraft. Yaw-to-turn involves simply yawing to perform
+   a turn -- no rolling/banking is used. The command string should be one of the following:
+
+     * BANK_TO_TURN_NO_YAW (no yaw control)
+     * BANK_TO_TURN_WITH_YAW (allows yaw control)
+     * YAW_TO_TURN_NO_ROLL (no roll control)
+     * YAW_TO_TURN_ROLL_RATE (zeros-out any roll rate buildup)
+     * YAW_TO_TURN_ZERO_BANK (rolls to maintain a zero bank)
+
+///////////////////////////////////////////////////////////////////////////////
+   
+.. command:: use_legacy_beta <boolean-value>
+
+   This enables/disables the use of the legacy_beta flag. This should be set to false when the new/improved beta
+   calculations are desired. For example, Mover Creator uses the new beta calculations, so data files created
+   by Mover Creator always set the use_legacy_beta command to false.
+
+   The new beta calcuations help avoid the need for negative PID values for beta-related control.
+
+   The default value is true.
+
+///////////////////////////////////////////////////////////////////////////////
+   
+.. command:: min_taxi_turn_radius <length-value>
+
+   The defines the minimum taxi turning radius that will be used by the autopilot when performing taxi ground operations.
+
+   If undefined, the default turn radius is 50 feet (~15 meters).
+
+.. command:: use_simple_yaw_damper <boolean-value>
+
+   If true, a very "simple" (but not realistic) yaw damper action will be used to zero any sideslip (beta), making the RB6 more like a 5DOF. This will negate any sideslip, and so should only be used for bank-to-turn objects such as fixed-wing aircraft.
+
+   The use_simple_yaw_damper_ is most often used to reduce the amount of autopilot tuning, especially to reduce/eliminate roll-yaw coupling effects.
+   
+   The simple yaw damper will automatically be disengaged when operating on the ground and re-engaged once the vehicle is airborne.
+
+PIDs
+^^^^
+
+The autopilot uses a collection of Proportional, Integral, Derivative (PID) controllers, which are control loop feedback
+mechanisms. The autopilot supports a total of 20 PIDs (alpha, delta_pitch, vert_speed, pitch_angle, pitch_rate,
+flightpath_angle, altitude, beta, yaw_rate, yaw_heading, taxi_heading, roll_rate, delta_roll, bank_angle, roll_heading,
+forward_accel, speed, taxi_forward_accel, taxi_speed, and taxi_yaw_rate). Four PIDs are only used for ground operations,
+so when these are not needed, this leaves a subtotal of 16 PIDs. However, many missiles (that use the yaw-to-turn
+control_method_) will only need the alpha and beta PIDs.
+
+During development of RB6 models in particular, the various PID control parameters must be set appropriately for proper control.
+Adjusting the PIDs is often referred to as "tuning" the PIDs or "tuning" the autopilot. Aircraft typically require
+that 16-20 PIDs be tuned, but missiles often require tuning for only 2 PIDs. As a result, it is typically significantly
+easier to "tune" a missile autopilot than an aircraft autopilot.
+
+.. _PID_Block_Label:
+
+PID blocks may contain any number of commands, including the following:
+
+   .. parsed-literal::
+
+      <pid_name>
+        update_interval_ ...
+        kp_ ...
+        ki_ ...
+        kd_ ...
+        max_error_accum_ ...
+        low_pass_alpha_ ...
+        ignore_large_error_accum_ ...
+        ignore_small_error_accum_ ...
+        kt_anti_windup_gain_ ...
+        
+        gain_table_ ... end_gain_table
+        
+      <end_pid_name>
+
+.. command:: update_interval <Time>
+
+   This specifies the update rate of the PID. This is optional and, when defined, takes priority over the loop rate factors defined above. This limits the update rate from below and does not trigger a mover update.
+
+.. command:: kp <real-value>
+
+   This specifies the proportional gain of the PID. When not defined, the gain will be zero.
+
+.. command:: ki <real-value>
+
+   This specifies the integral gain of the PID. When not defined, the gain will be zero.
+
+.. command:: kd <real-value>
+
+   This specifies the derivative gain of the PID. When not defined, the gain will be zero.
+   
+.. command:: max_error_accum <real-value>
+
+   This limits the maximum integrated error accumulation to the specified value. If not defined, no limit will be used.
+   
+.. command:: low_pass_alpha <real-value>
+
+   This specifies the value for the low-pass filter alpha for the derivative gain.
+
+.. command:: ignore_large_error_accum <real-value>
+
+   This specifies that the PID will not accumulate integrated error if the current error value is greater than the
+   specified value.
+
+.. command:: ignore_small_error_accum <real-value>
+
+   This specifies that the PID will not accumulate integrated error if the current error value is less than the
+   specified value.
+
+.. command:: kt_anti_windup_gain <real-value>
+
+   This specifies the Kt anti-windup gain of the PID. When not defined, the gain will be zero.
+   
+   
+Gain Table
+^^^^^^^^^^
+
+Gain tables provide a means to have multiple sets of PID parameters that are interpolated for the current conditions.
+They utilize a control_value_ which is based on dynamic pressure, giving the PIDs a means to be adjusted for different
+flight regime conditions.
+
+Each gain_table_ provides the same commands as a `PID_Block_Label`_, but **must** include a control_value_ command as
+well, as follows:   
+
+.. command:: gain_table ... end_gain_table
+
+   .. parsed-literal::
+
+      gain_table
+        control_value_ ...
+        kp_ ...
+        ki_ ...
+        kd_ ...
+        max_error_accum_ ...
+        low_pass_alpha_ ...
+        ignore_large_error_accum_ ...
+        ignore_small_error_accum_ ...
+        kt_anti_windup_gain_ ...
+      end_gain_table
+
+.. command:: control_value <real-value>
+
+   This specifies the "control value" for which the PID parameters are used. The value is specified in lbs/ft^2 of 
+   dynamic pressure. The PID will interpolate between the appropriate control_value_ pairs based on the current
+   dynamic pressure.
+      
+   
+.. _SixDOF_Limits_and_Settings_Label:
+
+SixDOF Limits and Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each PID block should contain the following:
+
+   .. parsed-literal::
+
+      limits_and_settings
+        afterburner_threshold_ ...
+        speedbrake_threshold_ ...
+        pitch_gload_min_ ...
+        pitch_gload_max_ ...
+        alpha_min_ ...
+        alpha_max_ ...
+        pitch_rate_min_ ...
+        pitch_rate_max_ ...
+        vert_speed_min_ ...
+        vert_speed_max_ ...
+        yaw_gload_max_ ...
+        beta_max_ ...
+        yaw_rate_max_ ...
+        roll_rate_max_ ...
+        bank_angle_max_ ...
+        forward_accel_min_ ...
+        forward_accel_max_ ...
+        taxi_speed_max_fps_ ...
+        taxi_yaw_rate_max_ ...
+        turn_roll_in_multiplier_ ...
+        route_allowable_angle_error_ ...
+      end_limits_and_settings
+
+.. command:: afterburner_threshold <real-value>
+
+   This specifies the value above which afterburner will be used instead of limiting to military power.
+   
+.. command:: speedbrake_threshold <real-value>
+
+   This specifies the value below which the speed brake will be used to help slow down.
+   
+.. command:: pitch_gload_min <real-value>
+
+   This specifies the minimum pitch g-load value.
+   
+.. command:: pitch_gload_max <real-value>
+
+   This specifies the maximum pitch g-load value.
+   
+.. command:: alpha_min <real-value>
+
+   This specifies the minimum angle of attack (alpha) in degrees.
+   
+.. command:: alpha_max <real-value>
+
+   This specifies the maximum angle of attack (alpha) in degrees.
+   
+.. command:: pitch_rate_min <real-value>
+
+   This specifies the minimum pitch rate in degrees/sec.
+   
+.. command:: pitch_rate_max <real-value>
+
+   This specifies the maximum pitch rate in degrees/sec.
+   
+.. command:: vert_speed_min <real-value>
+
+   This specifies the minimum vertical speed in ft/minute.
+   
+.. command:: vert_speed_max <real-value>
+
+   This specifies the maximum vertical speed in ft/minute.
+   
+.. command:: yaw_gload_max <real-value>
+
+   This specifies the maximum yaw g-load.
+   
+.. command:: beta_max <real-value>
+
+   This specifies the maximum sideslip angle (beta) in degrees.
+   
+.. command:: yaw_rate_max <real-value>
+
+   This specifies the maximum yaw rate in degrees/sec.
+   
+.. command:: roll_rate_max <real-value>
+
+   This specifies the maximum roll rate in degrees/sec.
+   
+.. command:: bank_angle_max <real-value>
+
+   This specifies the maximum bank angle in degrees.
+   
+.. command:: forward_accel_min <real-value>
+
+   This specifies the minimum forward acceleration in g's.
+   
+.. command:: forward_accel_max <real-value>
+
+   This specifies the maximum forward acceleration in g's.
+   
+.. command:: taxi_speed_max_fps <real-value>
+
+   This specifies the maximum taxi speed in feet/sec.
+
+.. command:: taxi_yaw_rate_max <real-value>
+
+   This specifies the maximum taxi yaw rate in degrees/sec.
+
+.. command:: turn_roll_in_multiplier <real-value>
+
+   This is a multiplier that can shorten (less than than 1) or extend (greater than 1)
+   the time/distance used when turning when following a route (waypoints).
+
+.. command:: route_allowable_angle_error <angle-value>
+
+   This specifies the angular error that is tolerated when rolling-out on a turn
+   when following a route (waypoints). A larger value will allow the vehicle to consider
+   the turn to be complete and switch to route segment control rather than continuing
+   to use turn control.
+
+///////////////////////////////////////////////////////////////////////////////
+
+Return to :doc:`six_dof_object_types`, :doc:`rigid_body_vehicle_type`, :doc:`point_mass_vehicle_type`

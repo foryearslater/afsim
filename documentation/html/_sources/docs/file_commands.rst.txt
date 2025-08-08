@@ -1,0 +1,111 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _File_Commands:
+
+File Commands
+-------------
+
+.. command:: include <filename>
+             include_once <filename>
+
+   Temporarily suspends reading commands from the current file and reads commands from the file *<filename>*. Reading from
+   the current file will continue when all the commands have been read from the file *<filename>*. This is very useful for
+   creating a library of platform and system types and attributes that can be used in a number of simulations.
+
+   **include_once** is just like **include** except that it will be ignored if the indicated file has been previously
+   included. This is typically used within a file that is itself designed to be included (such as including a file that
+   defines a sensor_type from a file that is defining a platform_type).  This allows self-contained complex platform types
+   to be created from a composition of previously defined components without having to consider if the file that defines a
+   platform component has already been included.
+
+   .. note::
+       As a rule of thumb, the use of "include" is used to read in scenario files and "include_once" is used
+       to read in platform_types.
+
+   .. note::
+      file_path_ processing will be applied to *<filename>*
+
+.. command:: define_path_variable <name> <value>
+
+   Defines the value of a variable than can be substituted into a file name.
+   References to most WSF components that accept file names will allow path variable substitution to be performed on the
+   name. In path variable substitution, the file name is examined for strings of the form '$(*name*)' or '${*name*}'
+   (without the quotes). If such a string is found then it is replaced with:
+
+   #. The value of the path variable with the specified name, if it exists.
+   #. The value of the environment variable with the specified name, if it exists.
+   #. The empty string.
+
+   The substituted text is not rescanned for further substitution.
+
+   Substitution is inhibited for strings of the form '$(name)' or '${name}'.
+
+   Example::
+
+      define_path_variable DATADIR /disk1/examples
+      include $(DATADIR)/test1.txt          // includes /disk1/examples/test1.txt
+      include ${DATADIR}/test2.txt          // includes /disk1/examples/test2.txt
+      include ${UNDEFINED}/test3.txt        // tries to include /test3.txt
+
+   Variables can occur anywhere in the filename, not just at the front as in the example.
+
+.. command:: undefine_path_variable <name>
+
+   Removes the definition of the path variable with the specified name.
+
+   .. note::
+      This will not remove the definition from the external environment.
+
+.. command:: file_path <path>
+
+   Adds an entry for the specified path to the end of the 'file path'.  <path> is either an absolute path or relative to
+   the directory containing this command.
+
+   The file path is used to locate include files and certain other external files (e.g., antenna patterns, signatures).
+   The algorithm for locating a file is a follows:
+
+   #. Perform path_variable substitution.
+   #. If the resulting name is an absolute specification (starts with a '/' or '\') then use the file name.
+   #. Concatenate the file name to the path name of the current input file being processed. If the resulting file exists then use the combined file name.
+   #. Starting with the first entry in the list of 'file_path' entries, concatenate the file name to the file_path entry. If the resulting file exists then use the combined file name. If not, repeat this step with the remaining file_path entries until either a match is found or this list is exhausted.
+   #. If no match is found, simply return the file as generated in step 1.
+
+   .. note::
+      This is the same as the algorithm used the C/C++ preprocessor to locate include files
+
+   .. attention::
+      It is highly recommended to only use the file_path_ command in the first top-level scenario file. Unexpected results will occur if the file_path_ command is used in any included file inside or outside the current working directory (especially if ``file_path .`` is used). In addition, the use of relative directory paths that are not specifically named will cause unnecessary re-parsing to occur. For example, ``file_path ..`` or ``file_path ../..`` will re-search the current working directory needlessly and may give unexpected results.
+
+.. command:: reset_file_path
+
+   Deletes all entries in the file path list.
+
+.. command:: log_file <filename>
+
+   Opens the specified file as the current system log. Any existing contents of the file are discarded.
+
+   The log file can be thought of as an audit log for the simulation. It maintains a record of files that were used to
+   instantiate a simulation as well as other entries created by the log_ command. As such, it can be used to create
+   a 'manifest' of the files needed to run the simulation.
+
+   .. note::
+      This command should occur before any other command in order to capture the names of all the files
+      needed to run the simulation.
+
+.. command:: log <log-data>
+
+   Writes all of the remaining information on the current line to the current log file (see log_file_). This can be
+   used to write out information (such as a file version) that might be useful for ensuring the correct data is being
+   brought into the simulation.
+
+   .. note::
+      This command does nothing if a log file has not been opened.

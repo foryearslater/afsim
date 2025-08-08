@@ -1,0 +1,137 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_FALSE_TARGET_EFFECT
+-----------------------
+
+.. model:: effect WSF_FALSE_TARGET_EFFECT
+   
+EW Effects: :ref:`Predefined_Electronic_Warfare_Effect_Types`
+
+.. parsed-literal::
+
+      effect <effect-name> WSF_FALSE_TARGET_EFFECT_
+         ... :ref:`Base Effect Commands <electronic_warfare_effect.Commands>` ...
+         ... :ref:`WSF_PULSE_EFFECT Commands <WSF_PULSE_EFFECT.Commands>` ...
+         ... :ref:`WSF_REPEATER_EFFECT Commands <WSF_REPEATER_EFFECT.Commands>` ...
+         ... :ref:`WSF_POWER_EFFECT Commands <WSF_POWER_EFFECT.Commands>` ...
+         ... :ref:`WSF_RADIUS_EFFECT Commands <WSF_RADIUS_EFFECT.Commands>` ...
+
+         ... :command:`false target definition <false_target>` ...
+
+         false_target_name_ <string-value>
+         jamming_pulse_density_ <real-value>
+         `number_of_false_targets`_ <integer-value>
+         scan_rate_multiplier_ <real-value>
+         speeds_ <min-speed-value> <max-speed-value>
+
+         system_type_data_ <system-type-name> ... end_system_type_data
+      end_effect
+
+Overview
+========
+
+This base effect type can be included in the :command:`electronic_protect` or
+:command:`electronic_attack` technique block as one of the many available effects for a given
+technique. The commands listed below are the base-type commands that can be specified in the effect block for this
+effect type.
+
+.. block:: WSF_FALSE_TARGET_EFFECT
+
+Commands
+========
+
+.. command:: false_target_name  <string-value> 
+   
+   Specifies the false-target name of the :command:`false_target` definition to be used by this effect.
+   
+.. note:: If not specified then automatic generation of false-targets will be done and default radar parameters will be
+   used in conjunction with the default_pulse_density to generate false targets. The radar :command:`_.transmitter` is
+   required to have the :command:`_.transmitter.pulse_width` and
+   :command:`_.transmitter.pulse_repetition_interval` defined for automatic generation of false targets.
+
+.. command:: jamming_pulse_density  <real-value> 
+
+.. command:: jamming_duty_cycle  <real-value> 
+   
+   Specifies the jammer pulse density in range [0,1] for generating false targets. This input will override the specified
+   :command:`false_target.quantity` if a false target name is input and is mutually
+   exclusive with number_of_false_targets_. This input is used to calculate the number of false targets according to
+   the following:
+   
+    :math:`NumberOfFalseTargets = (PRI/PW) * (ScanTime/PRI) * NumberPulsesIntegrated * jamming\_pulse\_density\,` 
+    :math:`NumberOfPulsesIntegrated = MaximumOf(number\_of\_pulses\_integrated,  (AzBeamWidth/ScanRate)/PRI)\,` 
+
+   .. note::
+   
+      Same as the :model:`WSF_PULSE_EFFECT` - :command:`jamming_pulse_density <WSF_PULSE_EFFECT.jamming_pulse_density>`,
+      listed here for more information.
+   
+   Default: 0.1
+
+.. command:: number_of_false_targets  <value> 
+
+   Specifies the number of false targets that will be created for this radar type. This input will override the
+   specified :command:`false_target.quantity` if a false target name is input and is
+   mutually exclusive with the jamming_pulse_density_. This input is used to calculate the
+   Jamming_pulse_density_ according to the following:
+
+      :math:`JammingPulseDensity = NumberOfFalseTargets * PW * NumberPulsesIntegrated / ScanTime\,`
+      :math:`NumberOfPulsesIntegrated = MaximumOf(number\_of\_pulses\_integrated,  (AzBeamWidth/ScanRate)/PRI)\,`
+
+Default: Use jamming_pulse_density_ 
+
+.. command:: scan_rate_multiplier  <real-value> 
+
+Specifies the false target generation scan rate multiplier for regenerating false targets. This input will be
+multiplied by the specified :command:`false_target.scan_rate` if a false target name is input, else the scan rate of
+the false targets is equal to the :command:`sensor_mode.frame_time` times the scan_rate_multiplier.
+
+Default: 1.0
+
+.. command:: speeds <min-speed-value> <max-speed-value>
+
+.. command:: blip_speeds <min-speed-value> <max-speed-value>
+
+.. command:: track_speeds <min-speed-value> <max-speed-value>
+
+   Specifies the minimum and maximum <speed-value> at which the false target blips will move. If minimum and maximum
+   speeds are equal all speeds will be the same on the blips; if they are not equal then random speeds will be drawn with
+   the limits and set for each false target blip separately as to its speed. The :command:`false_target`, as defined with the
+   false_target_name_, definition for speeds inside the **track_movement** block has priority if defined, if not
+   defined then this speed will be used. This definition will aid in Doppler radars that reject nonmoving targets.
+
+Default: 0.0 m/s 0.0 m/s
+
+.. command:: system_type_data  <system-type-name> ... end_system_type_data 
+
+   Input block to provide the system type (e.g., SENSOR-TYPE, JAMMER-TYPE) specific data necessary to implement this
+   technique for a given system type. Default data can be set up for system types not defined using the "default" string
+   as the system type.
+
+.. parsed-literal::
+
+   system_type_data_ <system-type-name>
+      ... :ref:`WSF_PULSE_EFFECT Commands <WSF_PULSE_EFFECT.Commands>` ...
+      ... :ref:`WSF_POWER_EFFECT Commands <WSF_POWER_EFFECT.Commands>` ...
+      ... :ref:`WSF_RADIUS_EFFECT Commands <WSF_RADIUS_EFFECT.Commands>` ...
+
+      ... :command:`false target definition <false_target>` ...
+
+      false_target_name_ <string-value>
+      jamming_pulse_density_ <real-value>
+      scan_rate_multiplier_ <real-value>
+      speeds_ <min-speed-value> <max-speed-value>
+   end_system_type_data
+
+*<system-type-name>* : A string input of the system-type the following data applies to, valid values are
+**[system-type-name | "default"]**. Default data is used for unspecified system-types and if not defined no effect will
+be applied for the given system-type.

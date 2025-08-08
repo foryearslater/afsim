@@ -1,0 +1,168 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY
+====================================
+
+.. model:: weapon_effects WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY
+
+    .. parsed-literal::
+
+	 :command:`weapon_effects` <name> :model:`WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY`
+	   :command:`weapon_effects` Commands ...
+
+	   pk_tables_path_ <directory>
+	   default_pk_ <pk-value>
+	   file_filter_ <string>
+	 end_weapon_effects
+
+Overview
+--------
+
+:model:`WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY` computes lethality using a probability of kill (Pk) table lookup defined in Pk table files. 
+Pk table files specify launching platform types and target platform types.  
+For each launching/target platform type pair, the Pk lookup is a function of target altitude and speed, as well as target cross range and down range distance at the time of weapon launch.
+
+
+Each file must be of a pre-defined format containing the following:
+
+* Site Platform Type (launcher)
+* Target Platform Type
+* Length Units of Measure
+* Speed Units of Measure
+* Target Altitude
+* Target Speed
+* Pk table with target cross range distance specified in the X-axis (columns) and target down range distance specified in the Y-axis (rows)
+
+.. important::  At a minimum, WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY requires 2 Pk table files per weapon/target pairing with at least 1 *Altitude* and 2 *Speed* defined across both files.
+                A warning will be issued when attempting to use a single Pk table file and when using Pk table files with invalid table inputs.
+                The `Examples`_ below show valid WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY command values and Pk file input.
+
+Pk table files may be created using the AFSIM :ref:`engage<docs/engage:engage>` tool via :ref:`Pk Table Generation Commands<docs/engage:Pk Table Generation Commands>`.
+If a Pk table is not available for a given launcher/target pair involved in a weapon engagement, a default constant Pk is specified using the default_pk_ command. 
+
+Commands
+--------
+
+.. note::
+
+   If incidental damage is enabled, the pk drawn for the target (:command:`weapon_effects.launch_pk`) will be applied to all platforms in the simulation. To apply incidental damage more appropriately, use :command:`weapon_effects.on_weapon_target_engagement` to degrade the pk (see example below).
+
+.. warning::
+
+   The following :command:`weapon_effects` commands are not compatible with WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY.  Use of these commands will result in an input processing error.
+   
+   * :command:`weapon_effects.intercept_pk`
+   * :command:`weapon_effects.launch_pk`
+   * :command:`weapon_effects.use_intercept_pk`
+   
+.. command:: pk_tables_path <directory>
+
+   Specifies the path to the Pk table files. May be a relative or absolute path. 
+
+.. command:: default_pk <pk-value>
+
+   The default constant Pk value to be used in a weapon engagement when no Pk table lookup is available for a given launcher and target platform type.
+
+   **Default:** 0.0
+
+.. command:: file_filter <string>
+
+   The filter to use when recursively scanning the pk_tables_path_ directory for Pk table files. Any file whose name matches the filter will be loaded. Wild-carding using '*' is suggested (e.g. \*.\*; \*.pk\*) and the filter may be surrounded by quotation marks if it contains white space characters.
+
+   **Default:** * (wild-card matches all files)
+
+Examples
+--------
+
+The example file below contains a WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY weapon_effects block.  The file is located in the *~/engage_pk_tables* working directory.
+
+.. list-table::
+   :header-rows: 1
+   
+   * - *~/engage_pk_tables/PkTableLethality.txt*
+   
+   * - .. code-block::
+   
+         weapon_effects ENGAGE_PK_TABLE_LETHALITY WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY
+ 
+            pk_tables_path ./
+            file_filter *.pk*
+            default_pk 0.7
+
+         end_weapon_effects
+
+The following 2 example Pk table files define a BOMBER/VEHICLE launcher/target platform type pair for target altitude of 9144 meters and target speeds of 131 and 262 knots, respectively. 
+
+
+.. note:: The location and file names of the Pk table files must be consistent with the arguments passed to the pk_tables_path_ and file_filter_ commands.
+
+.. list-table::
+   :header-rows: 1
+
+   * - *~/engage_pk_tables/BOMBER/VEHICLE/9144m/131knots.pkt*
+     - *~/engage_pk_tables/BOMBER/VEHICLE/9144m/262knots.pkt*
+	 
+   * - .. code-block::
+
+         Site Platform Type: BOMBER
+         Target Platform Type: VEHICLE
+         Length Units: m
+         Speed Units: knots
+         Altitude: 9144
+         Speed: 131
+                        -20000         0              20000          
+         -100000        0.9            0.9            0.9            
+         0              0.9            0.3            0.9            
+         100000         0.5            0.5            0.5
+
+     - .. code-block::
+
+         Site Platform Type: BOMBER
+         Target Platform Type: VEHICLE
+         Length Units: m
+         Speed Units: knots
+         Altitude: 9144
+         Speed: 262
+                       -20000         0              20000          
+        -100000        0.9            0.9            0.9            
+        0              0.9            0.3            0.9            
+        100000         0.5            0.5            0.5
+
+The following example shows how incidental damage can be applied more appropriately::
+
+   weapon_effects ENGAGE_PK_TABLE_LETHALITY WSF_ENGAGE_LAUNCH_PK_TABLE_LETHALITY
+
+      incidental_damage_allowed true
+      pk_tables_path ./
+
+      script void on_weapon_target_engagement(WsfPlatform aTarget)
+         WsfPlatform intendedTarget = TargetPlatform();
+         WsfPlatform actualTarget = aTarget;
+         if (actualTarget != intendedTarget)
+         {
+            double distance = MissDistance(actualTarget); # meters
+            if (distance <= 100.0)
+            {
+               SetPkDegrade(1.0);
+            }
+            else if (distance <= 250.0)
+            {
+               SetPkDegrade(0.5);
+            }
+            else
+            {
+               SetPkDegrade(0.0);
+            }
+         }
+      }
+      end_script
+   end_weapon_effects

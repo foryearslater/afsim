@@ -1,0 +1,440 @@
+:orphan:
+
+AFPerf Intermediate File Format
+===============================
+
+.. contents::
+   :local:
+   :depth: 2
+
+The AFPerf file format is an intermediate format which stores profiling data.
+It is structured to capture profiling data during execution in a reasonably efficient manner.
+It is not intended to be used directly; the normal and supported usage pattern is post-processing using the Artificer toolset.
+
+.. warning::
+   The AFPerf file format is an implementation detail and is subject to change without notice.
+
+In addition, there is no guarantee that future releases will retain support for collecting data in a given format version.
+The Artificer toolset will preserve compatibility to *post-process* earlier versions (subject to AFSIM deprecation policies), but capturing new data in an old format may not be possible.
+More specifically, a future release may, without notice, change the major version of the AFPerf file format and use it as the exclusive collection version.
+
+While the format is raw, its content is both structured and versioned.
+The AFPerf format may be considered a type of container format in that it can represent profiling data collected from multiple independent executions.
+This document describes the structure primarily as an internal implementation reference, but it may be found useful by someone seeking to process AFPerf files directly.
+Such direct processing of AFPerf files is generally discouraged, and should be done with care.
+Every tool which processes an AFPerf data file MUST recognize and check compatibility of the version record prior to processing.
+When a tool encounters a later minor version than known, it SHOULD ignore all unknown record types and additional fields for known record types.
+
+AFPerf Format Version 1.x
+-------------------------
+
+The AFPerf version 1.x format makes use of comma-delimited records.
+The format is text-based and MUST use UTF-8 encoding with no byte order marks.
+Processing compatibility with third party tools is a non-goal and should not be expected.
+In particular, the per-record variation in field count and semantics makes it incompatible with common CSV processing tools.
+The output format selection was constrained by a requirement to not depend on any third party library for functionality.
+The format design tries to balance size compactness, implementation efficiency, future implementation flexibility, as well as extensibility.
+
+The AFPerf format enables representing point and aggregate data samples for arbitrary performance measures.
+Point data represents a measurement from a single point in time, while aggregate data represents measurements between two points in time.
+The start and end time for an aggregate measurement may be identical, indicating a duration of zero.
+Aggregate data may have been aggregated at the time of collection and/or during subsequent processing.
+
+Aggregate data records may represent a single raw record or represent a processed derivation of multiple raw records.
+To distinguish between raw and processed aggregate records, raw records MUST contain a valid record id (run, region, section) with which they are associated.
+If the record id field is blank, the aggregate data represents a processed record derived from multiple raw records.
+A processed record MUST populate the aggregation type field, whereas raw records MUST leave it blank.
+
+The timing of when data measurements are performed varies with the profiling construct used to perform measurement.
+Data may be measured at an overall run level, a ``ProfilingRegion`` level, and a ``ProfilingSection`` level.
+For details on ``ProfilingRegion`` and ``ProfilingSection`` usage recommendations see the profiling interface documentation.
+
+For the limited purposes of the format specification, there are two important distinctions.
+First, a region covers a single interval (start/stop timestamp pair of nonnegative duration), while a section may include zero to many intervals.
+Second, regions are entirely disjoint or form a nested stack, while section intervals may partially overlap.
+As a result, section records contain a section interval id field, while it is implicit in the timed ordering of regions due to strict stacking.
+
+Depending on their definition, raw measurement types are either snapshot samples or duration/rate samples.
+The following table summarizes available measurement record points.
+
+=====================  =======================================  =========================
+Scope of collection    Snapshot Measurement                     Duration/Rate Measurement
+=====================  =======================================  =========================
+run as a whole         periodic (defined by profiling library)  periodic (defined by profiling library)
+region interval        start and end of interval                once at end of region
+section interval       start and end of interval                at end of each interval
+=====================  =======================================  =========================
+
+The preferred record separator is a single newline character ('\\n', U+000A) regardless of platform.
+For compatibility it may also use CRLF ('\r\n'), likewise regardless of platform.
+As a result, each record appears as a distinct line should a file be viewed with a text editor.
+If a record begins with the number sign character ('#', U+0023) then the entire record should be considered a comment and not processed.
+An empty record or record consisting only of tab and space characters MUST be likewise ignored.
+The first field in each record is the name of a record type.
+The record type defines all subsequent field count and meaning for each field.
+
+Each individual record follows the `RFC 4180 <https://tools.ietf.org/html/rfc4180>`_ standard for formatting and quoting.
+However the overall file is not an RFC-conformant CSV file since not all records contain the same number (or meaning) of fields as is required by Section 2.4.
+
+Integer values MUST be represented using decimal or hexadecimal format as specified in the C99 standard for ``strtoll`` in the default locale.
+(Octal values are not supported due to potential confusion with leading zeroes.)
+Floating-point values MUST be represented as defined in the C99 standard for ``strtod``, and MUST not have a non-whitespace final string component.
+Notably, floating-point values MAY use representations of infinity or not-a-number (NAN).
+Using appropriate measurement units, along with hexadecimal form for integers and exponential form for floating point values may result in a slightly more compact record size.
+
+A file may contain only point data, only aggregate data, or any combination for each measurement types.
+In particular, presence of aggregate data neither requires nor preclude presence of input point data.
+
+Record Ordering
+^^^^^^^^^^^^^^^
+
+For a file to be valid it MUST start with a specific file format header value.
+The file format header is the literal string ``# AFPerf v1``, followed by space (U+0020) padding such that the header size comprises exactly 16 bytes.
+As such, the literal hex byte sequence ``23 20 41 46 50 65 72 66 20 76 31 20 20 20 20 20`` may be used as file signature "magic" to identify AFPerf v1 files.
+This particular value was chosen for broad compatibility across possible future major version changes, since it is a single field CSV record, but also a comment for many common representation formats (e.g. Bourne shell, Python, YAML, binary packing, etc.).
+
+A file which only contains a version header is valid but meaningless other than an empty container.
+The minimal useful file contains a single version header followed by a single `RunInfo` record.
+Such a file is minimally useful to represent cases where no data was matched or collected for the given run.
+
+Additional version header lines may appear throughout the file contents, but MUST always be an identical header value.
+The minor and patch versions of AFPerf format may vary among multiple runs within a single container file, but all MUST be use an identical version header (i.e. major version).
+This can occur in many circumstances, including accumulating run data from multiple build versions and installation locations which support differing output versions.
+Before appending a new version header to an existing file, writing software MUST ensure that first file record version is compatible.
+Each occurence of a version header MUST be ordered such that it forms a logical boundary between other records.
+In other words, a new version record indicates that all records prior to it are in the old version, and all records following it are in the new version.
+
+A file may contain multiple `RunInfo` records to capture data from multiple runs within a single file.
+When multiple `RunInfo` records are present, there is no strict ordering requirement.
+In particular, complete records from multiple concurrent runs may be interleaved.
+
+There are no other ordering restrictions or constraints.
+In particular, point and aggregate data records may occur before the `MeasurementType` or `RunInfo` records to which they refer.
+This relaxed ordering provides flexibility in the writing of data during collection.
+The set of records provides sufficient information to reconstruct the execution order during later processing.
+
+Common Record Fields
+^^^^^^^^^^^^^^^^^^^^
+
+There are several types of fields which are common to many of the record types.
+For brevity they are defined here.
+
+aggregate type
+   The field describes the manner of aggregation for processed records (i.e. count, sum, mean, std deviation, max, min, etc.).
+   It MUST be blank for raw records, and MUST be populated for composite/processed records.
+
+aggregate timestamps
+   The start and stop timestamps of an aggregate data record reflect either a specific interval for raw aggregate records, or the overall combined span for processed aggregate records.
+
+record id
+   Several record types use id values to establish relational references to other records.
+   These ids provide flexibility in linking records in order to a) minimize the likelihood of ambiguous/colliding records, and b) ease visual inspection of file contents for internal debugging.
+   All id values should be unsigned integer values no larger than may be represented with 64 bits.
+
+   Note that each record type specifies required semantics on range for each id value.
+
+   A generator of AFPerf files may opt to not use id fields by leaving the field blank.
+   If id fields are not used, then the generator MUST ensure that consistent record block ordering is provided in the file.
+   Record block ordering means that point and aggregate data records immediately follow the `RunInfo`, `RegionStart`, `RegionStop`, `SectionStart` or `SectionStop` record with which they are associated.
+   By so doing, the data record block is unambiguously grouped.
+   Distinct record blocks may still be arbitrarily ordered (i.e not ordered according to record timestamp) as long as each block is internally consistent.
+
+tags
+   A tag is a name value pair of metadata which may be associated with collected data.
+   Tags can be useful to provide alternate axes on which to report or aggregate data.
+
+timestamp
+   An internal timestamp of a record, where the absolute value is arbitrary and implementation defined.
+   The value of a timestamp must be nonnegative.
+   The benefit of timestamps come through duration calculations between timestamps.
+   The time unit is fixed for any single run, however may vary between runs due to differences across systems, compilers, and compiler versions.
+
+Defined Record Types
+^^^^^^^^^^^^^^^^^^^^
+
+The following list contains the set of valid record types.
+Each record MUST begin with the first field designating the record type for that record.
+The record type may be represented as either the literal string name, or as the assigned record id.
+
+To provide for flexibility in implementation as well as future compatible extensibility, data record types (e.g. RegionPoint) are distinct from event record types (e.g. RegionStop).
+The data record types permit multiple measurements to be reported in a single record as well as multiple data records for the same event to be provided.
+This is intended to provide flexibility in compactness, while providing flexibility in format, in particular for reporting multiple aggregation types of multiple data points.
+
+.. csv-table::
+   :header-rows: 1
+   :align: left
+   :delim: |
+
+   Record Name         |  Version Available  |  Record Id
+   `(reserved)`        |                     |      0
+   `MeasurementType`_  |        1.0.0        |      1
+   `PauseResume`_      |        1.0.0        |      2
+   `RegionAggregate`_  |        1.0.0        |      3
+   `RegionPoint`_      |        1.0.0        |      4
+   `RegionStart`_      |        1.0.0        |      5
+   `RegionStop`_       |        1.0.0        |      6
+   `RunAggregate`_     |        1.0.0        |      7
+   `RunInfo`_          |        1.0.0        |      8
+   `RunPoint`_         |        1.0.0        |      9
+   `SectionAggregate`_ |        1.0.0        |     10
+   `SectionInfo`_      |        1.0.0        |     11
+   `SectionPoint`_     |        1.0.0        |     12
+   `SectionStart`_     |        1.0.0        |     13
+   `SectionStop`_      |        1.0.0        |     14
+
+
+MeasurementType
+"""""""""""""""
+
+This record provides definition for a particular element being measured.
+There is no central registry of known or available measurement types.
+This is intentional to provide flexibility in adding new measurement types as well as variation across platforms of what is collectable.
+While many data captures will contain identical measurement elements, each run MUST separately register all measurement types.
+
+Example possible measurement types and datatypes include:
+
+* Operating System, string
+* Operating System Version, string
+* CPU Model, string
+* Processing Cores, integer
+* Processing Threads, integer
+* System Available RAM, integer (in MB)
+* System Free RAM, integer (in MB)
+* Profiling Start, string (ISO 8601)
+* Profiling Finish, string (ISO 8601)
+* User run label, string
+* Scenario input files, string
+* Execution hostname, string
+
+Note that multiple `MeasurementType` records for the same run and measurement type id may be emitted.
+In such cases subsequent records update the previous definition.
+
+Format:  ``MeasurementType,<timestamp>,<run id>,<measurement type id>,<name>,<datatype>,<units>,<summary>,<description>``
+
+Example: ``MeasurementType,123456700,0xbad0bad0,0xabe,Execution Time,int64,nanoseconds,System execution,Some further elaboration on nuances of measured mechanism``
+
+===================  ===========  ==========
+Unique Field         Data Format  Definition
+===================  ===========  ==========
+run id               integer      The run id from a `RunInfo` record with which this record is associated.
+measurement type id  integer      A dynamically assigned id for the specified measurement type.
+                                  A type id value should be selected to minimize chance of duplication, including
+                                  for successive runs using the same measurement type names.
+name                 string       A human friendly name of the measurement
+datatype             string       Indicates the base datatype for all values of this MeasurementType.
+                                  This field enables processing tools to have some knowledge of exported data formats.
+                                  This value must be one of "double", "int32", "int64", "bool", "string", and "enum".
+                                  The "enum" datatype indicates strings with an expected small set of value options,
+                                  indicating to reporting tools that binning of values is a reasonable action.
+                                  For compactness "bool" a field MUST use only literal values ``0`` and ``1``.
+units                string       The units used for values in measurement records, in a machine parseable format.
+                                  A units value MUST be provided, and SHOULD be "text", "count", a time unit, or an amount-of-data units.
+                                  A units value of "text" MUST only be used when datatype is "string".
+                                  A units value of "count" MUST only be used when datatype is one of the numeric values.
+                                  Time units MUST use an SI abbreviated value of "s", "ms", "us"/"μs" (with U+00B5), or "ns".
+                                  Amount-of-data MUST use standard abbreviation and MUST follow IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
+summary              string       A human friendly summary of the measurement, no more than a full sentence.
+                                  This field may be blank.
+description          string       A human friendly description of the measurement, with further detail and explanation if warranted.
+===================  ===========  ==========
+
+PauseResume
+"""""""""""
+
+This record provides context of execution pauses experiences.
+Such pauses are frequently the result of execution debugging.
+A tool interpreting an AFPerf file SHOULD indicate these pause periods and provide an option to deduct the overlapping paused duration from intervals which partially or fully overlapped.
+
+Format:  ``PauseResume,<end timestamp>,<start timestamp>,<run id>``
+
+Example: ``PauseResume,123456750,123456700,0xbad0bad0``
+
+===============  ===========  ==========
+Unique Field     Data Format  Definition
+===============  ===========  ==========
+end timestamp    timestamp    The timestamp of when execution resumed.
+start timestamp  timestamp    The timestamp of when an execution pause began.
+===============  ===========  ==========
+
+RegionAggregate
+"""""""""""""""
+
+This records represents data measurements collected from ``ProfilingRegion`` usages  within code.
+
+Format:  ``RegionAggregate,<end timestamp>,<start timestamp>,<record id>,<aggregation type>,<measurement type id>,<value>[,<measurement type id>,<value>]``
+
+Example: ``RegionAggregate,123456788,123456784,0xaaaa0000,summation,0xcccddd,0.531``
+
+===============  ===========  ==========
+Unique Field     Data Format  Definition
+===============  ===========  ==========
+record id        integer      The most specific record with which the measurement data is associated.
+                              For raw records this MUST be the specific region id for which the data was measured.
+                              For processed records this MUST be the overall run id within which multiple region records were accumulated.
+===============  ===========  ==========
+
+RegionPoint
+"""""""""""
+
+There may be two `RegionPoint` records for each region id in cases of snapshot sampled data elements.
+One will have contain the timestamp of interval start, the other will contain the timestamp of stop.
+
+Format:  ``RegionPoint,<timestamp>,<region id>,<measurement type id>,<value>[,<measurement type id>,<value>]``
+
+Example: ``RegionPoint,123456789,0xaaaa0000,0xcccddd,0.531,0xeeeeffff,3.445e7``
+
+
+RegionStart
+"""""""""""
+
+This record type marks the start of a region interval.
+Since there can only be exactly one interval per region, `RegionStart` also serves as what would otherwise be a separate `RegionInfo` record.
+
+Format:  ``RegionStart,<timestamp>,<run id>,<region id>,<region label>,<tags>``
+
+Example: ``RegionStart,12345678,0xaaaa0000,rudimentary FooBar frobbing,platform=F15_ABC;component=sensor_XYZ``
+
+
+===============  ===========  ==========
+Unique Field     Data Format  Definition
+===============  ===========  ==========
+region id        integer      A region id value unique to each `RegionStart` record, even for distinct records with the same region label.
+===============  ===========  ==========
+
+RegionStop
+""""""""""
+
+This record type marks the stop of a region interval.
+
+Format:  ``RegionStop,<timestamp>,<region id>``
+
+Example: ``RegionStop,12345679,0xaaaa0000``
+
+
+RunAggregate
+""""""""""""
+
+Format:  ``RunAggregate,<end timestamp>,<start timestamp>,<run id>,<aggregation type>,<measurement type id>,<value>[,<measurement type id>,<value>]``
+
+Example: ``RunAggregate,123456786,123456780,0xbad0bad0,mean,0xcccddd,0.531``
+
+
+RunInfo
+"""""""
+
+This record provides basic information about a single run.
+It assigns a run id which enables associated records to be relationally linked to a given run.
+
+Format:  ``RunInfo,<start timestamp>,<timestamp units>,<wallclock time>,<afperf format version>,<run id>,<application name>,<application version>,<tags>``
+
+
+
+Example: ``RunInfo,0x11223344,nanoseconds,1639527663.713,0xbad0bad0,mission,2.9.0.21.12.13-g123456789ab,``
+
+=====================    ===========  ==========
+Field                    Data Format  Definition
+=====================    ===========  ==========
+start timestamp          integer      The initial timestamp value at the start of the run.
+                                      Other records related to this run can be calculated relative to this timestamp.
+                                      The combination of start timestamp and wallclock time allows subsequent processing to assign wallclock time to events.
+timestamp units          string       An SI division of seconds indicating the unit of timestamp values for this run.
+                                      Valid values are "seconds", "milliseconds", "microseconds", and "nanoseconds".
+wallclock time           decimal      UTC start time of the run as seconds since the Unix epoch.
+run id                   integer      A generated run id.
+                                      The value should be selected so as to have two arbitrary run ids be very unlikely to be duplicated.
+afperf format version    string       The AFPerf output format version used.
+                                      This is used to indicate minor versions of format semantics on a per-run basis.
+                                      This permits a single AFPerf file to be a container for multiple runs with different minor versions.
+                                      Must be three non-negative integer values, each separated by a single dot, e.g., "1.2.3".
+application name         string       The name of the application which executed the run.
+application version      string       The version of the application which executed the run.
+tags                     tags         An optional set of tags reflecting user-specified values, such as user understandable
+                                      run description, component type, host platform name etc.
+                                      This field should *not* be used for system measured data such as hostname, CPU information, etc.
+=====================    ===========  ==========
+
+RunPoint
+""""""""
+
+Represents point data collected throughout the entire run.
+There may be multiple `RunPoint` entries for a single run id and measurement type id.
+
+Format:  ``RunPoint,<timestamp>,<run id>,<measurement type id>,<value>``
+
+Example: ``RunPoint,123456786,0xbad0bad0,0xcccddd,0.531``
+
+SectionAggregate
+""""""""""""""""
+
+Format:  ``SectionAggregate,<end timestamp>,<start timestamp>,<record id>,<section interval id>,<aggregation type>,<measurement type id>,<value>[,<measurement type id>,<value>]``
+
+Example: ``SectionAggregate,123456788,123456784,0xaaaa0000,3,maximum,0xcccddd,0.531``
+
+Note: if ``<record id>`` is blank due to representing a processed record, then the ``<section interval id>`` should likewise be left blank.
+
+===============  ===========  ==========
+Unique Field     Data Format  Definition
+===============  ===========  ==========
+record id        integer      The most specific record with which the measurement data is associated.
+                              For raw records this MUST be the specific section id for which the data was measured.
+                              For processed records this MUST be the overall run id within which multiple section data was accumulated.
+===============  ===========  ==========
+
+SectionInfo
+"""""""""""
+
+This record provides information about a ``ProfilingSection``.
+
+The `SectionInfo` record contains a timestamp field for orthogonality with other record types.
+It does not have a clear interpretation for `SectionInfo` and therefore may be blank.
+In code, ``ProfilingSection`` is often generated separately from starting and thus not relevant to actual section intervals.
+
+Format:  ``SectionInfo,<timestamp>,<run id>,<section id>,<section label>,<tags>``
+
+Example: ``SectionInfo,0xbbbb0000,0x99887766,fancy FooBar frobbing,platform=F15_DEF;component=sensor_RST``
+
+The section id is unique within each `SectionInfo` record, i.e. distinguishes each section creation during runtime.
+
+===============  ===========  ==========
+Unique Field     Data Format  Definition
+===============  ===========  ==========
+record id        integer      The most specific record with which the measurement data is associated.
+                              For raw records this MUST be the specific section id for which the data was measured.
+                              For processed records this MUST be the overall run id within which multiple section data was accumulated.
+===============  ===========  ==========
+
+
+SectionPoint
+""""""""""""
+
+Format:  ``SectionPoint,<timestamp>,<section id>,<section interval id>,<measurement type id>,<value>[,<measurement type id>,<value>]``
+
+Example: ``SectionPoint,123456789,0xaaaa0000,3,0xcccddd,0.531``
+
+SectionStart
+""""""""""""
+
+This record marks the start of a distinct interval within a section.
+
+Format:  ``SectionStart,<timestamp>,<section id>,<section interval id>``
+
+Example: ``SectionStart,0xbbbb0000,0x99887766,34,fancy FooBar frobbing``
+
+
+===================  ===========  ==========
+Unique Field         Data Format  Definition
+===================  ===========  ==========
+section id           integer      The section id, as defined by a `SectionInfo` record, with which this interval is associated.
+section interval id  integer      A unique id for the interval.
+                                  The interval id need only be unique within matching section ids, it is not required to be globally unique.
+                                  Specifically, a simple incrementing counter of intervals for each section is sufficient (but not required).
+===================  ===========  ==========
+
+SectionStop
+"""""""""""
+
+This records marks the close of a section interval.
+
+Format:  ``SectionStop,<timestamp>,<section id>,<section interval id>``
+
+Example: ``SectionStop,12345679,0xaaaa0000,3``

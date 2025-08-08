@@ -1,0 +1,675 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WsfConstellationMaker &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="WsfControlMessage" href="wsfcontrolmessage.html" />
+    <link rel="prev" title="WsfConstellation" href="wsfconstellation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfcontrolmessage.html" title="WsfControlMessage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="wsfconstellation.html" title="WsfConstellation"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="wsfconstellationmaker">
+<h1>WsfConstellationMaker<a class="headerlink" href="#wsfconstellationmaker" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+WsfConstellationMaker</dt>
+<dd></dd></dl>
+
+<p><a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> provides a scripted ability to create
+constellations of space platforms. Created constellations can then be managed
+with a <a class="reference internal" href="wsfconstellation.html#WsfConstellation" title="WsfConstellation"><span class="xref wsf wsf-class">WsfConstellation</span></a>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Constellations created by this object are all formed by defining
+a set of orbital planes, with each plane having an equal number of members.
+The orbits in each plane differ only in the initial anomaly of the member, and
+are distributed uniformly around one full orbit. In this way the plane’s members
+sweep through the same path in the orbital plane, but reach each point in that
+path at a different time.</p>
+<p>The inclination and the size of the orbits are the same for each member of the
+constellation. The RAAN of the orbital planes is spread evenly over a
+specifiable range, though this is typically either the full 360 degrees
+or 180 degrees.</p>
+<p>The relative placement of members of a plane, and those members one plane to the
+east is controlled by the inter-plane phasing. This phasing advances the members
+of the next plane a given amount in true anomaly.</p>
+<p>The RAAN of the first orbital plane, and the true anomaly of the first member of
+the first orbital plane can be set to provide fine control over the placement of
+the constellation members.</p>
+<section id="design-types">
+<h3>Design Types<a class="headerlink" href="#design-types" title="Permalink to this headline">¶</a></h3>
+<p>There are three overall design types supported by this object: the general
+design, the Walker Delta, and the Walker Star. Each design sets the basic
+parameters of the constellation.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>A general design is defined by the number of planes, <img class="math" src="../../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/>, the number of satellites
+per plane, <img class="math" src="../../_images/math/106b04b320e75010b1d8029e59244f234f75e6f9.png" alt="s"/>, the inter-plane phasing, <img class="math" src="../../_images/math/21d5e793ca9c1331329f1707e56af06fc704d26d.png" alt="\Delta \nu"/>, and the range of RAAN
+over which the orbital planes are distributed.</p></li>
+<li><p>A Walker Delta design is defined by the total number of
+satellites, <img class="math" src="../../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/>, the number of planes, <img class="math" src="../../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/>, and an inter-plane
+phasing given by an integer <img class="math" src="../../_images/math/5b7752c757e0b691a80ab8227eadb8a8389dc58a.png" alt="f"/>. A Walker Delta design spreads its
+orbital planes over a full 360 degrees in RAAN.</p></li>
+<li><p>A Walker Star design is defined by the total number of satellites, <img class="math" src="../../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/>,
+the number of planes, <img class="math" src="../../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/>, and an inter-plane phasing given by an
+integer <img class="math" src="../../_images/math/5b7752c757e0b691a80ab8227eadb8a8389dc58a.png" alt="f"/>. A Walker Star design spreads its orbital planes over 180
+degrees in RAAN.</p></li>
+</ul>
+</div></blockquote>
+<p>For Walker designs, the number of satellites per plane, <img class="math" src="../../_images/math/106b04b320e75010b1d8029e59244f234f75e6f9.png" alt="s"/>, is easily
+computed: <img class="math" src="../../_images/math/a8a8973f296509a81e7c527a4133bbd3ac6bb96e.png" alt="s = t / p"/>. For this reason, <img class="math" src="../../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/> must be evenly divisible
+by <img class="math" src="../../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/>. The Walker <img class="math" src="../../_images/math/5b7752c757e0b691a80ab8227eadb8a8389dc58a.png" alt="f"/> parameter is limited to be in the range
+<img class="math" src="../../_images/math/5a5db5f3f5c05b806318ea2b8bbc5432f8857c77.png" alt="[0, p-1]"/>. <img class="math" src="../../_images/math/5b7752c757e0b691a80ab8227eadb8a8389dc58a.png" alt="f"/> is equivalent to <img class="math" src="../../_images/math/21d5e793ca9c1331329f1707e56af06fc704d26d.png" alt="\Delta \nu"/>,
+with the two related by <img class="math" src="../../_images/math/4cfbacbca4dba71e4c63ed82537a19fe2ce9f256.png" alt="\Delta \nu = (360 / t) f"/>.</p>
+</section>
+<section id="platform-instances">
+<h3>Platform Instances<a class="headerlink" href="#platform-instances" title="Permalink to this headline">¶</a></h3>
+<p>Constellations created with <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> objects will have
+a name. This name controls the names of the platform instances that will ultimately
+form the constellation. If the constellation has a name ‘&lt;name&gt;’, then the ‘&lt;nth&gt;’
+member of plane ‘&lt;plane&gt;’ will have the name ‘&lt;name&gt;_&lt;plane&gt;_&lt;nth&gt;’. For
+example, the 0th member of the 4th plane of the constellation named ‘sample’ will
+have the name ‘sample_4_0’.</p>
+<p>The type of the platform instances created by a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a>
+instance is a user-specifiable parameter.</p>
+</section>
+</section>
+<section id="static-methods">
+<h2>Static Methods<a class="headerlink" href="#static-methods" title="Permalink to this headline">¶</a></h2>
+<p>The following methods are static, and can be used to create a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a>.</p>
+<dl class="method">
+<dt id="WsfConstellationMaker.CreateGeneral">
+static <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker">WsfConstellationMaker</a> CreateGeneral<span class="sig-paren">(</span><em class="sig-param">int aNumPlanes</em>, <em class="sig-param">int aSatellitesPerPlane</em>, <em class="sig-param">double aAnomalyAlias</em>, <em class="sig-param">double aRAAN_Range</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.CreateGeneral" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new instance of a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> that can be used to generate
+a general constellation. These constellations are defined by the number of satellites
+per plane, the number of planes, the inter-plane phasing parameter in degrees, aAnomalyAlias, and the
+range in RAAN in degrees over which the planes of the constellation are to be spread, aRAAN_Range. If there are any
+input arguments that are out of range, this method will print a message and return an
+invalid object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.CreateWalkerDelta">
+static <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker">WsfConstellationMaker</a> CreateWalkerDelta<span class="sig-paren">(</span><em class="sig-param">int aTotalSatellites</em>, <em class="sig-param">int aNumPlanes</em>, <em class="sig-param">int aWalkerF</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.CreateWalkerDelta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new instance of a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> that can be used to generate
+Walker Delta constellations. These constellations are defined by the total number of satellites,
+the number of planes, and the inter-plane phasing parameter, f. If the total number of satellites
+is not evenly divisible by the number of planes, or if the f parameter is not between zero
+and the number of planes minus one, then this method will return an invalid
+object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.CreateWalkerStar">
+static <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker">WsfConstellationMaker</a> CreateWalkerStar<span class="sig-paren">(</span><em class="sig-param">int aTotalSatellites</em>, <em class="sig-param">int aNumPlanes</em>, <em class="sig-param">int aWalkerF</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.CreateWalkerStar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new instance of a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> that can be used to generate
+Walker Star constellations. These constellations are defined by the total number of
+satellites, the number of planes, and the inter-plane phasing parameter, f. If the
+total number of satellites is not evenly divisible by the number of planes,
+or if the f parameter is not between zero and the number of planes minus one,
+then this method will return an invalid object.</p>
+</dd></dl>
+
+</section>
+<section id="action-methods">
+<h2>Action Methods<a class="headerlink" href="#action-methods" title="Permalink to this headline">¶</a></h2>
+<p>These methods are the main actions taken with this object. This
+<a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> must be fully set up
+(i.e., <a class="reference internal" href="#WsfConstellationMaker.IsSetup" title="WsfConstellationMaker.IsSetup"><span class="xref wsf wsf-method">WsfConstellationMaker.IsSetup</span></a> returns true) to use these methods.
+If these are used on an object that is not fully set up, they will print out
+the missing or out-of-range parameters to the console.</p>
+<dl class="method">
+<dt id="WsfConstellationMaker.DetectConjunction">
+bool DetectConjunction<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.DetectConjunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the constellation design represented by this object would have
+members that suffer a conjunction with other members of the constellation.
+This method can also return false if this is called on an object that is
+not fully set up.</p>
+<p>This method does not require that the constellation to be created to give
+results; this method is useful for filtering out possible constellation
+designs before they are instantiated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Create">
+<a class="reference internal" href="wsfconstellation.html#WsfConstellation" title="WsfConstellation">WsfConstellation</a> Create<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will instantiate a set of platforms into the simulation that
+realize the constellation design represented by this object. This method
+returns a <a class="reference internal" href="wsfconstellation.html#WsfConstellation" title="WsfConstellation"><span class="xref wsf wsf-class">WsfConstellation</span></a> object the represents the generated
+collection of platforms. If there is a problem with creating the
+constellation, this method returns an invalid object.</p>
+<p>The platforms created by this method will be added with a creation time
+equal to the simulation time at which this method is called. Further, the
+epoch of the orbits for the platforms created by this method will be set
+to the time at which this method is called.</p>
+<p>The platforms that are created will have the type selected by the user
+(see <a class="reference internal" href="#WsfConstellationMaker.SetPlatformType" title="WsfConstellationMaker.SetPlatformType"><span class="xref wsf wsf-method">WsfConstellationMaker.SetPlatformType</span></a>). The platform type
+so specified must exist, and must have a space mover.
+The constellation name (see <a class="reference internal" href="#WsfConstellationMaker.SetConstellationName" title="WsfConstellationMaker.SetConstellationName"><span class="xref wsf wsf-method">WsfConstellationMaker.SetConstellationName</span></a>)
+must be unique in a simulation, and be chosen so that no possible member
+platform would be created with a name that is already used by a platform in
+the simulation. If any of these requirements are violated, this method will
+add nothing to the simulation, and return an invalid object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Create">
+<a class="reference internal" href="wsfconstellation.html#WsfConstellation" title="WsfConstellation">WsfConstellation</a> Create<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="string.html#string" title="string">string</a> aFilterMethodName</em>, <em class="sig-param"><a class="reference internal" href="string.html#string" title="string">string</a> aSetupMethodName</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method operates similarly to the previous, but allows for more customization
+by the user via two scripts.</p>
+<p>The first argument, aFilterMethodName, provides the name of a script
+defined in the global context that can be used to filter out some constellation
+members before they are added to the simulation. For each potential constellation
+member, the script named in the first argument is called, and the member is not
+added if the script returns true. The script named in the first argument must
+return a bool and must accept two integer arguments: the first giving the
+orbital plane in which the proposed member would reside, and the second giving
+the satellite number in the plane in which the proposed member would reside.</p>
+<p>As an example, providing the name of the following script as the first argument
+would filter out the constellation member in plane 1, position 3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script</span> <span class="nb">bool</span> <span class="n">ExampleFilterScript</span><span class="p">(</span><span class="nb">int</span> <span class="n">aPlane</span><span class="p">,</span> <span class="nb">int</span> <span class="n">aSatellite</span><span class="p">)</span>
+   <span class="nb">bool</span> <span class="n">retval</span> <span class="o">=</span> <span class="n">false</span><span class="p">;</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">aPlane</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">aSatellite</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">retval</span> <span class="o">=</span> <span class="n">true</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="k">return</span> <span class="n">retval</span><span class="p">;</span>
+<span class="n">end_script</span>
+</pre></div>
+</div>
+<p>The second argument, aSetupMethodName, provides the name of a script defined in the global
+context that can be used to perform any post-initialization setup for the
+member platforms. After all member platforms have been added to the
+simulation, the script named in the second argument to this function is
+called for each member. The script should return nothing, and accept four
+arguments: the <a class="reference internal" href="wsfconstellation.html#WsfConstellation" title="WsfConstellation"><span class="xref wsf wsf-class">WsfConstellation</span></a> object in which the platform is
+a member; an integer giving the orbital plane of the member; an integer
+giving the satellite number in the plane of the member; and the
+<a class="reference internal" href="wsfplatform.html#WsfPlatform" title="WsfPlatform"><span class="xref wsf wsf-class">WsfPlatform</span></a> for the member itself.</p>
+<p>As an example, providing the name of the following script as the second
+argument would print out a message detailing each member of the constellation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script</span> <span class="n">void</span> <span class="n">ExampleSetupScript</span><span class="p">(</span><span class="n">WsfConstellation</span> <span class="n">aConstellation</span><span class="p">,</span> <span class="nb">int</span> <span class="n">aPlane</span><span class="p">,</span> <span class="nb">int</span> <span class="n">aSatellite</span><span class="p">,</span> <span class="n">WsfPlatform</span> <span class="n">aMember</span><span class="p">)</span>
+   <span class="n">writeln</span><span class="p">(</span><span class="s2">&quot;Constellation &quot;</span><span class="p">,</span> <span class="n">aConstellation</span><span class="o">.</span><span class="n">ConstellationName</span><span class="p">(),</span> <span class="s2">&quot; has member &quot;</span><span class="p">,</span>
+           <span class="n">aMember</span><span class="o">.</span><span class="n">Name</span><span class="p">(),</span> <span class="s2">&quot; in orbital plane &quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">string</span><span class="p">)</span><span class="n">aPlane</span><span class="p">,</span> <span class="s2">&quot; position &quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">string</span><span class="p">)</span><span class="n">aSatellite</span><span class="p">);</span>
+<span class="n">end_script</span>
+</pre></div>
+</div>
+<p>One or both of these arguments can be an empty string, in which case either
+filtering or post-initialization setup is skipped. The zero-argument form
+of this method is equivalent to this method with two empty strings as
+arguments. Scripts with the given names must actually exist, and their
+signatures must conform to the requirements laid out above.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.WriteToFile">
+bool WriteToFile<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.WriteToFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method creates an AFSIM input file for the constellation design
+represented by this object. The name of the generated file will be based
+on the name of the constellation: if the constellation has the name
+‘&lt;name&gt;’, then the generated file will be called ‘&lt;name&gt;_autogen.txt’. This
+file will be generated into the folder specified by the path set on this
+object (see <a class="reference internal" href="#WsfConstellationMaker.BasePath" title="WsfConstellationMaker.BasePath"><span class="xref wsf wsf-method">WsfConstellationMaker.BasePath</span></a> and
+<a class="reference internal" href="#WsfConstellationMaker.SetBasePath" title="WsfConstellationMaker.SetBasePath"><span class="xref wsf wsf-method">WsfConstellationMaker.SetBasePath</span></a>). If there are any errors
+during this method, a message will be output and this method will return
+false.</p>
+</dd></dl>
+
+</section>
+<section id="status-methods">
+<h2>Status Methods<a class="headerlink" href="#status-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfConstellationMaker.IsSetup">
+bool IsSetup<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.IsSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the constellation parameters have been fully defined, or
+false if they have not been. See <a class="reference internal" href="#wsfconstellationmaker-setup-methods"><span class="std std-ref">Setup Methods</span></a>
+for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Validate">
+<a class="reference internal" href="string.html#string" title="string">string</a> Validate<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string indicating which constellation parameters are out of range,
+or which have not been defined. The returned string will be empty if there
+are no problems with the constellation parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.IsGeneral">
+bool IsGeneral<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.IsGeneral" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the constellation that this object will create has a general
+design.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.IsWalkerDelta">
+bool IsWalkerDelta<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.IsWalkerDelta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the constellation that this object will create has a
+Walker Delta design.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.IsWalkerStar">
+bool IsWalkerStar<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.IsWalkerStar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the constellation that this object will create has a Walker
+Star design.</p>
+</dd></dl>
+
+</section>
+<section id="setup-methods">
+<span id="wsfconstellationmaker-setup-methods"></span><h2>Setup Methods<a class="headerlink" href="#setup-methods" title="Permalink to this headline">¶</a></h2>
+<p>These methods are used to setup the remaining details of the constellations that
+are generated by a <a class="reference internal" href="#WsfConstellationMaker" title="WsfConstellationMaker"><span class="xref wsf wsf-class">WsfConstellationMaker</span></a> that are not set upon initial
+creation. If the object is not completely set up using these methods, this object
+will be unable to create constellations. With the exception of the base path
+(see <a class="reference internal" href="#WsfConstellationMaker.SetBasePath" title="WsfConstellationMaker.SetBasePath"><span class="xref wsf wsf-method">WsfConstellationMaker.SetBasePath</span></a>), each of the following
+parameters must be explicitly set. Note that there are four equivalent ways
+of specifying the size of the orbit.</p>
+<dl class="method">
+<dt id="WsfConstellationMaker.SetSemiMajorAxis">
+void SetSemiMajorAxis<span class="sig-paren">(</span><em class="sig-param">double aSemiMajorAxis</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetSemiMajorAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the semi-major axis in meters of the orbits for the constellations
+created by this object. This is one of four equivalent ways of specifying
+orbit size.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetAltitude">
+void SetAltitude<span class="sig-paren">(</span><em class="sig-param">double aAltitude</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetAltitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the altitude in meters of the orbits for the constellations created by
+this object. This is one of four equivalent ways of specifying orbit size.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetRevolutionsPerDay">
+void SetRevolutionsPerDay<span class="sig-paren">(</span><em class="sig-param">double aRevolutionsPerDay</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetRevolutionsPerDay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of revolutions per day of the orbits for the constellations
+created by this object. This is one of four equivalent ways of specifying
+orbit size.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetPeriod">
+void SetPeriod<span class="sig-paren">(</span><em class="sig-param">double aPeriod</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetPeriod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the period in seconds of the orbits for the constellations created by
+this object. This is one of four equivalent ways of specifying orbit size.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetInclination">
+void SetInclination<span class="sig-paren">(</span><em class="sig-param">double aInclination</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetInclination" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the inclination in degrees of the orbits for the constellations created
+by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetInitialRAAN">
+void SetInitialRAAN<span class="sig-paren">(</span><em class="sig-param">double aInitialRAAN_Deg</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetInitialRAAN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the RAAN of the first orbital plane for the constellations created by
+this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetInitialAnomaly">
+void SetInitialAnomaly<span class="sig-paren">(</span><em class="sig-param">double aInitialAnomalyDeg</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetInitialAnomaly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the true anomaly in degrees of the first member of the first orbital
+plane for the constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetConstellationName">
+void SetConstellationName<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="string.html#string" title="string">string</a> aConstellationName</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetConstellationName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the name of the constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetPlatformType">
+void SetPlatformType<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="string.html#string" title="string">string</a> aPlatformType</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetPlatformType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the platform type of the member platforms for the constellations
+created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SetBasePath">
+void SetBasePath<span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="path.html#Path" title="Path">Path</a> aPath</em><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SetBasePath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the path of the folder into which any files will be generated. The
+base path defaults to the current working directory.</p>
+</dd></dl>
+
+</section>
+<section id="parameter-methods">
+<h2>Parameter Methods<a class="headerlink" href="#parameter-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="WsfConstellationMaker.TotalSatellites">
+int TotalSatellites<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.TotalSatellites" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the total number of members, <img class="math" src="../../_images/math/907a4add6d5db5b7f197f7924f1371b8ac404fe6.png" alt="t"/>, for constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Planes">
+int Planes<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Planes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of orbital planes, <img class="math" src="../../_images/math/141bbefb74014fc5e43499901bf78607ae335583.png" alt="p"/>, for constellations created by this
+object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SatellitesPerPlane">
+int SatellitesPerPlane<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SatellitesPerPlane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of members per orbital plane, <img class="math" src="../../_images/math/106b04b320e75010b1d8029e59244f234f75e6f9.png" alt="s"/>, for constellations created by
+this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.WalkerF">
+int WalkerF<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.WalkerF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Walker <img class="math" src="../../_images/math/5b7752c757e0b691a80ab8227eadb8a8389dc58a.png" alt="f"/> parameter for constellations created by this object. If
+this object was created with <a class="reference internal" href="#WsfConstellationMaker.CreateGeneral" title="WsfConstellationMaker.CreateGeneral"><span class="xref wsf wsf-method">WsfConstellationMaker.CreateGeneral</span></a>
+(i.e., <a class="reference internal" href="#WsfConstellationMaker.IsGeneral" title="WsfConstellationMaker.IsGeneral"><span class="xref wsf wsf-method">WsfConstellationMaker.IsGeneral</span></a> returns true), then this
+method will return 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.AnomalyAlias">
+double AnomalyAlias<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.AnomalyAlias" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the inter-plane phasing for constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.RAAN_Range">
+double RAAN_Range<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.RAAN_Range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the range in RAAN over which the orbital planes are distributed for
+constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.SemiMajorAxis">
+double SemiMajorAxis<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.SemiMajorAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the semi-major axis in meters of the orbits for constellations
+created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Altitude">
+double Altitude<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Altitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the altitude in meters of the orbits for constellations created
+by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.RevolutionsPerDay">
+double RevolutionsPerDay<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.RevolutionsPerDay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of revolutions per day of the orbits for constellations
+created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Period">
+double Period<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Period" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the period in seconds of the orbits for constellations created
+by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.Inclination">
+double Inclination<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.Inclination" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the inclination in degrees of the orbits for constellations created
+by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.InitialRAAN">
+double InitialRAAN<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.InitialRAAN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the RAAN in degrees of the first plane for constellations created by
+this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.InitialAnomaly">
+double InitialAnomaly<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.InitialAnomaly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the true anomaly in degrees of the first member of the first plane
+for constellations created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.ConstellationName">
+<a class="reference internal" href="string.html#string" title="string">string</a> ConstellationName<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.ConstellationName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the name of the constellation created by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.PlatformType">
+<a class="reference internal" href="string.html#string" title="string">string</a> PlatformType<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.PlatformType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the platform of the constellation members for constellations created
+by this object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="WsfConstellationMaker.BasePath">
+<a class="reference internal" href="path.html#Path" title="Path">Path</a> BasePath<span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#WsfConstellationMaker.BasePath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the path of the folder into which any files will be generated.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/script/wsfconstellationmaker.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="wsfcontrolmessage.html" title="WsfControlMessage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="wsfconstellation.html" title="WsfConstellation"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

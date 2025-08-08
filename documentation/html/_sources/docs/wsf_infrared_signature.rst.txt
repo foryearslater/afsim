@@ -1,0 +1,96 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_INFRARED_SIGNATURE
+----------------------
+
+.. model:: infrared_signature WSF_INFRARED_SIGNATURE
+
+.. parsed-literal::
+
+    infrared_signature *<signature-name>* (:model:`WSF_INFRARED_SIGNATURE`)
+       interpolate_tables_ <boolean-value>
+       interpolation_type_ [linear | logarithmic]
+       state_ <state-name> | default
+          band_ [ short | medium | long | very_long | default ]
+             ... :ref:`Azimuth-elevation_Table_Definition` ...
+          band_ ...
+             ... :ref:`Azimuth-elevation_Table_Definition` ...
+       state_ ...
+    end_infrared_signature
+
+Overview
+========
+
+:model:`WSF_INFRARED_SIGNATURE` provides the standard implementation used by :command:`infrared_signature` if the user did not specify a different implementation model.  This model implements the signature as one or more sets of tables that apply when the platform is in a particular 'state'.  A 'state' represents a condition such as 'bay-doors-open'.
+
+The units for the dependent variable in the tables should be units of radiant intensity (W/sr).
+
+**<signature-name>** is the name to be given to the signature. If the name specifies the name of an existing definition then the new definition will replace the current one (i.e. the last occurrence will be used for the simulation.)
+
+.. block:: WSF_INFRARED_SIGNATURE
+
+Commands
+========
+
+.. command:: interpolate_tables <boolean-value>
+
+   Specifies whether to apply interpolation to the defined :ref:`Azimuth-elevation_Table_Definition`. The type of interpolation can be either linear or logarithmic (see interpolation_type_).
+
+   **Default** true
+
+.. command:: interpolation_type <linear | logarithmic>
+
+   Specifies whether to use linear or logarithmic interpolation when interpolating data in the azimuth elevation tables.
+
+   **Default** linear
+
+.. command:: state <state-name>
+
+   Indicates that the following table definition will be used when the platform is in the signature state *<state-name>*. If <state-name> is **default** then the subsequent table will be used if the platform is in a signature state that does   not match any of the states defined in the signature.
+
+   If a **state** command is not specified then the signature has one signature table that applies to all signature states.
+
+.. command:: band  [ short | medium | long | very_long | default ]
+
+   Indicates that the following table will be used when the sensing infrared sensor is operating with the specified band. Where:
+
+   short:
+      1 to 3 microns
+   medium:
+      3 to 8 microns (3 to 5 nominally)
+   long:
+      8 to 14 microns
+   very_long:
+      14 microns and beyond
+
+   Every state must define every band or must define a default band.
+
+Examples
+========
+
+Use a constant signature named *cueball* for all states and bands::
+
+ infrared_signature cueball
+    constant 10 w/sr
+ end_infrared_signature
+
+Use a band-dependent signature by default and a fixed signature if the bay doors are open::
+
+ infrared_signature dummy
+    state default
+       band medium
+          constant 10 w/sr
+       band default
+          constant 20 w/sr
+    state bays_open
+       constant 30 w/sr
+ end_infrared_signature

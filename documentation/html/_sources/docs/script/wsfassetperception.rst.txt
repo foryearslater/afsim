@@ -1,0 +1,124 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfAssetPerception
+------------------
+
+.. class:: WsfAssetPerception inherits Object
+
+General Methods
+===============
+
+.. method:: int Index()
+
+   The simulation index of the platform that this perception represents.  This is useful with :method:`WsfSimulation.FindPlatform`.
+
+.. method:: double Time()
+
+   The simulation time at which this perception was captured.
+
+.. method:: WsfGeoPoint Location()
+
+   Perceived location.
+
+.. method:: Vec3 VelocityWCS()
+
+   Perceived WCS velocity vector; in meters per second.
+
+.. method:: Vec3 VelocityNED()
+
+   Perceived NED velocity vector; in meters per second.
+
+.. method:: double Speed()
+
+   Perceived speed, units: meters/seconds.
+
+.. method:: Vec3 OrientationNED()
+
+   Perceived NED orientation angles (heading, pitch, roll); in degrees.
+
+.. method:: Vec3 OrientationWCS()
+
+   Perceived WCS orientation angles (psi, theta, phi); in degrees.
+
+.. method:: double Heading()
+
+   Perceived heading, units: degrees, reference: clockwise from north.
+
+.. method:: double Pitch()
+
+   Perceived pitch angle; in degrees.
+
+.. method:: double Roll()
+
+   Perceived roll angle; in degrees.
+
+
+Relative Geometry Methods
+=========================
+
+.. method:: double InterceptLocation(WsfTrack aTrack, WsfWaypoint aWaypoint)
+
+   Returns the intercept time and fills the WsfWaypoint argument with 2D location of the intercept point, bearing to the intercept point, and if possible: altitude.  An intercept time of -1 indicates that there is no solution.
+
+.. method:: double TrueBearingTo(WsfGeoPoint aLocation)
+
+   Returns the absolute bearing of the vector between this asset perception and the provided location; in degrees.
+
+.. method:: double RelativeBearingTo(WsfGeoPoint aLocation)
+
+   Returns the relative bearing to the provided location; in degrees.  This is the shortest angle between the assets bearing and the true bearing to the provided location.
+
+.. method:: WsfGeoPoint ClosestApproachOf(WsfTrack aTrack)
+
+   Returns the approximate point at which the track would pass closest to the asset perception. It is derived by extending the horizontal components of the velocity vector of the track and determining the point at which the line passes closest to the asset perception. If the track is not moving or if it is coincident with the requesting asset
+   perception, the returned value will be the current position of the track.
+
+   .. note::
+
+      The velocity of the requesting asset perception is not considered in this calculation (i.e., it is not an intercept calculation).
+
+
+.. method:: double ClosingSpeedOf(WsfTrack aTrack)
+
+   Returns the closing speed in meters per second between the asset perception and the track. This value is the component of the total velocity in the direction of the vector between the two objects. Positive values mean the objects are closing and negative values mean the objects are separating.
+
+
+Sub-System Access
+=================
+
+.. method:: int SystemCount()
+
+   The number of recognized subsystems perceived on the platform.
+
+.. method:: string SystemType(int aIndex)
+
+   Returns a string identifying the input type of the subsystem at the given index.
+
+   Example values: "RADAR_MISSILE", "XYZ_SENSOR", or any other defined type.
+
+.. method:: string SystemKind(int aIndex)
+
+   Returns a string identifying the kind of the subsystem at the given index.
+
+   Possible values: 'sensor', 'weapon', 'jammer', 'processor', 'uplink', or 'none'
+
+.. method:: string SystemName(int aIndex)
+
+   Returns the name of the instance of the subsystem at the given index as specified on the platform or in the platform_type definition.
+
+.. method:: int SystemReadyAssignment(int aIndex)
+
+   Returns the number of tasks this subsystem can still receive and/or handle. For explicit weapons and sensors, it is the difference between the maximum_request_count and the number of active requests across all modes. For jammers, it is the difference between the maximum number of spots available and the number of active spots across all modes.
+
+.. method:: double SystemQuantityRemaining(int aIndex)
+
+   Returns a numerical value representing how much subsystem usage is available.  For explicit weapons, it is simply the weapon count.  For sensors & jammers, it is the same value as return **SystemReadyAssignment** method.  For uplinks its the available uplink slots remaining.

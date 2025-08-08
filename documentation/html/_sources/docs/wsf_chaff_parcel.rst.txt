@@ -1,0 +1,122 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI//REL TO USA ONLY
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_CHAFF_PARCEL
+----------------
+
+.. model:: chaff_parcel WSF_CHAFF_PARCEL
+
+.. parsed-literal::
+
+   chaff_parcel <name> :model:`WSF_CHAFF_PARCEL`
+      # Geometric inputs
+      bloom_diameter_ ...
+      expansion_time_constant_ | bloom_time_constant_ ...
+
+      # Kinematic inputs
+      terminal_velocity_ ...
+      deceleration_rate_ ...
+
+      # Lifetime and debugging inputs
+      expiration_time_ ...
+      debug_ ...
+
+      # Signal return (RCS) inputs
+      `RCS Related Commands`_
+
+   end_chaff_parcel
+
+Overview
+========
+
+:model:`WSF_CHAFF_PARCEL` represents a chaff parcel or bundle dispensed from a system of ejectors composing a :model:`WSF_CHAFF_WEAPON`.
+They are modeled as spheres, whose mean radial size is computed as an exponential growth according to the bloom equation:
+
+.. math::
+   R_{parcel} = 0.5D_{max}(1 - e^{-t_{fall}/\tau_{D}})
+
+where :math:`D_{max}` is the bloom_diameter_, :math:`t_{fall}` is time since the parcel was ejected, and :math:`\tau_{D}` is the 
+expansion_time_constant_.
+
+A group of one or more parcels dropped with a call to script method :method:`WsfChaffWeapon.DropChaffCloud` together form a chaff cloud. 
+When illuminated by RF energy, each parcel produces a return signal with a radar cross section defined by:
+
+.. math::
+   \sigma_{parcel} = \frac{A_{p}}{N}\Big[1 - e^{-(N\sigma_{max}/A_{p})}\Big]
+
+where :math:`A_{p}` is the bistatic presented area of the cloud, :math:`N` is the number of parcels in the cloud, and :math:`\sigma_{max}`
+is the maximum theoretical RCS of the dispersed parcel when its dipoles are widely spaced (i.e., no shielding effects). 
+
+The bistatic presented area of the cloud accounts for parcel blooming and aspect angle dependency. It is the average of the areas 
+presented to the transmitter and receiver, each of which uses aspect angle to compute a weighted RMS value of the cross-sectional areas of the cloud viewed
+from the front and broad-side.
+
+:math:`\sigma_{max}` can be a function of frequency and specified with the frequency_maximum_rcs_table_ command. If this table is not
+specified, :math:`\sigma_{max}` is computed, assuming spot chaff with half-wave dipoles (all dipoles are cut to the same length 
+:math:`L=\lambda/2`), as follows: 
+
+.. math::
+   \sigma_{max} = 0.15N_{d}\lambda^2
+
+where :math:`N_{d}` is the number of chaff dipoles specified by the number_dipoles_ command, and :math:`\lambda` is the wavelength 
+of the radar. (Ref: Schleher, Electronic Warfare in the Information Age)
+
+.. note::
+
+   Chaff parcels are removed from the simulation when they hit the ground, or have been falling for a maximum amount of time specified
+   by expiration_time_, whichever comes first.
+
+Commands
+========
+
+.. command:: bloom_diameter <length-value>
+
+   Specifies the diameter to which the parcel blooms asymptotically, as time goes to infinity.
+
+   **Default:** 10.0 meters
+
+.. command:: expansion_time_constant <time-value>
+.. command:: bloom_time_constant <time-value>
+
+   Specifies the expansion time constant (:math:`\tau_{D}`) in the bloom equation above. The smaller the value, the faster the 
+   parcel approaches its bloom_diameter_.
+
+   **Default:** 0.75 sec
+
+.. command:: terminal_velocity <speed-value>
+
+   Free fall velocity of the parcel. Parcels are assumed to reach terminal velocity instantaneously upon ejection.
+
+   **Default:** 1.0 m/s
+
+.. command:: deceleration_rate <acceleration-value>
+
+   The rate at which the parcel decelerates upon ejection. This should specify a positive value, giving the magnitude of the 
+   acceleration vector that is aligned opposite the initial velocity vector.
+
+   **Default:** 100.0 m/s^2
+
+.. command:: expiration_time <time-value>
+
+   The time at which the parcel will be removed from the simulation, after ejection, unless it hits the ground first.
+
+   **Default:** 60.0 sec
+
+.. command:: debug <boolean-value>
+
+   If true, will print debugging information about parcel status to the console.
+
+   **Default:** false
+
+RCS Related Commands
+====================
+
+.. include:: chaff_parcel_rcs_commands.txt

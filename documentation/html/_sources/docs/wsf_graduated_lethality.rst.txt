@@ -1,0 +1,101 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WSF_GRADUATED_LETHALITY
+=======================
+
+.. model:: weapon_effects WSF_GRADUATED_LETHALITY
+
+.. parsed-literal::
+
+   :command:`weapon_effects` <name> :model:`WSF_GRADUATED_LETHALITY`
+     ... :command:`weapon_effects` Commands ...
+     ... :model:`WSF_EXPLICIT_WEAPON_EFFECTS` Commands ...
+
+     discrete_ | interpolated_
+     use_3d_radius_ | use_2d_radius_
+
+     # Single table format (a single table for all target types}
+
+     radius_and_pk_ | pk_and_radius_ ...
+     ... repeat as necessary ...
+     radius_and_pk_ | pk_and_radius_ ...
+
+     # Multiple tables (target-type specific tables)
+
+     target_type_ <target-type-1>
+        radius_and_pk_ | pk_and_radius_ ...
+        ... repeat as necessary ...
+        radius_and_pk_ | pk_and_radius_ ...
+     [ **end_target_type** ]
+
+     ...
+
+     target_type_ <target-type-n>
+        radius_and_pk_ | pk_and_radius_ ...
+        ... repeat as necessary ...
+        radius_and_pk_ | pk_and_radius_ ...
+     [ **end_target_type** ]
+
+   end_weapon_effects
+
+Overview
+--------
+
+:model:`WSF_GRADUATED_LETHALITY` computes lethality using a probability of kill (Pk) versus miss distance table lookup. The table lookup may be either interpolated or non-interpolated using either 2D (horizontal miss distance only considered) or 3D miss-distances.
+
+Target-type specific tables may be defined to reflect effectiveness versus certain types targets. When an engagement occurs, the model will select the first table whose *<target-type>* matches any platform type within the inheritance hierarchy of the target platform.  For example, if platform types F-18E and F-18F derive from a common F-18 platform_type, a target_type table for F-18 would be considered. If a target-type specific table cannot be found then the default table (see target_type_) will be used. Note that even if the default table is defined first it will always be the last one considered.
+
+.. block:: WSF_GRADUATED_LETHALITY
+
+Commands
+--------
+
+.. warning::
+
+   The following :command:`weapon_effects` commands are not compatible with WSF_GRADUATED_LETHALITY.  Use of these commands will result in an input processing error.
+   
+   * :command:`weapon_effects.intercept_pk`
+   * :command:`weapon_effects.launch_pk`
+   * :command:`weapon_effects.use_intercept_pk`
+   * :command:`weapon_effects.use_launch_pk`
+   
+.. command:: discrete
+
+.. command:: interpolated
+
+   This keyword specifies a flag denoting whether the Pk is interpolated within two concentric rings or stays constant from one boundary to the other.
+
+   Default: discrete
+
+.. command:: use_3d_radius
+
+.. command:: use_2d_radius
+
+   Miss distance is computed as either the slant range or horizontal distance between the weapon and target.
+
+   Default: use_3d_radius
+
+.. command:: target_type <target_type>
+
+   Introduce a set of radius and Pk values that pertain to the specified target type. All subsequent radius_and_pk_ and pk_and_radius_ commands up to the next command that does not define a radius/Pk pair are part of the table. An optional **end_target_type** command may be used to explicitly terminate the block.
+
+   A *<target_type>* of **DEFAULT**, **default** or **WSF_PLATFORM** should be used for targets whose platform type does have a matching **target_type** block.
+
+   .. note::
+      radius/Pk definitions that appear outside a target_type specification apply to targets whose platform
+      type does not have a matching **target_type** block (i.e., the **default** target type).
+
+.. command:: radius_and_pk <length-value> <pk-value>
+
+.. command:: pk_and_radius <pk-value> <length-value>
+
+   Specify an entry in the current Pk vs. miss distance table.

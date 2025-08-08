@@ -1,0 +1,94 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+Signal
+------
+
+.. class:: Signal
+   :constructible:
+   :cloneable:
+
+:class:`Signal` maintains a list of :class:`Method` to be invoked when a signal is triggered.
+
+Static Methods
+==============
+
+.. method:: static Signal Global(string aSignalName)
+   
+   Returns a signal with a globally unique name.  Creates a new signal if one does not already exist.
+
+.. method:: static void RemoveGlobal(string aSignalName)
+   
+   Removes a signal with a globally unique name.  Has no effect if no signal has the given name.
+
+Methods
+=======
+
+.. method:: void Connect(Method aMethod)
+   
+   Connects a :class:`Method` to the signal.  The method will be executed when Call is invoked.
+
+.. method:: void Connect(string aFunctionName)
+            void Connect(Object aBaseObject, string aMethodName)
+   
+   First creates a Method given the global function name or an object and a method name.  The resulting method is then
+   connected to the signal.
+
+.. method:: void Disconnect(string aFunctionName)
+            void Disconnect(Object aBaseObject, string aMethodName)
+            void Disconnect(Method aMethod)
+   
+   Disconnects a Method from the signal.
+
+.. method:: void DisconnectAll()
+   
+   Disconnects all methods from the signal.
+
+.. method:: Array<Object> Call()
+            Array<Object> Call(Array<Object> aParams)
+   
+   Invokes all connected methods with the specified parameter list.  It is the responsibility of the user to ensure method
+   arguments match.
+   Returns a list of return values from each method.
+
+.. method:: int Size()
+   
+   Returns the number of methods connected to this signal.
+
+.. method:: Array<Method> Methods()
+   
+   Returns an array of all connected methods.
+
+Example
+=======
+
+Demonstrates basic usage of Signal::
+
+ platform_type plat_type WSF_PLATFORM
+    script void report(string aParm)
+       writeln(Name(), " says ", aParm);
+    end_script
+    on_initialize
+       Signal sig = Signal.Global("report_status");
+       sig.Connect(PLATFORM, "report");
+    end_on_initialize
+ end_platform_type
+ platform plat-1 plat_type    end_platform
+ platform plat-2 plat_type    end_platform
+ execute at_time 1 s absolute
+    Signal.Global("report_status").Call( {"Hello World"} );
+ end_execute
+
+outputs::
+
+ plat-1 says Hello World
+ plat-2 says Hello World
+

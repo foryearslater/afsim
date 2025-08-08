@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Classification Commands &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="clutter_model" href="clutter_model.html" />
+    <link rel="prev" title="ciws demo" href="ciws.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="clutter_model.html" title="clutter_model"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ciws.html" title="ciws demo"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="classification-commands">
+<h1>Classification Commands<a class="headerlink" href="#classification-commands" title="Permalink to this headline">¶</a></h1>
+<pre class="literal-block"><a class="reference internal" href="#classification_levels">classification_levels</a>
+   <a class="reference internal" href="#level">level</a> &lt;string&gt;
+      <a class="reference internal" href="#color">color</a> ...
+   end_level
+end_classification_levels
+
+<a class="reference internal" href="#classification">classification</a>
+   <a class="reference internal" href="#level">level</a> &lt;string&gt;
+   <a class="reference internal" href="#caveats">caveats</a> ... end_caveats
+   <a class="reference internal" href="#trigraphs">trigraphs</a> ... end_trigraphs
+end_classification</pre>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#classification">classification</a> command is used to specify the classification <a class="reference internal" href="#level">level</a>, <a class="reference internal" href="#caveats">caveats</a> and <a class="reference internal" href="#trigraphs">trigraphs</a> associated with a particular input
+file or scenario. If multiple <a class="reference internal" href="#classification">classification</a> blocks are encountered within the scenario, the trigraphs and caveats are aggregated
+(duplicates removed) and the level of the scenario is set to the highest level found. The highest level is determined by the
+<a class="reference internal" href="#classification_levels">classification_levels</a> block, in which levels are defined in order of increasing degree of sensitivity, and optionally with a <a class="reference internal" href="#color">color</a>
+to use when displaying the level in the GUI applications. In the example below, <em>HIGHEST</em> is more sensitive than <em>HIGHER</em>, which is
+more sensitive than <em>HIGH</em>. The aggregated scenario classification string, including level, caveats and trigraphs, is echoed to
+the console and displayed in a banner within the GUI applications. The classification string and color are also accessible via script
+with the <a class="reference internal" href="script/wsfsimulation.html#WsfSimulation.ClassificationString" title="WsfSimulation.ClassificationString"><span class="xref wsf wsf-method">ClassificationString</span></a> and <a class="reference internal" href="script/wsfsimulation.html#WsfSimulation.ClassificationColor" title="WsfSimulation.ClassificationColor"><span class="xref wsf wsf-method">ClassificationColor</span></a>
+methods of <a class="reference internal" href="script/wsfsimulation.html#WsfSimulation" title="WsfSimulation"><span class="xref wsf wsf-class">WsfSimulation</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The format of the scenario classification string is as follows:
+<strong>Level//Trigraph-1//Trigraph-2//…//Trigraph-N - Caveat-1//Caveat-2//…//Caveat-N</strong></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <a class="reference internal" href="#classification">classification</a> command can be placed within any file in the scenario, but it must come after the <a class="reference internal" href="#classification_levels">classification_levels</a> block that
+defines the levels. Therefore, there is an input file order dependency.</p>
+</div>
+<p>Example:</p>
+<pre class="literal-block"><a class="reference internal" href="#classification_levels">classification_levels</a>
+  <a class="reference internal" href="#level">level</a> HIGH    <a class="reference internal" href="#color">color</a> yellow end_level
+  <a class="reference internal" href="#level">level</a> HIGHER  <a class="reference internal" href="#color">color</a> red    end_level
+  <a class="reference internal" href="#level">level</a> HIGHEST <a class="reference internal" href="#color">color</a> orange end_level
+end_classification_levels
+
+<a class="reference internal" href="#classification">classification</a>
+  <a class="reference internal" href="#level">level</a> HIGHER
+  <a class="reference internal" href="#caveats">caveats</a> ABC DEF end_caveats
+  <a class="reference internal" href="#trigraphs">trigraphs</a> RST XYZ end_trigraphs
+end_classification
+
+...
+...
+
+<a class="reference internal" href="#classification">classification</a>
+  <a class="reference internal" href="#level">level</a> HIGHEST
+  <a class="reference internal" href="#caveats">caveats</a> DEF GHI end_caveats
+  <a class="reference internal" href="#trigraphs">trigraphs</a> RST UVW end_trigraphs
+end_classification</pre>
+<p>The resulting aggregated classification string would be as follows:
+<strong>HIGHEST//RST//UVW//XYZ - ABC//DEF//GHI</strong></p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="command">
+<dt id="classification_levels">
+classification_levels … end_classification_levels<a class="headerlink" href="#classification_levels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to define the list of potential classification levels in a scenario, in order of increasing degree of sensitivity.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is an error to define multiple <a class="reference internal" href="#classification_levels">classification_levels</a> blocks.</p>
+</div>
+<dl class="command">
+<dt id="classification_levels.level">
+<span id="level"></span>level<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a> … end_level<a class="headerlink" href="#classification_levels.level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines a level that can be used in <a class="reference internal" href="#classification">classification</a> blocks.</p>
+<dl class="command">
+<dt id="classification_levels.level.color">
+<span id="level.color"></span><span id="color"></span>color<a class="reference internal" href="argumenttypes.html#color-value" title="color-value"><em> &lt;color-value&gt;</em></a><a class="headerlink" href="#classification_levels.level.color" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optionally define the color to be used when displaying the level in the classification banner within the GUI applications.</p>
+<p><strong>Default</strong>: black</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The alpha component of the color will not be used in the classification banner even if specified.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<dl class="command">
+<dt id="classification">
+classification … end_classification<a class="headerlink" href="#classification" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="command">
+<dt id="classification.level">
+<span id="level"></span>level<a class="reference internal" href="argumenttypes.html#string" title="string"><em> &lt;string&gt;</em></a><a class="headerlink" href="#classification.level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the classification level of the input file or scenario. An error will occur if the level string does not appear in the <a class="reference internal" href="#classification_levels">classification_levels</a> block.</p>
+<p><strong>Default</strong>: None</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="classification.caveats">
+<span id="caveats"></span>caveats<em> &lt;caveat-1&gt;</em><em> &lt;caveat-2&gt;</em> …<em> &lt;caveat-n&gt;</em> end_caveats<a class="headerlink" href="#classification.caveats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the caveats associated with the classification. Each caveat is a string literal specified by the user. The user can provide as many caveats as needed.</p>
+<p><strong>Default</strong>: None</p>
+</dd></dl>
+
+<dl class="command">
+<dt id="classification.trigraphs">
+<span id="trigraphs"></span>trigraphs<em> &lt;trigraph-1&gt;</em><em> &lt;trigraph-2&gt;</em> …<em> &lt;trigraph-n&gt;</em> end_trigraphs<a class="headerlink" href="#classification.trigraphs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the trigraphs associated with the classification. Each trigraph is a string literal specified by the user. The user can provide as many trigraphs as needed.</p>
+<p><strong>Default</strong>: None</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="main_page.html">
+      <img class="logo" src="../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="main_page.html">Main Page</a></li>
+      <li><a href="changelog/afsim_2.9.html">Changelog</a> | <a href="afsim_change_log.html">History</a></li>
+      <li><a href="documents.html">Documents</a></li>
+      <li><a href="security_info.html">Security Information</a></li>
+      <li><a href="contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="wsf_core.html">Main Page</a></li>
+     <li><a href="wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wsf_2.9.html">Changelog</a> | <a href="wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="changelog/demos_2.9.html">Changelog</a> | <a href="demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="mystic.html">Main Page</a></li>
+     <li><a href="mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="pymystic.html">Batch Processing</a></li>
+     <li><a href="changelog/mystic_2.9.html">Changelog</a> | <a href="mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="warlock.html">Main Page</a></li>
+     <li><a href="warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/warlock_2.9.html">Changelog</a> | <a href="warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="wizard.html">Main Page</a></li>
+     <li><a href="wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/wizard_2.9.html">Changelog</a> | <a href="wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="mover_creator.html">Main Page</a></li>
+     <li><a href="mc_users_guide.html">User's Guide</a></li>
+     <li><a href="mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="changelog/mover_creator_2.9.html">Changelog</a> | <a href="mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/classification_commands.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="clutter_model.html" title="clutter_model"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ciws.html" title="ciws demo"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

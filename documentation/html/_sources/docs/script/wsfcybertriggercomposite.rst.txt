@@ -1,0 +1,115 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfCyberTriggerComposite
+------------------------
+
+.. class:: WsfCyberTriggerComposite inherits WsfCyberTrigger
+   :constructible:
+   :cloneable:
+
+WsfCyberTriggerComposite is a script based trigger object, used to execute user-defined script methods.
+This trigger type facilitates the usage of the evaluation conditions on one or more other triggers in a logical
+combination (using OR, AND, and NOT) to determine the success or failure of evaluation. While this
+trigger type is a combination of evaluation methods, it retains its own defined execution method. This
+script based version of the composite trigger enables its use and functionality in that context.
+
+.. note::
+   This document refers to 'global' triggers, which are triggers defined via scenario input in
+   the global context (not on or associated with a platform).
+
+Methods
+=======
+
+.. method:: bool IsPolicyAND()
+
+   Returns true if the composite trigger policy is AND, such that all triggers used for evaluation
+   associated with this trigger have their evaluation results logically combined using the AND operator.
+   Returns false if using another policy.
+
+.. method:: bool IsPolicyOR()
+
+   Returns true if the composite trigger policy is OR, such that all triggers used for evaluation
+   associated with this trigger have their evaluation results logically combined using the OR operator.
+   Returns false if using another policy.
+
+.. method:: void SetPolicyAND()
+
+   Changes the composite trigger evaluation policy to use AND for all associated triggers.
+
+.. method:: void SetPolicyOR()
+
+   Changes the composite trigger evaluation policy to use OR for all associated triggers.
+
+.. method:: int GetTriggerSize()
+
+   Returns the number of triggers associated with this object used for logical combination for
+   trigger evaluation purposes.
+
+.. method:: WsfCyberTrigger GetTriggerEntry(int aIndex)
+
+   Returns a reference to the trigger associated with this object used for logical combination for
+   trigger evaluation purposes using the user provided index.
+
+.. method:: bool IsTriggerEntryNOT(int aIndex)
+
+   Returns true if the trigger entry at the provided index is associated with the NOT operator,
+   effectively providing the opposite of its defined evaluation results (true becomes false, false
+   becomes true). Returns false otherwise.
+
+.. method:: void SetTriggerEntryNOT(int aIndex, bool isNOT)
+
+   Sets the evaluation trigger at the provided index to use the NOT operator in its logical evaluation as indicated by the argument isNOT.
+
+.. method:: bool AddTrigger(string aTriggerName, bool isNOT)
+            bool AddTrigger(WsfCyberTrigger aTrigger, bool isNOT)
+
+   The first AddTrigger method adds an existing global trigger of the user provided name to this
+   composite trigger for usage in determining evaluation results. A trigger named in this way must
+   be a global trigger, and must be managed by the simulation - in other words, the global trigger
+   must have been defined in the scenario input file, or previously added to the simulation during
+   runtime using the :method:`WsfCyberTrigger.AddGlobalTrigger` method.
+
+   The second version of the AddTrigger method explicitly provides a trigger reference. As such,
+   this method is suitable for use with all triggers, regardless if they are actively managed
+   by the simulation or not (such as those created solely in the script context).
+
+   These methods are functionally equivalent except in the ways noted above.
+
+   The composite trigger maintains order when adding evaluation triggers, such that a trigger
+   added in this way is the last in the list.
+
+   A trigger added in this way for evaluation purposes will be used immediately for any subsequent
+   evaluations scheduled for this composite trigger.
+
+   The user provided boolean value indicates whether the NOT operator should be associated with
+   this trigger evaluation, effectively providing the opposite result of its normal return value.
+
+   Returns true if adding the trigger was successful, false otherwise.
+
+   .. note::
+      Composite triggers do not filter or restrict the addition of evaluation triggers, regardless
+      of their naming convention or actual functionality. As such, identical triggers may be added
+      multiple times to a composite trigger.
+
+.. method:: bool RemoveTriggerEntry(int aIndex)
+
+   Removes the trigger at the indicated index from the composite trigger. All subsequent evaluations
+   of this composite trigger will use the remaining triggers for evaluation determination. Returns
+   true if successful, false otherwise.
+
+.. method:: void EraseTriggers()
+
+   Removes all triggers used for evaluation from the composite trigger.
+
+   .. note::
+      A composite trigger without evaluation triggers will never evaluate to true, and as such
+      will no longer execute.

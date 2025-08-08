@@ -1,0 +1,255 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+WsfSpaceMover
+-------------
+
+.. class:: WsfSpaceMover inherits WsfMover
+
+**Input types:** :model:`WSF_SPACE_MOVER`, :model:`WSF_NORAD_SPACE_MOVER`
+
+.. contents::
+   :local:
+
+.. include:: spacemover_location_methods.txt
+
+Orbit Methods
+=============
+
+.. method:: void SetInitialOrbitalState(OrbitalState aOrbitalState)
+
+   Set the initial orbital state of the space mover using a :class:`OrbitalState` object. This function will only have an effect
+   for platforms that have not already been initialized.
+
+.. method:: bool SetOrbit(double aLatitude, double aLongitude, double aAltitude, double aHeading)
+
+   Initialize the orbit based on information contained in a :class:`waypoint <WsfWaypoint>`.  Latitude and longitude values
+   should be in standard decimal degrees, altitude in meters, and heading in degrees.  If this method is called after the
+   parent platform is initialized, the mover will be reinitialized at the current simulation time.
+
+   .. note::
+      This method is somewhat limiting in that the orbit will always be circular.  If one has general
+      coordinates or orbital elements, use another form of this method
+
+.. method:: void SetOrbit(Vec3 aLocationECI, Vec3 aVelocityECI)
+
+   Initialize the orbit based on a predetermined location and velocity in ECI coordinates.  If this method is called after
+   the parent platform is initialized, the mover will be reinitialized at the current simulation time.
+
+.. method:: void SetOrbit(Vec3 aLocationECI, Vec3 aVelocityECI, Calendar aCalendar)
+
+   Initialize the orbit based on a predetermined location and velocity in ECI coordinates with the given calendar as the initial epoch.
+   If this method is called after the parent platform is initialized, the mover will be reinitialized at the current simulation time.
+
+.. method:: void SetOrbitColor(Color aOrbitColor)
+
+   Set the display color of the orbit in the visual tools.
+
+.. method:: Color GetOrbitColor()
+
+   Get the display color of the orbit. If the color is not explicitly set, this value will return white (255, 255, 255).
+
+.. include:: spacemover_orbital_element_methods.txt
+
+.. include:: spacemover_initial_elements_methods.txt
+
+TLE Methods
+===========
+
+.. method:: string TwoLineElement()
+
+   Return current orbital elements in a two-line element format.  If the satellite was originally specified as a two-line element, all non-orbital element fields (launch designator, etc.) will be copied.
+
+.. method:: bool SetTwoLineElement(string aTwoLineElement)
+
+   Set the two-line element in the mover.  The satellite with then be initialized with the data contained in the TLE.
+
+.. method:: string InitialTwoLineElement()
+
+   Return the initial orbital elements rendered as a TLE. If the initial orbital elements are unable to be converted to a TLE, this method will return an empty string.
+
+.. method:: int SatelliteNumber()
+
+   Return the satellite number of the TLE associated with this mover. If the orbital elements for this space mover are not derived from a TLE, then this method will return -1.
+
+.. method:: string Classification()
+
+   Return the classification of the TLE associated with this mover. If the orbital elements for this space mover are not derived from a TLE, then this method will return an empty string.
+
+.. method:: double BallisticCoefficient()
+
+   Return the ballistic coefficient of the TLE associated with this mover. This is also known as the first derivative of the mean motion. If the orbital elements
+   for this space mover are not derived from a TLE, then this method will return 0.
+
+.. method:: double BStar()
+
+   Return the :math:`B^{*}` drag term of the TLE associated with this mover. If the orbital elements for this space mover are not derived from a TLE, then this method will return 0.
+
+.. include:: spacemover_convenience_methods.txt
+
+.. include:: spacemover_orientation_methods.txt
+
+Mission Sequence Methods
+========================
+
+.. method:: double AvailableDeltaV()
+
+   Get the available delta-V remaining in m/s.
+
+   .. note::
+      This value will only have significance if a :ref:`maneuvering model <orbital_maneuvering_models.types>` is defined and if the underlying orbital propagator type supports maneuvering; otherwise a very large value (DBL_MAX) is returned.
+
+.. method:: bool CancelMissionSequence()
+
+   Cancel a :class:`mission sequence<WsfOrbitalMissionSequence>` that is currently executing. The currently scheduled :doc:`orbital event<../orbital_event>` will cease execution; a ORBITAL_MANEUVER_CANCELED :command:`observer` callback will be triggered, and any subsequent events in the mission sequence will not be executed.
+
+.. method:: bool ExecuteEvent(WsfOrbitalEvent aEvent)
+
+   Execute the supplied :class:`orbital event<WsfOrbitalEvent>`. Returns true if the event is verified as a valid (i.e., a compatible :class:`WsfOrbitalEventCondition` is provided, and any other checks also pass); otherwise false.
+
+.. method:: bool ExecuteManeuver(WsfOrbitalManeuver aManeuver)
+
+   Execute the supplied :class:`maneuver<WsfOrbitalManeuver>`. Returns true if the maneuver is verified as a valid (i.e., a compatible :class:`WsfOrbitalEventCondition` is provided, and any other checks also pass); otherwise false.
+
+   .. note::
+      The :method:`WsfSpaceMover.ExecuteEvent` method may also be used to Execute an orbital maneuver.
+
+.. method:: bool ExecuteMissionSequence(WsfOrbitalMissionSequence aMissionSequence)
+
+   Execute the supplied :class:`mission sequence<WsfOrbitalMissionSequence>`. Returns true if the mission sequence is verified as valid (i.e., compatible :class:`WsfOrbitalEventConditions<WsfOrbitalEventCondition>` are provided for each event, and any other checks also pass for all events in the sequence), otherwise false.
+
+   .. note:: Calling any of :method:`WsfSpaceMover.ExecuteMissionSequence`, :method:`WsfSpaceMover.ExecuteEvent`, and :method:`WsfSpaceMover.ExecuteManeuver` also have the effect of calling :method:`WsfSpaceMover.CancelMissionSequence`, as the new mission sequence replaces the old one.
+
+.. method:: double GetTimeToConstraint(WsfOrbitalEventCondition aCondition)
+
+   Return the time in seconds that would elapse until the given condition is met by this mover. This will return a negative value if there is no solution for that constraint or if the mover does not have support for the given condition type.
+
+   .. note::
+      This method will not give accurate results for the :method:`WsfOrbitalEventCondition.AT_NORTHERN_INTERSECTION` and :method:`WsfOrbitalEventCondition.AT_SOUTHERN_INTERSECTION`.
+
+Orbit Computation Methods
+=========================
+
+.. method:: Array<double> ComputeRendezvous(WsfTrack aTrack, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+            Array<double> ComputeRendezvous(WsfTargetPoint aTargetPoint, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+
+   Compute a rendezvous maneuver without actually performing the maneuver. The target of the rendezvous is specified by either a :class:`WsfTrack` or a :class:`WsfTargetPoint`.
+
+   These versions of the method optimize the rendezvous using the given constraints and optimization selection. The maximum allowable time to complete the rendezvous, and the maximum allowable change in velocity must be provided. This method supports two optimization options: a rendezvous that uses the minimum change in velocity given the maximum allowable time to completion, or a rendezvous that takes the least time given the maximum allowable change in velocity. The final argument to this routine should be true to minimize the change in velocity, or false to minimize the time.
+
+   In addition to the supplied time and velocity change constraints, this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are non-hyperbolic. If a valid solution is found, the computed rendezvous maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no rendezvous is possible satisfying the constraints, an empty array is returned.
+
+.. method:: Array<double> ComputeRendezvous(WsfTargetPoint aTargetPoint, double aMaxTime, double aMaxDeltaV, WsfOrbitalOptimizationCost aCost)
+
+   Compute a rendezvous maneuver without actually performing the maneuver. The target of the rendezvous is specified by a :class:`WsfTargetPoint`.
+
+   This version of the method optimizes the rendezvous by minimizing the provided cost, **aCost**. The maximum allowable time to complete the rendezvous, and the maximum allowable change in velocity must be provided.
+
+   In addition to the supplied time and velocity change constraints, this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are non-hyperbolic. If a valid solution is found, the computed rendezvous maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no rendezvous is possible satisfying the constraints, an empty array is returned.
+
+.. method:: Array<double> ComputeRendezvous(WsfTrack aTrack, double aTransferTime)
+            Array<double> ComputeRendezvous(WsfTargetPoint aTargetPoint, double aTransferTime)
+
+   Compute a rendezvous maneuver without actually performing the maneuver. The target of the rendezvous is specified by either a :class:`WsfTrack` or a :class:`WsfTargetPoint`.
+
+   These versions of the method calculate the rendezvous with the given fixed transfer time.  No optimization is performed, nor any delta-V limit imposed.
+
+   This method will only find solutions that have transfer orbits that do not intersect the Earth, and that are hyperbolic only if the mover allows for hyperbolic propagation. If a valid solution is found, the computed rendezvous maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no rendezvous is possible satisfying the constraints, an empty array is returned.
+
+.. method:: Array<double> ComputeIntercept(WsfTrack aTrack, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+            Array<double> ComputeIntercept(WsfTargetPoint aTargetPoint, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+
+   Compute an intercept maneuver without actually performing the maneuver. The target of the intercept is specified by either a :class:`WsfTrack` or a :class:`WsfTargetPoint`.
+
+   These versions of the method optimize the intercept using the given constraints and optimization selection. The maximum allowable time to complete the intercept, and the maximum allowable change in velocity must be provided. This method supports two optimization options: an intercept that uses the minimum change in velocity given the maximum allowable time to completion, or an intercept that takes the least time given the maximum allowable change in velocity. The final argument to this routine should be true to minimize the change in velocity, or false to minimize the time.
+
+   In addition to the supplied time and velocity constraints, this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are non-hyperbolic. If a valid solution is found, the computed intercept maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no intercept is possible satisfying the constraints, an empty array is returned.
+
+.. method:: Array<double> ComputeIntercept(WsfTargetPoint aTargetPoint, double aMaxTime, double aMaxDeltaV, WsfOrbitalOptimizationCost aCost)
+
+   Compute an intercept maneuver without actually performing the maneuver. The target of the intercept is specified by a :class:`WsfTargetPoint`.
+
+   This version of the method optimizes the intercept by minimizing the provided cost, **aCost**. The maximum allowable time to complete the intercept, and the maximum allowable change in velocity must be provided.
+
+   In addition to the supplied time and velocity constraints, this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are non-hyperbolic. If a valid solution is found, the computed intercept maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no intercept is possible satisfying the constraints, an empty array is returned.
+
+.. method:: Array<double> ComputeIntercept(WsfTrack aTrack, double aTransferTime)
+            Array<double> ComputeIntercept(WsfTargetPoint aTargetPoint, double aTransferTime)
+
+   Compute an intercept maneuver without actually performing the maneuver. The target of the intercept is specified by either a :class:`WsfTrack` or a :class:`WsfTargetPoint`.
+
+   These versions of the method calculate the intercept with the given fixed transfer time.  No optimization is performed, nor any delta-V limit imposed.
+
+   This method will only find solutions that have transfer orbits that do not intersect the Earth, and that are hyperbolic only if the mover allows for hyperbolic propagation. If a valid solution is found, the computed intercept maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no intercept is possible satisfying the constraints, an empty array is returned.
+
+.. include:: spacemover_eclipse_methods.txt
+
+Geometry Methods
+================
+
+.. method:: double LookAngleTo(WsfTrack aTrack)
+            double LookAngleTo(WsfPlatform aPlatform)
+            double LookAngleTo(double aLatitude, double aLongitude, double aAltitude)
+            double LookAngleTo(WsfGeoPoint aPoint)
+
+   Return the angle in degrees from the space mover's nadir direction to the given target location. If the target is specified as a track, and if that track does not have a valid position, this method will return -360.0.
+
+.. method:: double IncidenceAngle(WsfTrack aTrack)
+            double IncidenceAngle(WsfPlatform aPlatform)
+            double IncidenceAngle(double aLatitude, double aLongitude, double aAltitude)
+            double IncidenceAngle(WsfGeoPoint aPoint)
+
+   Return the angle in degrees between the target location's vertical direction and the direction from the target location to this space mover. If the target is specified as a track, and if that track does not have a valid position, this method will return -360.0.
+
+.. method:: double TargetElevationAngle(WsfTrack aTrack)
+            double TargetElevationAngle(WsfPlatform aPlatform)
+            double TargetElevationAngle(double aLatitude, double aLongitude, double aAltitude)
+            double TargetElevationAngle(WsfGeoPoint aPoint)
+
+   Return the angle in degrees between the target location's horizontal direction and the direction from the target location to this space mover. If the target is specified as a track, and if that track does not have a valid position, this method will return -360.0.
+
+.. method:: double SquintAngleTo(WsfTrack aTrack)
+            double SquintAngleTo(WsfPlatform aPlatform)
+            double SquintAngleTo(double aLatitude, double aLongitude, double aAltitude)
+            double SquintAngleTo(WsfGeoPoint aPoint)
+
+   Return the angle in degrees between the WCS velocity of this space mover projected into the local horizontal plane, and the WCS displacement from this space mover to the given target projected into the local horizontal plane. If the target is specified as a track, and if that track does not have a valid position, this method will return -360.0.
+
+.. method:: double DistanceToHorizon()
+
+   Return the distance in meters from the space mover to the horizon of the space mover's central body. If the mover is inside the mean radius of the central body, this method will return -1.0.
+
+.. method:: double LookAngleToHorizon()
+
+   Return the angle in degrees from the nadir direction to the horizon of the space mover's central body. If the mover is inside the mean radius of the central body, this method will instead return -360.0.
+
+Deprecated Methods
+==================
+
+.. method:: Array<double> ComputeRendezvous(WsfTrackId aTrackId, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+
+   Compute a rendezvous maneuver without actually performing the maneuver.
+
+   These versions of the method optimize the rendezvous using the given constraints and optimization selection. The maximum allowable time to complete the rendezvous, and the maximum allowable change in velocity must be provided. This method supports two optimization options: a rendezvous that uses the minimum change in velocity given the maximum allowable time to completion, or a rendezvous that takes the least time given the maximum allowable change in velocity. The final argument to this routine should be true to minimize the change in velocity, or false to minimize the time.
+
+   In addition to the supplied time and velocity change constraints (if applicable), this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are hyperbolic only if the mover allows for hyperbolic propagation. If a valid solution is found, the computed rendezvous maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no rendezvous is possible satisfying the constraints, an empty array is returned.
+
+   .. deprecated:: 2.9 This will be removed in a future release.
+
+.. method:: Array<double> ComputeIntercept(WsfTrackId aTrackId, double aMaxTime, double aMaxDeltaV, bool aMinimizeDeltaV)
+
+   Compute an intercept maneuver without actually performing the maneuver.
+
+   These versions of the method optimize the intercept using the given constraints and optimization selection. The maximum allowable time to complete the intercept, and the maximum allowable change in velocity must be provided. This method supports two optimization options: an intercept that uses the minimum change in velocity given the maximum allowable time to completion, or an intercept that takes the least time given the maximum allowable change in velocity. The final argument to this routine should be true to minimize the change in velocity, or false to minimize the time.
+
+   In addition to the supplied time and velocity constraints (if applicable), this method will only find solutions that have transfer orbits that do not intersect the Earth, and that are hyperbolic only if the mover allows for hyperbolic propagation. If a valid solution is found, the computed intercept maneuver duration and the computed change in velocity will be returned as the first and second entries of an :class:`Array\<double\><Array\<T\>>`. In the case that no intercept is possible satisfying the constraints, an empty array is returned.
+
+   .. deprecated:: 2.9 This will be removed in a future release.

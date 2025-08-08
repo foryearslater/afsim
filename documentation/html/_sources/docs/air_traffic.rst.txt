@@ -1,0 +1,177 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+air_traffic
+-----------
+
+.. command:: air_traffic ... end_air_traffic
+   :block:
+
+.. parsed-literal::
+
+   air_traffic
+      aircraft_type_ ... end_aircraft_type
+      airbase_ ... end_airbase
+      everyone_land_time_ ... end_air_traffic
+      remove_completed_flights_
+   end_air_traffic
+
+Overview
+========
+
+The air_traffic_ command generates background air traffic during the simulation. The generator creates aircraft flights to and from airports at specified intervals. The following items must be defined:
+
+* The types of aircraft to be generated
+* The airbases from which the aircraft can depart and land
+* Departure information (rate, type and destinations)
+
+Commands
+========
+
+.. command:: aircraft_type <aircraft-type> ... end_aircraft_type
+   :block:
+
+   .. parsed-literal::
+
+      aircraft_type_ <aircraft-type>
+         minimum_cruise_altitude_   <length-value>
+         maximum_cruise_altitude_   <length-value>
+         mean_cruise_speed_   <speed-value>
+         sigma_cruise_speed_  <speed-value>
+         maximum_operating_range_  <length-value>
+         minimum_runway_length_  <length-value>
+         local_
+         mean_loiter_time_   <time-value>
+         sigma_loiter_time_   <time-value>
+         loiter_route_   <route>
+      end_aircraft_type
+
+   Define the attributes of an aircraft that can be controlled by the air_traffic_ manager. The <aircraft-type> name must already be a previously defined platform_type.
+
+   .. command:: minimum_cruise_altitude   <length-value>
+
+      The minimum altitude this aircraft type can cruise at.
+
+   .. command:: maximum_cruise_altitude   <length-value>
+
+      The maximum altitude this aircraft type can cruise at.
+
+   .. command:: mean_cruise_speed   <speed-value>
+
+      The average speed this aircraft type will cruise at.
+
+   .. command:: sigma_cruise_speed  <speed-value>
+
+      The speed magnitude of one standard deviation.
+
+   .. command:: maximum_operating_range  <length-value>
+
+      The maximum distance this aircraft type can fly, which is used to determine  what airbases it can fly to.
+
+   .. command:: minimum_runway_length  <length-value>
+
+      The minimum runway length that this aircraft type can land on, which is used to determine what airbases it can fly to.
+
+   .. command:: local
+
+      Indicates that this aircraft can be used for local flights.
+
+   .. command:: mean_loiter_time   <time-value>
+
+      The amount of time this aircraft type will loiter, once it arrives at the local_destination.
+
+   .. command:: sigma_loiter_time   <time-value>
+
+      The time magnitude of one standard deviation.
+
+   .. command:: loiter_route   <route>
+
+      A loiter pattern that this aircraft will perform once it reaches its local_destination. Note: specify multiple loiter_route commands to use different loiter patterns.
+
+   Example::
+
+     aircraft_type Cessna172
+       minimum_cruise_altitude 10000 ft
+       maximum_cruise_altitude 12000 ft
+       mean_cruise_speed         175 kts
+       sigma_cruise_speed         20 kts
+       minimum_runway_length    3000 ft
+       maximum_operating_range   400 nm
+     end_aircraft_type
+
+.. command:: airbase <airbase-name>  <latitude> <longitude> ... end_airbase
+   :block:
+
+   Define the attributes of an airbase from which aircraft can depart or arrive. The airbase block may be specified as many times as necessary to define all of the airbases. The <airbase-name> specifies the name of the airbase.  This must be unique within the air traffic definition.  The <latitude> <longitude> specifies the latitude and longitude of the airbase. **Note: The platform type generated is named "Airbase", so make sure not to reuse this type name.**
+
+   .. parsed-literal::
+
+      airbase_ <airbase-name>  <latitude> <longitude>
+         runway_length_  <length-value>
+         runway_heading_  <heading>
+         runway_  <beg-lat> <beg-lon> <end-lat> <end-lon>
+         departure_interval_  <time-value>
+         deactivation_time_  <time-value>
+         aircraft_  <aircraft-type> <fraction>
+         destination_  <airbase-name> <fraction>
+         local_destination_  <latitude> <longitude> <length-value> <fractional-quantity>
+      end_airbase
+
+   .. command:: runway_length  <length-value>
+
+      Specify the length of the runway.  This command is not required if the runway command is specified.
+
+   .. command:: runway_heading  <heading>
+
+      Specify the heading of the runway.  Takeoffs and landings will take place in this direction. This command is not required if the runway command is specified.
+
+   .. command:: runway  <beg-lat> <beg-lon> <end-lat> <end-lon>
+
+      Specify the end points of the runway.  This command can be used to precisely specify the location of a runway.  This command will override the runway_length and runway_heading commands.
+
+   .. command:: departure_interval  <time-value>
+
+      This specifies the time interval of all the departures.
+
+   .. command:: deactivation_time  <time-value>
+
+      This is an optional command that specifies when the airbase is to be 'deactivated'.  This can be used to simulate a situation at the airbase that
+      prevents further arrivals or departures. Aircraft that are currently enroute will be diverted to another airbase.
+
+   .. command:: aircraft  <aircraft-type> <fraction>
+
+      Define the fraction (in the range (0..1]) of the traffic that departs from the airbase that will be of the specified type.  NOTE: The sum of all of the <fraction> values for a given airbase must be 1.
+
+   .. command:: destination  <airbase-name> <fraction>
+
+      Define the fraction of the traffic that departs from this airbase that will fly to the specified destination.  The sum of all of the <fraction> values for a given airbase destinations must be 1.  In addition, the aircraft must be listed in the destination airbase definition.
+
+   .. command:: local_destination  <latitude> <longitude> <length-value> <fractional-quantity>
+
+      Specifies a local destination where locally departing aircraft will fly to and loiter.  The third argument is the diameter of the region centered about the specified latitude and longitude.  Many local_destinations can be specified, however, the sum of their <fractional-quantity>s must be 1.0
+
+   Example of the airbase subcommand::
+
+     airbase SFO 37:37:08.300N 122:22:29.600W
+       runway_length   12000 ft
+       runway_heading  117
+       departure_interval 50.0 min
+       aircraft    B-707  1.0
+       destination LAS 1.0
+     end_airbase
+
+.. command:: everyone_land_time <time_value>
+
+   Specifies a time for ALL background air traffic to land.
+
+.. command:: remove_completed_flights
+
+   TBD

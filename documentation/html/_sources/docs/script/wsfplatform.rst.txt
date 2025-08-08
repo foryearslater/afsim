@@ -1,0 +1,1282 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _WsfPlatform:
+
+WsfPlatform
+-----------
+
+.. class:: WsfPlatform inherits WsfObject
+   :arrow:
+
+**Input type:** :model:`WSF_PLATFORM`
+
+.. contents::
+   :local:
+
+Static Methods
+==============
+
+.. method:: WsfRoute CreateRoute(string aRouteName)
+
+   Returns a clone of the route with the given name. The returned value will not be valid if the named route is not found.
+
+.. method:: bool ExecuteGlobalScript(string aScript)
+
+   Executes the script with the given name within the global context and returns true if successful.
+   See :method:`WsfSimulation.Execute` for more methods to execute global scripts.
+
+.. method:: static bool IsA_TypeOf(string aDerivedType, string aBaseType)
+
+   Returns true if the platform type specified by *aDerivedType* inherits from the platform type specified by
+   *aBaseType* (compare to :method:`WsfObject.IsA_TypeOf(aBaseType) <WsfObject.IsA_TypeOf>`, which determines if a specific
+   object inherits from *aBaseType*).
+
+General Methods
+===============
+
+.. method:: int Index()
+
+   Returns the unique index of the platform within the simulation. A platform's index is constant, and a given index will never be reused during the course of the simulation.
+
+.. method:: double CreationTime()
+
+   Returns the simulation time (in seconds) when the platform was created.
+
+   ::
+
+      if (PLATFORM.CreationTime() > 60)
+      {
+        writeln("This platform was created at simulation time ", PLATFORM.CreationTime());
+      }
+
+.. method:: double TimeSinceCreation()
+
+   Returns the elapsed time in seconds since the platform was created.
+
+   ::
+
+      writeln("It has been ", PLATFORM.TimeSinceCreation(), " seconds since this platform was created");
+
+.. method:: void SetCreationTime(double aTime)
+
+   Defines the simulation time in seconds when the platform is to be added to the simulation.
+
+   .. note::
+      This method is valid only during the execution of the simulation-scope :command:`on_platform_injection` script when the platform is being added to the simulation. Setting a value greater than the current simulation time defers the addition of the platform to the simulation until the specified time. The call is ignored if the value is less than the current simulation time.
+
+.. method:: void SetSide(string aSide)
+
+   Sets the platform's side.
+
+   .. note::
+      This method is only valid prior to adding the platform to the simulation.
+
+.. method:: string Side()
+
+   Returns the platform's side.
+
+.. method:: void SetIcon(string aIcon)
+
+   Sets the platform's icon.
+
+.. method:: string Icon()
+
+   Returns the platform's icon.
+
+.. method:: bool IsExternallyControlled()
+
+   Returns whether the platform is being controlled externally to the local simulation (as with an external :command:`dis_interface` entity).
+
+.. method:: void Detonate(string aResult)
+
+   Detonates the platform. The value of "aResult" must be one of the following or the detonation will be treated as a "dud":
+
+      * target_impact
+      * far_away_in_air
+      * far_away_above_ground
+      * far_away_ground_impact
+      * target_proximity_air_burst
+      * target_proximity_above_ground
+      * target_proximity_ground_impact
+
+.. method:: void DeletePlatform()
+
+   Schedules the platform for deletion from the simulation. Since the deletion will occur after the current script context returns, any remaining commands in the script context will be executed.
+
+
+.. _WsfPlatform.Command_Chain_Methods:
+
+Command Chain Methods
+=====================
+
+.. method:: WsfPlatform Commander()
+            WsfPlatform Commander(string aCommandChainName)
+
+   Returns the platform's commander in the default command chain (first form) or the specified command chain (second form).
+
+.. method:: void SetCommander(WsfPlatform aPlatform)
+            void SetCommander(string aCommandChainName, WsfPlatform aPlatform)
+
+   Sets the platform's commander in the default command chain (first form) or the specified command chain (second form). There is one issue with using this method.  Any links to a commander that transmit over a comm devices that uses the <local:slave> network_name will not work.  So if you plan on using this method to change a platform's commander during run-time, then do NOT use the <local:slave> network_name on the platform's comm devices.
+
+.. method:: string CommanderName()
+            string CommanderName(string aCommandChainName)
+
+   Returns the platform's commander's name in the default command chain (first form) or the specified command chain (second form).
+
+.. method:: WsfPlatformList Peers()
+            WsfPlatformList Peers(string aCommandChainName)
+
+   Returns a platform list of peers in the default command chain (first form) or the specified command chain (second form).
+
+.. method:: WsfPlatformList Subordinates()
+            WsfPlatformList Subordinates(string aCommandChainName)
+
+   Returns a platform list of subordinates in the default command chain (first form) or the specified command chain (second form).
+
+.. method:: WsfCommandChain CommandChain(string aCommandChainName)
+
+   Returns the command chain with the specified name.
+
+.. method:: int CommandChainCount()
+
+   Returns the number of command chains to which this platform belongs.
+
+.. method:: WsfCommandChain CommandChainEntry(int aIndex)
+
+   Returns the command chain at the specified index. This must be in the range [0, CommandChainCount()-1].
+
+
+Subsystem Methods
+=================
+
+.. method:: WsfMover Mover()
+
+   Returns the platform's mover object.
+
+.. method:: WsfFuel Fuel()
+
+   Returns the platform's fuel object.
+
+.. method:: int GPS_Status()
+
+   Retrieves the GPS availability state from the :command:`_.navigation_errors` model. See :command:`_.navigation_errors` for more information.
+
+   .. note::
+      The return value is a large positive value if :command:`_.navigation_errors` have not been defined.
+
+.. method:: bool SetGPS_Status(int aGPS_Status)
+
+   Sets the current GPS availability state ( :command:`_.navigation_errors` for more information).
+
+   The return value is true if the GPS status was changed. The return value is false if the requested state is the same as the current state or if :command:`_.navigation_errors` have not been defined.
+
+   .. note::
+      This has no effect if :command:`_.navigation_errors` have not been defined.
+
+.. method:: WsfComm Comm(string aName)
+
+   Returns the WsfComm object with the given name.
+
+.. method:: int CommCount()
+
+   Returns the number of communication devices.
+
+.. method:: WsfComm CommEntry(int aIndex)
+
+   Returns the WsfComm object at the given index.
+
+   .. note::
+      0-based indexing applies.
+
+.. method:: WsfCommRouter Router(string aName)
+
+   Returns the WsfCommRouter object with the given name.
+
+.. method:: int RouterCount()
+
+   Returns the number of router objects.
+
+.. method:: WsfCommRouter RouterEntry(int aIndex)
+
+   Returns the WsfCommRouter object at the given index.
+
+   .. note::
+      0-based indexing applies.
+
+.. method:: WsfProcessor Processor(string aName)
+
+   Returns the WsfProcessor object with the given name.
+
+.. method:: int ProcessorCount()
+
+   Returns the number of processor devices.
+
+.. method:: WsfProcessor ProcessorEntry(int aIndex)
+
+   Returns the WsfProcessor object at the given index.
+
+   .. note::
+      0-based indexing applies.
+
+.. method:: WsfSensor Sensor(string aName)
+
+   Returns the WsfSensor object with the given name.
+
+.. method:: int SensorCount()
+
+   Returns the number of sensor instances on this platform.
+
+.. method:: WsfSensor SensorEntry(int aIndex)
+
+   Returns the WsfSensor object at the given index.
+
+   .. note::
+      0-based indexing applies.
+
+.. method:: bool TurnCommOn(string aName)
+
+   Turns the communication device with the specified name on, returns true if successful.
+
+.. method:: bool TurnCommOff(string aName)
+
+   Turns the communication device with the specified name off, returns true if successful.
+
+.. method:: bool TurnProcessorOn(string aName)
+
+   Turns the processor device with the specified name on, returns true if successful.
+
+.. method:: bool TurnProcessorOff(string aName)
+
+   Turns the processor device with the specified name off, returns true if successful.
+
+.. method:: bool TurnSensorOn(string aName)
+
+   Turns the sensor device with the specified name on, returns true if successful.
+
+.. method:: bool TurnSensorOff(string aName)
+
+   Turns the sensor device with the specified name off, returns true if successful.
+
+.. method:: bool TurnRouterOn(string aName)
+
+   Turns the router object with the specified name on, returns true if successful.
+
+.. method:: bool TurnRouterOff(string aName)
+
+   Turns the router object with the specified name off, returns true if successful.
+
+.. _WsfPlatform.Appearance_Methods:
+
+Appearance Methods
+==================
+
+.. method:: double Length()
+.. method:: double Width()
+.. method:: double Height()
+
+   Returns the length, width and height of the platform (in meters) as defined by the :command:`platform.length`, {:command:`platform.width` and :command:`platform.height` commands. The return value will be zero if it was not defined.
+
+.. method:: double TotalMass()
+.. method:: double EmptyMass()
+.. method:: double FuelMass()
+.. method:: double PayloadMass()
+
+   Returns the total mass (empty mass + fuel mass + payload mass) of the platform or one of the components (in kilograms). The masses may be defined directly using the :command:`platform.empty_mass`, :command:`platform.fuel_mass` and :command:`platform.payload_mass`, but the masses are sometimes defined in and maintained by the mover.
+
+.. method:: int Appearance()
+
+   Returns the platform's current 32-bit Appearance data as an integer excluding data for bits 3-4, 21 & 23. (See Distributed Interactive Simulation (DIS) Entity Appearance field definitions.)
+
+.. method:: void SetAppearance(int aLeastSignificantBit, int aNumberOfBits, int aValue)
+
+   Sets the platform's 32-bit Appearance data excluding data for bits 3-4, 21 & 23. (See :command:`Distributed Interactive Simulation (DIS) Entity Appearance <dis_interface>` field definitions.)
+
+   .. note::
+      This capability allows for direct manipulation of the Entity State Appearance data being reported.
+
+   **Example**
+
+   ::
+
+    #  To set afterburner to on
+    #  LSB=16; number of bits=1; value=1 for afterburner on
+    PLATFORM.SetAppearance(16, 1, 1);
+    ...
+    #  To set configuration state
+    # LSB=17; number of bits=4; value=15  // valid values in the range of [0..15]
+     PLATFORM.SetAppearance(17, 4, 15);
+    ...
+    #  To set power-plant status to on
+    # LSB=22; number of bits=1 ; value=1
+     PLATFORM.SetAppearance(22, 1, 1);
+
+.. method:: double ConcealmentFactor()
+
+   Returns the platform's current Concealment Factor.
+
+.. method:: void SetConcealmentFactor(double aConcealmentFactor)
+
+   Sets the platform's concealment factor to a value within the range of [0..1], with 0 being visible and 1 being hidden. This value is used to determine the Entity State Appearance bit 19 for land domain platforms only. The SetAppearance function can also be used to set bit 19 directly.
+
+.. method:: double DamageFactor()
+
+   Returns the platform's current damage level (factor). The return value is in the range of [0..1], with 0 being undamaged and 1 being fully damaged or destroyed.
+
+.. method:: void SetDamageFactor(double aDamageFactor)
+
+   Sets the platform's damage factor to a value within the range of [0..1], with 0 being undamaged and 1 being fully damaged or destroyed.
+
+.. method:: void SetTrailingEffects(int aTrailingEffect)
+
+   Sets the platform's trailing effect to the given integer value. This value is used to set the Entity State Appearance bits 7-8. The SetAppearance function can also be used to set these bits directly.
+
+.. method:: bool Indestructible()
+
+   Returns 'true' if the platform is indestructible. A platform may be marked as indestructible in order prevent it from being destroyed. When this value is set 'true', any applied damage accumulates in a logarithmically decaying fashion, so DamageFactor(), rather than returning an actual damage state, reflects an ever decreasing (but never reaching zero) probability of survival.
+
+.. method:: void SetIndestructible(bool aIsIndestructible)
+
+   Sets the platform's indestructible attribute.
+
+.. method:: void SetSignatureState(string aState)
+
+   Sets the platform's infrared, optical and radar signature state to the given state.
+
+.. method:: string InfraredSigState()
+
+   Returns the current infrared signature state of the platform.
+
+.. method:: void SetInfraredSigState(string aState)
+
+   Sets the platform's infrared signature state to the given state.
+
+.. method:: double InfraredSigScaleFactor()
+
+   Returns the current infrared signature scale factor (as a linear value, not dB).
+
+.. method:: void SetInfraredSigScaleFactor(double aScaleValue)
+
+   Sets the infrared signature scale factor to the given value (as an linear value, not dB). The effective infrared signature of the platform becomes the baseline signature value multiplied by this value.
+
+.. method:: double InfraredRadiantIntensity(WsfGeoPoint aViewer, double aEarthRadiusScale, string aBandName)
+
+   Returns the infrared radiant intensity of the platform (in W/sr) when viewed from the location specified by *aViewer*.
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 1.0). A value of less than or equal to zero is equivalent to specifying 1.0.
+
+   *aBandName* is the infrared band name to be used for the query and must be an empty string or one of the infrared band names as defined in :command:`infrared_signature`. An empty string is equivalent to specifying "default".
+
+   .. note::
+     This performs the same function as the new method :method:`WsfPlatform.RadiantIntensity`, but only functions for infrared bands.   The new method is preferred because it is more general in that it also handles the visual band (if the optical signature is one   that also provides radiant intensity). This method may be deprecated in some future release.
+
+.. method:: string OpticalSigState()
+
+   Returns the current optical signature state of the platform.
+
+.. method:: void SetOpticalSigState(string aState)
+
+   Sets the platform's optical signature state to the given state.
+
+.. method:: double OpticalSigScaleFactor()
+
+   Returns the current optical signature scale factor (as a linear value, not dB).
+
+.. method:: void SetOpticalSigScaleFactor(double aScaleValue)
+
+   Sets the infrared optical scale factor to the given value (as an linear value, not dB). The effective optical signature of the platform becomes the baseline signature value multiplied by this value.
+
+.. method:: double OpticalCrossSection(WsfGeoPoint aViewer, double aEarthRadiusScale)
+
+   Returns the optical cross section of the platform (in m^2) when viewed from the location specified by *aViewer*.
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 1.0). A value of less than or equal to zero is equivalent to specifying 1.0.
+
+   .. note::
+     This performs the same function as the new method :method:`WsfPlatform.ProjectedArea`. The new method is preferred and this method may be deprecated in some future release.
+
+.. method:: double ProjectedArea(WsfGeoPoint aViewer, double aEarthRadiusScale)
+
+   Returns the projected area of the platform (in m^2) when viewed from the location specified by *aViewer*.
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 1.0). A value of less than or equal to zero is equivalent to specifying 1.0.
+
+   .. note::
+      This is equivalent to :method:`WsfPlatform.OpticalCrossSection` and is preferred because it is more representative of what is being returned.
+
+.. method:: double RadiantIntensity(WsfGeoPoint aViewer, double aEarthRadiusScale, string aBandName)
+
+   Returns the radiant intensity of the platform (in W/sr) when viewed from the location specified by *aViewer*.
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 1.0). A value of less than or equal to zero is equivalent to specifying 1.0.
+
+   *aBandName* is either "visual" or one of the infrared band names as defined in :command:`infrared_signature`. An empty string is equivalent to specifying "default". "default" should be avoid because it is possibly ambiguous.
+
+   .. note::
+      If an infrared band is supplied as *aBandName*, this is equivalent to :method:`WsfPlatform.InfraredRadiantIntensity`. This is the preferred method because it works for both visual and infrared bands.
+
+.. method:: string RadarSigState()
+
+   Returns the current radar signature state of the platform.
+
+.. method:: void SetRadarSigState(string aState)
+
+   Sets the platform's radar signature state to the given state.
+
+.. method:: double RadarSigScaleFactor()
+
+   Returns the current radar signature scale factor (as a linear value, not dB).
+
+.. method:: void SetRadarSigScaleFactor(double aScaleValue)
+
+   Sets the radar signature scale factor to the given value (as an linear value, not dB). The effective radar signature of the platform becomes the baseline signature value multiplied by this value.
+
+.. method:: double RadarCrossSection(double aRcvrAzimuth, double aRcvrElevation, string aPolarization, double aFrequency)
+            double RadarCrossSection(WsfGeoPoint aViewer, double aEarthRadiusScale, string aPolarization, double aFrequency)
+            double RadarCrossSection(double aXmtrAzimuth, double aXmtrElevation, double aRcvrAzimuth, double aRcvrElevation, string aPolarization, double aFrequency)
+
+   Returns the radar cross section of the platform (in m^2) when viewed from the aspect (e.g. :method:`WsfPlatform.ApparentAspectOf`) specified by *aRcvrAzimuth* and *aRcvrElevation* (degrees), or location specified by *aViewer*. In the first and second versions, the transmitter and receiver are assumed to be co-located. In the third version, the aspect of the transmitter illuminating the target is specified by *aXmtrAzimuth* and *aXmtrElevation* (degrees).
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 4/3). A value of less than or equal to zero is equivalent to specifying 4/3.
+
+   *aPolarization* is the polarization to be used for the query and must be an empty string or one of the polarization names as defined in :command:`radar_signature`. An empty string is equivalent to specifying "default".
+
+   *aFrequency* is the frequency of the signal (in Hertz) to be used for the query.
+
+.. _WsfPlatform.Capabilities_Methods:
+
+Capabilities Methods
+====================
+
+.. method:: int Capabilities()
+
+   Returns the platform's current 16-bit Capabilities data as an integer. The integer contains bit-mapped flags that indicate if the platform has the ability to supply payload, fuel, vehicle repair, vehicle recovery, or automated data service - broadcast (ADS_B) services.  This information is especially of interest to the :model:`WSF_EXCHANGE_PROCESSOR`. (See :command:`Distributed Interactive Simulation (DIS) Entity Capabilities <dis_interface>` field definitions.)
+
+.. method:: void SetCapability(int aLeastSignificantBit, bool aValue)
+
+   Sets the platform's 16-bit Capabilities data. (See :command:`|Distributed Interactive Simulation (DIS) Entity Capabilities <dis_interface>` field definitions.)
+
+   .. note::
+      This capability allows for direct manipulation of the Entity State Capability data being reported, and  may internally generate a callback that Capabilities have changed.
+
+   **Example**
+
+   ::
+
+    #  To flag the platform as a fuel provider
+    #  LSB=1; value=true for supplying fuel
+    PLATFORM.SetCapability(1, true);
+
+Script Invocation Methods
+=========================
+
+.. method:: bool ScriptExists(string aScript)
+
+   Returns 'true' if a script with the given name exists on the platform.
+
+.. method:: Object Execute(string aScript)
+            Object Execute(string aScript, Array<Object> aArgs)
+.. method:: bool ExecuteScript(string aScript)
+            bool ExecuteScriptWithArgs(string aScript, Array<Object> aArgs)
+
+   Executes the script with the given name and optional argument list.  Returns the return value of the executed
+   script.
+
+   **Example**
+
+   ::
+
+    int count = (int)plat.Execute("SensorCount", {"airliner"} );
+
+    PLATFORM.Execute("TrackCount", {aTrack});
+
+   .. note::
+      The ExecuteScript and ExecuteScriptWithArgs forms are provided for backward compatibility, and return
+      'true' if the script exists.
+
+.. method:: bool ExecuteAtTime(double aTime, string aScript)
+            bool ExecuteAtTime(double aTime, string aScript, Array<Object> aArgs)
+
+   Executes the script with the given name and optional argument list at the given simulation time. Return value indicates whether the supplied script exists on the platform.
+
+.. _WsfPlatform.Perception_Methods:
+
+Perception Methods
+==================
+
+.. method:: WsfPerceptionProcessor PerceptionProcessor()
+
+   Returns the platform's perception processor.  If none were defined, a default perception processor is added and
+   returned.  If more than one were defined, it returns the first one.
+
+.. method:: Array<WsfAssetPerception> PerceivedAssets()
+
+   Returns the platform's perceived assets.
+
+Track Methods
+=============
+
+.. method:: WsfLocalTrackList MasterTrackList()
+
+   Returns the platform's master track list.
+
+.. method:: WsfTrackList MasterRawTrackList()
+
+   Returns the platform's master raw track list, or list of raw tracks fused to form the master track list.
+
+.. method:: WsfLocalTrackList TrackList(string aTrackProcessorName)
+
+   Returns the :class:`local track list <WsfLocalTrackList>` associated with the given track processor.  If the track processor
+   is a :model:`non-master track processor <WSF_TRACK_PROCESSOR>`, the returned track list will **not** be the master track list.
+
+   .. note::
+      The track processor, name aTrackProcessorName, must exist on the platform; otherwise, the track list
+      will be invalid.
+
+.. method:: WsfTrackList RawTrackList(string aTrackProcessorName)
+
+   Returns the :class:`raw track list <WsfTrackList>` associated with the given track processor.  If the track processor is a
+   :model:`non-master track processor <WSF_TRACK_PROCESSOR>`, the returned track list will **not** be the master raw track list.
+
+   .. note::
+      The track processor, name aTrackProcessorName, must exist on the platform; otherwise, the track list
+      will be invalid.
+
+.. method:: WsfTrackManager TrackManager()
+
+   Returns the "master" track manager (i.e., the track manager that owns and maintains the master track list).
+
+.. method:: WsfTrackId CurrentTarget()
+
+   Returns the :class:`WsfTrackId` of the current target.
+
+   .. note::
+      :method:`return_value.IsNull() <WsfTrackId.IsNull>` will be true if there is no current target.
+
+
+.. method:: WsfTrackId SetCurrentTarget(WsfTrack aTrack)
+
+   Sets the current target given a track and return the :class:`WsfTrackId` of the current target track. If the argument is a
+   sensor track and already correlated to a local track in the track manager then the current target will be that local
+   track. If the argument is a sensor track and NOT already correlated to a local track in the track manager then a new
+   correlated local track is created and the current target will be that new local track.
+
+.. method:: bool HasCurrentTarget()
+
+   Returns true if the platform has a current target.
+
+.. method:: void ClearCurrentTarget()
+
+   Clears the current target.
+
+.. method:: WsfTrack CurrentTargetTrack()
+
+   Returns the :class:`WsfTrack` of the current target.
+
+   .. note::
+      Use :method:`return_value.IsValid() <WsfObject.IsValid>` to ensure the return value is valid (i.e., there is
+      a current target) before using it.
+
+
+.. method:: double InterceptLocation2D(WsfTrack aTrack, WsfWaypoint aWaypoint)
+
+   Returns the time to intercept and the intercept bearing. An intercept time of -1 indicates that there is no solution.
+
+   The intercept bearing is available in the :class:`WsfWaypoint` that is passed in by reference. All forms of InterceptLocation2D
+   require a track to intercept and return by reference a waypoint with the intercept bearing.
+
+.. method:: double InterceptLocation2D(WsfTrack aTrack, WsfWaypoint aWaypoint, bool aDebug)
+
+   See above. This version provides a third argument that outputs debug information about the intercept calculation.
+
+.. method:: double InterceptLocation2D(WsfTrack aTrack, WsfWaypoint aWaypoint, double aOwnshipSpeed, double aTimeDelay)
+
+   See above. This version provides additional arguments for providing the ownship speed and a delay until that speed is reached.
+
+.. method:: double InterceptLocation2D(WsfTrack aTrack, WsfWaypoint aWaypoint, double aOwnshipSpeed, double aTimeDelay, bool aDebug)
+
+   See above. This version provides additional arguments for providing the ownship speed, delay until that speed is
+   reached, and whether to output debug information about the intercept calculation.
+
+.. method:: double InterceptLocation3D(WsfTrack aTrack, WsfWaypoint aWaypoint)
+
+   Returns the intercept time, bearing, altitude. An intercept time of -1 indicates that there is no solution.
+   The intercept bearing and altitude is available in the :class:`WsfWaypoint` that is passed in by reference. All forms of
+   InterceptLocation3D require a track to intercept and return by reference a waypoint with the intercept bearing and altitude.
+
+.. method:: double InterceptLocation3D(WsfTrack aTrack, WsfWaypoint aWaypoint, bool aDebug)
+
+   See above. This version provides a third argument that outputs debug information about the intercept calculation.
+
+.. method:: double InterceptLocation3D(WsfTrack aTrack, WsfWaypoint aWaypoint, double aOwnshipSpeed, double aTimeDelay)
+
+   See above. This version provides additional arguments for providing the ownship speed and a delay until that speed is
+   reached.
+
+.. method:: double InterceptLocation3D(WsfTrack aTrack, WsfWaypoint aWaypoint, double aOwnshipSpeed, double aTimeDelay, bool aDebug)
+
+   See above. This version provides additional arguments for providing the ownship speed, delay until that speed is
+   reached, and whether to output debug information about the intercept calculation.
+
+.. method:: double TravelTime(WsfTrack aTrack)
+
+   Returns the time required to travel to the provided track (seconds).
+
+   .. note::
+      This method is valid only for :model:`WSF_ROAD_MOVER`.
+
+.. _platform-loc-and-nav-meths:
+
+Location and Navigation Methods
+===============================
+
+.. method:: WsfGeoPoint Location()
+.. method:: WsfWaypoint LocationAsWaypoint()
+
+   Returns the current location of the platform. In the second form, only the latitude, longitude and altitude of the
+   waypoint is defined.
+
+.. method:: double HeightAboveTerrain()
+
+   Returns the height of the platform above the terrain (meters).
+
+.. method:: double Latitude()
+.. method:: double Longitude()
+.. method:: double Altitude()
+
+   Returns the platform's latitude, longitude (decimal degrees) or altitude (meters above mean sea level), respectively.
+
+   .. note::
+      These commands should be used only if a single position component will be extracted. If multiple
+      components will be extracted, it is more efficient to use :method:`Location <WsfPlatform.Location>` and retrieve the individual components from
+      the returned object.
+
+.. method:: double X()
+.. method:: double Y()
+.. method:: double Z()
+
+   Returns the 'x', 'y' or 'z' component of the platform's WCS position (meters), respectively.
+
+   .. note::
+      These commands should be used only if a single position component will be extracted. If multiple
+      components will be extracted, it is more efficient to use :method:`Location <WsfPlatform.Location>` and retrieve the individual components from
+      the returned object.
+
+
+.. method:: double Vx()
+.. method:: double Vy()
+.. method:: double Vz()
+
+   Returns the 'x', 'y' or 'z' component of the platform's WCS velocity (meters/second), respectively.
+
+.. method:: WsfGeoPoint PerceivedLocation()
+
+   Returns the location of the platform as perceived by itself. This location will be different than the value returned by
+   :method:`Location <WsfPlatform.Location>` only if :command:`_.navigation_errors` have been defined for the platform.
+
+.. method:: Vec3 PerceivedLocationErrorNED()
+.. method:: Vec3 PerceivedLocationErrorWCS()
+
+   Returns the difference between the perceived platform location as returned by :method:`PerceivedLocation <WsfPlatform.PerceivedLocation>` and the true platform location by :method:`Location <WsfPlatform.Location>`. The value will be non-zero only if :command:`_.navigation_errors` have been defined for the platform.
+
+.. method:: void SetPerceivedLocationErrorWCS(Vec3 aLocationErrorWCS)
+
+   Define the difference between the perceived platform location as returned by :method:`PerceivedLocation <WsfPlatform.PerceivedLocation>` and the true platform location returned by :method:`Location <WsfPlatform.Location>`. This method will have no effect unless :command:`_.navigation_errors` have been defined for the platform and the value of :method:`GPS_Status <WsfPlatform.GPS_Status>` (as set by :method:`SetGPS_Status <WsfPlatform.SetGPS_Status>` or :command:`_.gps_status`) is **3** (GPS errors can be set from an external source).
+
+.. method:: WsfGeoPoint FutureLocation(double aTime)
+
+   Returns the anticipated location of the platform at the specified time in the future. If the location cannot be determined then the return will be invalid. The return value should be tested for validity before attempting to use it.
+
+   **Example**
+
+   ::
+
+     WsfGeoPoint p = FutureLocation(t);
+     if (p.IsValid()) <process the data>
+
+   This method is currently only valid for :model:`WSF_AIR_MOVER`, :model:`WSF_GROUND_MOVER`, :model:`WSF_SURFACE_MOVER`, :model:`WSF_SPACE_MOVER`, :model:`WSF_NORAD_SPACE_MOVER`, and :model:`WSF_INTEGRATING_SPACE_MOVER`.
+
+   .. note:: For a platform with a space mover, this method will not return a valid result when the current simulation time is during an orbital maneuver, or if there is the start of a maneuver before the time of the prediction time, *aTime*.
+
+.. method:: Vec3 LocationWCS()
+
+   Returns the WCS location of the platform in meters.
+
+.. method:: Vec3 LocationECI()
+
+   Returns the ECI location of the platform in meters.
+
+.. method:: Vec3 LocationJ2000()
+
+   Returns the J2000 location of the platform in meters.
+
+.. method:: string LocationMGRS()
+
+   Returns the location of the platform in MGRS (Military Grid Reference System) format.
+
+.. method:: Vec3 VelocityWCS()
+
+   Returns the WCS velocity of the platform in meters/second.
+
+.. method:: Vec3 VelocityNED()
+
+   Returns the NED velocity of the platform in meters/second.
+
+.. method:: Vec3 VelocityECI()
+
+   Returns the ECI velocity of the platform in meters/second.
+
+.. method:: Vec3 VelocityJ2000()
+
+   Returns the J2000 velocity of the platform in meters/second.
+
+.. method:: Vec3 AccelerationWCS()
+
+   Returns the WCS acceleration of the platform in meters/second.
+
+.. method:: Vec3 AccelerationNED()
+
+   Returns the NED acceleration of the platform in meters/second.
+
+.. method:: Vec3 AccelerationECI()
+
+   Returns the ECI acceleration of the platform in meters/second.
+
+.. method:: double Speed()
+
+   Returns the platform's current speed (meters/second).
+
+.. method:: double GroundSpeed()
+
+   Returns the platform's current ground speed (meters/second).
+
+.. method:: double TargetSpeed()
+
+   Returns the target speed of the platform's mover if it is a :model:`WSF_WAYPOINT_MOVER <WSF_GROUND_MOVER>`.
+
+.. method:: double MachNumber()
+
+   Returns the platform's current speed as a Mach number.
+
+.. method:: double Heading()
+
+   Returns the platform's heading angle [-180, 180] (degrees).
+
+.. method:: double Pitch()
+
+   Returns the platform's pitch angle [-90, 90] (degrees).
+
+.. method:: double Roll()
+
+   Returns the platform's roll angle [-90, 90] (degrees).
+
+.. method:: Vec3 OrientationNED()
+
+   Returns the platform's orientation in NED (yaw, pitch, roll degrees).
+
+.. method:: Vec3 OrientationWCS()
+
+   Returns the platform's orientation in :ref:`WCS <WCS>` (degrees).
+
+.. method:: Vec3 OrientationECI()
+
+   Returns the platform's orientation in :ref:`ECI` (degrees).
+
+.. method:: Vec3 ConvertECSToWCS(Vec3 aPosition)
+
+   Given a position in :ref:`ECS`, returns the position in :ref:`WCS <WCS>`.
+
+.. method:: Vec3 ConvertWCSToECS(Vec3 aPosition)
+
+   Given a position in :ref:`WCS <WCS>`, returns the position in :ref:`ECS`.
+
+.. method:: Vec3 ConvertECIToWCS(Vec3 aPosition)
+
+   Given a position in :ref:`ECI <ECI>`, returns the position in :ref:`WCS <WCS>`.
+
+.. method:: Vec3 ConvertWCSToECI(Vec3 aPosition)
+
+   Given a position in :ref:`WCS <WCS>`, returns the position in :ref:`ECI <ECI>`.
+
+.. method:: void SetHeading(double aHeading)
+
+   Sets the platform's desired Heading (body pointing angle) angle [-180, 180] (degrees).  The SetOrientationNED() command
+   is similar.  Implementation differs from the TurnToHeading command below, which is actually a turn to Course command.
+   Note that most Mover types do not distinguish between heading and course angles, and much infrastructure is in place
+   that assumes a heading command is a desire to move in a certain direction, rather than orient in a particular
+   direction.  The :model:`WSF_ROTORCRAFT_MOVER` is a notable exception to this rule, see this documentation for syntax and
+   usage details.
+
+   .. note::
+      A platform's mover can override this setting at any time.
+
+.. method:: void SetPitch(double aPitch)
+
+   Sets the platform's pitch angle [-90, 90] (degrees).
+
+   .. note::
+      A platform's mover can override this setting at any time. For instance, it cannot be used to set pitch
+      if WSF_AIR_MOVER is providing the current platform's movement.  It is recommended to use GoToAltitude().
+
+
+.. method:: void SetRoll(double aRoll)
+
+   Sets the platform's roll angle [-90, 90] (degrees).
+
+   .. note::
+      A platform's mover can override this setting at any time.
+
+.. method:: bool GoToLabel(string aLabel)
+
+   Causes the platform to move to the waypoint on its route with the given label. Return true if successful.
+
+.. method:: bool GoToLocation(double aLat, double aLon, double aAlt)
+            bool GoToLocation(double aLat, double aLon)
+            bool GoToLocation(WsfWaypoint aPoint)
+            bool GoToLocation(WsfGeoPoint aPoint)
+
+   Causes the platform to move to the specified location (degrees, meters). Return true if successful.
+
+   If the parameter is a waypoint, only the position of the waypoint is used.
+
+.. method:: bool GoToPoint(string aGeoPointName)
+            bool GoToPoint(WsfGeoPoint aLocation)
+            bool GoToPoint(string aGeoPointName,string aCallbackFunction)
+            bool GoToPoint(WsfGeoPoint aGeoPoint,string aCallbackFunction)
+
+   Causes the platform to move to a previously defined geo_point (by name or :class:`WsfGeoPoint`) with the option of adding a
+   :ref:`callback` method when the platform reaches the given location
+
+.. method:: bool GoToAltitude(double aAlt)
+            bool GoToAltitude(double aAlt, double aAltRateOfChange)
+            bool GoToAltitude(double aAlt, double aAltRateOfChange, bool aKeepRoute)
+
+   Causes the platform to adjust its altitude to the specified value (meters).
+
+   In the second form, the second argument is the positive altitude rate-of-change (meters/second) to be used to achieve
+   the desired altitude. It will be negated if the target altitude is less than the current altitude.
+
+   By default, the mover will quit following the route and begin extrapolating on the current heading.  If the
+   third parameter is set to *true*, the mover will remain on the current route, but change the target altitude.
+
+.. method:: bool GoToSpeed(double aSpeed)
+            bool GoToSpeed(double aSpeed, double aLinearAccel)
+            bool GoToSpeed(double aSpeed, double aLinearAccel, bool aKeepRoute)
+.. method:: bool GoToMachNumber(double aMachNumber)
+            bool GoToMachNumber(double aMachNumber, double aLinearAccel)
+
+   Causes the platform to adjust its speed to the specified value (meters/second) or Mach number, while maintaining its
+   current path.
+
+   In the two argument form, second argument is a positive linear acceleration to be used (meters/second^2) to be used to
+   achieve the desired speed. It will be negated if the target speed is less than the current speed.
+
+   By default, the mover will quit following the route and begin extrapolating on the current heading. If the
+   third parameter is set to *true*, the mover will remain on the current route, but change the target speed.
+
+.. method:: bool TurnToHeading(double aHeading)
+            bool TurnToHeading(double aHeading, double aRadialAccel)
+
+   Causes the platform to turn to the given absolute Course (inadvertently referred to as Heading) [0, 360] (degrees).
+   Return true if successful.
+
+   In the second form, the second argument is the radial acceleration to be used (meters/second^2) to be used during the
+   turn. Realized radial acceleration will be limited by :model:`WSF_AIR_MOVER` :command:`maximum_radial_acceleration <_.route_mover.maximum_radial_acceleration>`.
+
+.. method:: bool TurnToRelativeHeading(double aHeading)
+            bool TurnToRelativeHeading(double aHeading, double aRadialAccel)
+
+   Causes the platform to turn to the given relative heading [-180, 180] (degrees). Return true if successful.
+
+   In the second form, the second argument is the radial acceleration to be used (meters/second^2) to be used during the
+   turn. Realized radial acceleration will be limited by :model:`WSF_AIR_MOVER` :command:`maximum_radial_acceleration <_.route_mover.maximum_radial_acceleration>`.
+
+.. method:: bool FollowRoute(WsfRoute aRoute)
+            bool FollowRoute(WsfRoute aRoute, string aLabel)
+            bool FollowRoute(WsfRoute aRoute, int aIndex)
+            bool FollowRoute(string aRouteName)
+            bool FollowRoute(string aRouteName, string aLabel)
+            bool FollowRoute(string aRouteName, int aIndex)
+
+   Causes the platform to drop its current path and follow the provided route. The starting point defaults to the first
+   point in the route if not specified.
+
+   Returns true if successful.
+
+   *WsfRoute aRoute* indicates a script :class:`WsfRoute` to follow.
+
+   *string aRouteName* indicates a route to follow by either:
+   * The name of a predefined route type defined with a global :command:`route` command.
+   * The string "DEFAULT_ROUTE" selects the initial route defined for the platform.
+
+   *string aLabel* specifies an alternate starting point in the route as either:
+   * The label of a waypoint within the specified route.
+   * The string "CLOSEST_POINT" selects the point that is closest to the current location.
+
+   *int aIndex* specifies an alternate starting point in the route as an integer where 0 is the first index into route.
+
+.. method:: bool ReturnToRoute()
+
+   Causes to the platform to return to its default, or preplanned route following a diversion. The platform goes to the
+   target waypoint it had at the time of the diversion.  Return true if successful.
+
+.. important::
+   The following SetLocation, SetVelocity, and SetOrientation methods are not guaranteed to be compatible with all mover types. Furthermore, they may be unsuccessful if invoked on uninitialized platforms created with :method:`WsfSimulation.CreatePlatform` before being added to the simulation.
+
+.. method:: void SetLocation(double aLat, double aLon, double aAlt)
+            void SetLocation(WsfGeoPoint aPoint)
+
+   Immediately moves the platform to a new location. This method may not be compatible with all mover types, or successful if invoked on uninitialized platforms created in script.
+
+.. method:: bool SetLocationMGRS(string aLocationMGRS)
+            bool SetLocationMGRS(string aLocationMGRS, double aAlt)
+
+   Immediately moves the platform to a new location.  The first form will place the platform on the ground.  The second form will place the platform at the specified altitude (AGL). This method may not be compatible with all mover types, or successful if invoked on uninitialized platforms created in script.
+
+.. method:: void SetVelocityECS(double aForward, double aRight, double aDown)
+
+   Changes the platform's velocity in :ref:`ECS`. This method may not be compatible with all mover types, or successful if invoked on uninitialized platforms created in script.
+
+.. method:: void SetVelocityNED(double aNorth, double aEast, double aDown)
+
+   Changes the platform's velocity in North, East, Down. This method may not be compatible with all mover types, or successful if invoked on uninitialized platforms created in script.
+
+.. method:: void SetOrientationNED(double aHeading, double aPitch, double aRoll)
+
+   Changes the platform's orientation in heading, pitch, roll (in degrees).  This is only useful for platform's without a mover.
+
+.. method:: void SetOrientationWCS(double aPsi, double aTheta, double aPhi)
+
+   Changes the platform's orientation in :ref:`WCS <WCS>` (degrees).  This is only useful for platform's without a mover.
+
+.. method:: WsfRoute Route()
+
+   Returns a reference to the current route the platform is traveling.  The returned route may not be modified, use
+   :method:`Copy() <WsfRoute.Copy>` and :method:`FollowRoute <WsfPlatform.FollowRoute>` to modify the platform's route.
+
+.. method:: int RoutePointIndex()
+
+   Returns the index of the waypoint within the route to which the platform is moving towards.
+
+   .. note::
+      The return value is valid only if the platform is following a route.
+
+
+.. method:: bool SetRoute(WsfRoute aRoute)
+            bool SetRoute(string aRouteName)
+
+   Immediately moves the platform to the start and begins following a route.  Use FollowRoute() if you do not want move
+   immediately to the beginning of the route.
+
+   Returns true if successful.
+
+   *WsfRoute aRoute* indicates a script :class:`WsfRoute` to follow.
+
+   *string aRouteName* indicates a route to follow by either:
+   * The name of a predefined route type defined with a global :command:`route` command.
+   * The string "DEFAULT_ROUTE" selects the initial route defined for the platform.
+
+.. method:: void Pause(double UnpauseTime)
+
+   Stops platform movement until unpaused. UnpauseTime is the absolute time the platform is to resume.
+
+.. method:: void Unpause()
+
+   Resumes platform movement if it was previously paused.
+
+.. method:: WsfPathFinder PathFinder()
+
+   Returns the path finder attached to the platform's mover object.
+
+   .. note::
+      The current mover must be a type of route mover or the return value is invalid.
+
+Relative Geometry Methods
+=========================
+
+.. method:: double RelativeAzimuthOf(WsfGeoPoint aPoint)
+
+   Returns the azimuth angle ([-180, 180] degrees) of the supplied point with respect to the current orientation of the
+   platform (includes any yaw, pitch or roll angles).
+
+.. method:: double RelativeElevationOf(WsfGeoPoint aPoint)
+
+   Returns the elevation angle ([-90, 90] degrees) of the supplied point with respect to the current orientation of the
+   platform (includes any yaw, pitch or roll angles).
+
+.. method:: double TrueBearingTo(WsfTrack aTrack)
+            double TrueBearingTo(WsfPlatform aPlatform)
+            double TrueBearingTo(double aLat, double aLon, double aAlt)
+            double TrueBearingTo(WsfGeoPoint aPoint)
+
+   Returns the bearing ([-180, 180] degrees) to the given location. The angle is relative to north, with positive values
+   being clockwise.
+
+.. method:: Array<double> ApparentAspectOf(WsfGeoPoint aPoint, double aEarthRadiusScale)
+
+   Returns the 'apparent' azimuth angle ([-180, 180] degrees) and the elevation angle, in a two element array of type double, of the supplied point with respect to the current orientation of the platform (includes any yaw, pitch or roll angles).  The apparent location (i.e., the perceived location of an object which accounts for atmospheric refraction) may be needed to properly cue sensors that have very narrow beams.
+
+   *aEarthRadiusScale* is a value that can be used to account for atmospheric refraction (typically 1.0). A value of less than or equal to zero is equivalent to specifying 1.0.
+
+.. method:: double RelativeBearingTo(WsfTrack aTrack)
+            double RelativeBearingTo(WsfPlatform aPlatform)
+            double RelativeBearingTo(double aLat, double aLon, double aAlt)
+            double RelativeBearingTo(WsfGeoPoint aPoint)
+
+   Returns the bearing ([-180, 180] degrees) to the given location. The angle is relative to the platforms current heading with positive values being clockwise.
+
+.. method:: double SlantRangeTo(WsfTrack aTrack)
+            double SlantRangeTo(WsfTrack aTrack, bool aUseSpherical)
+            double SlantRangeTo(WsfPlatform aPlatform)
+            double SlantRangeTo(WsfPlatform aPlatform, bool aUseSpherical)
+            double SlantRangeTo(double aLat, double aLon, double aAlt)
+            double SlantRangeTo(double aLat, double aLon, double aAlt, bool aUseSpherical)
+            double SlantRangeTo(WsfGeoPoint aPoint)
+            double SlantRangeTo(WsfGeoPoint aPoint, bool aUseSpherical)
+            double SlantRangeTo(WsfWaypoint aPoint)
+            double SlantRangeTo(WsfWaypoint aPoint, bool aUseSpherical)
+
+   Returns the slant range in meters between the platform and the indicated location. If *aUseSpherical* is true, calculate using spherical coordinates; if it is false or left unspecified, calculate using ellipsoidal coordinates.
+
+.. method:: double GroundRangeTo(WsfTrack aTrack)
+            double GroundRangeTo(WsfPlatform aPlatform)
+            double GroundRangeTo(double aLat, double aLon, double aAlt)
+            double GroundRangeTo(WsfGeoPoint aPoint)
+
+   Returns the approximate ground range in meters between the platform and the indicated location. Calculated using spherical coordinates.
+
+.. method:: double DownRangeTo(WsfTrack aTrack)
+            double DownRangeTo(WsfPlatform aPlatform)
+            double DownRangeTo(double aLat, double aLon, double aAlt)
+            double DownRangeTo(WsfGeoPoint aPoint)
+
+   Returns the approximate down range in meters between the platform and the indicated location. This is the ground range
+   times the cosine of the relative bearing to the location. Positive values indicate the location is in front of the
+   platform while negative values indicate it is behind the platform.  Calculated using spherical coordinates.
+
+.. method:: double CrossRangeTo(WsfTrack aTrack)
+            double CrossRangeTo(WsfPlatform aPlatform)
+            double CrossRangeTo(double aLat, double aLon, double aAlt)
+            double CrossRangeTo(WsfGeoPoint aPoint)
+
+   Returns the approximate cross range in meters between the platform and the indicated location. This is the ground range
+   times the sine of the relative bearing to the location. Positive values indicate the location is to the right of the
+   platform while negative values indicate it is to the left of the platform.  Calculated using spherical coordinates.
+
+.. method:: WsfGeoPoint ClosestApproachOf(WsfTrack aTrack)
+            WsfGeoPoint ClosestApproachOf(WsfPlatform aPlatform)
+
+   Returns the approximate point at which the indicated object would pass closest to the platform. It is derived by
+   extending the horizontal components of the velocity vector of the indicated object and determining the point at which
+   the line passes closest to the platform. If the object is not moving or if it is coincident with the requesting
+   platform, the returned value will be the current position of the object.
+
+   .. note::
+      The velocity of the requesting platform is not considered in this calculation (i.e., it is not an
+      intercept calculation).
+
+.. method:: double HeadingDifferenceOf(WsfTrack aTrack)
+            double HeadingDifferenceOf(WsfPlatform aPlatform)
+
+   Returns the difference in heading in degrees between the platform and the indicated object.  That is,
+   result = heading of platform - heading of object normalized to the range [-180, 180].
+   The sign of the value indicates the potential direction of the crossing of the objects. A positive value indicates the
+   object would cross the platform's path from left to right while a negative value indicates it would cross from right to
+   left. A value of zero indicates the objects are traveling in the same direction while a value of 180 indicates they are
+   traveling in opposite directions.
+
+.. method:: double ClosingSpeedOf(WsfTrack aTrack)
+            double ClosingSpeedOf(WsfPlatform aPlatform)
+            double ClosingSpeedOf(WsfTrack aTrack, double aMySpeed)
+            double ClosingSpeedOf(WsfPlatform aPlatform, double aMySpeed)
+
+   Returns the closing speed in meters per second between the platform and the indicated object. This value is the
+   component of the total velocity in the direction of the vector between the two objects. Positive values mean the
+   objects are closing and negative values mean the objects are separating.
+
+.. method:: bool WithinFieldOfView(WsfTrack aTrack, string aMySensorName)
+            bool WithinFieldOfView(WsfPlatform aPlatform, string aMySensorName)
+
+   Is the given track or platform within the field of view of this platform's sensor?
+
+.. _WsfPlatform.MaskedByTerrain:
+
+.. method:: bool MaskedByTerrain (WsfGeoPoint aPoint, double aVerticalOffset, double aRadiusScaleFactor)
+
+   Returns true if the line of sight between the platform and the supplied point is masked (obscured) by the terrain.
+
+   * *aVerticalOffset* is the amount added to the platform altitude to simulate the height of the observer (e.g., antenna) above the platform.
+   * *aRadiusScaleFactor* is the scale factor to be applied to Earths radius to simulate atmospheric refraction. This value is typically 1.3333 (4 / 3) for radio frequencies.
+
+.. method:: double ApparentTime()
+
+  Return the apparent mean solar time at the position of this platform in hours since midnight.
+
+
+Compatibility Methods
+=====================
+
+.. method:: double RelativeAltitudeOf(WsfTrack aTrack)
+
+   Returns the signed difference between the specified track and the requesting platform. A positive value means the
+   altitude of the track is above the requesting platform.
+
+.. method:: double RelativeHeadingOf(WsfTrack aTrack)
+
+   This returns the absolute value of the angle between the line-of-sight vector from the target (represented by the
+   supplied track) to the requesting platform and the heading vector of the target.
+
+   .. note::
+      The track must have a valid non-zero velocity, or a large value (1.0E+10) will be returned.
+
+
+.. method:: double RelativeOffsetOf(WsfTrack aTrack)
+
+   This returns the approximate ground range (in meters) to the point of closest approach of the target represented by the
+   specified track.
+
+   .. note::
+      The track must have a valid non-zero velocity, or a large value (1.0E+10) will be returned.
+
+
+
+Zone Methods
+============
+
+.. method:: WsfZone Zone(string aZoneName)
+
+   Returns the WsfZone script object matching the given zone name.
+
+.. method:: bool WithinZone(string aZoneName)
+
+   Returns 'true' if the platform is within the specified zone defined on the platform. The zone can be created on the
+   platform using the zone ... end_zone block or the use_zone command. See :command:`platform`.
+
+.. method:: bool WithinZoneOf(WsfPlatform aPlatform, string aZoneName)
+
+   Returns 'true' if the platform is within the specified zone defined on the specified platform. The zone can be created
+   on the platform using the zone ... end_zone block or the use_zone command. See :command:`platform`.
+
+.. method:: Array<string> ZoneNames()
+
+   Returns an array of the names for all zones that were defined on the platform.
+
+.. method:: Array<WsfZone> Zones()
+
+   Returns an array of :class:`WsfZone` objects that were defined on the platform.
+
+.. _WsfPlatform.Auxiliary_Data_Methods:
+
+Auxiliary Data Methods
+======================
+
+.. include:: ../scriptauxdata.txt
+
+.. _WsfPlatform.Group_Methods:
+
+Group Methods
+=============
+
+.. method:: bool GroupMemberOf(string aGroupName)
+.. method:: bool GroupMemberOf(WsfGroup aGroupPtr)
+
+   Returns true if the platform is a member of the specified group (by name, id or object).
+
+.. method:: Array<WsfGroup> Groups()
+
+   Returns a list of all groups this platform is a member of.
+
+.. method:: Array<string> GroupsByName()
+
+   Returns a list of the names of all groups this platform is a member of.
+
+.. method:: void GroupJoin(string aGroupName)
+
+   Joins the given group if it exists in the simulation.
+
+.. method:: void GroupLeave(string aGroupName)
+
+   Leaves the given group if this platform is a member.
+
+Other Methods
+=============
+
+.. method:: void AddCategory(string aCategoryName)
+
+   Adds the category to the platform's category list.
+
+.. method:: bool CategoryMemberOf(string aCategoryName)
+
+   Returns true if the platform is a member of the specified category.
+
+.. method:: void Comment(string aComment)
+            void Comment(double aTime, string aComment)
+
+   Sends a time-stamped comment entry for the platform to the simulation observers (such as :command:`event_output`,
+   :command:`dis_interface`). This is typically used to insert application-specific data into the event logs or simulation output
+   stream. In :command:`event_output`, the supplied string will be written as a COMMENT entry. For the :command:`dis_interface`, a
+   Comment PDU will be written which can be interpreted by many visualization tools as a 'thought bubble.'
+
+   The first form uses the current simulation time as the time of the comment. The second form uses the supplied time as
+   the time of the comment and should be used very carefully as time should only increase in some output streams.
+
+.. method:: WsfGeoPoint GeoPoint(string aGeoPointName)
+
+   Returns the point with the given name.
+
+.. method:: WsfTrack MakeTrack()
+
+   Returns a track that represents the current state of the platform.
+
+.. method:: WsfMover SwapMover(WsfMover aMover)
+
+   Changes the Platform's mover.  The platform actually starts using a **copy** of the specified mover.  Use
+   :method:`WsfPlatform.Mover` to access the mover after SwapMover is called.  If aMover is null, the platform will no longer have a
+   mover.  Returns the mover the platform was using prior to the swap.
+
+.. method:: WsfMover SwapMover(string aMoverType)
+
+   Changes the Platform's mover to a new mover of the given type.  Use :method:`WsfPlatform.Mover` to access the mover after SwapMover
+   is called.  If aMoverType is known, returns the mover the platform was using prior to the swap. If aMoverType is unknown, this does
+   nothing and will return a null object.
+
+.. method:: void SetMoverDebugEnabled(bool aBoolean)
+
+   Enables ('true') or disable ('false') the debug mode of the mover attached to the platform.
+
+.. method:: WsfGeoPoint SubordinatesCentroid()
+
+   Calculates and returns the centroid of the platform's subordinates.
+
+
+.. method:: EntityType EntityType()
+
+   Returns the :class:`EntityType` if it exists in the :command:`dis_interface.entity_type` mapping command.
+
+   Example::
+
+      ...
+
+      EntityType et = pltfrm.EntityType();
+
+      ...
+
+.. method:: void PrintComponentInfo()
+
+   Prints a list of the names and types of components attached to the platform, along with a descriptive header.
+
+.. method:: string GetComponentInfo()
+
+   Returns a string containing the names and types of components attached to the platform.
+
+.. include:: _wsfplatform.wsf_cyber.txt
+.. include:: _wsfplatform.wsf_mil.txt

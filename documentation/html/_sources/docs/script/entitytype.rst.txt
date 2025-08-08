@@ -1,0 +1,124 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+EntityType
+----------
+
+.. class:: EntityType
+
+Provides access to the Entity Type record data fields for :command:`dis_interface` and other interfaces.
+
+.. note::
+   The IEEE Std 1278.1 provides more complete information about each field of this Entity Type record. 
+
+Methods
+=======
+
+.. method:: string String()
+
+   Returns the Entity Type record as a string containing the <Entity Kind>:<Domain>:<Country>:<Category>:<Subcategory>:<Specific>:<Extra>, separated by colons.
+   
+   Example output::
+      1:2:225:1:9:10:0
+
+.. method:: int EntityKind()
+
+   Returns the Entity Kind field in the Entity Type record as an int.
+
+.. method:: int Domain()
+
+   Returns the Domain field in the Entity Type record as an int.
+
+.. method:: int Country()
+
+   Returns the Country field in the Entity Type record as an int.
+
+.. method:: int Category()
+
+   Returns the Category field in the Entity Type record as an int.
+
+.. method:: int Subcategory()
+
+   Returns the Subcategory field in the Entity Type record as an int.
+
+.. method:: int Specific()
+
+   Returns the Specific field in the Entity Type record as an int.
+
+.. method:: int Extra()
+
+   Returns the Extra field in the Entity Type record as an int.
+
+Example
+=======
+
+::
+
+   dis_interface
+      entity_type AIRCRAFT 1:2:225:1:9:10:0
+   end_dis_interface
+
+   platform_type AIRCRAFT WSF_PLATFORM
+   end_platform_type
+
+   platform aircraft_1 AIRCRAFT
+   end_platform
+
+   script void CheckEntityType(EntityType et)
+      if (et.String() != "1:2:225:1:9:10:0")
+      {
+         writeln("-FAIL- EntityType.String()=" + et.String() + " expected 1:2:225:1:9:10:0");
+      }
+      if (et.EntityKind() != 1)
+      {
+         writeln("-FAIL- EntityType.Kind()=" + et.EntityKind().ToString() + " expected 1");
+      }
+      if (et.Domain() != 2)
+      {
+         writeln("-FAIL- EntityType.Domain()=" + et.Domain().ToString() + " expected 2");
+      }
+      if (et.Country() != 225)
+      {
+         writeln("-FAIL- EntityType.Kind()=" + et.Country().ToString() + " expected 225");
+      }
+      if (et.Category() != 1)
+      {
+         writeln("-FAIL- EntityType.Kind()=" + et.Category().ToString() + " expected 1");
+      }
+      if (et.SubCategory() != 9)
+      {
+         writeln("-FAIL- EntityType.Kind()=" + et.SubCategory().ToString() + " expected 9");
+      }
+      if (et.Specific() != 10)
+      {
+         writeln("-FAIL- EntityType.Specific()=" + et.Specific().ToString() + " expected 10");
+      }
+      if (et.Extra() != 0)
+      {
+         writeln("-FAIL- EntityType.Extra()=" + et.Extra().ToString() + " expected 1");
+      }
+   end_script
+
+   execute at_time 0.1 sec absolute
+      WsfPlatform pltfrm = WsfSimulation.FindPlatform("aircraft_1");
+
+      EntityType et = pltfrm.EntityType();
+      writeln("**** Checking Entity Type through platform:      " + et.String());
+      CheckEntityType(et);
+      
+      et = WsfDIS.EntityType("AIRCRAFT");
+      writeln("**** Checking Entity Type by DIS, platform type: " + et.String());
+      CheckEntityType(et);
+      
+      et = WsfDIS.EntityType(pltfrm);
+      writeln("**** Checking Entity Type by DIS, object  type:  " + et.String());
+      CheckEntityType(et);   
+   end_execute

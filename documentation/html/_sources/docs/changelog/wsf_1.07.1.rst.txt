@@ -1,0 +1,254 @@
+:orphan:
+
+.. ****************************************************************************
+.. CUI
+..
+.. The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+..
+.. The use, dissemination or disclosure of data in this file is subject to
+.. limitation or restriction. See accompanying README and LICENSE for details.
+.. ****************************************************************************
+
+.. _wsf_1.7.1:
+
+WSF 1.7.1 - 25 Mar 2011
+-----------------------
+
+General
+=======
+
+Significant enhancements were made to the 'search' capability for the documentation provided with the software.
+This should make it much easier to locate the desired information.
+
+Updated the :command:`dis_interface` to set orientation rates to zero when using the
+:command:`dis_interface.use_simple_accelerations` entry. To set the simple orientation rate fields in
+the DIS Entity State PDU, use the entry :command:`dis_interface.use_simple_orientation_rates`,
+also.  These commands will be ignored by any platform that has a 6-DOF mover, as the 6-DOF mover calculates its own
+acceleration values.
+
+Added a Flexible Data Link (FADL) communication module and Communication Effects interface.  The
+FADL is a mechanism to represent data-link messages passed between simulated entities on a DIS network.  It has a
+flexible definition to accommodate almost any message format.  One predefined message set has been defined in order to
+achieve this interoperability to share target information.  The Communication Effects interface enables external
+communications simulations to effect FADL traffic on a DIS network.
+
+Corrections
+===========
+
+**(CR 8310)**  Fixed an issue where the J11.1 messages were being sent to a weapon when its target platform was no
+  longer alive.  J11.1 messages are no longer being sent in this case to any weapons that had said platform as a target.
+
+**(CR 8643)**  Fixed an issue where the number of canceled jammers was being incorrectly book-kept within the
+   :model:`WSF_SLC_EFFECT` whenever the :command:`electronic_attack` being mitigated had multiple effects within a single
+   technique and one of them was or inherited from the :model:`WSF_SLC_DEGRADE_EFFECT` with the number of saturated channels
+   being greater than 1.
+
+**(CR 8661)** Corrected an issue in weapon engagement termination processing where *csims_interface* and
+   *jaam_interface* movers could cause a crash or lockup when running in multi-threaded mode.
+
+**(CR 8662)** Corrected several memory initialization problems in the *WSF_CSIMS_MOVER* that
+   would cause erratic flyouts on Windows 7 systems. The problem could have existed on any system, but was more pronounced
+   on Windows 7 because of the way newly allocated memory was not initialized to zero.
+
+**(CR 8663)**  Fixed a segmentation fault when the :model:`WSF_POL_MOD_EFFECT` and :model:`WSF_SLC_EFFECT` were interacting.
+   This issue was not seen between the :model:`WSF_SLC_DEGRADE_EFFECT` and :model:`WSF_SLC_EFFECT`.
+
+**(CR 8668)** Fixed a performance issue in the :model:`WSF_SIMPLE_FT_EFFECT` causing slow/lock-ups in the simulation
+   for sensors that scanned in azimuth and elevation with narrow beamwidths. Also fixed some issues with the algorithms
+   and calculation of the number of false targets that the sensor could detect.
+
+**(CR 8671)** Modified the :class:`WsfCovariance` script methods so they no longer require a track argument to be
+   provided.
+
+**(CR 8672)** Corrected a problem where later :command:`message_table` entries that used the same key (comm type, message
+   type and message subtype) were not overwriting the values from the previous entry (thus violating the convention that
+   the last value for a given data item should be used). Also modified the code so that a warning message would be emitted
+   if a 'subtype' command was used under the 'default' command. The documentation did not indicate they were acceptable
+   and the code would never use such entries.
+
+**(CR 8673)** Fixed an issue where the :command:`dis_interface.ew_technique_type` command in the :command:`dis_interface` was
+   only allowing 16-bit values when it should have allowed 32-bit values.
+
+**(CR 8684)** Fixed issue where the :command:`dis_interface.start_entity` command in the :command:`dis_interface` did not
+   work.
+
+**(CR 8717)** Corrected a problem in the DIS Detonation PDU when a weapon platform is fully damaged and killed.
+   The detonation result in the corresponding DIS Detonation PDU was being set to 5 (for detonation). It is now being set
+   to 6 (for none) for this case.
+
+**(CR 8723)** Corrected a problem where the azimuth component of a cue was getting used even if the
+   :command:`_.articulated_part.slew_mode` or :command:`sensor_mode.cue_mode` specified 'elevation'.
+
+**(CR 8724)** Corrected a problem where the orientation of a non-imaging sensor that was cued was not being
+   properly reflected if there where no targets. This caused the visual displays in VESPA and the IWARS panel to be
+   incorrect.
+
+**(CR 8725)** Corrected a problem where when changing sensor modes, the scan rate (as computed from the
+   :command:`sensor_mode.frame_time`) was not getting updated to the rate of the new mode.
+
+**(CR 8726)** Corrected a problem where the sensor measurement errors for imaging sensors (:model:`WSF_EOIR_SENSOR` and
+   :model:`WSF_SAR_SENSOR`) were not getting propagated through image formation and analysis. This prevented the track manager
+   from being able to compute a covariance matrix.
+
+**(CR 8727)** Corrected a problem where :ref:`WSF_VIDEO_PROCESSOR` was not properly computing the velocity in the
+   output tracks that represented the objects in the image. A change implemented in WSF 1.6.3 caused the problem.
+
+**(CR 8738)** Corrected a problem where an additional space would show up after the first word in a script string
+   in certain circumstances.
+
+**(CR 8739)** Added behavior where track updates from the same raw track, at a lower track quality, are accepted
+   for fusion.  These updates had been rejected because lower quality tracks, from any source, had been rejected.
+
+**(CR 8743)** The script that converts IRIMAGE 'kio3' files into a format that can be used by the :ref:`SOSM_target_model_table`
+   (kio3_to_sosm.pl) was aborting if every az/el sample did not include a plume contribution. It was
+   corrected so it will produce a zero plume contribution for those az/el samples where no contribution was present in the
+   'kio3' file.
+
+**(CR 8758)** Documented the :class:`WsfTrack` script methods :method:`WsfTrack.IFF_Neutral` and
+   :method:`WsfTrack.SetIFF_Neutral`.
+
+**(CR 8760)** Corrected a problem in :command:`road_traffic` where the
+   :command:`end_of_path_option reverse_direction <road_traffic.network.end_of_path_option>` was not working.
+
+**(CR 8761)** Corrected a problem in :command:`road_traffic` where the initial distribution of travel times did not match
+   the requested distribution.
+
+**(CR 8793)** Corrected a cosmetic problem where the timestamp in the header written to :command:`dis_interface.record`
+   was not correct. This was not a problem because the time used programs like **VESPA** was recorded in
+   a different manner, but the timestamp was corrected just in case anybody ever used the file for another reason and
+   expected the timestamps to be correct.
+
+**(CR 8797)** Remove any special characters in user-supplied strings provided to :command:`event_output` before writing
+   them to the event file. The presence of some special characters can prevent some post-processors from being able to
+   interpret the file.
+
+**(CR 8803)** Changed the default :command:`WSF_DELAY_PROCESSOR.number_of_servers` in :model:`WSF_DELAY_PROCESSOR` from '1'
+   to 'infinite'. This makes it behave like a simple delay. The old default of '1' often caused problems because internal
+   messages would interfere with the expected delay.
+
+**(CR 8812)** Corrected a problem where the noise power used to calculate the signal-to-noise ratio was incorrect.
+   The problem only occurred for comm interactions involving a :model:`WSF_RADIO_XMTR<WSF_RADIO_TRANSCEIVER>` and a
+   :model:`WSF_RADIO_RCVR<WSF_RADIO_TRANSCEIVER>`. It did not occur when using matched :model:`WSF_RADIO_TRANSCEIVER`.
+
+**(CR 8819)** Corrected a problem where :model:`WSF_GRADUATED_LETHALITY` was considering too many targets for possible
+   damage when 'allow_incidental_damage' was enabled.
+
+**(CR 8824)** The **target_pitch** and **target_roll** target state variable selection commands in :command:`sensor_plot`
+   were not working because of a typographical error.
+
+**(CR 8825)** Added documentation for the various :command:`sensor_plot` target state variable selection commands.
+
+**(CR 8832, CR 8833)** Correct a problem where :model:`WSF_ROAD_MOVER` would sometimes generating the wrong route and
+   using the wrong speed.
+
+Enhancements
+============
+
+**(CR 5562)** Added the :command:`_.antenna_commands.scan_stabilization` option to enable the definition
+   of 'stabilized' sensor scan volumes.
+
+Added Ellipse capability to :class:`WsfDraw`.
+
+Added alpha value to SetColor in :class:`WsfDraw` allowing lines and shapes to appear translucent.
+
+Added documentation for :model:`WSF_SCRIPT_LAUNCH_COMPUTER`. This was implemented in the 1.7.0 release, but not
+   documented.
+
+Added script methods to WsfRoute: :method:`WsfRoute.Front`, :method:`WsfRoute.Back`, :method:`WsfRoute.Waypoint`
+
+Added script methods to WsfWaypoint: :method:`WsfWaypoint.SetClimbRate`, :method:`WsfWaypoint.ClimbRate`,
+   :method:`WsfWaypoint.SetLinearAcceleration`, :method:`WsfWaypoint.LinearAcceleration`,
+   :method:`WsfWaypoint.SetRadialAcceleration`, :method:`WsfWaypoint.RadialAcceleration`, :method:`WsfWaypoint.SetAltitude`,
+   :method:`WsfWaypoint.SetSwitch`, :method:`WsfWaypoint.SetSwitchTime`, :method:`WsfWaypoint.SetSwitchDistance`,
+   :method:`WsfWaypoint.Switch`, :method:`WsfWaypoint.SetEndOfPathOption`, :method:`WsfWaypoint.Index`,
+   :method:`WsfWaypoint.GoToLabel`, :method:`WsfWaypoint.Label`, :method:`WsfWaypoint.AltitudeAGL`, :method:`WsfWaypoint.AltitudeMSL`
+
+Added script method :method:`WsfGeoPoint.SetAltitudeAGL` to WsfGeoPoint.
+
+**(CR 8569)** Modified :model:`WSF_SAR_SENSOR` so that it will report an object as being in the image even if the
+   object was not detectable during part of the time while the image was being collected.
+
+**(CR 8570)** Added the IMAGE_CREATED event to :command:`event_output`.
+
+**(CR 8666)** Updated WSF to emit the latest format for the :class:`WsfDraw` PDUs, which support
+    :ref:`layers <WsfDraw.Other_Methods>` and :ref:`ellipses <WsfDraw.Begin_Methods>`. Note: To use :class:`WsfDraw`
+    with versions of VESPA v5.3.2 and
+    older you must explicitly enable the deprecated :class:`WsfDraw` PDU format using the
+    :command:`dis_interface.use_deprecated_cme_draw_data` command.
+
+**(CR 8669)** Added methods to :method:`WsfTrack <WsfTrack.StateCovarianceAtTime>` and
+   :class:`WsfCovariance` to return a covariance matrix that has been propagated forward in
+   time. Also cleaned up the :class:`WsfCovariance` script methods to conform to the conventions for method names and return
+   values.
+
+**(CR 8674)** Added the capability to define Electronic Warfare (EW) sets, techniques and effect type definitions.
+   See :command:`electronic_warfare`, :command:`electronic_warfare_technique` and :command:`electronic_warfare_effect` for more information.
+   Also, with this capability is the capability to modify already defined EW types and instances.
+
+**(CR 8698)** Added the :command:`WSF_RADAR_SENSOR.detection_probability` command to :model:`WSF_RADAR_SENSOR`, which
+   allows one to define a Pd vs. SNR curve as an alternative to using the Swerling detector.
+
+**(CR 8699)** Added the :ref:`signal_processor.mti_adjustment` to :ref:`Radar_Signal_Processors` types, which allows one
+   to define a curve to reflect the increasing difficulty in attempting to detect targets with a GMTI sensor as they move
+   with ever slower speeds.
+
+**(CR 8710)** The message length and priority can be now be set individually for a sensor modes
+   (:command:`sensor.message_length`, :command:`sensor.message_priority`).  Similar commands were defined for
+   :model:`WSF_IMAGE_PROCESSOR <WSF_IMAGE_PROCESSOR>`, :ref:`WSF_VIDEO_PROCESSOR`, This eliminates the most of the need to create scripts for setting these parameters.
+
+Documented the :method:`WsfTrackProcessor.is_track_reportable` script method in :model:`WSF_TRACK_PROCESSOR`. This
+   method has existed since the earliest releases and is useful for implementing custom reporting methods.
+
+As part of **CR 8725** documented in the Corrections section above, the :command:`sensor_mode.frame_time` of a sensor may
+   now be dynamically updated using the script :method:`WsfObject.ProcessInput` command (e.g.:
+   <tt>PLATFORM.Sensor("radar").ProcessInput("mode MY_MODE frame_time 10 sec end_mode");</tt>). This currently only works
+   for non-imaging sensors.
+
+Added the :command:`random_seed_time` command.
+
+Added commands to allow some 'list-type' items to be reset back to their initial or empty state. This allows these
+   items to be reset and redefined when reusing an existing definition. The new commands are
+   :command:`_.External_Link_Commands.clear_external_links` for external message routing, :command:`Platform Part Commands <_.platform_part.internal_link>`
+   for internal message routing; **clear_categories** in :command:`platform <platform.clear_categories>` and
+   :command:`_.platform_part.clear_categories`; :command:`sensor.ignore_nothing` for sensor detection control;
+   and :command:`sensor_mode.reports_nothing` for sensor reporting control.
+
+   Updated the script :command:`observer` capability so multiple script observers can be enabled for the same event. Also
+   added the :command:`observer.disable` command to disable a previously registered observer.
+
+**(CR 8731)** Added the command
+   :command:`link16_interface.include_dis_entity_id_in_j3x_tracks` to
+   :command:`link16_interface` which allows a new J3.X extension word that holds DIS Entity Id data to be
+   included in J3.X Surveillance track messages.  Messages can be sent through :model:`WSF_JTIDS_TERMINAL <WSF_JTIDS_TERMINAL>`
+   comm devices, and are also available via DIS Signal pdu's when configured.  :ref:`WsfTadilJ` for
+   the new extension word is available.
+
+**(CR 8786)** Added in more :model:`gain control methods <WSF_REPEATER_EFFECT>` to the
+   :model:`WSF_REPEATER_EFFECT`.
+
+**(CR 8813)** Allow optional definition of the :command:`platform.on_damage_received` script that will be called when
+   a platform receives damage as the result of a weapon hit.
+
+Added new script methods to :class:`WsfPlatform`: :method:`WsfPlatform.OrientationNED`, :method:`WsfPlatform.OrientationWCS`,
+   :method:`WsfPlatform.SetOrientationNED`, :method:`WsfPlatform.SetOrientationWCS`, :method:`WsfPlatform.ConvertECSToWCS`,
+   :method:`WsfPlatform.ConvertWCSToECS`
+
+**(CR 8818)** Updated :model:`WSF_TSPI_MOVER` to include an at_end_of_path option which defines what happens to
+   the platform when the end of the TSPI file is encountered.
+
+**(CR 8828)** Updated WSF DIS interface to send non-standard DIS pdu's containing beam range and color data for
+   each "active" beam of each mode of each sensor of each platform in a simulation.  VESPA will receive and interpret
+   these pdu's to display the appropriate beam range and color as the sensor mode(s) changes.  If a beam_parameters.txt
+   file has been referenced, the beam data from these pdu's will override it.  Beam range can be set using the
+   :command:`_.antenna_commands.maximum_range` command.  Beam color can be set using the
+   beam_color_rgba command.  This capability is functional for the
+   :model:`WSF_RADAR_SENSOR <WSF_RADAR_SENSOR>`, :model:`WSF_OTH_RADAR_SENSOR <WSF_OTH_RADAR_SENSOR>`,
+   :model:`WSF_SAR_SENSOR <WSF_SAR_SENSOR>`, and the :model:`WSF_GEOMETRIC_SENSOR <WSF_GEOMETRIC_SENSOR>`.
+
+Database Updates
+================
+
+Corrected issues with weapon inheritance causing SAMs not to shoot in legacy databases.
+
+**(CR 8807)** In one of the classified WSF 1.7.0 databases, tracks received by RADAR_BRIGADE, RADAR_REGIMENT and
+   RADAR_BATTALION players from subordinate RADAR_COMPANY players were not being sent up the command chain.

@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Tracking Uncertainties and Covariances &#8212; AFSIM 2.9.0 Documentation</title>
+    <link rel="stylesheet" href="../../_static/wsftheme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/collapse.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/admonition.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/table.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-header.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pseudo-topic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/quick-search.css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/collapse_sections.js"></script>
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Antenna Commands" href="../antenna_commands.html" />
+    <link rel="prev" title="Tracking Primer" href="tracking_primer.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="../antenna_commands.html" title="Antenna Commands"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracking_primer.html" title="Tracking Primer"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="tracking-uncertainties-and-covariances">
+<h1>Tracking Uncertainties and Covariances<a class="headerlink" href="#tracking-uncertainties-and-covariances" title="Permalink to this headline">¶</a></h1>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Multitarget-Multisensor Tracking, Bar-Shalom and Yi, 1993</p></li>
+</ol>
+</section>
+<section id="tracking-uncertainties">
+<h2>Tracking Uncertainties<a class="headerlink" href="#tracking-uncertainties" title="Permalink to this headline">¶</a></h2>
+<p>Tracking uncertainties in AFSIM typically arise from processed sensor errors.  These are the  <a class="reference internal" href="../sensor.html#sensor_mode.range_error_sigma" title="range_error_sigma (sensor_mode)"><span class="xref wsf wsf-command">range_error_sigma</span></a> (<img class="math" src="../../_images/math/affd5b9810f5fa138e6bbb811881f9c10ea82bf7.png" alt="\sigma_r"/>), <a class="reference internal" href="../sensor.html#sensor_mode.azimuth_error_sigma" title="azimuth_error_sigma (sensor_mode)"><span class="xref wsf wsf-command">azimuth_error_sigma</span></a> (<img class="math" src="../../_images/math/bce728b6a2dbdb105196c323560f4cf0ecd7a54f.png" alt="\sigma_\phi"/>), and <a class="reference internal" href="../sensor.html#sensor_mode.elevation_error_sigma" title="elevation_error_sigma (sensor_mode)"><span class="xref wsf wsf-command">elevation_error_sigma</span></a> (<img class="math" src="../../_images/math/0d06e33ad51eea9f7361a5baacb0bc0efe9ad3f1.png" alt="\sigma_\theta"/>).  As the names imply, they represent one sigma (<img class="math" src="../../_images/math/f2747f3db630ac73c73af65cbd2515d3e563c6cf.png" alt="1\sigma"/>) standard deviations according to a Normal distribution.  They are defined in the sensor’s natural coordinate system, the <a class="reference internal" href="../coordinate_systems.html#coordinate-systems"><span class="std std-ref">Beam Coordinate System</span></a>, BCS (which is often, but not always, aligned with the <a class="reference internal" href="../coordinate_systems.html#coordinate-systems"><span class="std std-ref">Part Coordinate System</span></a>, PCS, of the articulated part).  In this coordinate system the x-axis is oriented along the range vector, with azimuth and elevation errors defining uncertainty in the tangential coordinates.</p>
+<p>Along a given direction <img class="math" src="../../_images/math/888f7c323ac0341871e867220ae2d76467d74d6e.png" alt="x"/>, and for a zero mean value, the variance of a measurement is defined to be</p>
+<div class="math" id="equation-variance">
+<p><span class="eqno">(1)<a class="headerlink" href="#equation-variance" title="Permalink to this equation">¶</a></span><img src="../../_images/math/a8221adcbc5d74a7aa2b27887c434279ba5418bc.png" alt="\sigma^2_x = E[X^2]"/></p>
+</div><p>where <img class="math" src="../../_images/math/ef008126863199791c4cf18c7c14af70c813bddb.png" alt="E[f(X)]"/> denotes the expected value of the function <img class="math" src="../../_images/math/67bbc9654e984139379860ca1149076f353531cc.png" alt="f(X)"/>.</p>
+<p>As the notation implies, the variances of the sensor errors are given by the squares of the sigma values (they conform to a Normal distribution).  For a given range <img class="math" src="../../_images/math/1ebe654cc7b8f2a0d8100aa5825cf2b9021adbbc.png" alt="R"/>, the linear variances in the BCS (x,y,z) coordinate system are given by:</p>
+<div class="math" id="equation-bcs-variances">
+<p><span class="eqno">(2)<a class="headerlink" href="#equation-bcs-variances" title="Permalink to this equation">¶</a></span><img src="../../_images/math/812f2f08acd597b119e31310123419f8d7e24d18.png" alt="\sigma^2_x = \sigma^2_r
+
+\sigma^2_y = (R \sigma_\phi)^2
+
+\sigma^2_z = (R \sigma_\theta)^2"/></p>
+</div></section>
+<section id="covariance-matrices">
+<h2>Covariance Matrices<a class="headerlink" href="#covariance-matrices" title="Permalink to this headline">¶</a></h2>
+<p>The covariance measures the dependence or correlation of one independent variable with another.  In 3-D Cartesian coordinates (x,y,z) there are three covariances: <img class="math" src="../../_images/math/06df3c0cff2a03c260ebcee409b7d03a9ef08d88.png" alt="\sigma_{xy}"/>, <img class="math" src="../../_images/math/64ccc27519a3fcea81b37a3220f46318a90d5546.png" alt="\sigma_{yz}"/>, and <img class="math" src="../../_images/math/1bde309885e08465c0863fb45db85f52735afcc2.png" alt="\sigma_{xz}"/> (it is understood that <img class="math" src="../../_images/math/263381d8f0e04e008ed18b9652d9bbcc30a18aec.png" alt="\sigma_{xy}=\sigma_{yx}"/>, <img class="math" src="../../_images/math/6fa635c6b075024a7f842ab03c0cb20b6321e1fe.png" alt="\sigma_{yz} = \sigma_{zy}"/>, and <img class="math" src="../../_images/math/2552fc91e7d26a623b02fdeb8debf85a9c4442c4.png" alt="\sigma_{xz} = \sigma_{zx}"/>).  The covariance of a variable with itself is simply the variance (i.e., <img class="math" src="../../_images/math/d34df37f17f2828823f24f5792bdc5a3ae2cb45f.png" alt="\sigma_{xx} \equiv \sigma_x^2"/>, etc.).</p>
+<p>For two directions <img class="math" src="../../_images/math/888f7c323ac0341871e867220ae2d76467d74d6e.png" alt="x"/> and <img class="math" src="../../_images/math/1b5e577d6216dca3af7d87aa122a0b9b360d6cb3.png" alt="y"/>, and for zero mean values, the covariance of a measurement is defined to be</p>
+<div class="math" id="equation-covariance">
+<p><span class="eqno">(3)<a class="headerlink" href="#equation-covariance" title="Permalink to this equation">¶</a></span><img src="../../_images/math/397b286deeab8813645a18c396dd4a78c86c5794.png" alt="\sigma_{xy} = E[XY]"/></p>
+</div><p>The full set of covariances in three dimensions is conveniently expressed in the form of a covariance matrix:</p>
+<div class="math" id="equation-covariance-matrix-pos">
+<p><span class="eqno">(4)<a class="headerlink" href="#equation-covariance-matrix-pos" title="Permalink to this equation">¶</a></span><img src="../../_images/math/a78ad29d9ab7eadb2c33b01608f28d76eddb0390.png" alt="\bold{C} =
+\left[ {\begin{array}{rrr}
+\sigma_{xx}             &amp; \sigma_{xy}    &amp; \sigma_{xz} \\
+\sigma_{yx}             &amp; \sigma_{yy}    &amp; \sigma_{yz} \\
+\sigma_{zx}             &amp; \sigma_{zy}    &amp; \sigma_{zz}
+\end{array}} \right]"/></p>
+</div><p>The measurement covariance matrix expressing the sensor measurement errors in the BCS coordinate system only has nonzero values along the diagonal (it is a diagonal matrix):</p>
+<div class="math" id="equation-measurement-ovariance">
+<p><span class="eqno">(5)<a class="headerlink" href="#equation-measurement-ovariance" title="Permalink to this equation">¶</a></span><img src="../../_images/math/aacf3aed6b7e1b61cfd895665b3cda604526f669.png" alt="\bold{M} =
+\left[ {\begin{array}{rrr}
+ \sigma^2_r    &amp;  0                    &amp; 0 \\
+ 0             &amp; (R \sigma_\phi)^2     &amp; 0 \\
+ 0             &amp;  0                    &amp; (R \sigma_\theta)^2
+\end{array}} \right]"/></p>
+</div></section>
+<section id="transformation-of-covariance-matrices">
+<h2>Transformation of Covariance Matrices<a class="headerlink" href="#transformation-of-covariance-matrices" title="Permalink to this headline">¶</a></h2>
+<p>For simplicity in track reporting, it is good practice to express covariances with respect to a common coordinate system; for AFSIM this is the <a class="reference internal" href="../coordinate_systems.html#coordinate-systems"><span class="std std-ref">World Coordinate System (WCS)</span></a>.  For this reason the measurement covariances need to be transformed to align with WCS.</p>
+<p>From linear algebra, a diagonal matrix can be expressed in terms of a non-diagonal matrix using the relation:</p>
+<div class="math" id="equation-diagonalization">
+<p><span class="eqno">(6)<a class="headerlink" href="#equation-diagonalization" title="Permalink to this equation">¶</a></span><img src="../../_images/math/3c2568070b078a3bdb5b888f0a0b756df1f44bc5.png" alt="T^{-1}CT = M"/></p>
+</div><p>where <img class="math" src="../../_images/math/4db5b6e16e06f929ce3f675c5e535d06ffb02ff7.png" alt="C"/> is the non-diagonal covariance and T is matrix used to transform the covariance to diagonal form.  For AFSIM, this transform, <img class="math" src="../../_images/math/e8dea8254118f111b5fb20895b03528c17566f06.png" alt="T"/>, is the WCS-&gt;BCS coordinate transform, and <img class="math" src="../../_images/math/4db5b6e16e06f929ce3f675c5e535d06ffb02ff7.png" alt="C"/> is the WCS-aligned covariance matrix that we want.  Solving for <img class="math" src="../../_images/math/4db5b6e16e06f929ce3f675c5e535d06ffb02ff7.png" alt="C"/>:</p>
+<div class="math" id="equation-reorientation">
+<p><span class="eqno">(7)<a class="headerlink" href="#equation-reorientation" title="Permalink to this equation">¶</a></span><img src="../../_images/math/cc941ae61b2daa96431ecf960dd05b8b33757760.png" alt="TT^{-1}CTT^{-1} = TMT^{-1}
+
+C =  TMT^{-1}"/></p>
+</div><p>Thus the operation <img class="math" src="../../_images/math/9925a7e8cdbb0e6ae4855a195be806c5a618f50e.png" alt="TMT^{-1}"/> is performed for each measurement <img class="math" src="../../_images/math/4abba779877abb276b98ccb2b4ba9bf2e41947ab.png" alt="M"/> of the form given in <a class="reference internal" href="#equation-measurement-ovariance">(5)</a> to produce the matrix <img class="math" src="../../_images/math/4db5b6e16e06f929ce3f675c5e535d06ffb02ff7.png" alt="C"/> that is stored in WsfTrack’s measurement covariance field.</p>
+</section>
+<section id="covariance-matrix-types-in-afsim">
+<h2>Covariance Matrix Types in AFSIM<a class="headerlink" href="#covariance-matrix-types-in-afsim" title="Permalink to this headline">¶</a></h2>
+<p>Although there are an unlimited number of possible covariance matrix types, AFSIM only recognizes two types that are passed in WsfTracks as measurement covariances or state covariances (products of Kalman Filters).  One of these is the form expressed in  <a class="reference internal" href="#equation-covariance-matrix-pos">(4)</a>, which only includes position uncertainties.  The other form provides both position and velocity uncertainties in <img class="math" src="../../_images/math/c1456346031b4501339cfc13c421875bd62a18aa.png" alt="x, y"/>, and <img class="math" src="../../_images/math/8d051150f8669295ecdbe92367941012175a824d.png" alt="z"/>, and is expressed by a 6x6 matrix:</p>
+<div class="math" id="equation-covariance-matrix-pos-vel">
+<p><span class="eqno">(8)<a class="headerlink" href="#equation-covariance-matrix-pos-vel" title="Permalink to this equation">¶</a></span><img src="../../_images/math/a7ce3801a2e1129c762ca6cd43102691c7e956c9.png" alt="\bold{C^\prime} =
+\left[ {\begin{array}{rrrrrr}
+\sigma_{xx}             &amp; \sigma_{xy}        &amp; \sigma_{xz}   &amp; \sigma_{xv_x}   &amp; \sigma_{xv_y}   &amp; \sigma_{xv_z}   \\
+\sigma_{yx}             &amp; \sigma_{yy}        &amp; \sigma_{yz}   &amp; \sigma_{yv_x}   &amp; \sigma_{yv_y}   &amp; \sigma_{yv_z}   \\
+\sigma_{zx}             &amp; \sigma_{zy}        &amp; \sigma_{zz}   &amp; \sigma_{zv_x}   &amp; \sigma_{zv_y}   &amp; \sigma_{zv_z}   \\
+\sigma_{v_xx}           &amp; \sigma_{v_xy}      &amp; \sigma_{v_xz} &amp; \sigma_{v_xv_x} &amp; \sigma_{v_xv_y} &amp; \sigma_{v_xv_z} \\
+\sigma_{v_yx}           &amp; \sigma_{v_yy}      &amp; \sigma_{v_yz} &amp; \sigma_{v_yv_x} &amp; \sigma_{v_yv_y} &amp; \sigma_{v_yv_z} \\
+\sigma_{v_zx}           &amp; \sigma_{v_zy}      &amp; \sigma_{v_zz} &amp; \sigma_{v_zv_x} &amp; \sigma_{v_zv_y} &amp; \sigma_{v_zv_z}
+\end{array}} \right]"/></p>
+</div><p>where <img class="math" src="../../_images/math/b318858b731da399cec64260303767a1e2651376.png" alt="v_x"/>, <img class="math" src="../../_images/math/9c12c9f2a8349505839c288ba65d68e07392ab98.png" alt="v_y"/>, and <img class="math" src="../../_images/math/bf126cb3b001d15e87c54f5c850e0408f3928660.png" alt="v_z"/>, represent the components of the tracked target’s perceived velocity vector.</p>
+</section>
+<section id="weighted-average-fusion-of-covariances">
+<h2>Weighted Average Fusion of Covariances<a class="headerlink" href="#weighted-average-fusion-of-covariances" title="Permalink to this headline">¶</a></h2>
+<p>Using AFSIM’s <a class="reference internal" href="../fusion_methods.html#fusion-methods-weighted-average"><span class="std std-ref">weighted average fusion</span></a>, fusion of covariance matrices is performed when  covariances are obtained from two separate raw tracks.  This is done according to eq. 8.3.3-15 of ref. 1 (covariance fusion equation):</p>
+<div class="math" id="equation-covariance-fusion-equation">
+<p><span class="eqno">(9)<a class="headerlink" href="#equation-covariance-fusion-equation" title="Permalink to this equation">¶</a></span><img src="../../_images/math/9bd04e49e704d4f99c30b4a9e27a281d3e385271.png" alt="C = C^i(C^i + C^j)^{-1} C^j"/></p>
+</div><p>where <img class="math" src="../../_images/math/9d87c803a2e71be5f6370f686b2956d852891aeb.png" alt="C^i"/> and <img class="math" src="../../_images/math/898b67f6b5725636c46f36a1ed24a3a0b6453e16.png" alt="C^j"/> represent covariance matrices from the two distinct raw tracks, and <img class="math" src="../../_images/math/4db5b6e16e06f929ce3f675c5e535d06ffb02ff7.png" alt="C"/> is the fused covariance stored in the state covariance field of the local track.</p>
+<p>A more intuitive form of <a class="reference internal" href="#equation-covariance-fusion-equation">(9)</a> is obtained by using the inverse of the covariance matrices (called the information matrix):</p>
+<div class="math" id="equation-information-matrix">
+<p><span class="eqno">(10)<a class="headerlink" href="#equation-information-matrix" title="Permalink to this equation">¶</a></span><img src="../../_images/math/71eecb5e9b22aab845b24ff8cb9dfd665deb13ed.png" alt="I   \equiv  C^{-1}
+
+I^i \equiv (C^i)^{-1}
+
+I^j \equiv (C^j)^{-1}"/></p>
+</div><p>In which form, the covariance fusion equation becomes:</p>
+<div class="math" id="equation-information-fusion-equation">
+<p><span class="eqno">(11)<a class="headerlink" href="#equation-information-fusion-equation" title="Permalink to this equation">¶</a></span><img src="../../_images/math/f20721729e9657974be9373ef19c5619fa6722d7.png" alt="I = I^i + I^j"/></p>
+</div></section>
+<section id="visualization-of-covariance-matrices">
+<h2>Visualization of Covariance Matrices<a class="headerlink" href="#visualization-of-covariance-matrices" title="Permalink to this headline">¶</a></h2>
+<p>The three dimensional covariance of the form in <a class="reference internal" href="#equation-covariance-matrix-pos">(4)</a> can be represented as an ellipsoid centered on the track’s estimated location and oriented according to the transform that diagonalizes the covariance <a class="reference internal" href="#equation-diagonalization">(6)</a>.  This representation is useful as a visualization aid and is supported in AFSIM script using the <a class="reference internal" href="../script/ellipsoid.html#Ellipsoid" title="Ellipsoid"><span class="xref wsf wsf-class">Ellipsoid</span></a> and <a class="reference internal" href="../script/wsfdraw.html#WsfDraw" title="WsfDraw"><span class="xref wsf wsf-class">WsfDraw</span></a> script classes.  For example, a script that provides this visualization for track measurement covariances is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">script</span> <span class="n">void</span> <span class="n">DrawCovariance</span><span class="p">(</span><span class="n">WsfTrack</span> <span class="n">aTrack</span><span class="p">)</span>
+   <span class="n">WsfDraw</span> <span class="n">draw</span> <span class="o">=</span> <span class="p">{};</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">SetId</span><span class="p">(</span><span class="n">aTrack</span><span class="o">.</span><span class="n">TrackId</span><span class="p">()</span><span class="o">.</span><span class="n">Number</span><span class="p">());</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">Erase</span><span class="p">(</span><span class="n">aTrack</span><span class="o">.</span><span class="n">TrackId</span><span class="p">()</span><span class="o">.</span><span class="n">Number</span><span class="p">());</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">BeginLines</span><span class="p">();</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">Vertex</span><span class="p">(</span><span class="n">aTrack</span><span class="o">.</span><span class="n">Originator</span><span class="p">());</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">Vertex</span><span class="p">(</span><span class="n">aTrack</span><span class="o">.</span><span class="n">Target</span><span class="p">());</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">End</span><span class="p">();</span>
+   <span class="n">WsfCovariance</span> <span class="n">PWCS</span> <span class="o">=</span> <span class="n">aTrack</span><span class="o">.</span><span class="n">MeasurementCovariance</span><span class="p">();</span> <span class="o">//</span> <span class="n">The</span> <span class="n">WCS</span><span class="o">-</span><span class="n">oriented</span> <span class="n">covariance</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">track</span>
+   <span class="n">draw</span><span class="o">.</span><span class="n">SetColor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">);</span>
+   <span class="n">WsfGeoPoint</span> <span class="n">trackLocation</span> <span class="o">=</span> <span class="n">aTrack</span><span class="o">.</span><span class="n">CurrentLocation</span><span class="p">();</span>
+
+   <span class="k">if</span> <span class="p">(</span><span class="n">PWCS</span><span class="o">.</span><span class="n">IsValid</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">aTrack</span><span class="o">.</span><span class="n">LocationValid</span><span class="p">())</span>
+   <span class="p">{</span>
+       <span class="n">double</span> <span class="n">S</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="o">//</span> <span class="n">Scale</span> <span class="n">factor</span> <span class="n">to</span> <span class="n">make</span> <span class="n">small</span> <span class="n">ellipsoids</span> <span class="n">easier</span> <span class="n">to</span> <span class="n">see</span>
+       <span class="n">Ellipsoid</span> <span class="n">e</span> <span class="o">=</span> <span class="n">PWCS</span><span class="o">.</span><span class="n">EllipsoidNED</span><span class="p">();</span>  <span class="o">//</span> <span class="n">NED</span><span class="o">-</span><span class="n">referenced</span> <span class="n">ellipsoid</span> <span class="n">representation</span> <span class="n">of</span> <span class="n">the</span> <span class="n">covariance</span>
+       <span class="n">draw</span><span class="o">.</span><span class="n">BeginEllipsoid</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">OrientationHeadingDeg</span><span class="p">(),</span> <span class="o">//</span> <span class="n">See</span> <span class="n">documentation</span><span class="o">.</span>
+                           <span class="n">e</span><span class="o">.</span><span class="n">OrientationPitchDeg</span><span class="p">(),</span>
+                           <span class="n">e</span><span class="o">.</span><span class="n">OrientationRollDeg</span><span class="p">(),</span>
+                           <span class="n">e</span><span class="o">.</span><span class="n">SemiAxisForward</span><span class="p">()</span> <span class="o">*</span> <span class="n">S</span><span class="p">,</span>
+                           <span class="n">e</span><span class="o">.</span><span class="n">SemiAxisSide</span><span class="p">()</span> <span class="o">*</span> <span class="n">S</span><span class="p">,</span>
+                           <span class="n">e</span><span class="o">.</span><span class="n">SemiAxisUp</span><span class="p">()</span> <span class="o">*</span> <span class="n">S</span><span class="p">);</span>
+       <span class="n">draw</span><span class="o">.</span><span class="n">Vertex</span><span class="p">(</span><span class="n">trackLocation</span><span class="p">);</span>
+       <span class="n">draw</span><span class="o">.</span><span class="n">End</span><span class="p">();</span>
+   <span class="p">}</span>
+<span class="n">end_script</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    <p class="logo"><a href="../main_page.html">
+      <img class="logo" src="../../_static/sidebar_logo.png" alt="Logo"/>
+    </a></p>
+  
+
+<script src="../../_static/extension.js"></script>
+<p>
+   <ul class="Core-menu">
+      <li><a href="../main_page.html">Main Page</a></li>
+      <li><a href="../changelog/afsim_2.9.html">Changelog</a> | <a href="../afsim_change_log.html">History</a></li>
+      <li><a href="../documents.html">Documents</a></li>
+      <li><a href="../security_info.html">Security Information</a></li>
+      <li><a href="../contact_info.html">Contact Information</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+
+<p>
+   <h3>Core Apps</h3>
+   <ul class="Core-menu">
+     <li><a href="../wsf_core.html">Main Page</a></li>
+     <li><a href="../wsf_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wsf_2.9.html">Changelog</a> | <a href="../wsf_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Demos</h3>
+   <ul class="DEMOS-menu">
+     <li><a href="../changelog/demos_2.9.html">Changelog</a> | <a href="../demos_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mystic</h3>
+   <ul class="Mystic-menu">
+     <li><a href="../mystic.html">Main Page</a></li>
+     <li><a href="../mystic_users_guide.html">User's Guide</a></li>
+     <li><a href="../mystic_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../pymystic.html">Batch Processing</a></li>
+     <li><a href="../changelog/mystic_2.9.html">Changelog</a> | <a href="../mystic_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Warlock</h3>
+   <ul class="WARLOCK-menu">
+     <li><a href="../warlock.html">Main Page</a></li>
+     <li><a href="../warlock_users_guide.html">User's Guide</a></li>
+     <li><a href="../warlock_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/warlock_2.9.html">Changelog</a> | <a href="../warlock_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Wizard</h3>
+   <ul class="WIZARD-menu">
+     <li><a href="../wizard.html">Main Page</a></li>
+     <li><a href="../wizard_users_guide.html">User's Guide</a></li>
+     <li><a href="../wizard_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/wizard_2.9.html">Changelog</a> | <a href="../wizard_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>EVT Reader</h3>
+   <ul class="EvtReader-menu">
+     <li><a href="../evtreader.html">Main Page</a></li>
+   </ul>
+</p>
+
+<p>
+   <h3>Mover Creator</h3>
+   <ul class="MoverCreator-menu">
+     <li><a href="../mover_creator.html">Main Page</a></li>
+     <li><a href="../mc_users_guide.html">User's Guide</a></li>
+     <li><a href="../mc_reference_guide.html">Reference Guide</a></li>
+     <li><a href="../changelog/mover_creator_2.9.html">Changelog</a> | <a href="../mc_change_log.html">History</a></li>
+   </ul>
+</p>
+
+<br>
+<hr>
+<br>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/docs/analyst_ocd/tracking_uncertainties_and_covariances.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a></li>
+        <li class="right" >
+          <a href="../../wsf-classindex.html" title="Script Class Index"
+             >classes</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-commandindex.html" title="Command Index"
+             >commands</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-modelindex.html" title="Model Index"
+             >models</a> |</li>
+        <li class="right" >
+          <a href="../../wsf-demoindex.html" title="Demo Index"
+             >demos</a> |</li>
+        <li class="right" >
+          <a href="../antenna_commands.html" title="Antenna Commands"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tracking_primer.html" title="Tracking Primer"
+             >previous</a> |</li>
+  <li>
+    <img src="../../_static/relbar_logo.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="../main_page.html">AFSIM 2.9.0 Documentation</a> &#187;
+  </li>
+  
+        <li class="nav-item nav-item-0"><a href="../../site_index.html">Site Index</a> &#187;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright Multiple, All Rights Reserved.
+      Last updated on Feb 25, 2022.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
