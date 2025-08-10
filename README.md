@@ -18,8 +18,14 @@ conda 24.11.3
 构建环境  
 ![image](https://github.com/foryearslater/afsim/blob/main/image-20250809223404159.png)
 
+<<<<<<< HEAD
+=======
+![image-20250809223711800](C:\Users\26459\Desktop\afsim\image-20250809223711800.png)
+>>>>>>> 84206d3 (no message)
 
+![image-20250809223404159](C:\Users\26459\Desktop\afsim\image-20250809223404159.png
 
+![image-20250809223404159](C:\Users\26459\Desktop\afsim\image-20250809223404159.png)
 
 ## 2.模块介绍
 
