@@ -14,13 +14,10 @@ conda 24.11.3
 
 ![image](https://github.com/foryearslater/afsim/blob/main/image-20250809223711800.png)
 
-![image-20250809223711800](C:\Users\26459\AppData\Roaming\Typora\typora-user-images\image-20250809223711800.png)
-
 
 构建环境  
 ![image](https://github.com/foryearslater/afsim/blob/main/image-20250809223404159.png)
 
-![image-20250809223404159](C:\Users\26459\AppData\Roaming\Typora\typora-user-images\image-20250809223404159.png)
 
 
 
