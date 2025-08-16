@@ -1,0 +1,636 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# This file is used to enhance the debug watches that are shown
+# in Wizard
+# New user-defined watches may be added
+# 
+# Each function must start with '_debug_enumerate_', and take a unique object type
+# and an index array
+# The values returned by the function are used to populate the watch window.
+# The 'index' parameter defines the address being queried.  An empty index array
+# is querying for the value of the object 'p'
+# An index of { 0 } is querying for the first value inside p
+# An index of { 2, 3 } is querying for p[3][2]
+# As the index is used, PopBack() should be used.
+#
+# Return values with no children should take the form:
+#  { <attribute-name>, <attribute-value> }
+# Return values which contain children should take the form:
+#  { <Attribute-Type>, <value of variable>, <number of children> }
+#
+# Handling the index correctly can be difficult, but it provides a highly efficient
+#  access for watch variables.  There is no overhead for watches that are not
+#  expanded by the user.
+
+
+
+script Array<Object> _debug_help_enumerate_Attributes(Object p, Array<int> index)
+   if (index.Empty()) return { "variables", "<list>", attr_count(p)};
+   int i = index.Back(); index.PopBack();
+   string name = attr_name_at(p, i); 
+   writeln(p," ", i, " ", name);
+
+   if (name) {
+      return { name, get_attr(p, name) };
+   }
+   else {
+      return null;
+   }
+end_script
+
+script Array<Object> _debug_enumerate_Attributes_Platform(WsfPlatform p, Array<int> index)
+   if (index.Empty()) return { "variables", "<list>", attr_count(p) };
+   int i = index.Back(); index.PopBack();
+   string name = attr_name_at(p, i);
+
+   if(name == "this" || name == "PLATFORM")
+   {
+      return { name, "<recursive>" };
+   }
+   else
+   { 
+      return { name, get_attr(p, name) }; 
+   }
+end_script
+
+script Array<Object> _debug_enumerate_Attributes_Processor(WsfProcessor p, Array<int> index)
+   if (index.Empty()) return { "variables", "<list>", attr_count(p) };
+   int i = index.Back(); index.PopBack();
+   string name = attr_name_at(p, i);
+
+
+   if(name == "this" || name == "PROCESSOR")
+   {
+      return { name, "<recursive>" };
+   }
+   else
+   { 
+      return { name, get_attr(p, name) }; 
+   }
+
+end_script
+
+script Array<Object> _debug_enumerate_WsfArticulatedPart(WsfArticulatedPart p, Array<int> index)
+   extern Array<Object> _debug_enumerate_WsfPlatformPart(WsfPlatformPart p, Array<int> index);
+   if (index.Empty()) return { "WsfArticulatedPart", p, 2};
+   int i = index.Back(); index.PopBack();
+   if (i == 0) return _debug_enumerate_WsfPlatformPart(p, index);
+   if (i == 1) return { "Yaw,Pitch,Roll", { p.Yaw(), p.Pitch(), p.Roll() } };
+   return null;
+end_script
+
+script Array<Object> _debug_enumerate_WsfProcessor(WsfProcessor p, Array<int> index)
+   extern Array<Object> _debug_enumerate_WsfPlatformPart(WsfPlatformPart p, Array<int> index);
+   return _debug_enumerate_WsfPlatformPart(p, index);
+end_script
+
+script Array<Object> _debug_enumerate_WsfSensor(WsfSensor p, Array<int> index)
+   if (index.Empty()) return { "WsfSensor", p, 2};
+   int i = index.Back(); index.PopBack();
+   if (i == 0) return _debug_enumerate_WsfArticulatedPart(p, index);
+   if (i == 1) return { "CurrentMode", p.CurrentMode() };
+   return null;
+end_script
+
+script Array<Object> _debug_enumerate_WsfWeapon(WsfWeapon p, Array<int> index)
+   return _debug_enumerate_WsfArticulatedPart(p, index);
+end_script
+
+# Aux Data watches
+# 2.9 implemented support for inspecting aux data for types that support it
+# 
+conditional_section
+   conditionals
+      wsf_version >= 2.9.0
+   end_conditionals
+
+   script Array<Object> _debug_enumerate_WsfPlatformPart(WsfPlatformPart p, Array<int> index)
+      if (index.Empty()) {
+         int count = 4;
+         if (attr_count(p) > 0) { count += 1; }
+         return { "WsfPlatformPart", p, count };
+      }
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "Name", p.Name() };
+      if (i == 1) return { "Type", p.Type() };
+      if (i == 2) { 
+         string state;
+         if (p.IsTurnedOn()) state = "On";
+         else state = "Off";
+         if (p.IsOperational()) state += ";Operational";
+         else state += ";Non-operational";
+         return { "State", state };
+      }
+      if (i == 3) {
+         Map<string, string> auxData = p.GetAllAuxDataTypes();
+         if (index.Empty()) {
+            return { "AuxData", "<map>", auxData.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j >= auxData.Size()) {
+            return null;
+         }
+
+         string auxName = (string)auxData.ElementKeyAtIndex(j);
+         string auxType = auxData[auxName];
+         if (auxType == "string") {
+            return { auxName, p.AuxDataString(auxName) };
+         }
+         else if (auxType == "int") {
+            return { auxName, p.AuxDataInt(auxName) };
+         }
+         else if (auxType == "double") {
+            return { auxName, p.AuxDataDouble(auxName) };
+         }
+         else if (auxType == "bool") {
+            return { auxName, p.AuxDataBool(auxName) };
+         }
+         else {
+            return { auxName, auxType };
+         }
+      }
+      if (i == 4) return _debug_enumerate_Attributes_Processor((WsfProcessor) p, index);
+      return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfPlatform(WsfPlatform p, Array<int> index)
+      extern Array<Object> _debug_enumerate_WsfRoute(WsfRoute p, Array<int> index);
+      if (p.IsNull()) return { "WsfPlatform", null };
+      if (index.Empty()) return { "WsfPlatform", p, 9 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return {"Name", p.Name() };
+      if (i == 1) return {"Side", p.Side() };
+      if (i == 2) {
+         if (! index.Empty()) {
+         #return { write_str(index.Back()), p.ProcessorEntry(index.Back()) };   //_debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+            i = index.Back(); index.PopBack();
+            if (i >= p.ProcessorCount()) { return null; }
+            #return _debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+            return { write_str(i), p.ProcessorEntry(i) };   //_debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+         } else {
+            return { "Processors", "<list>", p.ProcessorCount() };
+         }
+      }
+      if (i == 3) {
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= p.SensorCount()) { return null; }
+            return _debug_enumerate_WsfSensor(p.SensorEntry(i), index);
+         } else {
+            return { "Sensors", "<list>", p.SensorCount() };
+         }
+      }
+      if (i == 4) {
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= p.WeaponCount()) { return null; }
+            return _debug_enumerate_WsfWeapon(p.WeaponEntry(i), index);
+         } else {
+            return { "Weapons", "<list>", p.WeaponCount() };
+         }
+      }
+      if (i == 5) {
+         Array<string> zones = p.ZoneNames();
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= zones.Size()) { return null; }
+            string name = zones[i];
+            return { name, p.Zone(name) };
+         } else
+         {
+            return { "Zones", "<list>", zones.Size() };
+         }
+      }
+      if (i == 6) return _debug_enumerate_WsfRoute(p.Route(), index);
+      if (i == 7) {
+         Map<string, string> auxData = p.GetAllAuxDataTypes();
+         if (index.Empty()) {
+            return { "AuxData", "<map>", auxData.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j >= auxData.Size()) {
+            return null;
+         }
+
+         string auxName = (string)auxData.ElementKeyAtIndex(j);
+         string auxType = auxData[auxName];
+         if (auxType == "string") {
+            return { auxName, p.AuxDataString(auxName) };
+         }
+         else if (auxType == "int") {
+            return { auxName, p.AuxDataInt(auxName) };
+         }
+         else if (auxType == "double") {
+            return { auxName, p.AuxDataDouble(auxName) };
+         }
+         else if (auxType == "bool") {
+            return { auxName, p.AuxDataBool(auxName) };
+         }
+         else {
+            return { auxName, auxType };
+         }
+      }
+      if (i == 8) return _debug_enumerate_Attributes_Platform(p, index);
+      return null;
+   end_script
+
+
+   script Array<Object> _debug_enumerate_WsfWaypoint(WsfWaypoint p, Array<int> index)
+      if (index.Empty()) {
+         int count = 5;
+         if (p.Label() != "") count+=1;
+         if (p.GoToLabel() != "") count+=1;
+         return { "Waypoint", p, count };
+      }
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "Location", p.Location() };
+      if (i == 1) return { "Speed", p.Speed() };
+      if (i == 2) return { "Heading", p.Heading() };
+      if (i == 3) return { "Switch", p.Switch() };
+      if (i == 4) {
+         Map<string, string> auxData = p.GetAllAuxDataTypes();
+         if (index.Empty()) {
+            return { "AuxData", "<map>", auxData.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j >= auxData.Size()) {
+            return null;
+         }
+
+         string auxName = (string)auxData.ElementKeyAtIndex(j);
+         string auxType = auxData[auxName];
+         if (auxType == "string") {
+            return { auxName, p.AuxDataString(auxName) };
+         }
+         else if (auxType == "int") {
+            return { auxName, p.AuxDataInt(auxName) };
+         }
+         else if (auxType == "double") {
+            return { auxName, p.AuxDataDouble(auxName) };
+         }
+         else if (auxType == "bool") {
+            return { auxName, p.AuxDataBool(auxName) };
+         }
+         else {
+            return { auxName, auxType };
+         }
+      }
+      if (i == 5) {
+         if (p.GoToLabel() == "") i+=1;
+         else return { "GoTo", p.GoToLabel() };
+      }
+      if (i == 6) {
+         return { "Label", p.Label() };
+      }
+      else return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfRoute(WsfRoute p, Array<int> index)
+      if (index.Empty()) {
+         return { "Route", p, 2 };
+      }
+
+      int i = index.Back(); index.PopBack();
+      if (i == 0) {
+         if (index.Empty()) {
+            return { "Waypoints", "<list>", p.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j < p.Size()) {
+            WsfWaypoint w = p.Waypoint(j);
+            return _debug_enumerate_WsfWaypoint(w, index);
+         }
+         else return null;
+      }
+      else if (i == 1) {
+         Map<string, string> auxData = p.GetAllAuxDataTypes();
+         if (index.Empty()) {
+            return { "AuxData", "<map>", auxData.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j >= auxData.Size()) {
+            return null;
+         }
+
+         string auxName = (string)auxData.ElementKeyAtIndex(j);
+         string auxType = auxData[auxName];
+         if (auxType == "string") {
+            return { auxName, p.AuxDataString(auxName) };
+         }
+         else if (auxType == "int") {
+            return { auxName, p.AuxDataInt(auxName) };
+         }
+         else if (auxType == "double") {
+            return { auxName, p.AuxDataDouble(auxName) };
+         }
+         else if (auxType == "bool") {
+            return { auxName, p.AuxDataBool(auxName) };
+         }
+         else {
+            return { auxName, auxType };
+         }
+      }
+      return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfTrack(WsfTrack p, Array<int> index)
+      if (index.Empty()) return { "WsfTrack", p, 8 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "TrackId", p.TrackId() };
+      if (i == 1) return { "StartTime", p.StartTime() };
+      if (i == 2) return { "UpdateTime", p.UpdateTime() };
+      if (i == 3) return { "UpdateCount", p.UpdateCount() };
+      if (i == 4) { 
+         string flags;
+         if (p.IsStale()) flags += "Stale;";
+         if (p.IsPredefined()) flags += "Predefined;";
+         if (p.IsFalseTarget()) flags += "FalseTarget;";
+         return { "Flags", flags };
+      }
+      if (i == 5) {
+         string valid;
+         if (p.LocationValid()) valid += "Location;";
+         if (p.AltitudeKnown()) valid += "Altitude;";
+         if (p.HeadingValid()) valid += "Heading;";
+         if (p.VelocityValid()) valid += "Velocity;";
+         if (p.FrequencyValid()) valid += "Frequency;";
+         return { "Valid", valid };
+      }
+      if (i == 6) return { "Location", p.ReportedLocation() };
+      if (i == 7) {
+         Map<string, string> auxData = p.GetAllAuxDataTypes();
+         if (index.Empty()) {
+            return { "AuxData", "<map>", auxData.Size() };
+         }
+         int j = index.Back(); index.PopBack();
+         if (j >= auxData.Size()) {
+            return null;
+         }
+
+         string auxName = (string)auxData.ElementKeyAtIndex(j);
+         string auxType = auxData[auxName];
+         if (auxType == "string") {
+            return { auxName, p.AuxDataString(auxName) };
+         }
+         else if (auxType == "int") {
+            return { auxName, p.AuxDataInt(auxName) };
+         }
+         else if (auxType == "double") {
+            return { auxName, p.AuxDataDouble(auxName) };
+         }
+         else if (auxType == "bool") {
+            return { auxName, p.AuxDataBool(auxName) };
+         }
+         else {
+            return { auxName, auxType };
+         }
+      }
+      return null;
+   end_script
+end_conditional_section
+
+# Pre-aux data scripts
+# prior to Wizard 2.9, aux data could not be inspected
+#
+conditional_section
+   conditionals
+      wsf_version < 2.9.0
+   end_conditionals
+
+   script Array<Object> _debug_enumerate_WsfPlatformPart(WsfPlatformPart p, Array<int> index)
+      if (index.Empty()) {
+         int count = 3;
+         if (attr_count(p) > 0) { count += 1; }
+         return { "WsfPlatformPart", p, count };
+      }
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "Name", p.Name() };
+      if (i == 1) return { "Type", p.Type() };
+      if (i == 2) { 
+         string state;
+         if (p.IsTurnedOn()) state = "On";
+         else state = "Off";
+         if (p.IsOperational()) state += ";Operational";
+         else state += ";Non-operational";
+         return { "State", state };
+      }
+      if (i == 3) return _debug_help_enumerate_Attributes(p, index);
+      return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfPlatform(WsfPlatform p, Array<int> index)
+      extern Array<Object> _debug_enumerate_WsfRoute(WsfRoute p, Array<int> index);
+      if (p.IsNull()) return { "WsfPlatform", null };
+      if (index.Empty()) return { "WsfPlatform", p, 8 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return {"Name", p.Name() };
+      if (i == 1) return {"Side", p.Side() };
+      if (i == 2) {
+         if (! index.Empty()) {
+         #return { write_str(index.Back()), p.ProcessorEntry(index.Back()) };   //_debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+            i = index.Back(); index.PopBack();
+            if (i >= p.ProcessorCount()) { return null; }
+            #return _debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+            return { write_str(i), p.ProcessorEntry(i) };   //_debug_enumerate_WsfProcessor(p.ProcessorEntry(i), index);
+         } else {
+            return { "Processors", "<list>", p.ProcessorCount() };
+         }
+      }
+      if (i == 3) {
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= p.SensorCount()) { return null; }
+            return _debug_enumerate_WsfSensor(p.SensorEntry(i), index);
+         } else {
+            return { "Sensors", "<list>", p.SensorCount() };
+         }
+      }
+      if (i == 4) {
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= p.WeaponCount()) { return null; }
+            return _debug_enumerate_WsfWeapon(p.WeaponEntry(i), index);
+         } else {
+            return { "Weapons", "<list>", p.WeaponCount() };
+         }
+      }
+      if (i == 5) {
+         Array<string> zones = p.ZoneNames();
+         if (! index.Empty()) {
+            i = index.Back(); index.PopBack();
+            if (i >= zones.Size()) { return null; }
+            string name = zones[i];
+            return { name, p.Zone(name) };
+         } else
+         {
+            return { "Zones", "<list>", zones.Size() };
+         }
+      }
+      if (i == 6) return _debug_enumerate_WsfRoute(p.Route(), index);
+      if (i == 7) return _debug_help_enumerate_Attributes(p, index);
+      return null;
+   end_script
+
+
+   script Array<Object> _debug_enumerate_WsfWaypoint(WsfWaypoint p, Array<int> index)
+      if (index.Empty()) {
+         int count = 4;
+         if (p.Label() != "") count+=1;
+         if (p.GoToLabel() != "") count+=1;
+         return { "Waypoint", p, 5 };
+      }
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "Location", p.Location() };
+      if (i == 1) return { "Speed", p.Speed() };
+      if (i == 2) return { "Heading", p.Heading() };
+      if (i == 3) return { "Switch", p.Switch() };
+      if (i == 4) {
+         if (p.GoToLabel() == "") i+=1;
+         else return { "GoTo", p.GoToLabel() };
+      }
+      if (i == 5) {
+         return { "Label", p.Label() };
+      }
+      else return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfRoute(WsfRoute p, Array<int> index)
+      if (index.Empty()) return { "Route", p, p.Size() };
+      int i = index.Back(); index.PopBack();
+      if (i < p.Size()) {
+         WsfWaypoint wpt = p.Waypoint(i);
+         return _debug_enumerate_WsfWaypoint(wpt, index);
+      }
+      else return null;
+   end_script
+
+   script Array<Object> _debug_enumerate_WsfTrack(WsfTrack p, Array<int> index)
+      if (index.Empty()) return { "WsfTrack", p, 7 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "TrackId", p.TrackId() };
+      if (i == 1) return { "StartTime", p.StartTime() };
+      if (i == 2) return { "UpdateTime", p.UpdateTime() };
+      if (i == 3) return { "UpdateCount", p.UpdateCount() };
+      if (i == 4) { 
+         string flags;
+         if (p.IsStale()) flags += "Stale;";
+         if (p.IsPredefined()) flags += "Predefined;";
+         if (p.IsFalseTarget()) flags += "FalseTarget;";
+         return { "Flags", flags };
+      }
+      if (i == 5) {
+         string valid;
+         if (p.LocationValid()) valid += "Location;";
+         if (p.AltitudeKnown()) valid += "Altitude;";
+         if (p.HeadingValid()) valid += "Heading;";
+         if (p.VelocityValid()) valid += "Velocity;";
+         if (p.FrequencyValid()) valid += "Frequency;";
+         return { "Valid", valid };
+      }
+      if (i == 6) return { "Location", p.ReportedLocation() };
+      return null;
+   end_script
+end_conditional_section
+
+script Array<Object> _debug_enumerate_WsfLocalTrack(WsfLocalTrack p, Array<int> index)
+   if (index.Empty()) return { "WsfLocalTrack", p, 2 };
+   int i = index.Back(); index.PopBack();
+   if (i == 0) return _debug_enumerate_WsfTrack(p, index);
+   if (i == 1) {
+      if (index.Empty()) return { "RawTracks", "<list>", p.RawTrackCount() };
+      int j = index.Back(); index.PopBack();
+      if (j < p.RawTrackCount()) return _debug_enumerate_WsfTrack(p.RawTrack(j), index);
+      return null;
+   }
+   return null;
+end_script
+
+
+script Array<Object> _debug_enumerate_WsfWeaponEngagement(WsfWeaponEngagement p, Array<int> index)
+   if (index.Empty()) return { "WsfWeaponEngagement", p, 3 };
+   int i = index.Back(); index.PopBack();
+   if (i == 0) return { "FiringPlatform", p.FiringPlatform() };
+   if (i == 1) return { "WeaponPlatform", p.WeaponPlatform() };
+   if (i == 2) return { "WeaponLocationAtLaunch", p.WeaponLocationAtLaunch() };
+   return null;
+end_script
+
+
+conditional_section
+   conditionals
+      type_present WsfRIPRJob
+      type_present WsfRIPRProcessor
+   end_conditionals
+   script Array<Object> _debug_enumerate_WsfRIPRJob(WsfRIPRJob p, Array<int> index)
+      if (index.Empty()) return { "WsfRIPRJob", p, 7 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return { "Name", p.GetName() };
+      if (i == 1) return { "Priority", p.Priority() };
+      if (i == 2) return { "BestProgress", p.BestProgress() };
+      if (i == 3) return { "WinnersMinMax", {p.WinnersMin(), p.WinnersMax()}};
+      if (i == 4) return { "Winners", p.Winners() };
+      if (i == 5) return { "Data", p.Data() };
+      if (i == 6) {
+         Set<int> deps = p.DependenciesForJob();
+         if (index.Empty()) return { "Dependencies", "<list>", deps.Size() };
+         int j = index.Back(); index.PopBack();
+         int idx=0;
+         foreach (int depid in deps) {
+            if (idx == j) {
+               p.Assigner().GetJobById(depid);
+               return _debug_enumerate_WsfRIPRJob(p.Assigner().GetJobById(depid), index);
+            }
+            idx+=1;
+         }
+      }
+      return null;
+   end_script
+   script Array<Object> _debug_enumerate_WsfRIPRProcessor(WsfRIPRProcessor p, Array<int> index)
+      if (index.Empty()) return { "WsfRIPRProcessor", p, 2 };
+      int i = index.Back(); index.PopBack();
+      if (i == 0) return _debug_enumerate_WsfProcessor(p, index);
+      if (i == 1) {
+         Array<WsfRIPRJob> jobs = p.Jobs();
+         if (index.Empty()) return { "Jobs", "<list>", jobs.Size() };
+         int j = index.Back(); index.PopBack();
+         return _debug_enumerate_WsfRIPRJob(jobs[j], index);
+      }
+      return null;
+   end_script
+end_conditional_section
+
+###############################################################################################
+# Global Watches
+#   This script enumerates values in the global context.  
+#   Custom global watch scripts may be added by writing new scripts with 
+#     the _debug_global_enumerate_ prefix.
+#
+#   Example:
+# script Array<Object> _debug_global_enumerate_MyStuff(Array<int> index)
+#    if (index.Empty()) return { "MyStuff", "", 2 };
+#    int i = index.Back(); index.PopBack();
+#    if (i==0) { return { "HI", "there" }; }
+#    if (i == 1) return { "One", 2 };
+#    return null;
+# end_script
+#
+#  Writing custom global watches allow for easy access to application or scenario specific data
+###############################################################################################
+script Array<Object> _debug_global_enumerate_Simulation(Array<int> index)
+   if (index.Empty()) return { "Simulation", "", 1 };
+   int i = index.Back(); index.PopBack();
+   if (i == 0) {
+      if (index.Empty()) return { "Platforms", "<list>", WsfSimulation.PlatformCount() };
+      int j = index.Back(); index.PopBack();
+      return { write_str(j), WsfSimulation.PlatformEntry(j) };
+   }
+   return null;
+end_script
+

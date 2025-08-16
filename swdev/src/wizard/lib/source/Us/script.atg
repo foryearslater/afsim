@@ -1,0 +1,592 @@
+// ****************************************************************************
+// CUI
+//
+// The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+//
+// Copyright 2003-2015 The Boeing Company. All rights reserved.
+//
+// The use, dissemination or disclosure of data in this file is subject to
+// limitation or restriction. See accompanying README and LICENSE for details.
+// ****************************************************************************
+
+// Coco/R compiler description file (extension .atg) (attributed grammar)
+//
+// This file is an input to CoCo/R parser generator
+// Semantic actions are indented to separate the grammar and the code for clarity.
+
+// Declarations to copy to parser
+#include "UsCtx.hpp"
+#include "UsSymbolTable.hpp"
+
+// =================================================================================================
+COMPILER Script
+
+// =================================================================================================
+// Global semantic declarations -> Variables and methods in the parser
+// Copied and not checked by Coco/R so syntax sholud refelect current coding standard, etc.
+
+// Typedefs to keep actions brief
+
+using Cx = Us::UsCtx;
+using Ty = UsType;
+using Fn = UsFunction;
+using Val = Us::UsVal;
+using ValList = Us::UsValList;
+using Sy = UsSymbol;
+
+Cx*   mRootCx;
+
+bool IsAssignment()
+{
+   if (la->kind != _ident) return false;
+   Token* next = mScannerPtr->Peek();
+   switch (next->kind)
+   {
+      case _assign:
+      case _plus_assign:
+      case _minus_assign:
+      case _times_assign:
+      case _div_assign:
+         return true;
+      default:
+         return false;
+   }
+}
+
+// Look for '(' 'TYPE' ~('.')
+bool IsCast(Cx& c)
+{
+   bool isCast = false;
+   Token* next = mScannerPtr->Peek();
+   if (la->kind == _lparen && IsType(c,next))
+   {
+      isCast = true;
+      Token* nextNext = mScannerPtr->Peek();
+      if (nextNext->kind == _dot) isCast = false;
+   }
+   mScannerPtr->ResetPeek();
+   return isCast;
+}
+
+bool IsInitializerEntry()
+{
+   if (la->kind == _comma)
+   {
+      Token* next = mScannerPtr->Peek();
+      return next->kind != _rbrace;
+   }
+   return false;
+}
+
+// Determine if the lookahead token is the name of a visible user-defined script or a class method call
+// using an implied class reference such as '__BUILTIN__' or 'this'.
+bool IsScript(Cx& c)
+{
+   UsVal v = c.Search(la);
+   bool isScript = false;
+   if (v.IsScript())
+   {
+      // Call to user-defined script.
+      isScript = true;
+   }
+   else if (v.IsAppMethod())
+   {
+      // Call to a class method using an implied class reference.
+      isScript = true;
+   }
+   return isScript;
+}
+
+// Determine if the supplied token is a registered type
+bool IsType(Cx& c, Token* tok)
+{
+   return c.qType(tok) != nullptr;
+}
+
+// Determine if the lookahead token is a registered type
+bool IsType(Cx& c)
+{
+   return c.qType(la) != nullptr;
+}
+
+bool IsVarDecl(Cx& c)
+{
+   if (la->kind == _global || la->kind == _static || la->kind == _extern) return true;
+   if (IsType(c))
+   {
+      Token* next = mScannerPtr->Peek();
+      return !(next->kind == _dot || next->kind == _lparen);
+   }
+   return false;
+}
+
+void EOF_Token()
+{
+   mRootCx->HitEOF();
+}
+CHARACTERS
+
+   alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_".
+   digit = "0123456789".
+   cr  = '\r'.
+   lf  = '\n'.
+   tab = '\t'.
+   quote = '"'.
+   single_quote = "'".
+   strchar = ANY - '"' - '\\' - '\n' - '\r'.
+   chrchar = ANY - "'" - '\\' - '\n' - '\r'.
+   varNameChar = ANY - ':' - '\n' - '>'.
+
+TOKENS
+
+   ident  = alpha {alpha | digit}.
+   // numbers do not allow '+' or '-' as a prefix.
+   // instead, they are handled as a unary operator
+   number = digit {digit}.
+   real_number =
+      (
+       ( digit {digit} '.' {digit} )
+              | ( '.' digit {digit} )
+      ) [ ('e' | 'E') [ '-' | '+' ] digit {digit} ].
+   // strchar does not include '\', so explicitly add '\' and '\"'
+   string_literal = quote { strchar | ("\\" [ '"' ]) } quote.
+   char_literal = "'" (chrchar | "\\'") "'".
+   dot = ".".
+   semicolon = ";".
+   lparen = "(".
+   rparen = ")".
+   assign = "=".
+   eq = "==".
+   ne = "!=".
+   ge = ">=".
+   le = "<=".
+   plus = "+".
+   minus = "-".
+   and = "&&".
+   or = "||".
+   rbrace = '}'.
+   comma = ','.
+   plus_assign = "+=".
+   minus_assign = "-=".
+   times_assign = "*=".
+   div_assign = "/=".
+   r_arrow = "->".
+   do = "do".
+   if = "if".
+   for = "for".
+   foreach = "foreach".
+   in = "in".
+   else = "else".
+   while = "while".
+   break = "break".
+   continue = "continue".
+   return = "return".
+   null = "null".
+   null2 = "NULL".
+   true = "true".
+   false = "false".
+
+   string = "string".
+   int = "int".
+   double = "double".
+   char = "char".
+   bool = "bool".
+   global = "global".
+   static = "static".
+   extern = "extern".
+
+PRAGMAS
+   ppvar = "$<" { varNameChar } (':' | ">$") .
+   ppvarEnd = ">$" .
+
+// Ignore nested comments and white space; case sensitive by default
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO lf
+COMMENTS FROM "#" TO lf
+
+IGNORE cr + lf + tab
+
+// =================================================================================================
+PRODUCTIONS
+
+Script  = {func_def<*mRootCx>} .
+
+// =================================================================================================
+// Helper productions
+
+basic_type =
+   string
+ | int
+ | double
+ | char
+ | bool
+ .
+
+type<Cx& c, Ty*& ty>                   (.ty = nullptr;.)
+=  basic_type                          (.ty = c.Type(t);.)
+ | ident                               (.ty = c.Type(t);.)
+ // Note: only allowing 1 or 2 template parameters
+    [  '<'                             (.std::pair<Ty*, Ty*> argtypes;.)
+         type<c, argtypes.first>
+         [
+          ',' type<c, argtypes.second>
+         ]
+       '>'                             (.ty = c.qType(ty, argtypes);.)
+    ]
+ .
+
+identifier<Cx& c, Val& v> =
+   ident                               (.v = c.Identifier(t);.)
+ .
+
+static_exp<Cx& c, Val& v> =
+   (null | null2)                      (.v = c.NullLiteral(t);.)
+ | true                                (.v = c.BoolLiteral(t);.)
+ | false                               (.v = c.BoolLiteral(t);.)
+ | string_literal                      (.v = c.StringLiteral(t);.)
+ | char_literal                        (.v = c.StringLiteral(t);.)
+ | real_number                         (.v = c.DoubleLiteral(t);.)
+ | number                              (.v = c.IntLiteral(t);.)
+ .
+
+ // An argument list for a method call: e.g.: [arg1 [, arg2 ...]
+ // This does not look for the opening and closing parens.
+ arg_list<Cx& c, ValList& args>         (.Val arg;.)
+ = [ exp<c,arg>                         (.args.push_back(arg);.)
+      {
+         ',' exp<c,arg>                 (.args.push_back(arg);.)
+      }
+   ]
+ .
+
+// =================================================================================================
+// Statement productions
+
+block<Cx& c>                           (.Cx subcx(c);.)
+= '{'  {stat<subcx>} '}'
+ .
+
+block_func<Cx& c> = {stat<c>} EOF.
+
+extern_stat<Cx& c>                     (.Ty* ty(nullptr), *arg(nullptr); Fn f; Token* argName(nullptr), *id;.)
+=  (
+     extern type<c,ty> ident           (.id = t;.)
+   )
+    (
+     ( '('
+        [ type<c,arg> [ident           (.argName=t;.) ] (.c.AddParam(f, arg, argName); argName=nullptr;.)
+          {
+           ',' type<c,arg> [ident      (.argName=t;.) ] (.c.AddParam(f, arg, argName); argName=nullptr;.)
+          }
+        ]
+       ')'                             (.c.SetRType(f, ty); c.AddEntry(id, f, true);.)
+       ';'
+     )
+     |                                 (.c.VarDecl(ty, id, Val::cEXTERN_VARIABLE);.)
+      ';'
+    )
+ .
+
+// Simplified variable expression needed in foreach.
+// Returns the variable declared.
+var_decl_expr<Cx& c, Val& v>           (.Ty* ty(nullptr);.)
+=   type<c,ty> ident                   (.v = c.VarDecl(ty, t, 0);.)
+ .
+
+var_decl<Cx& c>                        (.Ty* ty(nullptr); Val v; Val rhs; int varflags = 0;.)
+=  [ static                            (.varflags = Val::cSTATIC_VARIABLE;.)
+   | extern                            (.varflags |= Val::cEXTERN_VARIABLE;.)
+   | global                            (.varflags |= Val::cGLOBAL_VARIABLE;.)
+   ]
+    type<c,ty> ident                   (.v = c.VarDecl(ty, t, varflags); bool hasInitial=false;.)
+      ['='                             (.c.VarDeclPreAssign(v); hasInitial=true;.)
+         ( exp<c,rhs> )                (.v = c.Op(v, rhs, Cx::cASSIGN_INITIAL);.)
+      ]
+                                       (.if (! hasInitial) c.VarDeclInit(v);.)
+      {
+         ',' ident                     (.v = c.VarDecl(ty, t, varflags); hasInitial=false;.)
+         ['='                          (.c.VarDeclPreAssign(v); hasInitial=true;.)
+            ( exp<c,rhs> )             (.v = c.Op(v, rhs, Cx::cASSIGN_INITIAL);.)
+         ]
+                                       (.if (! hasInitial) c.VarDeclInit(v);.)
+      }
+ .
+
+do_stat<Cx& c>                         (.Cx doCx(c); doCx.SetBlockType(Cx::cDO_BLOCK);.)
+=  do                                  (.Val v;.)
+   stat<doCx>                          (.doCx.DoWhileStart();.)
+      while '(' bool_exp<doCx,v> ')'   (.doCx.DoCond(v);.)
+         ';'
+ .
+
+while_stat<Cx& c>                      (.Val v; Cx whileCx(c); whileCx.SetBlockType(Cx::cWHILE_BLOCK);.)
+= "while" '(' bool_exp<whileCx,v> ')'  (.whileCx.WhileCond(v);.)
+      stat<whileCx>                    (.whileCx.EndContext();.)
+ .
+
+bool_exp<Cx& c, Val& v> =
+   exp<c,v> // bool-expressions don't actually have to be boolean!
+ .
+
+stat<Cx& c>                            (.Val v; int statNum = c.BeginStat();.)
+=( do_stat<c>
+ | while_stat<c>
+ // Warning here about else is OK and inescapable without changing the grammar
+ | if '(' bool_exp<c,v> ')'            (.int trueEnd; trueEnd = c.IfCond(v); Cx c1(c);.)
+      stat<c1>
+                                       (.bool hasElse = false; c1.EndContext();.)
+    [ else                             (.hasElse = true; int elseEnd = c.IfTrueEnd(trueEnd,true); Cx c2(c);.)
+         stat<c2>                      (.c.IfElseEnd(elseEnd);.)
+    ]
+                                       (.if (! hasElse) c.IfTrueEnd(trueEnd,false);.)
+ | return [ exp<c,v> ]                 (.c.Return(v);.)
+     SYNC ';'
+ | break                               (.c.Break();.)
+         ';'
+ | continue                            (.c.Continue();.)
+         ';'
+ | for '('                             (.Val forCond; Cx forCx(c);.)
+    [
+      IF(IsVarDecl(forCx))
+         var_decl<forCx>
+     | assign_expr<forCx,v>
+    ]
+                                       (.forCx.SetBlockType(Cx::cFOR_BLOCK);.)
+    ';' exp<forCx,forCond>             (.forCx.ForCond(forCond);.)
+    ';' [assign_expr<forCx,v>] ')'     (.forCx.ForInc();.)
+      stat<forCx>                      (.forCx.EndContext();.)
+
+ | foreach                             (.Val var1, var2; Val cont; Cx feCx(c);.)
+    '(' var_decl_expr<feCx,var1>
+       [ ':' var_decl_expr<feCx,var2> ]
+       in exp<feCx,cont> ')'
+                                       (.feCx.ForEachBegin(var1, var2, cont);.)
+     stat<feCx>
+                                       (.feCx.EndContext();.)
+ | block<c>
+ | extern_stat<c>
+ | stat2<c>   // improves code generation moving IF to another rule
+ )                                     (.c.EndStat(statNum);.)
+ .
+
+//stub:
+initializer_list<Cx& c, Val& v>        (.bool hasKey=false; Val u, w;.)
+='{'                                   (.v = c.NewInitializerList();.)
+    [
+      exp<c,u> [ ':' exp<c,w>          (.hasKey=true;.)
+               ]                       (.c.AddToInitializerList(v, u, hasKey ? &w : nullptr); hasKey=false;.)
+      {
+         IF(IsInitializerEntry())
+         ',' exp<c,u> [ ':' exp<c,w>   (.hasKey=true;.)
+                      ]                (.c.AddToInitializerList(v, u, hasKey ? &w : nullptr); hasKey=false;.)
+      }
+    ]
+    [',']   // allow final ','
+ '}'
+ .
+
+AssignOp<int& op> =
+   "="                                 (.op = Cx::cASSIGN;.)
+ | "+="                                (.op = Cx::cASSIGN_PLUS;.)
+ | "-="                                (.op = Cx::cASSIGN_MINUS;.)
+ | "*="                                (.op = Cx::cASSIGN_TIMES;.)
+ | "/="                                (.op = Cx::cASSIGN_DIV;.)
+ .
+
+assign_expr<Cx& c,Val& v>              (.Val rhs; int op;.)
+=  identifier<c,v> AssignOp<op>
+   (
+     exp<c,rhs>
+   )
+                                       (. c.Op(v, rhs, op);.)
+.
+
+stat2<Cx& c>                           (.Val v;.)
+=  IF(IsVarDecl(c)) var_decl<c> ';'
+ | IF(IsAssignment()) assign_expr<c,v> SYNC ';'
+ | exp<c,v> SYNC ';'
+ .
+
+// =================================================================================================
+// Expression productions
+
+exp<Cx& c, Val& v> = exp1<c,v>.
+
+exp1<Cx& c, Val& v> =
+   exp2<c,v> {
+      or                               (.UsVal result; int jumpOffset = c.OrCheck(v, result); Val rhs;.)
+      exp2<c,rhs>                      (.v = c.OrComplete(result, rhs, jumpOffset);.)
+   }
+ .
+
+exp2<Cx& c, Val& v> =
+   exp3<c, v> {
+      and                              (.UsVal result; int jumpOffset = c.AndCheck(v, result); Val rhs;.)
+      exp3<c,rhs>                      (.v = c.AndComplete(result, rhs, jumpOffset);.)
+   }
+ .
+
+exp3<Cx& c, Val& v> =
+   exp_eq<c,v> { '^' exp_eq<c,v> }
+ .
+
+EqOp<int& op> =
+ ( "=="                                (.op = Cx::cEQ;.)
+ | "!="                                (.op = Cx::cNE;.)
+ )
+ .
+
+exp_eq<Cx& c, Val& v>                  (.int op;.)
+=  exp_test<c,v> { EqOp<op>            (.Val rhs;.)
+   exp_test<c,rhs>                     (.v = c.Op(v,rhs,op);.) }
+ .
+
+TestOp<int& op> =
+ ( '<'                                 (.op = Cx::cLT;.)
+ | '>'                                 (.op = Cx::cGT;.)
+ | "<="                                (.op = Cx::cLE;.)
+ | ">="                                (.op = Cx::cGE;.) )
+ .
+
+exp_test<Cx& c, Val& v>                (.int op;.)
+=  exp_add<c,v> { TestOp<op>           (.Val rhs;.)
+                  exp_add<c,rhs>       (.v = c.Op(v,rhs,op);.)
+                }
+ .
+
+AddOp<int& op> =
+   '+'                                 (.op = Cx::cADD;.)
+ | '-'                                 (.op = Cx::cSUBTRACT;.)
+ .
+
+exp_add<Cx& c, Val& v>                 (.int op(0);.)
+=  exp_mult<c,v>
+   {   AddOp<op>                       (.Val rhs;.)
+       exp_mult<c,rhs>                 (.v = c.Op(v,rhs,op);.)
+   }
+ .
+
+MulOp<int& op> =
+   '*'                                 (.op = Cx::cMULTIPLY;.)
+ | '/'                                 (.op = Cx::cDIVIDE;.)
+ .
+
+exp_mult<Cx& c, Val& v>                (.int op;.)
+=  exp5<c,v>
+   {   MulOp<op>                       (.Val rhs;.)
+       exp5<c,rhs>                     (.v = c.Op(v, rhs, op);.)
+   }
+ .
+
+exp5<Cx& c, Val& v>                    (.Ty* ty=nullptr;.)
+=  IF (IsCast(c))
+     '(' type<c,ty> ')' exp5<c,v>      (.v = c.Cast(v, ty);.)
+ | '!' exp5<c,v>                       (.v = c.Op(v, Cx::cNOT);.)
+ | exp6<c,v>
+ .
+
+exp6<Cx& c, Val& v>                    (.int unaryOp=-1;.)
+=  [( "+"                              (.unaryOp = Cx::cUNARY_PLUS;.) |
+      "-"                              (.unaryOp = Cx::cUNARY_MINUS;.) )
+   ] exp7<c,v>                         (.if (unaryOp>=0) v = c.Op(v,unaryOp);.)
+ .
+
+exp7<Cx& c, Val& v> =
+   atom<c, v> { trailer<c, v> }
+ .
+
+// 'atom' and 'trailer' are kind of messy for two reasons:
+// 1) We must detect missing parameter lists from script/method calls.
+// 2) We want to treat built-in classes and script structs the same when using the '.' syntax.
+
+atom<Cx& c, Val& v>                    (.Ty* ty(nullptr);.)
+=  '(' exp1<c, v> ')'
+ | static_exp<c, v>
+ | IF(IsType(c)) type<c,ty>
+      (
+         // First alternative is call to a static method (e.g.: Math.Sin(x))
+         '.'                           (.c.AtDot(ty,t->pos);.)
+         ident                         (.v = c.GetAttribute(ty, t);.)
+         '('                           (.ValList args;.)
+            arg_list<c, args>
+         ')'                           (.v = c.Call(v, args);.)
+
+         // Second alternative is constructor (e.g.: Vec3()) or copy constructor (e.g.: Vec3(otherVec3))
+       | '('                           (.ValList args;.)
+            arg_list<c, args>
+         ')'                           (.v = c.Ctor(ty, args);.)
+      )
+ | IF(IsScript(c)) identifier<c,v>
+      // Call to a user-defined script method or an implicit class method.
+      ( '('                            (.ValList args;.)
+          arg_list<c, args>
+        ')'                            (.v = c.Call(v, args);.)
+      )
+ | identifier<c,v>
+ | initializer_list<c,v>
+ .
+
+trailer<Cx& c, Val& v>                 (.Val idx;.)
+=
+   // Array/Map indexing.
+   (
+    '[' exp1<c,idx> ']'                (.Val rhs;.)
+    // NOTE: This optional '=' rule here leads to many WARNINGS.  This appears to be similar to the 'else' warning
+    //       I don't see a clear way to fix this, although the code appears to generate as expected.
+         [ '=' exp<c,rhs> ]            (.v = c.Op(v, idx, rhs, Cx::cINDEX);.)
+   )
+
+ | '.'                                 (.c.AtDot(v, t->pos);.)
+    ident                              (.Token* ident = t;.)
+    // If one follows 'ident' with a '(' it assumes that 'ident' is a method in the class. If it not then a 'not a method'
+    // error will be produced. Similarly if one attempts to use 'ident' as a variable and it is a method, one will get a 'not
+    // a variable' message. This later item is a little inconsistent in that in other places a method without an argument list
+    // will produce a '"(" expected' message.
+    (
+       ( '('                           (.v = c.GetClassMethod(v, ident);
+                                          ValList args;.)
+             arg_list<c, args>
+         ')'                           (.v = c.Call(v, args);.)
+       )
+     |
+       (                               (.v = c.GetClassVariable(v, ident);.)
+          [                            (.Val rhs; int op;.)
+            AssignOp<op> exp<c,rhs>    (.c.Op(v, rhs, op);.)
+          ]
+       )
+    )
+
+ | "->" ident                          (.v = c.GetDynAttribute(v, t);.)
+    // The thing represented by 'ident' could be a variable or a method, but that isn't known until runtime.
+    // If the next thing is an argument list then we assume it is a method, otherwise we assume a variable.
+    (
+       ( '('                           (.ValList args;.)
+             arg_list<c, args>
+         ')'                           (.v = c.Call(v, args);.)
+       )
+     |
+       // Note: Here we allow assignment to attributes in expressions, but assignments to
+       //       normal variables are only allowed as statements.  This is simply an implementation
+       //       detail: implementing assignment to attributes as a statement would require a non-constant
+       //       lookahead.
+       (
+          [                            (.Val rhs; int op;.)
+            AssignOp<op> exp<c,rhs>    (.c.Op(v, rhs, op);.)
+          ]
+       )
+    )
+ .
+
+formal_param_list<Cx& c, Fn& f>        (.Ty* ty=nullptr;.)
+   = '(' [ type<c,ty> ident            (.c.AddParam(f, ty, t, 1);.)
+       {',' type<c,ty> ident           (.c.AddParam(f, ty, t, 1);.)
+       } ] ')'
+ .
+
+func_def<Cx& c> =                      (.Token* fnIdent=nullptr; Ty* ty; Fn f; UsVal fnSym;.)
+   type<c,ty> ident                    (.c.SetRType(f, ty); fnIdent = t; Cx fncx(c); fncx.SetBlockType(Cx::cSCRIPT_BLOCK);.)
+      formal_param_list<fncx, f>       (.fnSym = c.AddEntry(fnIdent, f, false, &fncx); fncx.FuncDefStart(fnSym);.)
+      block_func<fncx>                 (.c.FuncComplete(fnSym,fncx);.)
+ .
+END Script.
+
