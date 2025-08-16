@@ -1,0 +1,46 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once xio_tests/platform.txt
+
+platform_type WARLOCK_PLATFORM WSF_PLATFORM
+   spatial_domain air
+   side blue
+   mover WSF_AIR_MOVER
+   end_mover 
+end_platform_type
+
+execute at_time 1 sec absolute
+   double numPlatformsToAdd = 5000.0;
+   for (double i = 0; i < numPlatformsToAdd; i = i + 1.0)
+   {
+      double longitude = 160.0 - (i * .01);  
+      string inputStr = write_str("route ",
+                                  "position 20.920n  ", longitude, "w altitude 10000 m speed 325 m/s ",
+                                  "position 20.980n  ", longitude, "w altitude 10000 m speed 325 m/s ",
+                                  "end_route");
+                                        
+      WsfPlatform p = WsfSimulation.CreatePlatform("myPlatformType1");   
+      p.ProcessInput(inputStr);
+	  
+	   string numPre = "";
+	   if     ( i < 10)   { numPre = "000"; }
+      else if( i < 100)  { numPre = "00"; }
+	   else if( i < 1000) { numPre = "0"; }  
+
+      WsfPlatform pa = WsfSimulation.AddPlatform(p, "platform_" + numPre + (string)i);
+      if (!pa.IsValid())
+      {
+         writeln("***** ERROR T=", TIME_NOW, " Could not add platform of type ", p.Type());
+      }  
+   }
+end_execute
+
+realtime
+end_time 60 mins

@@ -1,0 +1,172 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+
+infrared_signature MR_SAM_INFRARED_SIGNATURE
+   constant 1 watts/steradian
+end_infrared_signature
+
+optical_signature MR_SAM_OPTICAL_SIGNATURE
+   constant 1 m^2
+end_optical_signature
+
+radar_signature MR_SAM_RADAR_SIGNATURE
+   constant 1 m^2
+end_radar_signature
+
+weapon_effects MR_SAM_WEAPON_EFFECTS WSF_GRADUATED_LETHALITY   
+   
+   radius_and_pk  250.0 m 0.70 # All Platforms
+   radius_and_pk   65.0 m 0.80 # All Platforms
+   radius_and_pk   40.0 m 0.90 # All Platforms
+
+   #target_type F-18E
+   #   radius_and_pk  250.0 m 0.5
+   #   radius_and_pk   65.0 m 0.7
+   #   radius_and_pk   50.0 m 0.9
+   #end_target_type
+
+#   script void on_weapon_detonation()
+#      writeln("T=", TIME_NOW, " weapon_effects on_weapon_detonation");
+#   end_script
+
+end_weapon_effects
+
+aero MR_SAM_AERO WSF_AERO
+   # Values estimated from Hoerner's Drag book
+   cd_zero_subsonic    0.10 
+   cd_zero_supersonic  0.25
+   mach_begin_cd_rise  0.95
+   mach_end_cd_rise    1.30
+   mach_max_supersonic 4.00
+   reference_area      0.159 m2 # 0.45 m. body dia
+   cl_max             10.0
+   aspect_ratio       16.0 // 32.0 // AR = B^2/Sref assume span = 5Xdia
+end_aero
+
+mover MR_SAM_MOVER WSF_GUIDED_MOVER
+   update_interval                  0.01 sec
+   integration_timestep             0.01 sec
+
+   stage 1
+      aero                          MR_SAM_AERO
+      total_mass                    0.0078 kg
+      empty_mass                    0.0001 kg
+      thrust                        51479.4 nt
+      thrust_duration               0.77 sec
+   end_stage
+      
+   stage 2
+      aero                          MR_SAM_AERO
+      total_mass                    1284.001 kg
+      fuel_mass                     1284 kg
+      thrust_duration               20.0 sec
+      thrust                        165386.0 nt
+   end_stage
+      
+   stage 3
+      aero                          MR_SAM_AERO
+      total_mass                    854.0 kg
+   end_stage
+end_mover
+
+processor MR_SAM_AUTOPILOT WSF_GUIDANCE_COMPUTER
+   #show_status
+   guide_to_truth true
+   //show_evaluations
+
+   script_variables
+      double PITCH_OVER_DELAY = 0.8;
+   end_script_variables
+ 
+   phase LIFT_OFF
+      # No guidance commands during this phase
+      guidance_delay 4 sec
+      next_phase PITCH_OVER when phase_time >= variable PITCH_OVER_DELAY secs
+   end_phase
+
+   phase PITCH_OVER
+      commanded_flight_path_angle   55 deg
+      next_phase MIDCOURSE when on_commanded_flight_path_angle
+   end_phase
+      
+   phase MIDCOURSE
+      #on_entry
+      #   //SetDebugEnabled(true);
+      #end_on_entry
+      proportional_navigation_gain  4.0
+      next_phase TERMINAL when time_to_intercept < 10 sec
+   end_phase
+   
+   phase TERMINAL
+      #on_entry
+      #   #SetDebugEnabled(true);
+      #end_on_entry
+      proportional_navigation_gain  4.0
+   end_phase
+end_processor
+
+processor MR_SAM_FUSE WSF_AIR_TARGET_FUSE
+   time_of_flight_to_arm            10.0 sec     // Will arm during boost
+   max_time_of_flight_to_detonate  90.0 sec     // Set to max out at 50 nm.
+   coast_time_on_loss_of_target      6.0 sec
+
+#   script void on_weapon_detonation()
+#      writeln("T=", TIME_NOW, " fuse on_weapon_detonation");
+#   end_script
+   
+   #on_detonation
+   #   writeln("T=", TIME_NOW, " fuse on_weapon_detonation");
+   #end_on_detonation
+end_processor
+
+platform_type MR_SAM WSF_PLATFORM
+   icon mr_missile_icon 
+   infrared_signature MR_SAM_INFRARED_SIGNATURE
+   optical_signature  MR_SAM_OPTICAL_SIGNATURE
+   radar_signature    MR_SAM_RADAR_SIGNATURE
+   weapon_effects     MR_SAM_WEAPON_EFFECTS
+
+   mover MR_SAM_MOVER end_mover
+   processor autopilot MR_SAM_AUTOPILOT end_processor
+   processor fuse MR_SAM_FUSE end_processor
+end_platform_type
+
+#include_once mr_sam_launch_computer.txt
+
+
+weapon MR_SAM WSF_EXPLICIT_WEAPON
+   
+   launched_platform_type MR_SAM  # (User will probably choose to override this type.)
+// We will manually make our own launch computer   
+#   launch_computer        MR_SAM_LAUNCH_COMPUTER end_launch_computer
+
+   # A cannister missile is ejected from the canister and ignites at 25 m altitude.
+   launch_delta_v 22.4 0 0 m/s
+      
+   # The missiles are launched vertically from the canisters.
+   # We can't specify 90 degrees because of a singularity
+   tilt  89.9 degrees
+
+   # The user should cue the weapon to the target track before launching.
+   # This is a bit of a hack until the missile guidance computer will roll.
+   slew_mode azimuth
+   azimuth_slew_limits -180 deg 180 deg
+      
+   # There are 2 canisters per TEL
+   quantity 2
+      
+   # Assume there is some reaction time.
+   firing_delay   2.0 secs
+      
+   # Salvo interval 
+   salvo_interval uniform minimum 5.0 secs maximum 8.0 secs
+
+end_weapon

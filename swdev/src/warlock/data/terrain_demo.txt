@@ -1,0 +1,193 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+processor AIR_MOVER_TERRAIN_FOLLOWING WSF_SCRIPT_PROCESSOR
+   script_variables
+      double COMMANDED_HEIGHT_ABOVE_TERRAIN = 5000; # This is the default - must be changed
+                                                    # by either the platform_type or platform
+      double HEIGHT_TOLERANCE               = 100;   # +/- tolerance for hysteresis
+   end_script_variables
+   update_interval 2.0 sec
+   on_update
+      WsfGeoPoint FutureLocation  = PLATFORM.Location();
+      double CurrentAltAGL  = PLATFORM.HeightAboveTerrain();
+      double CurrentSpeed   = PLATFORM.Speed(); 
+      double CurrentAltMSL  = PLATFORM.Altitude();
+      double MaxRate        = 100;
+      double Rate           =  50;
+      FutureLocation.Extrapolate(0, CurrentSpeed*2); #heading, speed*script_update_rate
+      double FutureAltAGL = FutureLocation.HeightAboveTerrain();
+      // Valley coming...
+      if (FutureAltAGL > (COMMANDED_HEIGHT_ABOVE_TERRAIN + HEIGHT_TOLERANCE))
+         {
+         #double NewAlt = CurrentAltMSL - COMMANDED_HEIGHT_ABOVE_TERRAIN; 
+         double NewAlt = CurrentAltMSL - FutureAltAGL; 
+         if (CurrentAltMSL - NewAlt > 100) Rate = MaxRate;
+         PLATFORM.GoToAltitude(NewAlt, Rate, 1); # Alt, Rate, stay on route         
+         #writeln(TIME_NOW, " Commanding to go down to the new alt of ", NewAlt);
+         }
+      // Hill coming up..
+      if (FutureAltAGL < (COMMANDED_HEIGHT_ABOVE_TERRAIN - HEIGHT_TOLERANCE))
+         {
+         #double NewAlt = CurrentAltMSL + COMMANDED_HEIGHT_ABOVE_TERRAIN;
+         double NewAlt = CurrentAltMSL + FutureAltAGL ;
+         if (NewAlt - CurrentAltMSL > 100) Rate = MaxRate;
+         PLATFORM.GoToAltitude(NewAlt, Rate, 1); # Alt, Rate, stay on route
+         #writeln(TIME_NOW, " Commanding to go up to the new alt of ", NewAlt);
+         }
+   end_on_update
+end_processor
+
+platform_type  TEST_AIR_MOVER  WSF_PLATFORM
+   mover WSF_AIR_MOVER
+     body_g_limit 4 g
+     maximum_climb_rate 200 ft/s
+   end_mover
+   processor terrain_following AIR_MOVER_TERRAIN_FOLLOWING
+     script_variables
+        COMMANDED_HEIGHT_ABOVE_TERRAIN = 300; 
+        #HEIGHT_TOLERANCE = 50;  
+     end_script_variables
+   end_processor
+end_platform_type
+
+processor KINEMATIC_MOVER_TERRAIN_FOLLOWING WSF_SCRIPT_PROCESSOR
+   script_variables
+      double COMMANDED_HEIGHT_ABOVE_TERRAIN = 500; # This is the default - must be changed
+                                                    # by either the platform_type or platform
+      double HEIGHT_TOLERANCE               = 200;   # +/- tolerance for hysteresis
+   end_script_variables
+   update_interval 4.0 sec
+   on_update
+      WsfGeoPoint FutureLocation  = PLATFORM.Location();
+      #writeln(TIME_NOW, " location " , FutureLocation);
+      double CurrentAltAGL  = PLATFORM.HeightAboveTerrain();
+      #writeln(TIME_NOW, " Current Alt AGL ", CurrentAltAGL);
+      double CurrentSpeed   = PLATFORM.Speed(); 
+      #writeln(TIME_NOW, " Current Speed is ", CurrentSpeed);
+      double CurrentAltMSL  = PLATFORM.Altitude();
+      #writeln(TIME_NOW, " Current Alt MSL ", CurrentAltMSL);
+      #double MaxRate        = 100;
+      #double Rate           =  50;      
+      FutureLocation.Extrapolate(0, CurrentSpeed*4); #heading, speed*script_update_rate
+      double FutureLocationLat = FutureLocation.Latitude();
+      double FutureLocationLon = FutureLocation.Longitude();           
+      #writeln(TIME_NOW, " Future Location is ", FutureLocation);
+      double FutureAltAGL = FutureLocation.HeightAboveTerrain();
+      #writeln(TIME_NOW, " Future Alt AGL is ", FutureAltAGL);
+      // Valley coming...
+      if (FutureAltAGL > (COMMANDED_HEIGHT_ABOVE_TERRAIN + HEIGHT_TOLERANCE))
+         {          
+         double NewAlt = CurrentAltMSL - FutureAltAGL;          
+         WsfGeoPoint NewPoint = WsfGeoPoint.Construct(FutureLocationLat, FutureLocationLon, NewAlt);
+         PLATFORM.GoToPoint(NewPoint);
+         WsfDraw draw = WsfDraw();
+         draw.BeginLines();
+         draw.SetColor(0.3, 0.3, 0.3);
+         draw.Vertex(NewPoint);
+         draw.Vertex(PLATFORM);
+         draw.End();                 
+         #writeln(TIME_NOW, " Commanding to go down to the new alt of ", NewAlt);
+         }
+      // Hill coming up..
+      else if (FutureAltAGL < (COMMANDED_HEIGHT_ABOVE_TERRAIN - HEIGHT_TOLERANCE))
+         {
+            double NewAlt = CurrentAltMSL + FutureAltAGL + COMMANDED_HEIGHT_ABOVE_TERRAIN;         
+            WsfGeoPoint NewPoint = WsfGeoPoint.Construct(FutureLocationLat, FutureLocationLon, NewAlt);
+            PLATFORM.GoToPoint(NewPoint);
+            WsfDraw draw = WsfDraw();
+            draw.BeginLines();
+            draw.SetColor(0.3, 0.3, 0.3);
+            draw.Vertex(NewPoint);
+            draw.Vertex(PLATFORM);
+            draw.End();         
+            #writeln(TIME_NOW, " Commanding to go up to the new alt of ", NewAlt);
+         }
+      // fly level
+      else
+          {
+            double NewAlt = CurrentAltMSL;
+            WsfGeoPoint NewPoint = WsfGeoPoint.Construct(FutureLocationLat, FutureLocationLon, NewAlt);
+            PLATFORM.GoToPoint(NewPoint);
+            WsfDraw draw = WsfDraw();
+            draw.BeginLines();
+            draw.SetColor(0.9, 0.4, 0.4);
+            draw.Vertex(NewPoint);
+            draw.Vertex(PLATFORM);
+            draw.End();
+          }  
+      
+       
+   end_on_update
+end_processor
+
+platform_type  TEST_KINEMATIC_MOVER  WSF_PLATFORM
+   mover WSF_KINEMATIC_MOVER  
+     prefer_canopy_up       true       # Keeps it flying in a straight heading
+     initial_speed          400 kts
+     target_speed           400 kts
+     maximum_linear_acceleration  3 g
+     maximum_radial_acceleration  2 g   # ALSO INCLUDES PITCH UP ACCELERATION!!!
+     maximum_body_turn_rate  8 deg/sec # ALSO INCLUDES PITCH UP TURN RATE!!!!
+     maximum_body_roll_rate  5 deg/sec
+     proportional_navigation_gain 2.0
+     velocity_pursuit_gain        30.0
+     update_interval 4.0 sec
+   end_mover
+   processor terrain_following KINEMATIC_MOVER_TERRAIN_FOLLOWING
+     script_variables
+        COMMANDED_HEIGHT_ABOVE_TERRAIN = 600; 
+        HEIGHT_TOLERANCE = 50;  
+     end_script_variables
+   end_processor
+end_platform_type
+
+####################################################################################
+### Scenario 
+####################################################################################
+platform test_flyer TEST_AIR_MOVER
+  side blue
+  icon fighter
+  route
+    position 36:08:00.00n 115:10:48.00w altitude 1000.00 ft agl
+      speed 400 kts
+    position 37:18:49.56n 115:10:48.00w altitude 1000.00 ft agl
+      speed 400 kts
+    position 38:29:39.13n 115:10:48.00w altitude 5000.00 ft agl
+      speed 400 kts
+  end_route
+end_platform
+
+platform test_kinematic_flyer TEST_KINEMATIC_MOVER
+  side blue
+  icon Bomber
+  route
+    position 36:08:00.00n 115:10:47.50w altitude 6000.00 ft msl speed 400 kts
+    position 37:18:49.56n 115:10:47.50w altitude 6000.00 ft msl speed 400 kts 
+    position 38:18:49.56n 115:10:47.50w 
+    position 45:29:39.13n 115:10:47.50w 
+  end_route
+end_platform
+
+dis_interface
+   record                      replay.rep
+   suppress_comm_data          true
+   entity_position_threshold   10.0 meters
+end_dis_interface
+terrain
+   ## You must provide terrain data in order for this demo to work
+   ## Here are a couple of example input lines
+      #dted 1  c:/AFSIM/dted1/dted114
+      dted 1 C:/Users/jtallyn/swdev\/databases/dted1/dted115
+      dted 1 C:/Users/jtallyn/swdev/databases/dted1/dted128
+      #dted 0  C:/AFSIM/dted0/dted00	  
+      #load_cme_terrain
+end_terrain
+#realtime
+end_time 60 min

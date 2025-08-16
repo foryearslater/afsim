@@ -1,0 +1,168 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+event_pipe
+   file zonetest.aer
+end_event_pipe
+
+script_variables 
+   WsfDraw t = WsfDraw();
+end_script_variables
+
+script void DrawZone(WsfZone aZone, double aMinLat, double aMaxLat, double aMinLon, double aMaxLon, double aAltitude)
+{
+   t.SetPointSize(4);
+   if (aZone.IsValid())
+   {
+      t.SetPointSize(4);
+      for (double lat = aMinLat; lat < aMaxLat; lat = lat + 0.1)
+      {
+         for (double lon = aMinLon; lon < aMaxLon; lon = lon + 0.1)
+         {
+            if (aZone.PointIsInside(WsfGeoPoint.Construct(lat, lon, aAltitude)))
+            {
+               t.SetColor(Color.Red());
+            }
+            else
+            {
+               t.SetColor(Color.Blue());
+            }
+            t.BeginPoints();
+            t.VertexLLA(lat, lon, aAltitude);
+            t.End();
+         }
+      }
+   }
+}
+end_script
+
+script void Draw(string aName)
+{
+   DrawZone(WsfZone.FindZone(aName), 5, 15, 5, 15, 25000);
+}
+end_script
+
+script void DrawAltitudeZone(WsfZone aZone, double aLat, double aLon)
+{
+   if (aZone.IsValid())
+   {   
+      t.SetPointSize(4);
+      for (double altitude = 1000; altitude < 100000; altitude = altitude + 1000)
+      {
+         if (aZone.PointIsInside(WsfGeoPoint.Construct(aLat, aLon, altitude)))
+         {
+            t.SetColor(Color.Red());
+         }
+         else
+         {
+            t.SetColor(Color.Blue());
+         }
+         t.BeginPoints();
+         t.VertexLLA(aLat, aLon, altitude);
+         t.End();
+      }
+   }
+}
+end_script
+
+script void DrawAltitude(string aName, double aLat, double aLon)
+{
+   DrawAltitudeZone(WsfZone.FindZone(aName), aLat, aLon);
+}
+end_script
+
+platform target1 WSF_PLATFORM
+end_platform
+
+platform target2 WSF_PLATFORM
+   position 20n 20e
+   
+   zone t2_Platform3_ref
+      polygonal 
+
+      point 100 100 km
+      point 50 100 km
+      point 50 50 km
+      point 100 50 km
+  
+      minimum_altitude 5000 m
+      maximum_altitude 50000 m
+
+      reference_platform target3
+   end_zone
+
+   execute at_time 1 sec absolute
+      WsfZone zone = PLATFORM.Zone("t2_Platform3_ref");
+      DrawZone(zone, 1.1, 2.5, 1.1, 2.5, 25000);
+      DrawAltitudeZone(zone, 1.7, 1.7);
+   end_execute
+
+end_platform
+
+platform target3 WSF_PLATFORM
+   position 1n 1e
+   altitude 100 km
+end_platform
+   
+zone reference_Platform1
+   polygonal 
+
+   point -50 -50 km
+   point 50 -50 km
+   point 50 50 km
+   point -50 50 km
+  
+   minimum_altitude 5000 m
+   maximum_altitude 50000 m
+
+   reference_platform target1
+end_zone
+   
+zone reference_Platform3
+   polygonal 
+
+   point -50 -50 km
+   point 50 -50 km
+   point 50 50 km
+   point -50 50 km
+  
+   minimum_altitude 5000 m
+   maximum_altitude 50000 m
+
+   reference_platform target3
+end_zone
+   
+zone_set ZoneSet1
+   zone
+      elliptical 
+      minimum_radius 75 km
+      lateral_axis 200 km
+      longitudinal_axis 600 km    
+      minimum_altitude 5000 m
+      maximum_altitude 50000 m
+      position 8n 8e
+   end_zone
+   
+   zone
+      circular
+      minimum_radius 75 km
+      maximum_radius 150 km
+      minimum_altitude 5000 m
+      maximum_altitude 50000 m
+      position 10n 10e
+   end_zone
+end_zone_set
+
+execute at_time .1 sec absolute 
+   Draw("ZoneSet1");
+   DrawAltitude("reference_Platform1", 0, 0);
+   DrawAltitude("reference_Platform3", 1, 1);
+end_execute
+
+end_time 60 sec

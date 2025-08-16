@@ -1,0 +1,77 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once platform.txt 
+
+platform blue-1 myPlatformType1
+   side blue
+   marking blue-1
+   route
+      position 0.1n 1.0w altitude 20000 ft speed 270 m/s heading 90 deg extrapolate
+   end_route
+   
+   execute at_time 2 sec relative
+      Comment("Test comment from blue-1");
+   end_execute
+   
+end_platform
+
+platform blue-2 myPlatformType1
+   side blue
+   marking blue-2
+   route
+      position 0.2n 1.0w  altitude 20000 ft speed 270 m/s heading 90 deg extrapolate
+   end_route
+end_platform
+
+platform red-1 myPlatformType2
+   side red
+   marking red-1
+   route
+      position 0.1n 0.0e altitude 20000 ft speed 240 m/s heading -90 deg extrapolate
+   end_route
+   script void WARLOCK_AnotherDouble(double aSomeDouble)
+         // Print name using script argument.
+         writeln("The double value is ", aSomeDouble);
+   end_script
+   
+   execute at_time 4 sec relative
+      Comment("Test comment from red-1");
+   end_execute
+   
+   execute at_time 10 s relative
+      writeln("searching for tracks...");
+      WsfLocalTrackList localTrackList = PLATFORM.MasterTrackList();
+      
+      foreach(WsfLocalTrack localTrack in localTrackList)
+      {
+         string targetName = localTrack.TargetName();
+         
+         writeln("Have local track of ", targetName, ", length = ", targetName.Length());
+         if (targetName == "blue-1")
+         {
+            writeln("Firing...");
+            PLATFORM.Weapon("sam").FireSalvo(localTrack, 3);   
+         }   
+      }
+   end_execute
+   
+end_platform
+
+platform red-2 myPlatformType2
+   side red
+   marking red-2
+   route
+      position 0.2n 0.0e altitude 20000 ft speed 240 m/s heading -90 deg extrapolate
+   end_route
+   script void WARLOCK_AnotherDouble(double aSomeDouble)
+         // Print name using script argument.
+         writeln("The double value is ", aSomeDouble);
+   end_script
+end_platform

@@ -1,0 +1,134 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+end_time 90 sec
+
+script int Foo()
+   writeln("Hello World");   
+   return 0;
+end_script
+
+script void Bar(int i)
+end_script
+
+execute at_time 1 sec absolute 
+   WsfPrompt.DisplayAndPause("Zeroth", "This is a blocking message. Do not close this dialog.\n If you haven't already done this once, restart or reload the simulation. The dialog should close.\n When the simulation restarts and this dialog appears again, close it.");
+end_execute
+
+execute at_time 2 sec absolute 
+   WsfPrompt.DisplayAndPause("First", "This is a blocking message that should only have an 'OK' button that just closes the dialog. ");
+end_execute
+
+execute at_time 4 sec absolute 
+   WsfPrompt.Display("Second", "This is a non-blocking message that should only have an 'OK' button that just closes the dialog. ");
+end_execute
+
+//*********************************
+// Test chat link capability
+
+execute at_time 4.1 sec absolute 
+   WsfPrompt.DisplayAndPause("2.1", "This is a platform link: {p:p-1}");
+end_execute
+
+execute at_time 4.2 sec absolute 
+   WsfPrompt.DisplayAndPause("2.2", "This is a view link: {v:0,0,3237.99,78,218.847,View}");
+end_execute
+
+// Need to add test for track links
+//execute at_time 4.3 sec absolute 
+//   WsfPrompt.DisplayAndPause("2.3", "This is a track link: {t:}");
+//end_execute
+
+execute at_time 4.4 sec absolute 
+   WsfPrompt.DisplayAndPause("2.4", "This is a documentation link: <a doclink=\"warlock_selection.html\">Platform Selection</a> ");
+end_execute
+
+//*********************************
+
+execute at_time 12 sec absolute
+   WsfPrompt.DisplayAndPause("Third", "When this dialog is closed, an error message should appear in the console window saying that the arrays are not of equal size.");
+end_execute
+
+execute at_time 13 sec absolute 
+   Array<string> buttons = {"one", "two"};
+   Array<string> scripts = {"Foo"};
+   # This should give an error saying that the arrays are not of equal size.
+   WsfPrompt.DisplayAndPause("Some Title", "This is a blocking message", scripts, buttons);
+end_execute
+
+execute at_time 22 sec absolute 
+   Array<string> buttons = {"yes","no","foo", "bar", "blah"};
+   Array<string> scripts = {"Foo", "NONEXISTENT_SCRIPT", "", "", ""};
+   
+   WsfPrompt.Display("Fourth", "This is a non-blocking message. Clicking 'no' should give an error saying the script cannot be found.", scripts, buttons);
+end_execute
+
+execute at_time 32 sec absolute 
+   Array<string> buttons = {"yes","no"};
+   Array<string> scripts = {"Foo", ""};
+   
+   WsfPrompt.DisplayAndPause("Fifth", "This is a blocking message. Clicking 'yes' should print 'Hello World' to the console.", scripts, buttons);
+end_execute
+
+execute at_time 34 sec absolute 
+   Array<string> buttons = {"yes","no"};
+   Array<string> scripts = {"", ""};
+   
+   WsfPrompt.DisplayAndPause("Sixth", "This is another blocking message. Clicking either 'yes' or 'no' should not execute anything and give no errors.", scripts, buttons);
+end_execute
+
+execute at_time 36 sec absolute
+   WsfPrompt.DisplayAndPause("Seventh", "The next dialog that appears should be an error message saying that scripts with arguments are not supported");
+end_execute
+
+execute at_time 37 sec absolute 
+   Array<string> buttons = {"yes","no"};
+   Array<string> scripts = {"Bar", ""};
+   # This should give an error saying that scripts with arguments are not supported.
+   WsfPrompt.DisplayAndPause("Some Other Title", "This is another blocking message.", scripts, buttons);
+end_execute
+
+execute at_time 46 sec absolute 
+   Array<string> buttons = {"yes","no", "idk", "maybe", "possibly", "no way", "of course", "hell yeah", "nope"};
+   Array<string> scripts = {"Foo", "", "", "", "", "", "Foo", "Foo", ""};
+   
+   WsfPrompt.DisplayAndPause("Eighth", "This is another blocking message. It has a lot of buttons. Pick your poison", scripts, buttons);
+   WsfPrompt prompt;
+end_execute
+
+execute at_time 48 sec absolute 
+   WsfPrompt.Display("Ninth", "This is a non-blocking message. Wait to close this one until the next blocking message appears.\nThe clock should not resume by closing this dialog.");
+end_execute
+
+execute at_time 54 sec absolute 
+   WsfPrompt.DisplayAndPause("Tenth", "This is a blocking message. Don't close this dialog until the previous non-blocking dialog has been closed.");
+end_execute
+
+platform p-1 WSF_PLATFORM
+   execute at_time 56 s absolute
+      WsfPrompt.DisplayAndPause("Eleventh", "This is a platform scoped blocking message. Clicking \"Run Script\" should print \"Hello World\" to the console", {"Foo"}, {"Run Script"});
+   end_execute
+   execute at_time 60 s absolute
+      WsfPrompt.DisplayAndPause("Twelfth", "This is a platform scoped blocking message. Clicking \"Run Script\" should print \"Hello from platform 'p' \" to the console", {"PLATFORM_SCRIPT"}, {"Run Script"});
+   end_execute
+   execute at_time 68 s absolute
+      WsfPrompt.DisplayAndPause("Thirteenth", "This is a platform scoped blocking message. Delete platform 'p' from the simulation. Click \"Run Script\". An message should pop up saying that platform 'p' cannot be found. Ensure that warlock does not crash.", {"PLATFORM_SCRIPT"}, {"Run Script"});
+   end_execute
+   script void PLATFORM_SCRIPT()
+      writeln("Hello from platform '", Name(), "'");
+   end_script
+end_platform
+
+execute at_time 76 sec absolute 
+   WsfPrompt.Display("Fourteenth", "This is a non-blocking message. Do not close this dialog. Wait for the next message to appear.");
+end_execute
+
+execute at_time 84 sec absolute 
+   WsfPrompt.Display("Fifteenth", "This is a non-blocking message. Do not close this dialog. Wait for the simulation to finish. Restart the simulation. Both dialogs currently open should close.\nWhen the Zeroth dialog appears again, do not close it and exit Warlock. Ensure that Warlock does not crash.");
+end_execute

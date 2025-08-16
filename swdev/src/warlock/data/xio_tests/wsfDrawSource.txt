@@ -1,0 +1,86 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+//include_once dis_setup.txt 
+//include_once xio_setup.txt
+
+dis_interface
+   unicast 127.0.0.1
+   send_port 4567
+   receive_port 7654
+   application 11
+   site 22
+   autostart
+   
+   entity_type myPlatformType 1:2:225:1:5:5:0
+   entity_type MR_SAM  1:2:225:1:2:3:4
+end_dis_interface
+
+xio_interface
+   unicast 127.0.0.1
+   send_port 5678
+   receive_port 8765
+   debug yes
+   connect_to_simulations
+   auto_dis_mapping yes
+end_xio_interface
+
+realtime
+end_time 15 min
+
+include_once platform.txt 
+
+platform blue-1 myPlatformType1
+   side blue
+   marking blue-1
+   route
+      position 0.1n 1.0w altitude 20000 ft speed 270 m/s heading 90 deg extrapolate
+   end_route
+   
+   execute at_time 2 sec relative
+      Comment("Test comment from blue-1");
+   end_execute
+   
+end_platform
+
+platform blue-2 myPlatformType1
+   side blue
+   marking blue-2
+   route
+      position 0.2n 1.0w  altitude 20000 ft speed 270 m/s heading 90 deg extrapolate
+   end_route
+   
+   script_variables
+     WsfDraw draw = WsfDraw();
+     bool drawLarge = false;
+   end_script_variables
+
+   
+   execute at_interval_of 5 sec
+      draw.Erase("foo");
+   
+      # Draw a circle representing the sensor range
+      draw.SetEllipseMode("line");
+      draw.SetId("foo");
+      
+      if(drawLarge)
+      {
+         draw.BeginCircle(0, 24000.0);
+      }
+      else
+      {
+         draw.BeginCircle(0, 12000.0);
+      }
+      draw.Vertex(PLATFORM);
+      draw.End();
+      
+      drawLarge = !drawLarge;
+   end_execute
+   
+end_platform

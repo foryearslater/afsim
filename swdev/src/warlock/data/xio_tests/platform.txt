@@ -1,0 +1,139 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+include_once weapon.txt 
+
+platform_type myPlatformType1 WSF_PLATFORM
+ 
+   icon f-18
+   
+   mover WSF_AIR_MOVER
+   end_mover
+   
+   weapon sam MR_SAM
+      quantity 4
+   end_weapon
+      
+   script void WARLOCK_DoubleFunc(double aSomeDouble)
+         // Print name using script argument.
+         writeln("The double value is ", aSomeDouble);
+   end_script
+
+end_platform_type
+
+platform_type myPlatformType2 myPlatformType1
+   
+  sensor view WSF_GEOMETRIC_SENSOR
+     azimuth_scan_limits -60 deg 60 deg
+     elevation_scan_limits -60 deg 60 deg
+     azimuth_field_of_view -5 deg 5 deg
+     elevation_field_of_view -5 deg 5 deg
+	 pitch -20 degrees
+     maximum_range 80.0 nm
+     minimum_range 0.1 nm
+     scan_stabilization none
+     frame_time 1 sec
+     reports_location
+     reports_range
+     reports_range_rate
+     reports_velocity
+     on
+     aux_data
+        int wk_hdd_view = 3
+        string filter = "VaOverlayTextureGreen"
+     end_aux_data
+  end_sensor
+
+  sensor padlock WSF_GEOMETRIC_SENSOR
+     azimuth_scan_limits -60 deg 60 deg
+     elevation_scan_limits -60 deg 60 deg
+     azimuth_field_of_view -3 deg 3 deg
+     elevation_field_of_view -3 deg 3 deg
+     maximum_range 80.0 nm
+     minimum_range 0.1 nm
+     scan_stabilization none
+     frame_time 1 sec
+     reports_location
+     reports_range
+     reports_range_rate
+     reports_velocity
+     on
+     aux_data
+        int wk_hdd_view = 9
+        string filter = "VaOverlayTextureGray"
+     end_aux_data
+  end_sensor
+  
+  
+  sensor radar WSF_GEOMETRIC_SENSOR
+     azimuth_scan_limits -60 deg 60 deg
+     elevation_scan_limits -60 deg 60 deg
+     azimuth_field_of_view -60 deg 60 deg
+     elevation_field_of_view -60 deg 60 deg
+     maximum_range           80.0 nm
+     minimum_range           0.1 nm
+     scan_stabilization none
+     platform_type WSF_PLATFORM  detection_range 50.0 nm
+     frame_time 0.05 sec
+     reports_location
+     reports_range
+     reports_range_rate
+     reports_velocity
+     reports_bearing
+     internal_link track_manager
+     on
+  end_sensor
+
+  processor track_manager WSF_TRACK_PROCESSOR
+     update_interval 0.05 sec
+     on_update
+	    WsfTrackProcessor tp = (WsfTrackProcessor)PROCESSOR;
+	    WsfTrackManager tm = tp.TrackManager();
+		WsfTrackList tl = tm.RawTrackList();
+		double bestAzEl_deg = 1000000;
+		double bestEl_deg = 0;
+		double bestAz_deg = 0;
+		double az_deg;
+		double el_deg;
+		double azEl_deg;
+		bool boresightTrackValid = false;
+		int count = tl.Count();
+	    for (int i = 0; i < count; i = i + 1)
+		{
+		   WsfTrack t = tl.Entry(i);
+		   az_deg = PLATFORM.RelativeAzimuthOf(t.CurrentLocation());
+		   el_deg = PLATFORM.RelativeElevationOf(t.CurrentLocation());
+		   // need to convert to platform coordinates
+           azEl_deg = MATH.Sqrt(az_deg*az_deg + el_deg*el_deg);
+		   if (azEl_deg < bestAzEl_deg)
+		   {
+		      bestAzEl_deg = azEl_deg;
+			  boresightTrackValid = true;
+			  bestAz_deg = az_deg;
+			  bestEl_deg = el_deg;
+		   }
+		}
+		if (boresightTrackValid)
+		{
+		   WsfSensor s = PLATFORM.Sensor("padlock");
+		   s.TurnOn();
+		   s.SetPitch(bestEl_deg);
+		   s.SetYaw(bestAz_deg);
+   	       // que padlock to bestAz_deg bestEl_deg
+		}
+		else
+		{
+		   WsfSensor s = PLATFORM.Sensor("padlock");
+		   s.SetPitch(0);
+		   s.SetYaw(0);
+		   #s.TurnOff();
+		}
+	 end_on_update
+  end_processor
+end_platform_type

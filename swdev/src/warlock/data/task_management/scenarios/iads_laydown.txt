@@ -1,0 +1,198 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# * * ************************************** * *
+# *   ****** Demonstration input file ******   *
+# *   ******      UNCLASSIFIED        ******   *
+# * * ************************************** * *
+
+platform test_tgt_1 WSF_PLATFORM
+  side blue
+  position 38:20n  116:30:00w  altitude 10 kft agl
+end_platform
+
+platform test_tgt_2 WSF_PLATFORM
+  side blue
+  position 38:20n  116:30:00w  altitude 10 kft agl
+end_platform
+
+platform test_sub_1 WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:20n  117:14:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+end_platform
+
+platform test_sub_2 WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:20n  117:25:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+  add processor task_mgr_1 WSF_TASK_PROCESSOR end_processor
+  add processor task_mgr_2 WSF_TASK_PROCESSOR end_processor
+end_platform
+
+platform test_sub_3 WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:20n  117:35:00w  altitude 0.0 m agl
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+end_platform
+
+platform test_jam WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:30n  117:25:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  commander 10_iads_cmdr
+  add comm sub_net COMM_DATALINK
+    network_name <local:slave>
+    internal_link data_mgr
+    internal_link task_mgr
+  end_comm
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+  add processor task_mgr WSF_TASK_PROCESSOR end_processor
+  add weapon jam WSF_RF_JAMMER
+     transmitter
+       frequency_band             8 ghz 12 ghz
+       power                      1.5 kw
+     end_transmitter
+  end_weapon
+end_platform
+
+platform test_jam2 WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:33n  117:25:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  commander 10_iads_cmdr
+  add comm sub_net COMM_DATALINK
+    network_name <local:slave>
+    internal_link data_mgr
+    internal_link task_mgr
+  end_comm
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+  add processor task_mgr WSF_TASK_PROCESSOR end_processor
+  add weapon jam WSF_RF_JAMMER
+     transmitter
+       frequency_band             8 ghz 12 ghz
+       power                      1.5 kw
+     end_transmitter
+  end_weapon
+end_platform
+
+platform_type test_jamming WSF_PLATFORM
+  side red
+  command_chain TEST 10_iads_cmdr
+  position 38:30n  117:25:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  add processor data_mgr WSF_TRACK_PROCESSOR end_processor
+  add processor task_mgr WSF_TASK_PROCESSOR end_processor
+  add weapon jam WSF_RF_JAMMER
+     transmitter
+       frequency_band             8 ghz 12 ghz
+       power                      1.5 kw
+     end_transmitter
+  end_weapon
+end_platform_type
+
+
+zone 100_battalion_sector
+  circular
+    maximum_altitude 30 km
+    maximum_radius   30 nm
+end_zone
+
+platform 10_iads_cmdr IADS_CMDR
+  side red
+  commander SELF
+  command_chain TEST SELF
+  position 38:04:06n  117:14:00w  altitude 0.0 m agl
+  track platform test_tgt_1 end_track
+  track platform test_tgt_2 end_track
+end_platform
+
+platform 2200_radar_company RADAR_COMPANY
+  side red
+
+  commander 10_iads_cmdr
+  position 38:06:53n  116:52:58w  altitude 0.0 m agl
+end_platform
+
+platform 2500_ew_radar EW_RADAR
+  side red
+
+  commander 2200_radar_company
+  position 37:54:54n  116:08:57w  altitude 0.0 m agl
+
+  edit sensor ew_radar
+     transmitter
+        frequency  155.0 mhz
+     end_transmitter
+  end_sensor
+end_platform
+
+platform 2600_ew_radar EW_RADAR
+  side red
+
+  commander 2200_radar_company
+  position 38:07:15n  116:52:20w  altitude 0.0 m agl
+
+  edit sensor ew_radar
+     transmitter
+        frequency  160.0 mhz
+     end_transmitter
+  end_sensor
+end_platform
+
+platform 3000_large_sam_battalion LARGE_SAM_BATTALION
+  side red
+
+  commander 10_iads_cmdr
+  position 38:03:54n  117:26:41w  altitude 0.0 m agl
+  use_zone 100_battalion_sector as battalion_sector
+  track platform test_tgt_1 end_track
+  track platform test_tgt_2 end_track
+end_platform
+
+platform 3010_acq_radar ACQ_RADAR
+  side red
+
+  commander 3000_large_sam_battalion
+  position 38:03:54n  117:26:40w  altitude 0.0 m agl
+
+  edit sensor acq_radar
+     transmitter
+        frequency  2900.0 mhz
+     end_transmitter
+  end_sensor
+end_platform
+
+platform 3020_large_sam_ttr LARGE_SAM_TTR
+  side red
+
+  commander 3000_large_sam_battalion
+  position 38:03:54n  117:26:40w  altitude 0.0 m agl
+end_platform
+
+platform 3030_large_sam_launcher LARGE_SAM_LAUNCHER
+  side red
+
+  commander 3000_large_sam_battalion
+  position 38:03:56n  117:26:38w  altitude 0.0 m agl
+end_platform
+
+platform 3040_large_sam_launcher LARGE_SAM_LAUNCHER
+  side red
+
+  commander 3000_large_sam_battalion
+  position 38:03:52n  117:26:38w  altitude 0.0 m agl
+end_platform

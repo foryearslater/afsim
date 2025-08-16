@@ -1,0 +1,87 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+platform_type AIRCRAFT WSF_PLATFORM    
+   side blue  
+   icon F-18   
+   add mover WSF_AIR_MOVER end_mover
+end_platform_type
+   
+route global_route_1
+   position 47:43:24n 127:08:32w altitude 30000 ft agl speed 1160 knots
+   position 47:43:24n 127:18:01.05w
+   position 47:05:28n 127:18:55w altitude 15000 ft
+   position 47:05:26n 127:08:22w
+end_route
+
+route global_route_2
+   position 47:33:24n 128:08:32w altitude 30000 ft agl speed 1160 knots
+   position 47:33:24n 128:18:01.05w
+   position 47:15:28n 128:18:55w speed 660 knots
+   position 47:15:26n 128:08:22w
+end_route
+
+platform basic_route_flyer AIRCRAFT    
+   route
+      position 46:33:24n 127:07:32w altitude 30000 ft agl speed 1160 knots
+      position 46:43:24n 127:18:01.05w
+      position 47:05:28n 127:12:55w
+      position 46:55:26n 127:28:22w
+   end_route   
+end_platform
+
+route relative_route
+   label START
+   offset 20 20 km altitude 30000.00 ft
+      speed 250 m/s
+      radial_acceleration 1 g
+      switch_on_approach
+   label Second
+   offset 100 0 km altitude 30000.00 ft
+      switch_on_approach
+   label Third
+   offset 0 70 km altitude 30000.00 ft
+      switch_on_approach
+      goto START
+   label Fourth
+   offset -100 10 km altitude 30000.00 ft
+      switch_on_approach
+   #goto START
+end_route
+
+realtime
+end_time 180 min
+
+platform relative_route_flyer AIRCRAFT
+   position 47:37:00n 127:03:02w altitude 30000 ft agl
+   heading 280 deg
+   
+   edit mover
+      use_route relative_route
+   end_mover      
+end_platform
+
+platform relative_heading_flyer AIRCRAFT    
+   route
+      position 46:43:24n 127:08:32w altitude 30000 ft agl speed 1160 knots
+      position 46:43:24n 127:06:34w altitude 30000 ft agl speed 1160 knots
+      turn_left 45 deg time 60 sec
+      turn_right 90 deg  distance 100 km
+      position 46:43:24n 127:08:32w altitude 30000 ft agl speed 960 knots
+      stop
+   end_route   
+end_platform
+
+platform combined_flyer AIRCRAFT    
+   route
+      position 46:41:24n 127:08:32w altitude 30000 ft agl speed 1160 knots
+      position 46:41:24n 127:06:34w altitude 30000 ft agl speed 1160 knots
+      insert_route relative_route
+   end_route   
+end_platform
