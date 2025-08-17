@@ -1,0 +1,134 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+# ****************************************************************************
+#             WEAPON TOOL INPUT FILE - ATA Launch Computer Generator
+# ****************************************************************************
+# Example input data file to configure and exercise the ATA Launch Computer
+# Generator Weapon Tool.  Examples for all possible input keywords and values
+# are given below; however, default values are often sufficient, and when so,
+# the input keyword and its corresponding default value is commented out to
+# show the input is not mandatory. 
+# ****************************************************************************
+
+include_once aim120.txt
+
+# *****************************************************************************
+# This lethality is "perfect" if within lethal range.  Necessary, because
+# for the Tool to work properly we must have a kill if the missile is
+# kinematically able to pass within lethal range of its target. 
+# NOTE:  The weapon's fuse should not have 'hit_proximity_range' set
+#        greater than the radius indicated below.
+
+weapon_effects WEAPON_TOOL_LETHALITY WSF_GRADUATED_LETHALITY
+   radius_and_pk 50.0 ft 1.00 # All Platforms
+end_weapon_effects
+
+
+# *****************************************************************************
+platform_type LAUNCH_PLATFORM_TYPE WSF_PLATFORM
+  icon F-18E
+  weapon launching_weapon AIM120
+  end_weapon
+end_platform_type
+
+
+# *****************************************************************************
+platform_type TARGET_PLATFORM_TYPE WSF_PLATFORM
+  icon F-18
+  //mover WSF_AIR_MOVER end_mover
+  mover TARGET_MOVER end_mover
+end_platform_type
+
+
+
+tool AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR
+
+  # === Tool Input Keywords ===
+  #tool_debug
+
+  # The inputs below position the test case somewhere on the globe, and indicate the firing conditions
+#  position 34:54n 117:53w  # Near Edwards AFB
+  heading 0.0 deg
+
+  aspect_rotation_clockwise            true   # default = true;
+  aspect_rotation_signed_to_lead_angle false  # default = false;
+
+  output_object_name AIM120_AIR_TO_AIR_LAUNCH_COMPUTER    # *** TEMPORARY NON_DEFAULT OVERRIDE
+  output_file_name aim120_air_to_air_launch_computer.txt  # *** TEMPORARY NON_DEFAULT OVERRIDE
+
+  # === WsfAirtoAirLaunchComputer Input Keywords === 
+
+  maximum_iterations_per_engagement  20
+  engagement_range_tolerance         5 m
+  start_range_for_increasing    1000.0 m
+  start_range_for_decreasing   10000.0 m
+  maximum_rmax_limit          222240.0 m   ### 120 nm
+
+  launch_computer_table
+
+     no_escape_maneuver 7 g 
+
+     independent_variables
+
+       # Full generation takes forever to run:
+       shooter_altitudes 20000 ft end_shooter_altitudes
+       shooter_machs 0.8 end_shooter_machs
+       target_altitudes 20000 ft end_target_altitudes
+       target_machs 0.8  end_target_machs
+
+       target_aspects
+          30 deg 60 deg
+       end_target_aspects
+
+       target_lead_angles
+          -135 deg 135 deg
+       end_target_lead_angles
+
+       # Abbreviated test removes many conditions:
+       #shooter_altitudes 20000 ft 30000 ft end_shooter_altitudes
+       #shooter_machs 0.8 1.0 end_shooter_machs
+       #target_altitudes 20000 ft 30000 ft end_target_altitudes
+       #target_machs 0.8 1.0 end_target_machs
+       #target_aspects     0 deg 30 deg 60 deg end_target_aspects
+       #target_lead_angles 0 deg 30 deg        end_target_lead_angles
+
+     end_independent_variables
+
+  end_launch_computer_table
+
+
+
+###	for testing: (smaller set of independent variables)
+#  launch_computer_table
+#     no_escape_maneuver 7 g 
+#     independent_variables
+#        shooter_altitudes 10000 ft end_shooter_altitudes
+#        shooter_machs 1.0 end_shooter_machs
+#        target_altitudes 10000 ft end_target_altitudes
+#        target_machs 1.0 end_target_machs
+#        target_aspects 0 deg 20 deg end_target_aspects
+#        target_lead_angles 0 deg 70 deg end_target_lead_angles
+#     end_independent_variables
+#  end_launch_computer_table
+
+
+end_tool
+
+
+## *****************************************************************************
+## Define the DIS replay file output, if needed, for post-processing, visualization, etc.
+##  (Generation runs much faster if you turn this off...)
+
+dis_interface
+  record lc_generation.rep
+end_dis_interface
+
+## *****************************************************************************

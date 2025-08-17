@@ -1,0 +1,150 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# Copyright 2003-2015 The Boeing Company. All rights reserved.
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+(struct WeaponTool
+{
+   tool_debug
+ | terminate_on_launch_failure <Bool>
+ | position <Latitude> <Longitude>
+ | altitude <Length>
+ | heading <Angle>
+ | frame_step <Time>
+ | launch_platform_type (typeref platformType)
+ | target_platform_type (typeref platformType)
+ | weapon_name (typeref weaponType)
+ | weapon_effects (typeref weapon_effects)
+ | tool_produces <string>
+ | output_object_name <string>
+ | output_file_extension <string>
+ | output_file_name (output-file-reference weapon-tool-output)
+})
+
+
+(struct root
+   (var ObjectMap/WeaponTool weaponTool)
+)
+(rule weapon-tool {
+   tool <string> (load (type weaponTool $1)) [skip()] <TypeCommand>* end_tool
+})
+(rule root-command {
+   <weapon-tool>
+})
+
+(struct AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool AIR_TO_AIR_LAUNCH_COMPUTER_GENERATOR)
+{
+   <:WSF_AIR_TO_AIR_LAUNCH_COMPUTER>
+ | minimum_range <Length>
+ | maximum_range <Length>
+ | range_tolerance <Length>
+ | aspect_rotation_clockwise <Bool>
+ | aspect_rotation_signed_to_lead_angle <Bool>
+ | heading <Angle>
+ | maximum_iterations <integer>
+ | increment_ratio <Real>
+ | <WeaponTool>
+})
+
+(struct ATG_LAR_AND_LC_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool ATG_LAR_AND_LC_GENERATOR)
+{
+   altitude_and_mach <Length> <Real>
+ | altitude_and_speed <Length> <Speed>
+ | target_offsets <Length> <integer>
+ | target_lateral_offsets <Length> <integer>
+ | switch_sides
+ | target_ranges <Length> <Length> <integer>
+ | target_forward_offsets <Length> <Length> <integer>
+ | shrink_factor <Real>
+ | <WeaponTool>
+})
+
+(struct BALLISTIC_MISSILE_LAUNCH_COMPUTER_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool BALLISTIC_MISSILE_LAUNCH_COMPUTER_GENERATOR)
+{
+   air_target_file (file-reference air-target-file)
+ | surface_target_file (file-reference surface-target-file)
+ | gnuplot_file (output-file-reference gnu-plot-file)
+ | minimum_output_time <Time>
+ | maximum_output_time <Time>
+ | minimum_output_range <Length>
+ | maximum_output_range <Length>
+ | maximum_output_altitude <Length>
+ | limited_to_preapogee
+ | loft_angle <Angle>
+ | loft_angles from <Angle> to <Angle> by <Angle>
+ | burn_time <Time>
+ | burn_times from <Time> to <Time> by <Time>
+ | pass_1_loft_angle_start <Angle>
+ | pass_1_loft_angle_step <Angle>
+ | pass_2_loft_angle_step <Angle>
+ | <WeaponTool>
+})
+
+
+(struct BALLISTIC_LAUNCH_COMPUTER_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool BALLISTIC_LAUNCH_COMPUTER_GENERATOR)
+{
+
+   launch_altitudes <Length> <Length> <integer>
+ | launch_speeds <Speed> <Speed> <integer>
+ | target_altitudes <Length> <Length> <integer>
+ | <WeaponTool>
+})
+
+
+(struct ORBITAL_LAUNCH_COMPUTER_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool ORBITAL_LAUNCH_COMPUTER_GENERATOR)
+{
+   speed <Speed>
+ | pitch <Angle>
+ | leo_data_file (file-reference leo_data)
+ | loft_angle <Angle>
+ | loft_angles from <Angle> to <Angle> by <Angle>
+ | launch_heading <Angle>
+ | launch_headings from <Angle> to <Angle> by <Angle>
+ | pitch_rate <AngleRate>
+ | pitch_rates from <AngleRate> to <AngleRate> by <AngleRate>
+ | <WeaponTool>
+})
+
+
+(struct SAM_LAUNCH_COMPUTER_GENERATOR
+   :base_type WeaponTool
+   :symbol (type weaponTool SAM_LAUNCH_COMPUTER_GENERATOR)
+   (rule post-generation-test {
+      lateral_offset <Length>
+    | altitude <Length>
+    | ground_range <Length>
+    | target_speed <Speed>
+    | test
+   })
+   (rule test-matrix {
+      altitudes <Length>* {from <Length> to <Length> by <Length>}? <Length>* end_altitudes
+    | lateral_offsets <Length>* {from <Length> to <Length> by <Length>}? <Length>* end_lateral_offsets
+    | ranges <Length>* {from <Length> to <Length> by <Length>}? <Length>* end_ranges
+    | speeds <Speed>* {from <Speed> to <Speed> by <Speed>}? <Speed>* end_speeds
+   })
+{
+   test_matrix <test-matrix>* end_test_matrix
+ | post_generation_interpolation_tests <post-generation-test>* end_post_generation_interpolation_tests
+ | re_parse_produced_input_file
+ | tracker_height <Length>
+ | tracker_name <string>
+ | tracker_elevation_limits <Angle> <Angle>
+ | effective_earth_radius <Ratio>
+ | <WeaponTool>
+})

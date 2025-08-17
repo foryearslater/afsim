@@ -1,0 +1,52 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+weapon_effects WEAPON_TOOL_LETHALITY WSF_GRADUATED_LETHALITY
+   radius_and_pk 15.0 ft 1.00
+end_weapon_effects
+
+aero myaero WSF_AERO
+   cd_zero_subsonic     0.100
+   cd_zero_supersonic   0.40
+   mach_begin_cd_rise   0.800
+   mach_end_cd_rise     1.200
+   mach_max_supersonic  2.000
+   reference_area       0.059 m2
+   cl_max              10.400
+   aspect_ratio         4.000
+end_aero
+
+platform_type BOMB WSF_PLATFORM
+   mover WSF_GUIDED_MOVER
+      aero myaero
+      mass 500 lbs
+      update_interval 0.5 s
+   end_mover
+   processor guidance_computer WSF_GUIDANCE_COMPUTER
+      proportional_navigation_gain 10.0
+      velocity_pursuit_gain        10.0
+      g_bias                        1.0
+      maximum_commanded_g          25.0 g
+      guidance_delay                0.0 sec
+   end_processor      
+   processor fuse WSF_GROUND_TARGET_FUSE 
+   end_processor
+end_platform_type
+
+platform_type TARGET_PLATFORM_TYPE WSF_PLATFORM
+end_platform_type
+
+platform_type LAUNCH_PLATFORM_TYPE WSF_PLATFORM
+   mover WSF_AIR_MOVER
+   end_mover
+   weapon launcher WSF_EXPLICIT_WEAPON
+      launched_platform_type BOMB 
+      weapon_effects WEAPON_TOOL_LETHALITY
+   end_weapon
+end_platform_type

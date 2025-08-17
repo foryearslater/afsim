@@ -1,0 +1,94 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# Copyright 2003-2015 The Boeing Company. All rights reserved.
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+# Tests a very basic BALLISTIC_LAUNCH_COMPUTER_GENERATOR
+# Verifies that the correct number of bombs are dropped
+# and the flights are not wildly wrong
+draw_file test_basic_atg.draw
+
+weapon_effects WEAPON_TOOL_LETHALITY WSF_SPHERICAL_LETHALITY 
+   maximum_radius 1 km
+   minimum_radius .00001 km
+end_weapon_effects
+
+script_variables
+   int bombs_complete = 0;
+   double total_distance = 0;
+   double total_flight_time = 0;
+end_script_variables
+aero myaero WSF_AERO
+   reference_area .3 m2
+end_aero
+
+platform_type BOMB WSF_PLATFORM
+   mover WSF_UNGUIDED_MOVER
+      aero myaero
+      mass 10 kg
+      update_interval .1 s
+   end_mover
+   processor fuse WSF_GROUND_TARGET_FUSE 
+   end_processor
+   script_variables
+      WsfGeoPoint startPoint;
+      double startTime;
+   end_script_variables
+   execute at_time .01 s relative
+      startPoint = Location();
+      startTime = TIME_NOW;
+   end_execute
+   
+   execute at_interval_of 5 s
+      WsfDraw d = WsfDraw();
+      d.BeginPoints();
+         d.Vertex(Location());
+      d.End();
+   end_execute
+   script void on_platform_deleted()
+      bombs_complete+=1;
+      total_distance += Location().SlantRangeTo(startPoint);
+      total_flight_time += TIME_NOW - startTime;
+   end_script
+end_platform_type
+
+platform_type TARGET_PLATFORM_TYPE WSF_PLATFORM
+end_platform_type
+
+platform_type LAUNCH_PLATFORM_TYPE WSF_PLATFORM
+   mover WSF_AIR_MOVER
+      maximum_speed 500 kts
+   end_mover
+   weapon launcher WSF_EXPLICIT_WEAPON
+      launched_platform_type BOMB 
+      weapon_effects WEAPON_TOOL_LETHALITY
+   end_weapon
+end_platform_type
+
+script void SimulationComplete()
+   writeln("BOMBS: ", bombs_complete);
+   writeln("DISTANCE: ", total_distance, "   expected 331428");
+   writeln("FLIGHT_TIME: ", total_flight_time, "   expected 988.75");
+   if (bombs_complete == 20
+       && MATH.Fabs(331428 - total_distance) < 1000.0
+       && MATH.Fabs(998.75 - total_flight_time) < 30.0)
+   writeln("-PASS-");
+   else writeln("-FAIL-");
+end_script
+
+observer 
+   enable SIMULATION_COMPLETE
+end_observer
+
+tool BALLISTIC_LAUNCH_COMPUTER_GENERATOR
+   launch_altitudes 10 km 1 km 5
+   target_altitudes 0 m 1 m 2
+   launch_speeds 400 kts 100 kts 2
+   output_file_name output_test_basic_atg.tmp
+end_tool

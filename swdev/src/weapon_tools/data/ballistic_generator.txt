@@ -1,0 +1,111 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+# ****************************************************************************
+#        WEAPON TOOL INPUT FILE - Ballistic Launch Computer Generator
+# ****************************************************************************
+# Example input data file to configure and exercise the Ballistic Launch
+# Computer Generator Weapon Tool.  A BLC provides information to time the
+# release of a gravity bomb, to minimize its downrange miss distance from
+# the target.  Examples for all possible input keywords and values
+# are given below; however, default values are often sufficient, and when so,
+# the input keyword and its corresponding default value is commented out to
+# show the input is not mandatory. 
+# ****************************************************************************
+
+include ../../data/weapons/bombs.txt
+
+# *****************************************************************************
+# This lethality is "perfect" if within lethal range.  Necessary, because
+# for the Tool to work properly we must have a kill if the missile is
+# kinematically able to pass within lethal range of its target.
+# NOTE:  The weapon's fuse should not have 'hit_proximity_range' set
+#        greater than the radius indicated below. 
+
+weapon_effects WEAPON_TOOL_LETHALITY WSF_GRADUATED_LETHALITY
+   radius_and_pk 10.0 ft 1.00 # All Platforms
+end_weapon_effects
+
+# *****************************************************************************
+# The following is used as the launch platform type
+
+platform_type LAUNCH_PLATFORM_TYPE WSF_PLATFORM
+  icon F-18E
+  # (The default weapon fired by all Weapon Tools is the first one encountered on the launch platform.)
+  weapon launching_weapon 500_LB_GRAVITY_BOMB end_weapon
+end_platform_type
+
+# *****************************************************************************
+# The following is used as a target
+
+platform_type TARGET_PLATFORM_TYPE WSF_PLATFORM
+  icon Ground_Radar
+end_platform_type
+
+# *****************************************************************************
+
+tool BALLISTIC_LAUNCH_COMPUTER_GENERATOR # ballistic_launch_computer_generator
+
+  # === Tool Input Keywords ===
+  
+  #tool_debug
+  
+  # The inputs below position the test case somewhere
+  # on the globe, and indicate the firing conditions
+  
+  #altitude  <N/A> # The 'altitude' keyword is not used for this Tool.
+  #position     00:00n 00:00w
+  position      34:54n 117:53w   # Near Edwards AFB
+  #heading                 0 deg
+
+  #frame_step            0.5 sec # Time interval between Tool updates
+    
+  #target_platform_type TARGET_PLATFORM_TYPE
+  #launch_platform_type LAUNCH_PLATFORM_TYPE
+
+  # The default is to select the first weapon on the launch_platform_type 
+  #weapon_name <first_weapon_on_launch_platform_type> # (No matter what it is named.)
+
+  # (The PK should usually boosted to 1.0 for this generator to work properly.)
+  #weapon_effects WEAPON_TOOL_LETHALITY
+
+  # The following two string values are used to assist with naming output
+  # objects and files, if the names are not explicitly provided by user input.
+  
+  #tool_produces _BALLISTIC_LAUNCH_COMPUTER
+  
+  #output_file_extension .txt
+  
+  # The user may have letter case preferences on file names, or a preferred naming
+  # convention, so may choose to explicitly override the two Tool-provided names below:
+  
+  # 1. Output object name
+  # (If not provided, the default name is to aggregate the two items shown below.) 
+  #output_object_name <weapon_platform_type><tool_produces>
+  
+  # 2. Output file name
+  # (If not provided, the default name is to aggregate the two items shown below.) 
+  #output_file_name   <output_object_name><output_file_extension>
+  
+  # === Ballistic Launch Computer Generator Input Keywords === 
+  
+  launch_altitudes  2000 ft 2000 ft 9  # Min, Delta, NumAlts
+  target_altitudes     0 ft 1000 ft 6  # Min, Delta, NumAlts
+  launch_speeds  107.74 ft/s 107.74 ft/s 9 # Min, Delta, NumSpeeds (= 0.1M to 0.9M at 10kft)
+
+end_tool
+
+# *****************************************************************************
+# Define the DIS replay file output, if needed, for post-processing visualization, etc.
+
+dis_interface
+  record lc_generation.rep
+end_dis_interface
+

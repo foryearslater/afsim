@@ -1,0 +1,177 @@
+# ****************************************************************************
+# CUI
+#
+# The Advanced Framework for Simulation, Integration, and Modeling (AFSIM)
+#
+# The use, dissemination or disclosure of data in this file is subject to
+# limitation or restriction. See accompanying README and LICENSE for details.
+# ****************************************************************************
+
+
+#stream_debug_on
+
+# ****************************************************************************
+#             WEAPON TOOL INPUT FILE - SAM Launch Computer Generator
+# ****************************************************************************
+# Example input data file to configure and exercise the SAM Launch Computer
+# Generator Weapon Tool.  Examples for all possible input keywords and values
+# are given below; however, default values are often sufficient, and when so,
+# the input keyword and its corresponding default value is commented out to
+# show the input is not mandatory.
+# ****************************************************************************
+
+include ../../data/weapons/sa-10c.txt
+
+#include sa-10c_launch_computer.txt
+
+# *****************************************************************************
+# This lethality is "perfect" if within lethal range.  Necessary, because
+# for the Tool to work properly we must have a kill if the missile is
+# kinematically able to pass within lethal range of its target.
+# NOTE:  The weapon's fuse should not have 'hit_proximity_range' set
+#        greater than the radius indicated below.
+
+weapon_effects WEAPON_TOOL_LETHALITY WSF_GRADUATED_LETHALITY
+   radius_and_pk 65.0 m 1.00 # All Platforms
+end_weapon_effects
+
+# *****************************************************************************
+# The following is used as the launch platform type
+
+platform_type LAUNCH_PLATFORM_TYPE WSF_PLATFORM
+  icon SA-10_Launcher
+  # (The default weapon fired by all Weapon Tools is the first one encountered on the launch platform.)
+  weapon launching_weapon SA-10C end_weapon
+end_platform_type
+
+# *****************************************************************************
+# The following is used as a target
+
+platform_type TARGET_PLATFORM_TYPE WSF_PLATFORM
+  icon F-18
+  mover WSF_AIR_MOVER end_mover
+end_platform_type
+
+# *****************************************************************************
+
+tool SAM_LAUNCH_COMPUTER_GENERATOR # NEW sam_launch_computer_generator
+
+  # === Tool Input Keywords ===
+
+  #tool_debug
+
+  # The inputs below position the test case somewhere
+  # on the globe, and indicate the firing conditions
+
+  #altitude                0 m   # SAM Launcher defaults to Sea Level
+  #position     00:00n 00:00w
+  #heading                 0 deg
+  position      34:54n 117:53w   # Near Edwards AFB
+
+  #frame_step            0.5 sec # Time interval between Tool updates
+
+  #target_platform_type TARGET_PLATFORM_TYPE
+  #launch_platform_type LAUNCH_PLATFORM_TYPE
+
+  # The default is to select the first weapon on the launch_platform_type
+  #weapon_name <first_weapon_on_launch_platform_type> # (No matter what it is named.)
+
+  # (The PK should usually boosted to 1.0 for this generator to work properly.)
+  #weapon_effects WEAPON_TOOL_LETHALITY
+
+  # The following two string values are used to assist with naming output
+  # objects and files, if the names are not explicitly provided by user input.
+
+  #tool_produces _launch_computer2
+
+  #output_file_extension .txt
+
+  # The user may have letter case preferences on file names, or a preferred naming
+  # convention, so may choose to explicitly override the two Tool-provided names below:
+
+  # 1. Output object name
+  # (If not provided, the default name is to aggregate the two items shown below.)
+  #output_object_name <weapon_platform_type><tool_produces>
+  output_object_name SA-10C_LAUNCH_COMPUTER
+
+  # 2. Output file name
+  # (If not provided, the default name is to aggregate the two items shown below.)
+  #output_file_name   <output_object_name><output_file_extension>
+  output_file_name   sa-10c_launch_computer.txt
+
+  # === SAM Launch Computer Generator Input Keywords ===
+
+  # Specifying this continues missile shots at longer ranges after a miss is
+  # encountered at a given altitude.  The default is not to continue to longer ranges.
+  #continue_after_miss
+
+  # Re-test the produced output file for "parse-ability"
+  re_parse_produced_input_file
+
+  tracker_height 4.5 m
+
+  # Specify the altitude and range target points. There are no default values.
+  #
+  # You can specify multiple 'altitude' or 'altitudes' block and within each you can
+  # specify the 'range' or 'ranges' for shots at that altitude(s). The 'altitude(s)'
+  # blocks must be in monotonically increasing order and the 'range(s)' entries with
+  # the block must also be in monotonically increasing order.
+  #
+  # If there are no 'range(s)' entries for a given 'altitude(s)' block then it will
+  # inherit from the previous altitude.
+
+  test_matrix
+
+     lateral_offsets
+        from 0 km to 40 km by 4 km
+     end_lateral_offsets
+
+     altitudes
+        300 m
+        from 1000 m to 5000 m by 1000 m
+     end_altitudes
+
+     target_speeds
+        from 0 m/s to 750 m/s by 50 m/s
+     end_target_speeds
+
+     ranges
+        from 0 km to 150 km by 2 km
+     end_ranges
+
+  end_test_matrix
+
+  post_generation_interpolation_tests
+
+     # intercept 0 0 m 0 4000 m 3 75000 m 3 150 m/s 108.023 sec
+     lateral_offset    0 m
+     altitude       4000 m
+     ground_range  75000 m
+     target_speed    150 m/s
+     test  # expect 108.023 sec
+
+     # intercept 19 0 0 m 0 4000 m 3 75000 m 4 200 m/s 99.9367 sec
+     lateral_offset    0 m
+     altitude       4000 m
+     ground_range  75000 m
+     target_speed    200 m/s
+     test  # expect 99.9367 sec
+
+     # intercept 173 0 0 m 5 24000 m 4 100000 m 3 150 m/s -1 sec
+     lateral_offset    0 m
+     altitude      24000 m
+     ground_range 100000 m
+     target_speed    150 m/s
+     test  # expect -1.0 sec
+
+  end_post_generation_interpolation_tests
+
+end_tool
+
+# *****************************************************************************
+# Define the DIS replay file output, if needed, for post-processing visualization, etc.
+
+//dis_interface
+//  record lc_generation.rep
+//end_dis_interface
+
